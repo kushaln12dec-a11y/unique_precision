@@ -10,29 +10,24 @@ const PORT = process.env.PORT || 5000;
 
 app.use(express.json());
 
-// MongoDB (already working)
+// MongoDB
 mongoose.connect(process.env.MONGO_URI!)
   .then(() => console.log("MongoDB connected"))
   .catch(console.error);
 
-// API test
+// ✅ API returns JSON
 app.get("/api/hello", (_req, res) => {
-  res.send("Hello from backend");
+  res.json({ message: "Hello from backend" });
 });
 
-/**
- * ✅ SERVE FRONTEND
- */
+// Serve frontend
 const clientPath = path.join(__dirname, "../../frontend/dist");
-
 app.use(express.static(clientPath));
 
-// Catch-all handler: serve index.html for any non-API routes
-app.use((req, res, next) => {
+// Catch-all for React Router (non-API routes only)
+app.get("*", (req, res) => {
   if (!req.path.startsWith("/api")) {
     res.sendFile(path.join(clientPath, "index.html"));
-  } else {
-    next();
   }
 });
 
