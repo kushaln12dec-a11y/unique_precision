@@ -25,9 +25,11 @@ const clientPath = path.join(__dirname, "../../frontend/dist");
 app.use(express.static(clientPath));
 
 // Catch-all for React Router (non-API routes only)
-app.get("*", (req, res) => {
+app.use((req, res, next) => {
   if (!req.path.startsWith("/api")) {
     res.sendFile(path.join(clientPath, "index.html"));
+  } else {
+    next();
   }
 });
 
