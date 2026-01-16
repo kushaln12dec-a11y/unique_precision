@@ -5,29 +5,6 @@ import User from "../models/User";
 
 const router = Router();
 
-router.post("/signup", async (req, res) => {
-  try {
-    const { email, password } = req.body;
-
-    if (!email || !password) {
-      return res.status(400).json({ message: "Email and password are required" });
-    }
-
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    const user = await User.create({
-      email,
-      password: hashedPassword
-    });
-
-    res.json({ message: "User created" });
-  } catch (error: any) {
-    if (error.code === 11000) {
-      return res.status(400).json({ message: "Email already exists" });
-    }
-    res.status(500).json({ message: "Error creating user" });
-  }
-});
 
 router.post("/login", async (req, res) => {
   try {
@@ -35,6 +12,12 @@ router.post("/login", async (req, res) => {
 
     if (!email || !password) {
       return res.status(400).json({ message: "Email and password are required" });
+    }
+
+    // Check if JWT_SECRET is defined
+    if (!process.env.JWT_SECRET) {
+      console.error("JWT_SECRET is not defined in environment variables");
+      return res.status(500).json({ message: "Server configuration error" });
     }
 
     const user = await User.findOne({ email });
@@ -45,12 +28,13 @@ router.post("/login", async (req, res) => {
 
     const token = jwt.sign(
       { userId: user._id },
-      process.env.JWT_SECRET!,
+      process.env.JWT_SECRET,
       { expiresIn: "7d" }
     );
 
     res.json({ token });
-  } catch (error) {
+  } catch (error: any) {
+    console.error("Login error:", error);
     res.status(500).json({ message: "Error during login" });
   }
 });

@@ -25,16 +25,21 @@ app.use("/api", limiter);
 // Body parser with payload limit
 app.use(express.json({ limit: "10mb" }));
 
+// Error handling middleware for JSON parsing errors
+app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  if (err instanceof SyntaxError && 'body' in err) {
+    return res.status(400).json({ message: "Invalid JSON" });
+  }
+  next();
+});
+
 // MongoDB connection
 connectDB();
 
 // Auth routes
 app.use("/api/auth", authRoutes);
 
-// ✅ API returns JSON
-app.get("/api/hello", (_req, res) => {
-  res.json({ message: "Hello from backend" });
-});
+
 
 // Protected route example
 app.get("/api/protected", authMiddleware, (_req, res) => {
@@ -54,6 +59,14 @@ app.use((req, res, next) => {
   }
 });
 
+// Global error handler
+app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  console.error("Unhandled error:", err);
+  res.status(500).json({ message: "Internal server error" });
+});
+
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
+  console.log(`JWT_SECRET: ${process.env.JWT_SECRET ? "Set" : "NOT SET - Login will fail!"}`);
+  console.log(`MONGO_URI: ${process.env.MONGO_URI ? "Set" : "NOT SET"}`);
 });
