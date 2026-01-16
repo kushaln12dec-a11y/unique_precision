@@ -1,14 +1,7 @@
-import { useEffect, useState } from "react";
-import { fetchHello } from "./services/api";
+import Login from "./pages/Login";
 
 function App() {
-  const [message, setMessage] = useState("");
-
-  useEffect(() => {
-    fetchHello().then(data => setMessage(data.message));
-  }, []);
-
-  return <h1>{message}</h1>;
+  return <Login />;
 }
 
 export default App;
