@@ -1,23 +1,44 @@
 import express from "express";
 import path from "path";
 import dotenv from "dotenv";
-import mongoose from "mongoose";
+import helmet from "helmet";
+import rateLimit from "express-rate-limit";
+import authRoutes from "./routes/auth";
+import { authMiddleware } from "./middleware/auth";
+import { connectDB } from "./config/database";
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-app.use(express.json());
+// Security headers
+app.use(helmet());
 
-// MongoDB
-mongoose.connect(process.env.MONGO_URI!)
-  .then(() => console.log("MongoDB connected"))
-  .catch(console.error);
+// Rate limiting - 100 requests per 15 minutes per IP
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100
+});
+app.use("/api", limiter);
+
+// Body parser with payload limit
+app.use(express.json({ limit: "10mb" }));
+
+// MongoDB connection
+connectDB();
+
+// Auth routes
+app.use("/api/auth", authRoutes);
 
 // ✅ API returns JSON
 app.get("/api/hello", (_req, res) => {
   res.json({ message: "Hello from backend" });
+});
+
+// Protected route example
+app.get("/api/protected", authMiddleware, (_req, res) => {
+  res.json({ message: "Protected data" });
 });
 
 // Serve frontend
