@@ -1,17 +1,27 @@
-import { useState } from "react";
-import { login } from "../services/api";
-import { companySlides } from "../data/companySlides";
-import { useCarousel } from "../utils/useCarousel";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { login } from "../../services/api";
+import { companySlides } from "../../data/companySlides";
+import { useCarousel } from "../../utils/useCarousel";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
 import "./Login.css";
 
 const Login = () => {
+  const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
+
+  // Redirect if already logged in
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      navigate("/dashboard");
+    }
+  }, [navigate]);
 
   // Use carousel hook
   const {
@@ -32,9 +42,8 @@ const Login = () => {
 
     try {
       await login(email, password);
-      // On successful login, redirect or handle success
-      // TODO: Add navigation logic (e.g., using react-router)
-      console.log("Login successful");
+      // Redirect to dashboard on successful login
+      navigate("/dashboard");
     } catch (err: any) {
       setError(err.message || "Login failed. Please try again.");
       setIsLoading(false);

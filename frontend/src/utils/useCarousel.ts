@@ -1,23 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-
-interface UseCarouselOptions {
-  totalSlides: number;
-  threshold?: number; // Minimum drag distance to trigger slide change (default: 50px)
-  enableAutoPlay?: boolean;
-  autoPlayInterval?: number;
-}
-
-interface UseCarouselReturn {
-  currentSlide: number;
-  isDragging: boolean;
-  dragOffset: number;
-  handleMouseDown: (e: React.MouseEvent) => void;
-  handleTouchStart: (e: React.TouchEvent) => void;
-  goToSlide: (index: number) => void;
-  nextSlide: () => void;
-  prevSlide: () => void;
-  slideWrapperStyle: React.CSSProperties;
-}
+import type { UseCarouselOptions, UseCarouselReturn } from "../types/carousel";
 
 export const useCarousel = ({
   totalSlides,
@@ -29,7 +11,7 @@ export const useCarousel = ({
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState(0);
   const [dragOffset, setDragOffset] = useState(0);
-  const autoPlayRef = useRef<NodeJS.Timeout | null>(null);
+  const autoPlayRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Drag handlers
   const handleDragStart = (clientX: number) => {
@@ -38,29 +20,6 @@ export const useCarousel = ({
     setDragOffset(0);
   };
 
-  const handleDragMove = (clientX: number) => {
-    if (!isDragging) return;
-    const offset = clientX - dragStart;
-    setDragOffset(offset);
-  };
-
-  const handleDragEnd = () => {
-    if (!isDragging) return;
-
-    if (Math.abs(dragOffset) > threshold) {
-      if (dragOffset > 0) {
-        // Dragged right - go to previous slide
-        setCurrentSlide((prev) => (prev - 1 + totalSlides) % totalSlides);
-      } else {
-        // Dragged left - go to next slide
-        setCurrentSlide((prev) => (prev + 1) % totalSlides);
-      }
-    }
-
-    setIsDragging(false);
-    setDragOffset(0);
-    setDragStart(0);
-  };
 
   // Mouse event handlers
   const handleMouseDown = (e: React.MouseEvent) => {

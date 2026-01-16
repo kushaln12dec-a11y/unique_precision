@@ -1,23 +1,4 @@
-export const fetchHello = async () => {
-  try {
-    const res = await fetch("/api/hello");
-    if (!res.ok) {
-      throw new Error(`HTTP error! status: ${res.status}`);
-    }
-    return res.json();
-  } catch (error) {
-    console.error("Error fetching hello:", error);
-    throw error;
-  }
-};
-
-export interface LoginResponse {
-  token: string;
-}
-
-export interface LoginError {
-  message: string;
-}
+import type { LoginResponse } from "../types/auth";
 
 export const login = async (email: string, password: string): Promise<LoginResponse> => {
   try {
@@ -29,7 +10,16 @@ export const login = async (email: string, password: string): Promise<LoginRespo
       body: JSON.stringify({ email, password }),
     });
 
-    const data = await res.json();
+    // Check content type before parsing JSON
+    const contentType = res.headers.get("content-type");
+    let data;
+    
+    if (contentType && contentType.includes("application/json")) {
+      data = await res.json();
+    } else {
+      const text = await res.text();
+      throw new Error(`Server error: ${text || "Unknown error"}`);
+    }
 
     if (!res.ok) {
       throw new Error(data.message || "Login failed");
@@ -41,8 +31,7 @@ export const login = async (email: string, password: string): Promise<LoginRespo
     }
 
     return data;
-  } catch (error) {
-    console.error("Error during login:", error);
+  } catch (error: any) {
     throw error;
   }
 };
