@@ -1,5 +1,6 @@
 import { useState } from "react";
 import DashboardIcon from "@mui/icons-material/Dashboard";
+import PeopleIcon from "@mui/icons-material/People";
 import LogoutIcon from "@mui/icons-material/Logout";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
@@ -11,6 +12,7 @@ const Sidebar = ({ currentPath = "/dashboard", onNavigate }: SidebarProps) => {
 
   const menuItems = [
     { icon: DashboardIcon, label: "Dashboard", path: "/dashboard" },
+    { icon: PeopleIcon, label: "User Management", path: "/users" },
   ];
 
   const handleLogout = () => {
