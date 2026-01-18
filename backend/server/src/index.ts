@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import authRoutes from "./routes/auth";
+import userRoutes from "./routes/users";
 import { authMiddleware } from "./middleware/auth";
 import { connectDB } from "./config/database";
 
@@ -38,6 +39,9 @@ connectDB();
 
 // Auth routes
 app.use("/api/auth", authRoutes);
+
+// User routes
+app.use("/api/users", userRoutes);
 
 
 

@@ -16,7 +16,6 @@ router.post("/login", async (req, res) => {
 
     // Check if JWT_SECRET is defined
     if (!process.env.JWT_SECRET) {
-      console.error("JWT_SECRET is not defined in environment variables");
       return res.status(500).json({ message: "Server configuration error" });
     }
 
@@ -27,14 +26,13 @@ router.post("/login", async (req, res) => {
     if (!isMatch) return res.status(401).json({ message: "Invalid credentials" });
 
     const token = jwt.sign(
-      { userId: user._id },
+      { userId: user._id, email: user.email, role: user.role || "OPERATOR" },
       process.env.JWT_SECRET,
       { expiresIn: "7d" }
     );
 
-    res.json({ token });
+    res.json({ token, user: { id: user._id, email: user.email, role: user.role || "OPERATOR" } });
   } catch (error: any) {
-    console.error("Login error:", error);
     res.status(500).json({ message: "Error during login" });
   }
 });
