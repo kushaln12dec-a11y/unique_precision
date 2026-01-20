@@ -30,7 +30,7 @@ interface DateRange {
   end: Dayjs | null;
 }
 
-const Header = ({ title }: HeaderProps) => {
+const Header = ({  }: HeaderProps) => {
   const navigate = useNavigate();
   const location = useLocation();
   const [dateRange, setDateRange] = useState<DateRange>({
