@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Sidebar from "../../components/Sidebar";
+import Header from "../../components/Header";
 import "./Dashboard.css";
 
 const Dashboard = () => {
@@ -23,6 +24,7 @@ const Dashboard = () => {
       <Sidebar currentPath="/dashboard" onNavigate={handleNavigation} />
       
       <div className="dashboard-content">
+        <Header title="Dashboard" />
         {/* Dashboard content will be added here */}
       </div>
     </div>

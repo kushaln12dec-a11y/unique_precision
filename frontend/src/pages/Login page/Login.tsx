@@ -154,6 +154,9 @@ const Login = () => {
       {/* Right Side - Login Form */}
       <div className="login-section">
         <div className="login-form-container">
+          <div className="logo-container">
+            <img src="/logo.svg" alt="Unique Precision Logo" className="login-logo" />
+          </div>
           <h1 className="login-title">Welcome Back</h1>
           <p className="login-subtitle">Sign in to access your account</p>
 

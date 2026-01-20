@@ -6,13 +6,13 @@
 
 .dashboard-content {
   flex: 1;
-  margin-left: 280px;
-  padding: 2rem;
+  margin-left: 240px;
+  padding: 0;
   transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .sidebar.collapsed ~ .dashboard-content {
-  margin-left: 80px;
+  margin-left: 70px;
 }
 
 .dashboard-header {
@@ -225,7 +225,7 @@
 /* Responsive */
 @media (max-width: 1024px) {
   .dashboard-content {
-    margin-left: 80px;
+    margin-left: 70px;
   }
 
   .dashboard-grid {

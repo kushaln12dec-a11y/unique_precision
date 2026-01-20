@@ -1,15 +1,10 @@
-import { useState } from "react";
 import DashboardIcon from "@mui/icons-material/Dashboard";
 import PeopleIcon from "@mui/icons-material/People";
 import LogoutIcon from "@mui/icons-material/Logout";
-import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
-import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import type { SidebarProps } from "../types/sidebar";
 import "./Sidebar.css";
 
 const Sidebar = ({ currentPath = "/dashboard", onNavigate }: SidebarProps) => {
-  const [isExpanded, setIsExpanded] = useState(true);
-
   const menuItems = [
     { icon: DashboardIcon, label: "Dashboard", path: "/dashboard" },
     { icon: PeopleIcon, label: "User Management", path: "/users" },
@@ -25,16 +20,12 @@ const Sidebar = ({ currentPath = "/dashboard", onNavigate }: SidebarProps) => {
   };
 
   return (
-    <div className={`sidebar ${isExpanded ? "expanded" : "collapsed"}`}>
+    <div className="sidebar collapsed">
       <div className="sidebar-header">
-        {isExpanded && <h2 className="sidebar-title">UNIQUE PRECISION</h2>}
-        <button
-          className="sidebar-toggle"
-          onClick={() => setIsExpanded(!isExpanded)}
-          aria-label={isExpanded ? "Collapse sidebar" : "Expand sidebar"}
-        >
-          {isExpanded ? <ChevronLeftIcon /> : <ChevronRightIcon />}
-        </button>
+        <div className="sidebar-logo">
+          <img src="/logo-cropped.svg" alt="Unique Precision" className="logo-collapsed" />
+          <img src="/logo.svg" alt="Unique Precision" className="logo-expanded" />
+        </div>
       </div>
 
       <nav className="sidebar-nav">
@@ -46,10 +37,10 @@ const Sidebar = ({ currentPath = "/dashboard", onNavigate }: SidebarProps) => {
               key={index}
               className={`nav-item ${isActive ? "active" : ""}`}
               onClick={() => onNavigate && onNavigate(item.path)}
-              title={!isExpanded ? item.label : undefined}
+              title={item.label}
             >
               <Icon className="nav-icon" />
-              {isExpanded && <span className="nav-label">{item.label}</span>}
+              <span className="nav-label">{item.label}</span>
             </button>
           );
         })}
@@ -59,10 +50,10 @@ const Sidebar = ({ currentPath = "/dashboard", onNavigate }: SidebarProps) => {
         <button
           className="nav-item logout-item"
           onClick={handleLogout}
-          title={!isExpanded ? "Logout" : undefined}
+          title="Logout"
         >
           <LogoutIcon className="nav-icon" />
-          {isExpanded && <span className="nav-label">Logout</span>}
+          <span className="nav-label">Logout</span>
         </button>
       </div>
     </div>
