@@ -33,6 +33,8 @@ const Login = () => {
   } = useCarousel({
     totalSlides: companySlides.length,
     threshold: 50,
+    enableAutoPlay: true,
+    autoPlayInterval: 5000,
   });
 
   const handleSubmit = async (e: React.FormEvent) => {

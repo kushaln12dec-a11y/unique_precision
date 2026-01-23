@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
@@ -7,6 +7,13 @@ import Header from "../../components/Header";
 import { getUsers, createUser, updateUser, deleteUser } from "../../services/userApi";
 import type { User, CreateUserData, UpdateUserData, UserRole } from "../../types/user";
 import "./UserManagement.css";
+import ConfirmDeleteModal from "./components/ConfirmDeleteModal";
+import {
+  filterUsers,
+  paginateUsers,
+  sanitizePhoneInput,
+  sortUsers,
+} from "./utils/tableUtils";
 
 const UserManagement = () => {
   const navigate = useNavigate();
@@ -57,16 +64,15 @@ const UserManagement = () => {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    
-    // Phone number validation: only digits, max 10
+
     if (name === "phone") {
-      const digitsOnly = value.replace(/\D/g, ""); // Remove all non-digits
-      if (digitsOnly.length <= 10) {
-        setFormData((prev) => ({ ...prev, [name]: digitsOnly }));
-      }
+      setFormData((prev) => ({
+        ...prev,
+        phone: sanitizePhoneInput(value),
+      }));
       return;
     }
-    
+
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
@@ -168,48 +174,28 @@ const UserManagement = () => {
 
   const roles: UserRole[] = ["ADMIN", "PROGRAMMER", "OPERATOR", "QC"];
 
-  // Search and filter users
-  const filteredUsers = users.filter((user) => {
-    // Apply search query
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      const matchesSearch = (
-        user.firstName.toLowerCase().includes(query) ||
-        user.lastName.toLowerCase().includes(query) ||
-        user.email.toLowerCase().includes(query) ||
-        user.phone.toLowerCase().includes(query) ||
-        user.empId.toLowerCase().includes(query) ||
-        user.role.toLowerCase().includes(query)
-      );
-      if (!matchesSearch) return false;
-    }
+  const filteredUsers = useMemo(
+    () => filterUsers(users, searchQuery, roleFilter),
+    [users, searchQuery, roleFilter]
+  );
 
-    // Apply role filter
-    if (roleFilter && user.role !== roleFilter) {
-      return false;
-    }
+  const sortedUsers = useMemo(
+    () => sortUsers(filteredUsers, sortField, sortDirection),
+    [filteredUsers, sortField, sortDirection]
+  );
 
-    return true;
-  });
+  const paginated = useMemo(
+    () => paginateUsers(sortedUsers, currentPage, usersPerPage),
+    [sortedUsers, currentPage, usersPerPage]
+  );
 
-  // Sort users
-  const sortedUsers = [...filteredUsers].sort((a, b) => {
-    if (!sortField) return 0;
-    
-    const aValue = a[sortField];
-    const bValue = b[sortField];
-    
-    if (aValue === undefined || bValue === undefined) return 0;
-    
-    const comparison = aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
-    return sortDirection === 'asc' ? comparison : -comparison;
-  });
-
-  // Pagination calculations
-  const indexOfLastUser = currentPage * usersPerPage;
-  const indexOfFirstUser = indexOfLastUser - usersPerPage;
-  const currentUsers = sortedUsers.slice(indexOfFirstUser, indexOfLastUser);
-  const totalPages = Math.ceil(sortedUsers.length / usersPerPage);
+  const {
+    currentUsers,
+    totalPages,
+    indexOfFirstUser,
+    indexOfLastUser,
+    totalEntries,
+  } = paginated;
 
   const handlePageChange = (pageNumber: number) => {
     setCurrentPage(pageNumber);
@@ -509,7 +495,7 @@ const UserManagement = () => {
               </tbody>
             </table>
 
-            {users.length > 0 && (
+            {sortedUsers.length > 0 && (
               <div className="pagination">
                 <div className="pagination-left">
                   <span className="show-label">Show</span>
@@ -555,49 +541,19 @@ const UserManagement = () => {
                 </div>
 
                 <div className="pagination-right">
-                  Showing {indexOfFirstUser + 1} - {Math.min(indexOfLastUser, sortedUsers.length)} of {sortedUsers.length} entries
+                  Showing {indexOfFirstUser + 1} - {indexOfLastUser} of {totalEntries} entries
                 </div>
               </div>
             )}
           </div>
         ))}
 
-        {/* Delete Confirmation Modal */}
         {showDeleteModal && userToDelete && (
-          <>
-            <div className="modal-overlay" onClick={handleDeleteCancel} />
-            <div className="delete-modal">
-              <div className="modal-header">
-                <h3>Confirm Delete</h3>
-                <button className="modal-close" onClick={handleDeleteCancel}>
-                  ✕
-                </button>
-              </div>
-
-              <div className="modal-body">
-                <p className="delete-warning">
-                  Are you sure you want to delete this user?
-                </p>
-                <div className="user-details">
-                  <p><strong>Name:</strong> {userToDelete.firstName} {userToDelete.lastName}</p>
-                  <p><strong>Email:</strong> {userToDelete.email}</p>
-                  <p><strong>Role:</strong> {userToDelete.role}</p>
-                </div>
-                <p className="delete-note">
-                  This action cannot be undone.
-                </p>
-              </div>
-
-              <div className="modal-footer">
-                <button className="btn-secondary" onClick={handleDeleteCancel}>
-                  Cancel
-                </button>
-                <button className="btn-delete-confirm" onClick={handleDeleteConfirm}>
-                  Delete User
-                </button>
-              </div>
-            </div>
-          </>
+          <ConfirmDeleteModal
+            user={userToDelete}
+            onCancel={handleDeleteCancel}
+            onConfirm={handleDeleteConfirm}
+          />
         )}
       </div>
     </div>
