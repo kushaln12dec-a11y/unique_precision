@@ -64,12 +64,7 @@
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   position: relative;
   z-index: 1;
-  background: linear-gradient(
-  180deg,
-  #5B5FC7 0%,
-  #3F46A5 50%,
-  #2B2F77 100%
-);
+  background: #ababab;
 }
 
 .sidebar-logo {

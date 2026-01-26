@@ -8,9 +8,15 @@ import type { PickersDayProps } from "@mui/x-date-pickers/PickersDay";
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 import DashboardIcon from "@mui/icons-material/Dashboard";
 import PeopleIcon from "@mui/icons-material/People";
+import CodeIcon from "@mui/icons-material/Code";
+import BuildIcon from "@mui/icons-material/Build";
+import VerifiedUserIcon from "@mui/icons-material/VerifiedUser";
+import InventoryIcon from "@mui/icons-material/Inventory";
+import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import dayjs, { Dayjs } from "dayjs";
 import isBetween from "dayjs/plugin/isBetween";
+import { getUserDisplayNameFromToken } from "../utils/auth";
 import "./Header.css";
 
 dayjs.extend(isBetween);
@@ -30,7 +36,7 @@ interface DateRange {
   end: Dayjs | null;
 }
 
-const Header = ({  }: HeaderProps) => {
+const Header = ({ title }: HeaderProps) => {
   const navigate = useNavigate();
   const location = useLocation();
   const [dateRange, setDateRange] = useState<DateRange>({
@@ -39,19 +45,45 @@ const Header = ({  }: HeaderProps) => {
   });
   const [tempDate, setTempDate] = useState<Dayjs | null>(null);
   const [showCalendar, setShowCalendar] = useState(false);
+  const displayName = getUserDisplayNameFromToken();
 
   // Define breadcrumb paths
-  const breadcrumbMap: { [key: string]: BreadcrumbItem[] } = {
+  const breadcrumbMap: Record<string, BreadcrumbItem[]> = {
     "/dashboard": [
-      { label: "Dashboard", path: "/dashboard", icon: DashboardIcon }
+      { label: "Dashboard", path: "/dashboard", icon: DashboardIcon },
+    ],
+    "/programmer": [
+      { label: "Dashboard", path: "/dashboard", icon: DashboardIcon },
+      { label: "Programmer", path: "/programmer", icon: CodeIcon },
+    ],
+    "/programmer/newjob": [
+      { label: "Dashboard", path: "/dashboard", icon: DashboardIcon },
+      { label: "Programmer", path: "/programmer", icon: CodeIcon },
+      { label: "New Job", path: "/programmer/newjob", icon: AddCircleOutlineIcon },
+    ],
+    "/operator": [
+      { label: "Dashboard", path: "/dashboard", icon: DashboardIcon },
+      { label: "Operator", path: "/operator", icon: BuildIcon },
+    ],
+    "/qc": [
+      { label: "Dashboard", path: "/dashboard", icon: DashboardIcon },
+      { label: "QC", path: "/qc", icon: VerifiedUserIcon },
+    ],
+    "/inventory": [
+      { label: "Dashboard", path: "/dashboard", icon: DashboardIcon },
+      { label: "Inventory", path: "/inventory", icon: InventoryIcon },
     ],
     "/users": [
       { label: "Dashboard", path: "/dashboard", icon: DashboardIcon },
-      { label: "User Management", path: "/users", icon: PeopleIcon }
-    ]
+      { label: "User Management", path: "/users", icon: PeopleIcon },
+    ],
   };
 
-  const breadcrumbs = breadcrumbMap[location.pathname] || breadcrumbMap["/dashboard"];
+  const breadcrumbs =
+    breadcrumbMap[location.pathname] ||
+    (title
+      ? [{ label: title, path: location.pathname, icon: DashboardIcon }]
+      : breadcrumbMap["/dashboard"]);
 
   const handleBreadcrumbClick = (path: string, isLast: boolean) => {
     if (!isLast) {
@@ -163,6 +195,12 @@ const Header = ({  }: HeaderProps) => {
       </div>
       
       <div className="header-right">
+        {displayName && (
+          <div className="user-pill" title={displayName}>
+            <span className="user-label">Logged in as</span>
+            <span className="user-name">{displayName}</span>
+          </div>
+        )}
         <div className="calendar-container">
           <button className="calendar-button" onClick={toggleCalendar}>
             <CalendarMonthIcon />

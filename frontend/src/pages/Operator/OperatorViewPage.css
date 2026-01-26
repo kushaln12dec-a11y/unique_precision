@@ -1,0 +1,65 @@
+.operator-viewpage-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.viewpage-fields {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(160px, 1fr));
+  gap: 1.25rem;
+  padding: 0.5rem 0.75rem;
+}
+
+.viewpage-fields .input-pair {
+  align-items: center;
+  text-align: center;
+}
+
+.viewpage-fields .input-pair label {
+  color: #0f172a;
+}
+
+.viewpage-fields .input-pair input {
+  width: 100%;
+  padding: 0.75rem 0.9rem;
+  border-radius: 8px;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #0f172a;
+  text-align: center;
+}
+
+.viewpage-fields .input-pair select {
+  width: 100%;
+  padding: 0.75rem 2.25rem 0.75rem 0.9rem;
+  border-radius: 8px;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #0f172a;
+  text-align: center;
+  font-weight: 500;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 12 12'%3E%3Cpath fill='%2364748b' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+}
+
+.viewpage-fields .input-pair select:focus,
+.viewpage-fields .input-pair input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+
+@media (max-width: 1200px) {
+  .viewpage-fields {
+    grid-template-columns: repeat(3, minmax(160px, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .viewpage-fields {
+    grid-template-columns: repeat(2, minmax(150px, 1fr));
+  }
+}
