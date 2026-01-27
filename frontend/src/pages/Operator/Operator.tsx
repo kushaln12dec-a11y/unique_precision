@@ -5,15 +5,19 @@ import Header from "../../components/Header";
 import DataTable, { type Column } from "../../components/DataTable";
 import FilterModal, { type FilterField, type FilterValues, type FilterCategory } from "../../components/FilterModal";
 import FilterButton from "../../components/FilterButton";
+import FilterBadges from "../../components/FilterBadges";
 import { getUsers } from "../../services/userApi";
 import { getJobs, updateJob } from "../../services/jobApi";
 import type { User } from "../../types/user";
 import type { JobEntry } from "../../types/job";
 import { getUserRoleFromToken } from "../../utils/auth";
 import { formatDateValue, parseDateValue } from "../../utils/date";
-import { applyFilters, countActiveFilters } from "../../utils/filterUtils";
+import { countActiveFilters } from "../../utils/filterUtils";
+import ChildCutsTable from "../Programmer/components/ChildCutsTable";
+import ArrowOutwardIcon from "@mui/icons-material/ArrowOutward";
 import "../RoleBoard.css";
 import "../Programmer/Programmer.css";
+import "./Operator.css";
 
 const STORAGE_KEY = "programmerJobs";
 
@@ -24,7 +28,9 @@ const Operator = () => {
   const [jobsPerPage, setJobsPerPage] = useState(5);
   const [sortField, setSortField] = useState<keyof JobEntry | null>(null);
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
-  const [selectedJobIds, setSelectedJobIds] = useState<Set<number | string>>(new Set());
+  const [expandedGroups, setExpandedGroups] = useState<Set<number>>(
+    () => new Set()
+  );
   const [operatorUsers, setOperatorUsers] = useState<User[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [filters, setFilters] = useState<FilterValues>({});
@@ -46,7 +52,7 @@ const Operator = () => {
   useEffect(() => {
     const fetchJobs = async () => {
       try {
-        const fetchedJobs = await getJobs();
+        const fetchedJobs = await getJobs(filters, customerFilter, createdByFilter, assignedToFilter);
         setJobs(fetchedJobs);
       } catch (error) {
         console.error("Failed to fetch jobs", error);
@@ -70,7 +76,7 @@ const Operator = () => {
       }
     };
     fetchJobs();
-  }, []);
+  }, [filters, customerFilter, createdByFilter, assignedToFilter]);
 
   useEffect(() => {
     const fetchOperators = async () => {
@@ -97,62 +103,110 @@ const Operator = () => {
     }
   }, [canAssign]);
 
-  const filteredJobs = useMemo(() => {
-    let result = jobs;
-    
-    // Apply inline filters
-    if (customerFilter) {
-      result = result.filter((job) =>
-        job.customer?.toLowerCase().includes(customerFilter.toLowerCase())
-      );
-    }
-    
-    if (createdByFilter) {
-      result = result.filter((job) => job.createdBy === createdByFilter);
-    }
-    
-    if (assignedToFilter) {
-      result = result.filter((job) => job.assignedTo === assignedToFilter);
-    }
-    
-    // Apply modal filters
-    result = applyFilters(result, filters);
-    
-    return result;
-  }, [jobs, filters, customerFilter, createdByFilter, assignedToFilter]);
+  // Jobs are already filtered by API, no need for client-side filtering
+  const filteredJobs = useMemo(() => jobs, [jobs]);
 
-  const sortedJobs = useMemo(() => {
-    if (!sortField) return filteredJobs;
+  const toggleGroup = (groupId: number) => {
+    setExpandedGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(groupId)) {
+        next.delete(groupId);
+      } else {
+        next.add(groupId);
+      }
+      return next;
+    });
+  };
+
+  // Group jobs by groupId (like Programmer screen)
+  const groupedJobs = useMemo(() => {
+    const groups = new Map<number, JobEntry[]>();
+    filteredJobs.forEach((job) => {
+      const key = job.groupId ?? job.id;
+      if (!groups.has(key)) {
+        groups.set(key, []);
+      }
+      groups.get(key)!.push(job);
+    });
+    return Array.from(groups.entries()).map(([groupId, entries]) => ({
+      groupId,
+      entries: entries.sort((a, b) => {
+        const idA = typeof a.id === 'number' ? a.id : Number(a.id) || 0;
+        const idB = typeof b.id === 'number' ? b.id : Number(b.id) || 0;
+        return idA - idB;
+      }),
+    }));
+  }, [filteredJobs]);
+
+  const sortedGroups = useMemo(() => {
+    if (!sortField) {
+      // Default sort: newest first (by createdAt descending)
+      return [...groupedJobs].sort((a, b) => {
+        const dateA = parseDateValue(a.entries[0]?.createdAt || "");
+        const dateB = parseDateValue(b.entries[0]?.createdAt || "");
+        return dateB - dateA; // Descending (newest first)
+      });
+    }
     const direction = sortDirection === "asc" ? 1 : -1;
-    return [...filteredJobs].sort((a, b) => {
-      const getValue = (job: JobEntry): string | number => {
-        if (sortField === "createdAt") return parseDateValue(job.createdAt);
-        if (sortField === "createdBy") return job.createdBy.toLowerCase();
-        const fieldValue = job[sortField];
-        if (fieldValue === null || fieldValue === undefined) return "";
-        if (typeof fieldValue === "string") {
-          return fieldValue.toLowerCase();
+    return [...groupedJobs].sort((a, b) => {
+      const getValue = (group: { entries: JobEntry[] }) => {
+        const first = group.entries[0];
+        if (!first) return "";
+        if (sortField === "createdAt") return parseDateValue(first.createdAt);
+        if (sortField === "createdBy") return first.createdBy.toLowerCase();
+        if (sortField === "totalHrs") {
+          return group.entries.reduce((sum, entry) => sum + entry.totalHrs, 0);
         }
-        return fieldValue;
+        if (sortField === "totalAmount") {
+          return group.entries.reduce((sum, entry) => sum + entry.totalAmount, 0);
+        }
+        const rawValue = first[sortField];
+        if (rawValue === null || rawValue === undefined) {
+          return "";
+        }
+        if (typeof rawValue === "string") {
+          return rawValue.toString().toLowerCase();
+        }
+        return rawValue;
       };
       const valueA = getValue(a);
       const valueB = getValue(b);
-      if (valueA === null || valueA === undefined || valueA === "") return 1 * direction;
-      if (valueB === null || valueB === undefined || valueB === "") return -1 * direction;
       if (valueA < valueB) return -1 * direction;
       if (valueA > valueB) return 1 * direction;
       return 0;
     });
-  }, [filteredJobs, sortField, sortDirection]);
+  }, [groupedJobs, sortField, sortDirection]);
 
-  const handleSort = (field: keyof JobEntry) => {
-    if (sortField === field) {
-      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
-    } else {
-      setSortField(field);
-      setSortDirection("asc");
-    }
+  type TableRow = {
+    groupId: number;
+    parent: JobEntry;
+    groupTotalHrs: number;
+    groupTotalAmount: number;
+    entries: JobEntry[];
   };
+
+  const tableData = useMemo<TableRow[]>(() => {
+    return sortedGroups
+      .map((group) => {
+        const [parent] = group.entries;
+        if (!parent) return null;
+        return {
+          groupId: group.groupId,
+          parent,
+          groupTotalHrs: group.entries.reduce(
+            (sum, entry) => sum + (entry.totalHrs || 0),
+            0
+          ),
+          groupTotalAmount: group.entries.reduce(
+            (sum, entry) => sum + (entry.totalAmount || 0),
+            0
+          ),
+          entries: group.entries,
+        };
+      })
+      .filter((row): row is TableRow => row !== null);
+  }, [sortedGroups]);
+
 
   const handlePageChange = (pageNumber: number) => {
     setCurrentPage(pageNumber);
@@ -170,17 +224,6 @@ const Operator = () => {
     }
   };
 
-  const handleSelectJob = (jobId: number | string) => {
-    setSelectedJobIds((prev) => {
-      const updated = new Set<number | string>(prev);
-      if (updated.has(jobId)) {
-        updated.delete(jobId);
-      } else {
-        updated.add(jobId);
-      }
-      return updated;
-    });
-  };
 
   const handleApplyFilters = (newFilters: FilterValues) => {
     setFilters(newFilters);
@@ -189,6 +232,26 @@ const Operator = () => {
 
   const handleClearFilters = () => {
     setFilters({});
+    setCurrentPage(1);
+  };
+
+  const handleRemoveFilter = (key: string, type: "inline" | "modal") => {
+    if (type === "inline") {
+      if (key === "customer") {
+        setCustomerFilter("");
+      } else if (key === "createdBy") {
+        setCreatedByFilter("");
+      } else if (key === "assignedTo") {
+        setAssignedToFilter("");
+      }
+    } else {
+      // Modal filter
+      setFilters((prev) => {
+        const updated = { ...prev };
+        delete updated[key];
+        return updated;
+      });
+    }
     setCurrentPage(1);
   };
 
@@ -290,94 +353,153 @@ const Operator = () => {
 
   const activeFilterCount = useMemo(() => countActiveFilters(filters), [filters]);
 
-  const columns: Column<JobEntry>[] = useMemo(
+  const handleSort = (field: keyof JobEntry) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+    } else {
+      setSortField(field);
+      setSortDirection("asc");
+    }
+  };
+
+  const handleViewJob = (groupId: number) => {
+    navigate(`/operator/viewpage?groupId=${groupId}`);
+  };
+
+  const expandableRows = useMemo(() => {
+    const map = new Map<number, any>();
+    tableData.forEach((row) => {
+      const hasChildren = row.entries.length > 1;
+      if (hasChildren) {
+        map.set(row.groupId, {
+          isExpanded: expandedGroups.has(row.groupId),
+          onToggle: () => toggleGroup(row.groupId),
+          expandedContent: <ChildCutsTable entries={row.entries} />,
+          ariaLabel: expandedGroups.has(row.groupId)
+            ? "Collapse cuts"
+            : "Expand cuts",
+        });
+      }
+    });
+    return map;
+  }, [tableData, expandedGroups, toggleGroup]);
+
+  const columns: Column<TableRow>[] = useMemo(
     () => [
-      {
-        key: "select",
-        label: "",
-        sortable: false,
-        render: (job) => (
-          <input
-            type="checkbox"
-            checked={selectedJobIds.has(job.id)}
-            onChange={() => handleSelectJob(job.id)}
-            aria-label={`Select ${job.customer || String(job.id)}`}
-          />
-        ),
-      },
       {
         key: "customer",
         label: "Customer",
         sortable: true,
         sortKey: "customer",
-        render: (job) => job.customer || "—",
+        render: (row) => {
+          const expandable = expandableRows?.get(row.groupId);
+          const isExpanded = expandable?.isExpanded || false;
+          return (
+            <div style={{ display: "flex", alignItems: "center", gap: "0.2rem" }}>
+              {expandable && (
+                <button
+                  type="button"
+                  className="accordion-toggle-button"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    expandable.onToggle();
+                  }}
+                  aria-label={expandable.ariaLabel}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
+                    padding: "0",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: "0.5rem",
+                    color: "#1a1a2e",
+                    minWidth: "0.8rem",
+                    width: "0.8rem",
+                  }}
+                >
+                  <span style={{ fontSize: "0.5rem", lineHeight: "1" }}>
+                    {isExpanded ? "▴" : "▾"}
+                  </span>
+                </button>
+              )}
+              {!expandable && <span style={{ width: "1rem" }} />}
+              <span>{row.parent.customer || "—"}</span>
+            </div>
+          );
+        },
       },
       {
         key: "rate",
         label: "Rate",
         sortable: true,
         sortKey: "rate",
-        render: (job) => `₹${Number(job.rate || 0).toFixed(2)}`,
+        render: (row) => `₹${Number(row.parent.rate || 0).toFixed(2)}`,
       },
       {
         key: "cut",
         label: "Cut (mm)",
         sortable: true,
         sortKey: "cut",
-        render: (job) => Number(job.cut || 0).toFixed(2),
+        render: (row) => Number(row.parent.cut || 0).toFixed(2),
       },
       {
         key: "thickness",
         label: "Thickness (mm)",
         sortable: true,
         sortKey: "thickness",
-        render: (job) => Number(job.thickness || 0).toFixed(2),
+        render: (row) => Number(row.parent.thickness || 0).toFixed(2),
       },
       {
         key: "passLevel",
         label: "Pass",
         sortable: true,
         sortKey: "passLevel",
-        render: (job) => job.passLevel,
+        render: (row) => row.parent.passLevel,
       },
       {
         key: "setting",
         label: "Setting",
         sortable: true,
         sortKey: "setting",
-        render: (job) => job.setting,
+        render: (row) => row.parent.setting,
       },
       {
         key: "qty",
         label: "Qty",
         sortable: true,
         sortKey: "qty",
-        render: (job) => Number(job.qty || 0).toString(),
+        render: (row) => Number(row.parent.qty || 0).toString(),
       },
       {
         key: "createdAt",
         label: "Created At",
         sortable: true,
         sortKey: "createdAt",
-        render: (job) => formatDateValue(job.createdAt),
+        render: (row) => formatDateValue(row.parent.createdAt),
       },
       {
         key: "createdBy",
         label: "Created By",
         sortable: true,
         sortKey: "createdBy",
-        render: (job) => job.createdBy,
+        render: (row) => row.parent.createdBy,
       },
       {
         key: "assignedTo",
-        label: "Assigned To",
+        label: (
+          <>
+            Assigned <br /> To
+          </>
+        ),
         sortable: false,
-        render: (job) =>
+        render: (row) =>
           canAssign ? (
             <select
-              value={job.assignedTo || "Unassigned"}
+              value={row.parent.assignedTo || "Unassigned"}
               onChange={(event) =>
-                handleAssignChange(job.id, event.target.value)
+                handleAssignChange(row.parent.id, event.target.value)
               }
             >
               <option value="Unassigned">Unassigned</option>
@@ -391,24 +513,52 @@ const Operator = () => {
               ))}
             </select>
           ) : (
-            <span>{job.assignedTo || "Unassigned"}</span>
+            <span>{row.parent.assignedTo || "Unassigned"}</span>
           ),
       },
       {
         key: "totalHrs",
         label: "Total Hrs/Piece",
-        sortable: false,
-        render: (job) => (job.totalHrs ? job.totalHrs.toFixed(3) : "—"),
+        sortable: true,
+        sortKey: "totalHrs",
+        render: (row) =>
+          row.groupTotalHrs ? row.groupTotalHrs.toFixed(3) : "—",
       },
       {
         key: "totalAmount",
         label: "Total Amount (₹)",
+        sortable: true,
+        sortKey: "totalAmount",
+        render: (row) =>
+          row.groupTotalAmount
+            ? `₹${row.groupTotalAmount.toFixed(2)}`
+            : "—",
+      },
+      {
+        key: "action",
+        label: "Action",
         sortable: false,
-        render: (job) =>
-          job.totalAmount ? `₹${job.totalAmount.toFixed(2)}` : "—",
+        className: "action-cell",
+        headerClassName: "action-header",
+        render: (row) => (
+          <div className="action-buttons">
+            <button
+              type="button"
+              className="action-icon-button operator-action-button"
+              onClick={() => handleViewJob(row.groupId)}
+              aria-label={`View ${row.parent.customer || "entry"}`}
+              title="View Details"
+            >
+              <ArrowOutwardIcon 
+                fontSize="small" 
+                style={{ color: "#dc2626", fontSize: "1.1rem" }}
+              />
+            </button>
+          </div>
+        ),
       },
     ],
-    [selectedJobIds, canAssign, operatorUsers]
+    [canAssign, operatorUsers, handleAssignChange, expandableRows]
   );
 
   return (
@@ -498,19 +648,34 @@ const Operator = () => {
             onApply={handleApplyFilters}
             onClear={handleClearFilters}
           />
+          <FilterBadges
+            filters={filters}
+            filterFields={filterFields}
+            customerFilter={customerFilter}
+            createdByFilter={createdByFilter}
+            assignedToFilter={assignedToFilter}
+            onRemoveFilter={handleRemoveFilter}
+          />
           <DataTable
             columns={columns}
-            data={sortedJobs}
+            data={tableData}
             sortField={sortField}
             sortDirection={sortDirection}
             onSort={(field) => handleSort(field as keyof JobEntry)}
             emptyMessage='No entries added yet.'
-            getRowKey={(job) => job.id}
+            expandableRows={expandableRows}
+            showAccordion={false}
+            getRowKey={(row) => row.groupId}
+            getRowClassName={(row) =>
+              `group-row ${
+                expandedGroups.has(row.groupId) ? "group-row-expanded" : ""
+              }`
+            }
             className="jobs-table-wrapper"
             pagination={{
               currentPage,
               entriesPerPage: jobsPerPage,
-              totalEntries: sortedJobs.length,
+              totalEntries: tableData.length,
               onPageChange: handlePageChange,
               onEntriesPerPageChange: (entries) => {
                 setJobsPerPage(entries);

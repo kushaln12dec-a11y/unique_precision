@@ -4,6 +4,11 @@
   border: 1px solid #e2e8f0;
 }
 
+/* Ensure Programmer screen has horizontal scroll */
+.jobs-table-wrapper {
+  overflow-x: auto !important;
+}
+
 .data-table {
   width: 100%;
   border-collapse: separate;

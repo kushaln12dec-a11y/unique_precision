@@ -1,0 +1,310 @@
+/* Operator-specific table styles - no horizontal scroll, fit to container */
+.operator-table-no-scroll {
+  overflow-x: hidden !important;
+  width: 100%;
+  max-width: 100%;
+}
+
+.operator-table-no-scroll .data-table-wrapper {
+  overflow-x: hidden !important;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  position: relative;
+}
+
+.operator-table-no-scroll .data-table {
+  width: 100%;
+  max-width: 100%;
+  table-layout: fixed;
+}
+
+/* Make columns more compact for Operator screen */
+.operator-table-no-scroll .data-table th,
+.operator-table-no-scroll .data-table td {
+  padding: 0.15rem 0.08rem;
+  font-size: 0.5rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 1.2;
+}
+
+/* Specific column width adjustments for Operator - fixed layout with precise percentages */
+/* Total: 5.5% + 3.5% + 3% + 3% + 2% + 2% + 2% + 7% + 5% + 6% + 5% + 5% + 2% = 56% */
+/* Remaining 44% distributed proportionally, ensuring Action column is always visible */
+/* Note: Accordion toggle icon is now embedded within Customer column */
+
+/* Customer (first column - includes accordion toggle icon) */
+.operator-table-no-scroll .data-table th:nth-child(1),
+.operator-table-no-scroll .data-table td:nth-child(1) {
+  width: 5.5%;
+  min-width: 0;
+}
+
+/* Rate (second column) */
+.operator-table-no-scroll .data-table th:nth-child(2),
+.operator-table-no-scroll .data-table td:nth-child(2) {
+  width: 3.5%;
+  min-width: 0;
+}
+
+/* Cut (third column) */
+.operator-table-no-scroll .data-table th:nth-child(3),
+.operator-table-no-scroll .data-table td:nth-child(3) {
+  width: 3%;
+  min-width: 0;
+}
+
+/* Thickness (fourth column) */
+.operator-table-no-scroll .data-table th:nth-child(4),
+.operator-table-no-scroll .data-table td:nth-child(4) {
+  width: 3%;
+  min-width: 0;
+}
+
+/* Pass (fifth column) */
+.operator-table-no-scroll .data-table th:nth-child(5),
+.operator-table-no-scroll .data-table td:nth-child(5) {
+  width: 2%;
+  min-width: 0;
+}
+
+/* Setting (sixth column) */
+.operator-table-no-scroll .data-table th:nth-child(6),
+.operator-table-no-scroll .data-table td:nth-child(6) {
+  width: 2%;
+  min-width: 0;
+}
+
+/* Qty (seventh column) */
+.operator-table-no-scroll .data-table th:nth-child(7),
+.operator-table-no-scroll .data-table td:nth-child(7) {
+  width: 2%;
+  min-width: 0;
+}
+
+/* Created At (eighth column) */
+.operator-table-no-scroll .data-table th:nth-child(8),
+.operator-table-no-scroll .data-table td:nth-child(8) {
+  width: 7%;
+  min-width: 0;
+}
+
+/* Created By (ninth column) */
+.operator-table-no-scroll .data-table th:nth-child(9),
+.operator-table-no-scroll .data-table td:nth-child(9) {
+  width: 5%;
+  min-width: 0;
+}
+
+/* Assigned To (tenth column) */
+.operator-table-no-scroll .data-table th:nth-child(10),
+.operator-table-no-scroll .data-table td:nth-child(10) {
+  width: 6%;
+  min-width: 0;
+}
+
+/* Total Hrs (eleventh column) */
+.operator-table-no-scroll .data-table th:nth-child(11),
+.operator-table-no-scroll .data-table td:nth-child(11) {
+  width: 5%;
+  min-width: 0;
+}
+
+/* Total Amount (twelfth column) */
+.operator-table-no-scroll .data-table th:nth-child(12),
+.operator-table-no-scroll .data-table td:nth-child(12) {
+  width: 5%;
+  min-width: 0;
+}
+
+/* Action (last column) - ensure it's visible and always rendered - minimal width but enough for larger icon */
+.operator-table-no-scroll .data-table th.action-header,
+.operator-table-no-scroll .data-table td.action-cell {
+  width: 2% !important;
+  min-width: 0 !important;
+  max-width: 30px !important;
+  visibility: visible !important;
+  display: table-cell !important;
+  white-space: nowrap;
+  flex-shrink: 0;
+  padding: 0.1rem 0.05rem !important;
+}
+
+/* Fallback selector for Action column - ensure it's the last visible column */
+.operator-table-no-scroll .data-table th:last-child:not(.accordion-header-cell),
+.operator-table-no-scroll .data-table td:last-child:not(.accordion-toggle-cell) {
+  width: 2% !important;
+  min-width: 0 !important;
+  max-width: 30px !important;
+  padding: 0.1rem 0.05rem !important;
+}
+
+/* Reduce Action button size in Operator screen */
+.operator-table-no-scroll .data-table td.action-cell .operator-action-button {
+  padding: 0.05rem !important;
+  min-width: 1rem !important;
+  min-height: 1rem !important;
+  width: 1rem !important;
+  height: 1rem !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.operator-table-no-scroll .data-table td.action-cell .operator-action-button svg {
+  font-size: 0.65rem !important;
+  width: 0.65rem !important;
+  height: 0.65rem !important;
+}
+
+/* Ensure table container doesn't overflow - reduce white card background width */
+.roleboard-content .programmer-panel {
+  overflow-x: hidden;
+  max-width: 100%;
+  box-sizing: border-box;
+  margin: 0.5rem 0.25rem !important;
+  padding: 0.75rem !important;
+  width: calc(100% - 0.5rem) !important;
+}
+
+/* Reduce panel header spacing */
+.roleboard-content .programmer-panel .panel-header {
+  margin-bottom: 0.5rem !important;
+  gap: 0.5rem !important;
+}
+
+/* Reduce filter group spacing */
+.roleboard-content .programmer-panel .filter-group {
+  min-width: 120px !important;
+  gap: 0.25rem !important;
+}
+
+/* Prioritize Action column visibility */
+.operator-table-no-scroll .data-table th.action-header,
+.operator-table-no-scroll .data-table td.action-cell {
+  position: relative;
+  z-index: 1;
+  background-color: #ffffff;
+}
+
+/* Ensure table fits within container - no overflow */
+.operator-table-no-scroll .data-table {
+  border-collapse: collapse;
+  width: 100% !important;
+  table-layout: fixed !important;
+}
+
+/* Ensure all cells respect their width constraints */
+.operator-table-no-scroll .data-table th,
+.operator-table-no-scroll .data-table td {
+  box-sizing: border-box;
+}
+
+/* Force table to fit exactly within container */
+.operator-table-no-scroll .data-table-wrapper {
+  width: 100% !important;
+  max-width: 100% !important;
+  overflow-x: hidden !important;
+}
+
+/* Ensure Action column is always visible by reducing other columns if needed */
+.operator-table-no-scroll .data-table th:not(.action-header):not(.accordion-header-cell),
+.operator-table-no-scroll .data-table td:not(.action-cell):not(.accordion-toggle-cell) {
+  max-width: 100%;
+}
+
+/* Reduce font size for table headers specifically */
+.operator-table-no-scroll .data-table th {
+  font-size: 0.48rem !important;
+  font-weight: 600;
+  padding: 0.12rem 0.08rem !important;
+  line-height: 1.1 !important;
+}
+
+/* Reduce font size for action buttons - Operator screen specific */
+.operator-table-no-scroll .data-table td.action-cell button {
+  padding: 0.05rem !important;
+  font-size: 0.5rem !important;
+  min-width: 1rem !important;
+  min-height: 1rem !important;
+  width: 1rem !important;
+  height: 1rem !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.operator-table-no-scroll .data-table td.action-cell svg {
+  font-size: 0.65rem !important;
+  width: 0.65rem !important;
+  height: 0.65rem !important;
+}
+
+/* Specific styling for Operator action button with red arrow - increased icon size */
+.operator-table-no-scroll .data-table td.action-cell .operator-action-button {
+  padding: 0.1rem !important;
+  min-width: 1.2rem !important;
+  min-height: 1.2rem !important;
+  width: 1.2rem !important;
+  height: 1.2rem !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.operator-table-no-scroll .data-table td.action-cell .operator-action-button svg {
+  font-size: 0.9rem !important;
+  width: 0.9rem !important;
+  height: 0.9rem !important;
+  color: #dc2626 !important;
+}
+
+/* Reduce font size for select dropdowns */
+.operator-table-no-scroll .data-table td select {
+  font-size: 0.5rem !important;
+  padding: 0.08rem 0.15rem !important;
+  line-height: 1.2 !important;
+}
+
+/* Reduce spacing in customer column */
+.operator-table-no-scroll .data-table td:nth-child(1) > div {
+  gap: 0.2rem !important;
+}
+
+/* Reduce sort icon sizes */
+.operator-table-no-scroll .data-table th .sort-icon {
+  font-size: 0.5rem !important;
+  margin-left: 0.15rem !important;
+}
+
+/* Reduce all icon sizes */
+.operator-table-no-scroll .data-table svg {
+  font-size: 0.7rem !important;
+  width: 0.7rem !important;
+  height: 0.7rem !important;
+}
+
+/* Ensure table borders are minimal */
+.operator-table-no-scroll .data-table th,
+.operator-table-no-scroll .data-table td {
+  border-width: 0.5px !important;
+}
+
+/* Responsive adjustments for Operator table */
+@media (max-width: 1400px) {
+  .operator-table-no-scroll .data-table th,
+  .operator-table-no-scroll .data-table td {
+    padding: 0.15rem 0.08rem;
+    font-size: 0.5rem;
+  }
+}
+
+@media (max-width: 1200px) {
+  .operator-table-no-scroll .data-table th,
+  .operator-table-no-scroll .data-table td {
+    padding: 0.12rem 0.06rem;
+    font-size: 0.48rem;
+  }
+}

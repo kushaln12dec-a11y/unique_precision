@@ -5,6 +5,7 @@ import Header from "../../components/Header";
 import DataTable, { type Column } from "../../components/DataTable";
 import FilterModal, { type FilterField, type FilterValues, type FilterCategory } from "../../components/FilterModal";
 import FilterButton from "../../components/FilterButton";
+import FilterBadges from "../../components/FilterBadges";
 import { getUserDisplayNameFromToken, getUserRoleFromToken } from "../../utils/auth";
 import { getUsers } from "../../services/userApi";
 import { getJobs, createJobs, deleteJobsByGroupId } from "../../services/jobApi";
@@ -13,7 +14,7 @@ import ProgrammerJobForm from "./ProgrammerJobForm.tsx";
 import { calculateTotals, DEFAULT_CUT, type CutForm } from "./programmerUtils";
 import { DustbinIcon, PencilIcon } from "../../utils/icons";
 import { formatDateLabel, formatDateValue, parseDateValue } from "../../utils/date";
-import { applyFilters, countActiveFilters } from "../../utils/filterUtils";
+import { countActiveFilters } from "../../utils/filterUtils";
 import ChildCutsTable from "./components/ChildCutsTable";
 import type { JobEntry } from "../../types/job";
 import "./Programmer.css";
@@ -49,7 +50,7 @@ const Programmer = () => {
   useEffect(() => {
     const fetchJobs = async () => {
       try {
-        const fetchedJobs = await getJobs();
+        const fetchedJobs = await getJobs(filters, customerFilter, createdByFilter);
         setJobs(fetchedJobs);
       } catch (error) {
         console.error("Failed to fetch jobs", error);
@@ -74,7 +75,7 @@ const Programmer = () => {
       }
     };
     fetchJobs();
-  }, []);
+  }, [filters, customerFilter, createdByFilter]);
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -229,25 +230,8 @@ const Programmer = () => {
     });
   };
 
-  const filteredJobs = useMemo(() => {
-    let result = jobs;
-    
-    // Apply inline filters
-    if (customerFilter) {
-      result = result.filter((job) =>
-        job.customer?.toLowerCase().includes(customerFilter.toLowerCase())
-      );
-    }
-    
-    if (createdByFilter) {
-      result = result.filter((job) => job.createdBy === createdByFilter);
-    }
-    
-    // Apply modal filters
-    result = applyFilters(result, filters);
-    
-    return result;
-  }, [jobs, filters, customerFilter, createdByFilter]);
+  // Jobs are already filtered by API, no need for client-side filtering
+  const filteredJobs = useMemo(() => jobs, [jobs]);
 
   const groupedJobs = useMemo(() => {
     const groups = new Map<number, JobEntry[]>();
@@ -269,7 +253,14 @@ const Programmer = () => {
   }, [filteredJobs]);
 
   const sortedGroups = useMemo(() => {
-    if (!sortField) return groupedJobs;
+    if (!sortField) {
+      // Default sort: newest first (by createdAt descending)
+      return [...groupedJobs].sort((a, b) => {
+        const dateA = parseDateValue(a.entries[0]?.createdAt || "");
+        const dateB = parseDateValue(b.entries[0]?.createdAt || "");
+        return dateB - dateA; // Descending (newest first)
+      });
+    }
     const direction = sortDirection === "asc" ? 1 : -1;
     return [...groupedJobs].sort((a, b) => {
       const getValue = (group: { entries: JobEntry[] }) => {
@@ -470,6 +461,23 @@ const Programmer = () => {
     setFilters({});
   };
 
+  const handleRemoveFilter = (key: string, type: "inline" | "modal") => {
+    if (type === "inline") {
+      if (key === "customer") {
+        setCustomerFilter("");
+      } else if (key === "createdBy") {
+        setCreatedByFilter("");
+      }
+    } else {
+      // Modal filter
+      setFilters((prev) => {
+        const updated = { ...prev };
+        delete updated[key];
+        return updated;
+      });
+    }
+  };
+
   const filterCategories: FilterCategory[] = [
     { id: "dimensions", label: "Dimensions", icon: "📏" },
     { id: "production", label: "Production", icon: "⚙️" },
@@ -665,6 +673,13 @@ const Programmer = () => {
                 initialValues={filters}
                 onApply={handleApplyFilters}
                 onClear={handleClearFilters}
+              />
+              <FilterBadges
+                filters={filters}
+                filterFields={filterFields}
+                customerFilter={customerFilter}
+                createdByFilter={createdByFilter}
+                onRemoveFilter={handleRemoveFilter}
               />
             </>
           )}

@@ -1,4 +1,5 @@
 import type { JobEntry } from "../types/job";
+import type { FilterValues } from "../components/FilterModal";
 
 const getAuthHeaders = () => {
   const token = localStorage.getItem("token");
@@ -8,8 +9,76 @@ const getAuthHeaders = () => {
   };
 };
 
-export const getJobs = async (): Promise<JobEntry[]> => {
-  const res = await fetch("/api/jobs", {
+// Convert FilterValues to query parameters
+const buildQueryParams = (
+  filters?: FilterValues,
+  customerFilter?: string,
+  createdByFilter?: string,
+  assignedToFilter?: string
+): string => {
+  const params = new URLSearchParams();
+
+  // Inline filters
+  if (customerFilter) {
+    params.append("customer", customerFilter);
+  }
+  if (createdByFilter) {
+    params.append("createdBy", createdByFilter);
+  }
+  if (assignedToFilter) {
+    params.append("assignedTo", assignedToFilter);
+  }
+
+  // Modal filters
+  if (filters) {
+    Object.keys(filters).forEach((key) => {
+      const value = filters[key];
+
+      // Handle range filters (min/max objects)
+      if (typeof value === "object" && !Array.isArray(value) && value !== null) {
+        if (key === "createdAt") {
+          // Date range
+          if (value.min) {
+            params.append("createdAt_min", value.min as string);
+          }
+          if (value.max) {
+            params.append("createdAt_max", value.max as string);
+          }
+        } else {
+          // Number range
+          if (value.min !== undefined) {
+            params.append(`${key}_min`, String(value.min));
+          }
+          if (value.max !== undefined) {
+            params.append(`${key}_max`, String(value.max));
+          }
+        }
+      } else if (typeof value === "string" && value.trim() !== "") {
+        // Text/select filters
+        params.append(key, value);
+      } else if (typeof value === "number") {
+        // Number filters
+        params.append(key, String(value));
+      } else if (typeof value === "boolean") {
+        // Boolean filters
+        params.append(key, String(value));
+      }
+    });
+  }
+
+  return params.toString();
+};
+
+export const getJobs = async (
+  filters?: FilterValues,
+  customerFilter?: string,
+  createdByFilter?: string,
+  assignedToFilter?: string
+): Promise<JobEntry[]> => {
+  const queryString = buildQueryParams(filters, customerFilter, createdByFilter, assignedToFilter);
+  const url = queryString ? `/api/jobs?${queryString}` : "/api/jobs";
+
+  const res = await fetch(url, {
     method: "GET",
     headers: getAuthHeaders(),
   });

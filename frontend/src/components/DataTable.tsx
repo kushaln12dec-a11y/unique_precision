@@ -1,4 +1,5 @@
-import React, { ReactNode } from "react";
+import React from "react";
+import type { ReactNode } from "react";
 import SortIcon from "../pages/Programmer/components/SortIcon";
 import AccordionToggle from "../pages/Programmer/components/AccordionToggle";
 import Pagination from "./Pagination";
@@ -6,7 +7,7 @@ import "./DataTable.css";
 
 export type Column<T> = {
   key: string;
-  label: string;
+  label: string | ReactNode;
   sortable?: boolean;
   sortKey?: string;
   render?: (row: T, index: number) => ReactNode;
@@ -157,7 +158,7 @@ function DataTable<T extends Record<string, any>>({
                   </tr>
                   {expandable && expandable.isExpanded && (
                     <tr className="child-row">
-                      <td colSpan={totalColumns} className="child-row-content">
+                      <td colSpan={columns.length} className="child-row-content">
                         {expandable.expandedContent}
                       </td>
                     </tr>

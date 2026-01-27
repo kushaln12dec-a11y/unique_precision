@@ -3,7 +3,13 @@ const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "
 const pad = (value: number) => value.toString().padStart(2, "0");
 
 export const formatDateLabel = (date: Date) => {
-  return `${pad(date.getDate())} ${MONTHS[date.getMonth()]} ${date.getFullYear()}`;
+  const day = pad(date.getDate());
+  const month = MONTHS[date.getMonth()];
+  const year = date.getFullYear();
+  const hours = pad(date.getHours());
+  const minutes = pad(date.getMinutes());
+  const seconds = pad(date.getSeconds());
+  return `${day} ${month} ${year} ${hours}:${minutes}:${seconds}`;
 };
 
 const parseLegacyDateTime = (value: string) => {
@@ -15,12 +21,40 @@ const parseLegacyDateTime = (value: string) => {
   return new Date(year, month - 1, day, hour || 0, minute || 0).getTime();
 };
 
+const parseDateWithTime = (value: string) => {
+  // Format: "DD MMM YYYY HH:MM:SS" or "DD MMM YYYY"
+  const parts = value.trim().split(" ");
+  if (parts.length < 3) return null;
+  
+  const day = parseInt(parts[0], 10);
+  const monthStr = parts[1];
+  const year = parseInt(parts[2], 10);
+  const monthIndex = MONTHS.indexOf(monthStr);
+  
+  if (isNaN(day) || monthIndex === -1 || isNaN(year)) return null;
+  
+  // Parse time if present (HH:MM:SS)
+  let hours = 0, minutes = 0, seconds = 0;
+  if (parts.length >= 4 && parts[3].includes(":")) {
+    const timeParts = parts[3].split(":").map(Number);
+    hours = timeParts[0] || 0;
+    minutes = timeParts[1] || 0;
+    seconds = timeParts[2] || 0;
+  }
+  
+  return new Date(year, monthIndex, day, hours, minutes, seconds).getTime();
+};
+
 export const parseDateValue = (value: string) => {
   if (!value) return 0;
   if (value.includes("/") && value.includes(":")) {
     const legacy = parseLegacyDateTime(value);
     return legacy ?? 0;
   }
+  // Try parsing new format "DD MMM YYYY HH:MM:SS" or "DD MMM YYYY"
+  const dateWithTime = parseDateWithTime(value);
+  if (dateWithTime) return dateWithTime;
+  
   const parsed = Date.parse(value);
   return Number.isNaN(parsed) ? 0 : parsed;
 };

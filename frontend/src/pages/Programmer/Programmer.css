@@ -14,22 +14,25 @@
 }
 
 .programmer-panel {
-  margin: 2rem;
+  margin: 1rem 0.5rem;
   background: #ffffff;
-  border-radius: 18px;
-  padding: 1.5rem;
+  border-radius: 12px;
+  padding: 1rem;
   box-shadow: 0 10px 30px rgba(15, 23, 42, 0.1);
   border: 1px solid #e2e8f0;
   max-height: calc(100vh - 150px);
   overflow-y: auto;
+  width: calc(100% - 1rem);
+  max-width: calc(100% - 1rem);
+  box-sizing: border-box;
 }
 
 .panel-header {
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
-  margin-bottom: 1.5rem;
-  gap: 1.5rem;
+  margin-bottom: 0.75rem;
+  gap: 0.75rem;
 }
 
 .panel-header h2 {
@@ -63,8 +66,8 @@
 .filter-group {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
-  min-width: 200px;
+  gap: 0.3rem;
+  min-width: 150px;
 }
 
 .filter-group label {
@@ -724,9 +727,15 @@
 }
 
 .jobs-table-wrapper {
-  overflow-x: auto;
+  overflow-x: auto !important;
   border-radius: 12px;
   border: 1px solid #e2e8f0;
+  width: 100%;
+}
+
+/* Ensure Programmer table can scroll horizontally */
+.jobs-table-wrapper .data-table-wrapper {
+  overflow-x: auto !important;
 }
 
 .jobs-table {

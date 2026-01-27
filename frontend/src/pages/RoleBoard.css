@@ -7,6 +7,8 @@
 .roleboard-content {
   flex: 1;
   background: #f5f6fb;
+  padding: 0.25rem;
+  box-sizing: border-box;
 }
 
 .roleboard-body {
