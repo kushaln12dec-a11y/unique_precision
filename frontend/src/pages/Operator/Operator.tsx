@@ -5,6 +5,7 @@ import Header from "../../components/Header";
 import { getUsers } from "../../services/userApi";
 import type { User } from "../../types/user";
 import { getUserRoleFromToken } from "../../utils/auth";
+import { formatDateValue, parseDateValue } from "../../utils/date";
 import "../RoleBoard.css";
 import "../Programmer/Programmer.css";
 
@@ -83,20 +84,12 @@ const Operator = () => {
     }
   }, [canAssign]);
 
-  const parseCreatedAt = (value: string) => {
-    const [datePart, timePart] = value.split(" ");
-    if (!datePart || !timePart) return 0;
-    const [day, month, year] = datePart.split("/").map(Number);
-    const [hour, minute] = timePart.split(":").map(Number);
-    return new Date(year, month - 1, day, hour, minute).getTime();
-  };
-
   const sortedJobs = useMemo(() => {
     if (!sortField) return jobs;
     const direction = sortDirection === "asc" ? 1 : -1;
     return [...jobs].sort((a, b) => {
       const getValue = (job: JobEntry) => {
-        if (sortField === "createdAt") return parseCreatedAt(job.createdAt);
+        if (sortField === "createdAt") return parseDateValue(job.createdAt);
         if (sortField === "createdBy") return job.createdBy.toLowerCase();
         if (typeof job[sortField] === "string") {
           return job[sortField].toString().toLowerCase();
@@ -275,7 +268,7 @@ const Operator = () => {
                       <td>{job.passLevel}</td>
                       <td>{job.setting}</td>
                       <td>{Number(job.qty || 0).toString()}</td>
-                      <td>{job.createdAt}</td>
+                      <td>{formatDateValue(job.createdAt)}</td>
                       <td>{job.createdBy}</td>
                       <td>
                         {canAssign ? (

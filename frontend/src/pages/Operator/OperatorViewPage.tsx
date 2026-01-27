@@ -3,6 +3,7 @@ import Sidebar from "../../components/Sidebar";
 import Header from "../../components/Header";
 import "../RoleBoard.css";
 import "../Programmer/Programmer.css";
+import { formatDateValue } from "../../utils/date";
 import "./OperatorViewPage.css";
 
 const OperatorViewPage = () => {
@@ -17,7 +18,7 @@ const OperatorViewPage = () => {
       passLevel: "1",
       setting: "1",
       qty: "1",
-      createdAt: "25/01/2026 20:10",
+      createdAt: "25 Jan 2026",
       createdBy: "User",
       assignedTo: "Operator 1",
       totalHrs: 0.501,
@@ -83,7 +84,7 @@ const OperatorViewPage = () => {
                     <td>{job.passLevel}</td>
                     <td>{job.setting}</td>
                     <td>{job.qty}</td>
-                    <td>{job.createdAt}</td>
+                    <td>{formatDateValue(job.createdAt)}</td>
                     <td>{job.createdBy}</td>
                     <td>{job.assignedTo}</td>
                     <td>{job.totalHrs.toFixed(3)}</td>

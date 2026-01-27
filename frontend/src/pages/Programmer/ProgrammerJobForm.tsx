@@ -1,7 +1,8 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import type { CutForm } from "./programmerUtils";
-import { DEFAULT_CUT } from "./programmerUtils";
+import { DustbinIcon } from "../../utils/icons";
+import { calculateSedmAmount, DEFAULT_CUT } from "./programmerUtils";
 
 type CutTotals = {
   totalHrs: number;
@@ -26,6 +27,19 @@ const ProgrammerJobForm = ({
   isAdmin,
 }: ProgrammerJobFormProps) => {
   const [collapsedCuts, setCollapsedCuts] = useState<Set<number>>(new Set());
+  const [sedmModalIndex, setSedmModalIndex] = useState<number | null>(null);
+
+  useEffect(() => {
+    const primaryCustomer = cuts[0]?.customer ?? "";
+    if (!primaryCustomer || cuts.length <= 1) return;
+    setCuts((prev) =>
+      prev.map((cut, idx) =>
+        idx === 0 || cut.customer === primaryCustomer
+          ? cut
+          : { ...cut, customer: primaryCustomer }
+      )
+    );
+  }, [cuts.length, cuts[0]?.customer, setCuts]);
 
   const toggleCut = (index: number) => {
     if (index === 0) return;
@@ -75,10 +89,33 @@ const ProgrammerJobForm = ({
     reader.readAsDataURL(file);
   };
 
+  const handleSedmChange = (index: number, value: CutForm["sedm"]) => {
+    handleCutChange(index, "sedm")(value);
+    if (value === "Yes") {
+      setSedmModalIndex(index);
+    } else if (sedmModalIndex === index) {
+      setSedmModalIndex(null);
+    }
+  };
+
+  const closeSedmModal = () => {
+    setSedmModalIndex(null);
+  };
+
   const cutLabels = useMemo(
     () => cuts.map((_, index) => `Cut ${index + 1}`),
     [cuts]
   );
+
+  const grandTotals = useMemo(() => {
+    return totals.reduce(
+      (acc, current) => ({
+        totalHrs: acc.totalHrs + current.totalHrs,
+        totalAmount: acc.totalAmount + current.totalAmount,
+      }),
+      { totalHrs: 0, totalAmount: 0 }
+    );
+  }, [totals]);
 
   return (
     <div className="job-form-card">
@@ -142,8 +179,9 @@ const ProgrammerJobForm = ({
                       type="button"
                       className="cut-remove"
                       onClick={() => removeCut(index)}
+                      aria-label={`Delete ${cutLabels[index]}`}
                     >
-                      Remove
+                      <DustbinIcon fontSize="small" />
                     </button>
                   )}
                   <button
@@ -157,10 +195,24 @@ const ProgrammerJobForm = ({
                   </button>
                 </div>
               </div>
-              <div className="cut-section-body">
+                <div className="cut-section-body">
                 <div className="job-form-image">
                   {cut.cutImage ? (
-                    <img src={cut.cutImage} alt={`${cutLabels[index]} preview`} />
+                    <>
+                      <img src={cut.cutImage} alt={`${cutLabels[index]} preview`} />
+                      <button
+                        type="button"
+                        className="image-remove"
+                        onClick={(event) => {
+                          event.preventDefault();
+                          event.stopPropagation();
+                          handleCutImageChange(index, null);
+                        }}
+                        aria-label={`Remove image for ${cutLabels[index]}`}
+                      >
+                        ×
+                      </button>
+                    </>
                   ) : (
                     <span className="image-placeholder">Upload Image</span>
                   )}
@@ -176,10 +228,11 @@ const ProgrammerJobForm = ({
                   <div className="input-pair">
                     <label>Customer</label>
                     <select
-                      value={cut.customer}
+                      value={index === 0 ? cut.customer : cuts[0]?.customer ?? ""}
                       onChange={(e) =>
                         handleCutChange(index, "customer")(e.target.value)
                       }
+                      disabled={index > 0}
                     >
                       <option value="">Select Customer</option>
                       <option value="UPC001">UPC001</option>
@@ -270,14 +323,21 @@ const ProgrammerJobForm = ({
                     <select
                       value={cut.sedm}
                       onChange={(e) =>
-                        handleCutChange(index, "sedm")(
-                          e.target.value as CutForm["sedm"]
-                        )
+                        handleSedmChange(index, e.target.value as CutForm["sedm"])
                       }
                     >
                       <option value="No">No</option>
                       <option value="Yes">Yes</option>
                     </select>
+                    {cut.sedm === "Yes" && (
+                      <button
+                        type="button"
+                        className="sedm-config-button"
+                        onClick={() => setSedmModalIndex(index)}
+                      >
+                        Configure SEDM
+                      </button>
+                    )}
                   </div>
                   {isAdmin && (
                     <>
@@ -304,6 +364,7 @@ const ProgrammerJobForm = ({
                     <textarea
                       rows={6}
                       value={cut.description}
+                      placeholder="Enter description"
                       onChange={(e) =>
                         handleCutChange(index, "description")(
                           e.target.value.toUpperCase()
@@ -319,13 +380,80 @@ const ProgrammerJobForm = ({
       </div>
 
       <div className="form-actions">
-        <button className="btn-success" onClick={onSave}>
-          Save Job
-        </button>
-        <button className="btn-secondary" onClick={onCancel}>
-          Cancel
-        </button>
+        <div className="form-totals">
+          <div>
+            <span className="form-total-label">Total Hrs/Piece</span>
+            <span className="form-total-value">{grandTotals.totalHrs.toFixed(3)}</span>
+          </div>
+          <div>
+            <span className="form-total-label">Total Amount (₹)</span>
+            <span className="form-total-value">{grandTotals.totalAmount.toFixed(2)}</span>
+          </div>
+        </div>
+        <div className="form-action-buttons">
+          <button className="btn-success" onClick={onSave}>
+            Save Job
+          </button>
+          <button className="btn-secondary" onClick={onCancel}>
+            Cancel
+          </button>
+        </div>
       </div>
+      {sedmModalIndex !== null && cuts[sedmModalIndex] && (
+        <div className="modal-overlay">
+          <div className="modal-card sedm-modal">
+            <div className="sedm-modal-header">
+              <h3>SEDM Details</h3>
+              <button
+                type="button"
+                className="sedm-close"
+                onClick={closeSedmModal}
+                aria-label="Close SEDM"
+              >
+                ×
+              </button>
+            </div>
+            <div className="sedm-grid">
+              <div className="input-pair">
+                <label>Length</label>
+                <select
+                  value={cuts[sedmModalIndex].sedmLengthValue}
+                  onChange={(event) =>
+                    handleCutChange(sedmModalIndex, "sedmLengthValue")(event.target.value)
+                  }
+                >
+                  <option value="">Select length</option>
+                  {Array.from({ length: 30 }, (_, idx) => (idx + 1) / 10).map((value) => (
+                    <option key={value} value={value.toFixed(1)}>
+                      {value.toFixed(1)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="input-pair">
+                <label>Length Option</label>
+                <select
+                  value={cuts[sedmModalIndex].sedmLengthType}
+                  onChange={(event) =>
+                    handleCutChange(sedmModalIndex, "sedmLengthType")(
+                      event.target.value as CutForm["sedmLengthType"]
+                    )
+                  }
+                >
+                  <option value="min">Min 20mm</option>
+                  <option value="per">Greater than 20mm</option>
+                </select>
+              </div>
+            </div>
+            <p className="sedm-meta">
+              Quantity: {cuts[sedmModalIndex].qty || "0"}
+            </p>
+            <p className="sedm-amount">
+              SEDM Amount: ₹{calculateSedmAmount(cuts[sedmModalIndex]).toFixed(2)}
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

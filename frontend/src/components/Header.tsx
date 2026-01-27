@@ -161,7 +161,9 @@ const Header = ({ title }: HeaderProps) => {
 
   const formatDateRange = () => {
     if (dateRange.start && dateRange.end) {
-      return `${dateRange.start.format("DD MMM")} - ${dateRange.end.format("DD MMM YYYY")}`;
+      return `${dateRange.start.format("DD MMM YYYY")} - ${dateRange.end.format(
+        "DD MMM YYYY"
+      )}`;
     }
     return dateRange.start?.format("DD MMM YYYY") || "Select Date Range";
   };
