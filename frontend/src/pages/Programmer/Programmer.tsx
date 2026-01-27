@@ -2,22 +2,21 @@ import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import Sidebar from "../../components/Sidebar";
 import Header from "../../components/Header";
+import DataTable, { type Column } from "../../components/DataTable";
+import FilterModal, { type FilterField, type FilterValues, type FilterCategory } from "../../components/FilterModal";
+import FilterButton from "../../components/FilterButton";
 import { getUserDisplayNameFromToken, getUserRoleFromToken } from "../../utils/auth";
+import { getUsers } from "../../services/userApi";
+import { getJobs, createJobs, deleteJobsByGroupId } from "../../services/jobApi";
+import type { User } from "../../types/user";
 import ProgrammerJobForm from "./ProgrammerJobForm.tsx";
 import { calculateTotals, DEFAULT_CUT, type CutForm } from "./programmerUtils";
 import { DustbinIcon, PencilIcon } from "../../utils/icons";
 import { formatDateLabel, formatDateValue, parseDateValue } from "../../utils/date";
+import { applyFilters, countActiveFilters } from "../../utils/filterUtils";
+import ChildCutsTable from "./components/ChildCutsTable";
+import type { JobEntry } from "../../types/job";
 import "./Programmer.css";
-
-type JobEntry = CutForm & {
-  id: number;
-  groupId: number;
-  totalHrs: number;
-  totalAmount: number;
-  createdAt: string;
-  createdBy: string;
-  assignedTo: string;
-};
 
 const STORAGE_KEY = "programmerJobs";
 
@@ -30,6 +29,16 @@ const Programmer = () => {
   const [editingGroupId, setEditingGroupId] = useState<number | null>(null);
   const [sortField, setSortField] = useState<keyof JobEntry | null>(null);
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
+  const [expandedGroups, setExpandedGroups] = useState<Set<number>>(
+    () => new Set()
+  );
+  const [filters, setFilters] = useState<FilterValues>({});
+  const [showFilterModal, setShowFilterModal] = useState(false);
+  const [customerFilter, setCustomerFilter] = useState("");
+  const [createdByFilter, setCreatedByFilter] = useState("");
+  const [users, setUsers] = useState<User[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [entriesPerPage, setEntriesPerPage] = useState(10);
   const isAdmin = getUserRoleFromToken() === "ADMIN";
   const isNewJobRoute = location.pathname === "/programmer/newjob";
 
@@ -38,28 +47,46 @@ const Programmer = () => {
   };
 
   useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
+    const fetchJobs = async () => {
       try {
-        const parsed = JSON.parse(stored) as JobEntry[];
-        if (Array.isArray(parsed)) {
-          setJobs(
-            parsed.map((job) => ({
-              ...job,
-              assignedTo: job.assignedTo || "Unassigned",
-              groupId: job.groupId ?? job.id,
-            }))
-          );
-        }
+        const fetchedJobs = await getJobs();
+        setJobs(fetchedJobs);
       } catch (error) {
-        console.error("Failed to parse jobs from storage", error);
+        console.error("Failed to fetch jobs", error);
+        // Fallback to localStorage if API fails
+        const stored = localStorage.getItem(STORAGE_KEY);
+        if (stored) {
+          try {
+            const parsed = JSON.parse(stored) as JobEntry[];
+            if (Array.isArray(parsed)) {
+              setJobs(
+                parsed.map((job) => ({
+                  ...job,
+                  assignedTo: job.assignedTo || "Unassigned",
+                  groupId: job.groupId ?? job.id,
+                }))
+              );
+            }
+          } catch (parseError) {
+            console.error("Failed to parse jobs from storage", parseError);
+          }
+        }
       }
-    }
+    };
+    fetchJobs();
   }, []);
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(jobs));
-  }, [jobs]);
+    const fetchUsers = async () => {
+      try {
+        const userList = await getUsers();
+        setUsers(userList);
+      } catch (error) {
+        console.error("Failed to fetch users", error);
+      }
+    };
+    fetchUsers();
+  }, []);
 
   const totals = useMemo(
     () => cuts.map((cut) => calculateTotals(cut)),
@@ -81,61 +108,58 @@ const Programmer = () => {
     setEditingGroupId(null);
   };
 
-  const handleSaveJob = () => {
-    const createdBy = getUserDisplayNameFromToken() || "User";
-    const createdAt = formatDateLabel(new Date());
-    const groupId = Date.now();
-    const entries: JobEntry[] = cuts.map((cut, index) => {
-      const cutTotals = totals[index] ?? calculateTotals(cut);
-      return {
-        ...cut,
-        id: groupId + index,
-        groupId,
-        totalHrs: cutTotals.totalHrs,
-        totalAmount: cutTotals.totalAmount,
-        createdAt,
-        createdBy,
-        assignedTo: "Unassigned",
-      };
-    });
-
-    if (editingGroupId) {
-      setJobs((prev) => {
-        const existing = prev.find((job) => job.groupId === editingGroupId);
-        if (!existing) return prev;
-        const preserved = {
-          createdAt: existing.createdAt,
-          createdBy: existing.createdBy,
-          assignedTo: existing.assignedTo,
+  const handleSaveJob = async () => {
+    try {
+      const createdBy = getUserDisplayNameFromToken() || "User";
+      const createdAt = formatDateLabel(new Date());
+      const groupId = editingGroupId || Date.now();
+      
+      const entries: JobEntry[] = cuts.map((cut, index) => {
+        const cutTotals = totals[index] ?? calculateTotals(cut);
+        return {
+          ...cut,
+          id: groupId + index,
+          groupId,
+          totalHrs: cutTotals.totalHrs,
+          totalAmount: cutTotals.totalAmount,
+          createdAt,
+          createdBy,
+          assignedTo: editingGroupId 
+            ? jobs.find((job) => job.groupId === editingGroupId)?.assignedTo || "Unassigned"
+            : "Unassigned",
         };
-        const updatedEntries = cuts.map((cut, index) => {
-          const cutTotals = totals[index] ?? calculateTotals(cut);
-          return {
-            ...cut,
-            id: editingGroupId + index,
-            groupId: editingGroupId,
-            totalHrs: cutTotals.totalHrs,
-            totalAmount: cutTotals.totalAmount,
-            createdAt: preserved.createdAt,
-            createdBy: preserved.createdBy,
-            assignedTo: preserved.assignedTo,
-          };
-        });
-        return [
-          ...updatedEntries,
-          ...prev.filter((job) => job.groupId !== editingGroupId),
-        ];
       });
-    } else {
-      setJobs((prev) => [...entries, ...prev]);
+
+      if (editingGroupId) {
+        // Delete existing jobs in the group
+        await deleteJobsByGroupId(editingGroupId);
+        // Create updated jobs
+        const createdJobs = await createJobs(entries);
+        setJobs((prev) => [
+          ...createdJobs,
+          ...prev.filter((job) => job.groupId !== editingGroupId),
+        ]);
+      } else {
+        // Create new jobs
+        const createdJobs = await createJobs(entries);
+        setJobs((prev) => [...createdJobs, ...prev]);
+      }
+      
+      handleCancel();
+    } catch (error) {
+      console.error("Failed to save job", error);
+      alert("Failed to save job. Please try again.");
     }
-    handleCancel();
   };
 
   const handleEditJob = (groupId: number) => {
     const groupCuts = jobs
       .filter((job) => job.groupId === groupId)
-      .sort((a, b) => a.id - b.id);
+      .sort((a, b) => {
+        const idA = typeof a.id === 'number' ? a.id : Number(a.id) || 0;
+        const idB = typeof b.id === 'number' ? b.id : Number(b.id) || 0;
+        return idA - idB;
+      });
     if (groupCuts.length === 0) return;
     setEditingGroupId(groupId);
     setCuts(
@@ -158,6 +182,7 @@ const Programmer = () => {
           (job.sedmSelectionType === "range"
             ? job.sedmRangeKey ?? ""
             : job.sedmStandardValue ?? ""),
+        sedmHoles: job.sedmHoles ?? "1",
         priority: job.priority,
         description: job.description,
         cutImage: job.cutImage ?? null,
@@ -169,8 +194,14 @@ const Programmer = () => {
     navigate("/programmer/newjob");
   };
 
-  const handleDeleteJob = (groupId: number) => {
-    setJobs((prev) => prev.filter((job) => job.groupId !== groupId));
+  const handleDeleteJob = async (groupId: number) => {
+    try {
+      await deleteJobsByGroupId(groupId);
+      setJobs((prev) => prev.filter((job) => job.groupId !== groupId));
+    } catch (error) {
+      console.error("Failed to delete job", error);
+      alert("Failed to delete job. Please try again.");
+    }
   };
 
   const handleSort = (field: keyof JobEntry) => {
@@ -182,20 +213,45 @@ const Programmer = () => {
     }
   };
 
-  const renderSortIcon = (field: keyof JobEntry) => {
-    const isActive = sortField === field;
-    const isAsc = sortDirection === "asc";
-    return (
-      <span className="sort-icon">
-        <span className={`sort-arrow up ${isActive && isAsc ? "active" : ""}`}>▴</span>
-        <span className={`sort-arrow down ${isActive && !isAsc ? "active" : ""}`}>▾</span>
-      </span>
-    );
+  const handlePageChange = (pageNumber: number) => {
+    setCurrentPage(pageNumber);
   };
+
+  const toggleGroup = (groupId: number) => {
+    setExpandedGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(groupId)) {
+        next.delete(groupId);
+      } else {
+        next.add(groupId);
+      }
+      return next;
+    });
+  };
+
+  const filteredJobs = useMemo(() => {
+    let result = jobs;
+    
+    // Apply inline filters
+    if (customerFilter) {
+      result = result.filter((job) =>
+        job.customer?.toLowerCase().includes(customerFilter.toLowerCase())
+      );
+    }
+    
+    if (createdByFilter) {
+      result = result.filter((job) => job.createdBy === createdByFilter);
+    }
+    
+    // Apply modal filters
+    result = applyFilters(result, filters);
+    
+    return result;
+  }, [jobs, filters, customerFilter, createdByFilter]);
 
   const groupedJobs = useMemo(() => {
     const groups = new Map<number, JobEntry[]>();
-    jobs.forEach((job) => {
+    filteredJobs.forEach((job) => {
       const key = job.groupId ?? job.id;
       if (!groups.has(key)) {
         groups.set(key, []);
@@ -204,9 +260,13 @@ const Programmer = () => {
     });
     return Array.from(groups.entries()).map(([groupId, entries]) => ({
       groupId,
-      entries: entries.sort((a, b) => a.id - b.id),
+      entries: entries.sort((a, b) => {
+        const idA = typeof a.id === 'number' ? a.id : Number(a.id) || 0;
+        const idB = typeof b.id === 'number' ? b.id : Number(b.id) || 0;
+        return idA - idB;
+      }),
     }));
-  }, [jobs]);
+  }, [filteredJobs]);
 
   const sortedGroups = useMemo(() => {
     if (!sortField) return groupedJobs;
@@ -240,20 +300,374 @@ const Programmer = () => {
     });
   }, [groupedJobs, sortField, sortDirection]);
 
+  type TableRow = {
+    groupId: number;
+    parent: JobEntry;
+    groupTotalHrs: number;
+    groupTotalAmount: number;
+    entries: JobEntry[];
+  };
+
+  const tableData = useMemo<TableRow[]>(() => {
+    return sortedGroups
+      .map((group) => {
+        const [parent] = group.entries;
+        if (!parent) return null;
+        return {
+          groupId: group.groupId,
+          parent,
+          groupTotalHrs: group.entries.reduce(
+            (sum, entry) => sum + (entry.totalHrs || 0),
+            0
+          ),
+          groupTotalAmount: group.entries.reduce(
+            (sum, entry) => sum + (entry.totalAmount || 0),
+            0
+          ),
+          entries: group.entries,
+        };
+      })
+      .filter((row): row is TableRow => row !== null);
+  }, [sortedGroups]);
+
+  const columns: Column<TableRow>[] = useMemo(
+    () => [
+      {
+        key: "customer",
+        label: "Customer",
+        sortable: true,
+        sortKey: "customer",
+        render: (row) => row.parent.customer || "—",
+      },
+      {
+        key: "rate",
+        label: "Rate",
+        sortable: true,
+        sortKey: "rate",
+        render: (row) => `₹${Number(row.parent.rate || 0).toFixed(2)}`,
+      },
+      {
+        key: "cut",
+        label: "Cut (mm)",
+        sortable: true,
+        sortKey: "cut",
+        render: (row) => Number(row.parent.cut || 0).toFixed(2),
+      },
+      {
+        key: "thickness",
+        label: "Thickness (mm)",
+        sortable: true,
+        sortKey: "thickness",
+        render: (row) => Number(row.parent.thickness || 0).toFixed(2),
+      },
+      {
+        key: "passLevel",
+        label: "Pass",
+        sortable: true,
+        sortKey: "passLevel",
+        render: (row) => row.parent.passLevel,
+      },
+      {
+        key: "setting",
+        label: "Setting",
+        sortable: true,
+        sortKey: "setting",
+        render: (row) => row.parent.setting,
+      },
+      {
+        key: "qty",
+        label: "Qty",
+        sortable: true,
+        sortKey: "qty",
+        render: (row) => Number(row.parent.qty || 0).toString(),
+      },
+      {
+        key: "createdAt",
+        label: "Created At",
+        sortable: true,
+        sortKey: "createdAt",
+        render: (row) => formatDateValue(row.parent.createdAt),
+      },
+      {
+        key: "createdBy",
+        label: "Created By",
+        sortable: true,
+        sortKey: "createdBy",
+        render: (row) => row.parent.createdBy,
+      },
+      {
+        key: "totalHrs",
+        label: "Total Hrs/Piece",
+        sortable: true,
+        sortKey: "totalHrs",
+        render: (row) =>
+          row.groupTotalHrs ? row.groupTotalHrs.toFixed(3) : "—",
+      },
+      {
+        key: "totalAmount",
+        label: "Total Amount (₹)",
+        sortable: true,
+        sortKey: "totalAmount",
+        render: (row) =>
+          row.groupTotalAmount
+            ? `₹${row.groupTotalAmount.toFixed(2)}`
+            : "—",
+      },
+      {
+        key: "action",
+        label: "Action",
+        sortable: false,
+        className: "action-cell",
+        headerClassName: "action-header",
+        render: (row) => (
+          <div className="action-buttons">
+            <button
+              type="button"
+              className="action-icon-button"
+              onClick={() => handleEditJob(row.groupId)}
+              aria-label={`Edit ${row.parent.customer || "entry"}`}
+            >
+              <PencilIcon fontSize="small" />
+            </button>
+            <button
+              type="button"
+              className="action-icon-button danger"
+              onClick={() => handleDeleteJob(row.groupId)}
+              aria-label={`Delete ${row.parent.customer || "entry"}`}
+            >
+              <DustbinIcon fontSize="small" />
+            </button>
+          </div>
+        ),
+      },
+    ],
+    [handleEditJob, handleDeleteJob]
+  );
+
+  const expandableRows = useMemo(() => {
+    const map = new Map<number, any>();
+    tableData.forEach((row) => {
+      const hasChildren = row.entries.length > 1;
+      if (hasChildren) {
+        map.set(row.groupId, {
+          isExpanded: expandedGroups.has(row.groupId),
+          onToggle: () => toggleGroup(row.groupId),
+          expandedContent: <ChildCutsTable entries={row.entries} />,
+          ariaLabel: expandedGroups.has(row.groupId)
+            ? "Collapse cuts"
+            : "Expand cuts",
+        });
+      }
+    });
+    return map;
+  }, [tableData, expandedGroups, toggleGroup]);
+
+  const handleApplyFilters = (newFilters: FilterValues) => {
+    setFilters(newFilters);
+  };
+
+  const handleClearFilters = () => {
+    setFilters({});
+  };
+
+  const filterCategories: FilterCategory[] = [
+    { id: "dimensions", label: "Dimensions", icon: "📏" },
+    { id: "production", label: "Production", icon: "⚙️" },
+    { id: "additional", label: "Additional", icon: "⭐" },
+    { id: "financial", label: "Financial", icon: "💰" },
+    { id: "dates", label: "Dates", icon: "📅" },
+  ];
+
+  const filterFields: FilterField[] = [
+    {
+      key: "cut",
+      label: "Cut (mm)",
+      type: "numberRange",
+      category: "dimensions",
+      min: 0,
+      max: 1000,
+      step: 0.1,
+      unit: "mm",
+    },
+    {
+      key: "thickness",
+      label: "Thickness (mm)",
+      type: "numberRange",
+      category: "dimensions",
+      min: 0,
+      max: 500,
+      step: 0.1,
+      unit: "mm",
+    },
+    {
+      key: "passLevel",
+      label: "Pass Level",
+      type: "select",
+      options: [
+        { value: "1", label: "1" },
+        { value: "2", label: "2" },
+        { value: "3", label: "3" },
+        { value: "4", label: "4" },
+        { value: "5", label: "5" },
+        { value: "6", label: "6" },
+      ],
+      category: "production",
+    },
+    {
+      key: "setting",
+      label: "Setting",
+      type: "text",
+      placeholder: "Enter setting",
+      category: "production",
+    },
+    {
+      key: "qty",
+      label: "Quantity",
+      type: "numberRange",
+      category: "production",
+      min: 0,
+      max: 10000,
+      step: 1,
+    },
+    {
+      key: "priority",
+      label: "Priority",
+      type: "select",
+      options: [
+        { value: "Low", label: "Low" },
+        { value: "Medium", label: "Medium" },
+        { value: "High", label: "High" },
+      ],
+      category: "additional",
+    },
+    {
+      key: "critical",
+      label: "Critical",
+      type: "boolean",
+      category: "additional",
+    },
+    {
+      key: "pipFinish",
+      label: "PIP Finish",
+      type: "boolean",
+      category: "additional",
+    },
+    {
+      key: "sedm",
+      label: "SEDM",
+      type: "select",
+      options: [
+        { value: "Yes", label: "Yes" },
+        { value: "No", label: "No" },
+      ],
+      category: "additional",
+    },
+    {
+      key: "rate",
+      label: "Rate (₹)",
+      type: "numberRange",
+      category: "financial",
+      min: 0,
+      max: 100000,
+      step: 0.01,
+      unit: "₹",
+    },
+    {
+      key: "totalHrs",
+      label: "Total Hours",
+      type: "numberRange",
+      category: "financial",
+      min: 0,
+      max: 1000,
+      step: 0.001,
+      unit: "hrs",
+    },
+    {
+      key: "totalAmount",
+      label: "Total Amount (₹)",
+      type: "numberRange",
+      category: "financial",
+      min: 0,
+      max: 1000000,
+      step: 0.01,
+      unit: "₹",
+    },
+    {
+      key: "createdAt",
+      label: "Created Date",
+      type: "dateRange",
+      category: "dates",
+    },
+  ];
+
+  const activeFilterCount = useMemo(() => countActiveFilters(filters), [filters]);
+
   return (
     <div className="programmer-container">
       <Sidebar currentPath="/programmer" onNavigate={handleNavigation} />
       <div className="programmer-content">
-        <Header title="Programmer Jobs" />
+        <Header title="Programmer" />
         <div className="programmer-panel">
           <div className="panel-header">
-            <h2>Jobs</h2>
             {!isNewJobRoute && (
-              <button className="btn-new-job" onClick={handleNewJob}>
-                New Job
-              </button>
+              <>
+                <div className="inline-filters">
+                  <div className="filter-group">
+                    <label htmlFor="customer-search">Customer</label>
+                    <input
+                      id="customer-search"
+                      type="text"
+                      placeholder="Search customer..."
+                      value={customerFilter}
+                      onChange={(e) => setCustomerFilter(e.target.value)}
+                      className="filter-input"
+                    />
+                  </div>
+                  <div className="filter-group">
+                    <label htmlFor="created-by-select">Created By</label>
+                    <select
+                      id="created-by-select"
+                      value={createdByFilter}
+                      onChange={(e) => setCreatedByFilter(e.target.value)}
+                      className="filter-select"
+                    >
+                      <option value="">All Users</option>
+                      {users.map((user) => {
+                        const displayName = `${user.firstName} ${user.lastName}`.trim() || user.email;
+                        return (
+                          <option key={user._id} value={displayName}>
+                            {displayName}
+                          </option>
+                        );
+                      })}
+                    </select>
+                  </div>
+                </div>
+                <div className="panel-header-actions">
+                  <FilterButton
+                    onClick={() => setShowFilterModal(true)}
+                    activeFilterCount={activeFilterCount}
+                  />
+                  <button className="btn-new-job" onClick={handleNewJob}>
+                    Add New Job
+                  </button>
+                </div>
+              </>
             )}
           </div>
+          {!isNewJobRoute && (
+            <>
+              <FilterModal
+                isOpen={showFilterModal}
+                onClose={() => setShowFilterModal(false)}
+                fields={filterFields}
+                categories={filterCategories}
+                initialValues={filters}
+                onApply={handleApplyFilters}
+                onClear={handleClearFilters}
+              />
+            </>
+          )}
 
           {(isNewJobRoute || showForm) && (
             <ProgrammerJobForm
@@ -267,136 +681,35 @@ const Programmer = () => {
           )}
 
           {!isNewJobRoute && (
-            <div className="jobs-table-wrapper">
-              <table className="jobs-table">
-                <thead>
-                  <tr>
-                    <th onClick={() => handleSort("customer")} className="sortable">
-                      <span className="th-content">
-                        Customer
-                        {renderSortIcon("customer")}
-                      </span>
-                    </th>
-                    <th onClick={() => handleSort("rate")} className="sortable">
-                      <span className="th-content">
-                        Rate
-                        {renderSortIcon("rate")}
-                      </span>
-                    </th>
-                    <th onClick={() => handleSort("cut")} className="sortable">
-                      <span className="th-content">
-                        Cut (mm)
-                        {renderSortIcon("cut")}
-                      </span>
-                    </th>
-                    <th onClick={() => handleSort("thickness")} className="sortable">
-                      <span className="th-content">
-                        Thickness (mm)
-                        {renderSortIcon("thickness")}
-                      </span>
-                    </th>
-                    <th onClick={() => handleSort("passLevel")} className="sortable">
-                      <span className="th-content">
-                        Pass
-                        {renderSortIcon("passLevel")}
-                      </span>
-                    </th>
-                    <th onClick={() => handleSort("setting")} className="sortable">
-                      <span className="th-content">
-                        Setting
-                        {renderSortIcon("setting")}
-                      </span>
-                    </th>
-                    <th onClick={() => handleSort("qty")} className="sortable">
-                      <span className="th-content">
-                        Qty
-                        {renderSortIcon("qty")}
-                      </span>
-                    </th>
-                    <th onClick={() => handleSort("createdAt")} className="sortable">
-                      <span className="th-content">
-                        Created At
-                        {renderSortIcon("createdAt")}
-                      </span>
-                    </th>
-                    <th onClick={() => handleSort("createdBy")} className="sortable">
-                      <span className="th-content">
-                        Created By
-                        {renderSortIcon("createdBy")}
-                      </span>
-                    </th>
-                    <th onClick={() => handleSort("totalHrs")} className="sortable">
-                      <span className="th-content">
-                        Total Hrs/Piece
-                        {renderSortIcon("totalHrs")}
-                      </span>
-                    </th>
-                    <th onClick={() => handleSort("totalAmount")} className="sortable">
-                      <span className="th-content">
-                        Total Amount (₹)
-                        {renderSortIcon("totalAmount")}
-                      </span>
-                    </th>
-                    <th className="action-header">Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {sortedGroups.length === 0 && (
-                    <tr>
-                      <td colSpan={12} className="empty-state-row">
-                        No jobs added yet. Use “New Job” to add an entry.
-                      </td>
-                    </tr>
-                  )}
-                  {sortedGroups.map((group) =>
-                    group.entries.map((job, index) => {
-                      const isChild = index > 0;
-                      return (
-                        <tr key={job.id} className={isChild ? "child-row" : ""}>
-                          <td>{isChild ? "" : job.customer || "—"}</td>
-                          <td>₹{Number(job.rate || 0).toFixed(2)}</td>
-                          <td>{Number(job.cut || 0).toFixed(2)}</td>
-                          <td>{Number(job.thickness || 0).toFixed(2)}</td>
-                          <td>{job.passLevel}</td>
-                          <td>{job.setting}</td>
-                          <td>{Number(job.qty || 0).toString()}</td>
-                          <td>{isChild ? "" : formatDateValue(job.createdAt)}</td>
-                          <td>{isChild ? "" : job.createdBy}</td>
-                          <td>{job.totalHrs ? job.totalHrs.toFixed(3) : "—"}</td>
-                          <td>
-                            {job.totalAmount ? `₹${job.totalAmount.toFixed(2)}` : "—"}
-                          </td>
-                          <td className="action-cell">
-                            {!isChild && (
-                              <div className="action-buttons">
-                                <button
-                                  type="button"
-                                  className="action-icon-button"
-                                  onClick={() => handleEditJob(group.groupId)}
-                                  aria-label={`Edit ${job.customer || "job"}`}
-                                >
-                                  <PencilIcon fontSize="small" />
-                                </button>
-                                <button
-                                  type="button"
-                                  className="action-icon-button danger"
-                                  onClick={() => handleDeleteJob(group.groupId)}
-                                  aria-label={`Delete ${job.customer || "job"}`}
-                                >
-                                  <DustbinIcon fontSize="small" />
-                                </button>
-                              </div>
-                            )}
-                          </td>
-                        </tr>
-                      );
-                    })
-                  )}
-                </tbody>
-              </table>
-            </div>
+            <DataTable
+              columns={columns}
+              data={tableData}
+              sortField={sortField}
+              sortDirection={sortDirection}
+              onSort={(field) => handleSort(field as keyof JobEntry)}
+              emptyMessage='No entries added yet. Use "New" to add an entry.'
+              expandableRows={expandableRows}
+              showAccordion={true}
+              getRowKey={(row) => row.groupId}
+              getRowClassName={(row) =>
+                `group-row ${
+                  expandedGroups.has(row.groupId) ? "group-row-expanded" : ""
+                }`
+              }
+              className="jobs-table-wrapper"
+              pagination={{
+                currentPage,
+                entriesPerPage,
+                totalEntries: tableData.length,
+                onPageChange: handlePageChange,
+                onEntriesPerPageChange: (entries) => {
+                  setEntriesPerPage(entries);
+                  setCurrentPage(1);
+                },
+                entriesPerPageOptions: [5, 10, 15, 25, 50],
+              }}
+            />
           )}
-
         </div>
       </div>
     </div>

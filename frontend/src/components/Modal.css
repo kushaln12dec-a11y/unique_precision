@@ -1,0 +1,98 @@
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1300;
+}
+
+.modal-card {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 1.5rem;
+  box-shadow: 0 20px 40px rgba(15, 23, 42, 0.2) !important;
+  color: #0f172a;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-sizing: border-box;
+}
+
+.modal-small {
+  width: min(420px, 90%);
+}
+
+.modal-medium {
+  width: min(600px, 92vw);
+}
+
+.modal-large {
+  width: min(900px, 90vw) !important;
+  max-width: 90vw !important;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.filter-modal.modal-card,
+.filter-modal.modal-card.modal-large,
+.modal-card.filter-modal,
+.modal-card.filter-modal.modal-large,
+.modal-large.filter-modal.modal-card {
+  padding: 0 !important;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  height: auto;
+  max-height: 90vh;
+  min-height: 550px;
+  height: fit-content;
+  width: min(900px, 90vw) !important;
+  max-width: 90vw !important;
+  min-width: 700px !important;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+/* Support for SEDM modal specific header styling */
+.modal-card.sedm-modal .modal-header {
+  margin-bottom: 0.5rem;
+  padding-bottom: 0.5rem;
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  color: #0f172a;
+}
+
+.modal-close {
+  border: none;
+  background: transparent;
+  font-size: 1.4rem;
+  line-height: 1;
+  color: #0f172a;
+  cursor: pointer;
+  padding: 0;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-close:hover {
+  color: #ef4444;
+}
+
+.modal-content {
+  color: #0f172a;
+}

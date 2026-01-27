@@ -4,13 +4,13 @@ import VisibilityIcon from "@mui/icons-material/Visibility";
 import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
 import Sidebar from "../../components/Sidebar";
 import Header from "../../components/Header";
+import DataTable, { type Column } from "../../components/DataTable";
 import { getUsers, createUser, updateUser, deleteUser } from "../../services/userApi";
 import type { User, CreateUserData, UpdateUserData, UserRole } from "../../types/user";
 import "./UserManagement.css";
 import ConfirmDeleteModal from "./components/ConfirmDeleteModal";
 import {
   filterUsers,
-  paginateUsers,
   sanitizePhoneInput,
   sortUsers,
 } from "./utils/tableUtils";
@@ -184,41 +184,9 @@ const UserManagement = () => {
     [filteredUsers, sortField, sortDirection]
   );
 
-  const paginated = useMemo(
-    () => paginateUsers(sortedUsers, currentPage, usersPerPage),
-    [sortedUsers, currentPage, usersPerPage]
-  );
-
-  const {
-    currentUsers,
-    totalPages,
-    indexOfFirstUser,
-    indexOfLastUser,
-    totalEntries,
-  } = paginated;
-
   const handlePageChange = (pageNumber: number) => {
     setCurrentPage(pageNumber);
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  const handlePreviousPage = () => {
-    if (currentPage > 1) {
-      setCurrentPage(currentPage - 1);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-  };
-
-  const handleNextPage = () => {
-    if (currentPage < totalPages) {
-      setCurrentPage(currentPage + 1);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-  };
-
-  const handleEntriesChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setUsersPerPage(Number(e.target.value));
-    setCurrentPage(1);
   };
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -235,17 +203,73 @@ const UserManagement = () => {
     }
   };
 
-  const renderSortIcon = (field: keyof User) => {
-    const isActive = sortField === field;
-    const isAsc = sortDirection === 'asc';
-    
-    return (
-      <span className="sort-icon">
-        <span className={`sort-arrow up ${isActive && isAsc ? 'active' : ''}`}>▴</span>
-        <span className={`sort-arrow down ${isActive && !isAsc ? 'active' : ''}`}>▾</span>
-      </span>
-    );
-  };
+  const columns: Column<User>[] = useMemo(
+    () => [
+      {
+        key: "name",
+        label: "Name",
+        sortable: true,
+        sortKey: "firstName",
+        render: (user) => `${user.firstName} ${user.lastName}`,
+      },
+      {
+        key: "email",
+        label: "Email",
+        sortable: true,
+        sortKey: "email",
+        render: (user) => user.email,
+      },
+      {
+        key: "phone",
+        label: "Phone",
+        sortable: true,
+        sortKey: "phone",
+        render: (user) => user.phone,
+      },
+      {
+        key: "empId",
+        label: "Emp ID",
+        sortable: true,
+        sortKey: "empId",
+        render: (user) => user.empId,
+      },
+      {
+        key: "role",
+        label: "Role",
+        sortable: true,
+        sortKey: "role",
+        render: (user) => (
+          <span className={`role-badge role-${user.role.toLowerCase()}`}>
+            {user.role}
+          </span>
+        ),
+      },
+      {
+        key: "actions",
+        label: "Actions",
+        sortable: false,
+        className: "action-cell",
+        headerClassName: "action-header",
+        render: (user) => (
+          <div className="action-buttons">
+            <button
+              className="btn-edit"
+              onClick={() => handleEdit(user)}
+            >
+              Edit
+            </button>
+            <button
+              className="btn-delete"
+              onClick={() => handleDeleteClick(user)}
+            >
+              Delete
+            </button>
+          </div>
+        ),
+      },
+    ],
+    []
+  );
 
   const handleRoleFilterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setRoleFilter(e.target.value);
@@ -418,133 +442,29 @@ const UserManagement = () => {
               </button>
             </div>
 
-            <table className="users-table">
-              <thead>
-                <tr>
-                  <th onClick={() => handleSort('firstName')} className="sortable">
-                    <span className="th-content">
-                      Name
-                      {renderSortIcon('firstName')}
-                    </span>
-                  </th>
-                  <th onClick={() => handleSort('email')} className="sortable">
-                    <span className="th-content">
-                      Email
-                      {renderSortIcon('email')}
-                    </span>
-                  </th>
-                  <th onClick={() => handleSort('phone')} className="sortable">
-                    <span className="th-content">
-                      Phone
-                      {renderSortIcon('phone')}
-                    </span>
-                  </th>
-                  <th onClick={() => handleSort('empId')} className="sortable">
-                    <span className="th-content">
-                      Emp ID
-                      {renderSortIcon('empId')}
-                    </span>
-                  </th>
-                  <th onClick={() => handleSort('role')} className="sortable">
-                    <span className="th-content">
-                      Role
-                      {renderSortIcon('role')}
-                    </span>
-                  </th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {sortedUsers.length === 0 ? (
-                  <tr>
-                    <td colSpan={6} className="no-users">
-                      {searchQuery ? 'No users match your search' : 'No users found'}
-                    </td>
-                  </tr>
-                ) : (
-                  currentUsers.map((user) => (
-                    <tr key={user._id}>
-                      <td>{user.firstName} {user.lastName}</td>
-                      <td>{user.email}</td>
-                      <td>{user.phone}</td>
-                      <td>{user.empId}</td>
-                      <td>
-                        <span className={`role-badge role-${user.role.toLowerCase()}`}>
-                          {user.role}
-                        </span>
-                      </td>
-                      <td>
-                      <div className="action-buttons">
-                        <button
-                          className="btn-edit"
-                          onClick={() => handleEdit(user)}
-                        >
-                          Edit
-                        </button>
-                        <button
-                          className="btn-delete"
-                          onClick={() => handleDeleteClick(user)}
-                        >
-                          Delete
-                        </button>
-                      </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-
-            {sortedUsers.length > 0 && (
-              <div className="pagination">
-                <div className="pagination-left">
-                  <span className="show-label">Show</span>
-                  <select 
-                    className="entries-selector" 
-                    value={usersPerPage}
-                    onChange={handleEntriesChange}
-                  >
-                    <option value={5}>5</option>
-                    <option value={10}>10</option>
-                    <option value={15}>15</option>
-                    <option value={25}>25</option>
-                    <option value={50}>50</option>
-                  </select>
-                </div>
-
-                <div className="pagination-center">
-                  <button
-                    className="pagination-arrow"
-                    onClick={handlePreviousPage}
-                    disabled={currentPage === 1}
-                  >
-                    ‹
-                  </button>
-                  
-                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNumber) => (
-                    <button
-                      key={pageNumber}
-                      className={`pagination-page ${currentPage === pageNumber ? 'active' : ''}`}
-                      onClick={() => handlePageChange(pageNumber)}
-                    >
-                      {pageNumber}
-                    </button>
-                  ))}
-
-                  <button
-                    className="pagination-arrow"
-                    onClick={handleNextPage}
-                    disabled={currentPage === totalPages}
-                  >
-                    ›
-                  </button>
-                </div>
-
-                <div className="pagination-right">
-                  Showing {indexOfFirstUser + 1} - {indexOfLastUser} of {totalEntries} entries
-                </div>
-              </div>
-            )}
+            <DataTable
+              columns={columns}
+              data={sortedUsers}
+              sortField={sortField}
+              sortDirection={sortDirection}
+              onSort={(field) => handleSort(field as keyof User)}
+              emptyMessage={
+                searchQuery ? 'No users match your search' : 'No users found'
+              }
+              getRowKey={(user) => user._id}
+              className="left-align"
+              pagination={{
+                currentPage,
+                entriesPerPage: usersPerPage,
+                totalEntries: sortedUsers.length,
+                onPageChange: handlePageChange,
+                onEntriesPerPageChange: (entries) => {
+                  setUsersPerPage(entries);
+                  setCurrentPage(1);
+                },
+                entriesPerPageOptions: [5, 10, 15, 25, 50],
+              }}
+            />
           </div>
         ))}
 

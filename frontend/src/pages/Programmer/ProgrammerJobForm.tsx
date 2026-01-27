@@ -2,7 +2,10 @@ import { useEffect, useMemo, useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import type { CutForm } from "./programmerUtils";
 import { DustbinIcon } from "../../utils/icons";
-import { calculateSedmAmount, DEFAULT_CUT } from "./programmerUtils";
+import { DEFAULT_CUT } from "./programmerUtils";
+import SEDMModal from "./components/SEDMModal";
+import ImageUpload from "./components/ImageUpload";
+import { FormInput } from "./components/FormInput";
 
 type CutTotals = {
   totalHrs: number;
@@ -28,6 +31,30 @@ const ProgrammerJobForm = ({
 }: ProgrammerJobFormProps) => {
   const [collapsedCuts, setCollapsedCuts] = useState<Set<number>>(new Set());
   const [sedmModalIndex, setSedmModalIndex] = useState<number | null>(null);
+  const [savedCuts, setSavedCuts] = useState<Set<number>>(new Set());
+  const [cutValidationErrors, setCutValidationErrors] = useState<
+    Record<number, Record<string, string>>
+  >({});
+
+  useEffect(() => {
+    // Remove saved/validation state for cuts that no longer exist
+    setSavedCuts((prev) => {
+      const next = new Set<number>();
+      cuts.forEach((_, index) => {
+        if (prev.has(index)) next.add(index);
+      });
+      return next;
+    });
+    setCutValidationErrors((prev) => {
+      const next: Record<number, Record<string, string>> = {};
+      cuts.forEach((_, index) => {
+        if (prev[index]) {
+          next[index] = prev[index];
+        }
+      });
+      return next;
+    });
+  }, [cuts]);
 
   useEffect(() => {
     const primaryCustomer = cuts[0]?.customer ?? "";
@@ -60,6 +87,12 @@ const ProgrammerJobForm = ({
       setCuts((prev) =>
         prev.map((cut, idx) => (idx === index ? { ...cut, [field]: value } : cut))
       );
+      // Any change makes the cut "unsaved" again
+      setSavedCuts((prev) => {
+        const next = new Set(prev);
+        next.delete(index);
+        return next;
+      });
     };
 
   const addCut = () => {
@@ -107,6 +140,56 @@ const ProgrammerJobForm = ({
     [cuts]
   );
 
+  const validateCut = (cut: CutForm): Record<string, string> => {
+    const errors: Record<string, string> = {};
+    if (!cut.customer) errors.customer = "Customer is required.";
+    if (!cut.rate) errors.rate = "Rate is required.";
+    if (!cut.cut) errors.cut = "Cut length is required.";
+    if (!cut.thickness) errors.thickness = "Thickness is required.";
+    if (!cut.passLevel) errors.passLevel = "Pass is required.";
+    if (!cut.setting) errors.setting = "Setting level is required.";
+    if (!cut.qty) errors.qty = "Quantity is required.";
+    if (!cut.priority) errors.priority = "Priority is required.";
+    if (!cut.description.trim()) errors.description = "Description is required.";
+    if (cut.sedm === "Yes" && !cut.sedmLengthValue) {
+      errors.sedmLengthValue = "SEDM length is required when SEDM is Yes.";
+    }
+    return errors;
+  };
+
+  const handleSaveCut = (index: number) => {
+    const cut = cuts[index];
+    if (!cut) return;
+    const errors = validateCut(cut);
+    if (Object.keys(errors).length > 0) {
+      setCutValidationErrors((prev) => ({
+        ...prev,
+        [index]: errors,
+      }));
+      setSavedCuts((prev) => {
+        const next = new Set(prev);
+        next.delete(index);
+        return next;
+      });
+      return;
+    }
+
+    setCutValidationErrors((prev) => {
+      const next = { ...prev };
+      delete next[index];
+      return next;
+    });
+
+    setSavedCuts((prev) => {
+      const next = new Set(prev);
+      next.add(index);
+      return next;
+    });
+  };
+
+  const allCutsSaved =
+    cuts.length > 0 && cuts.every((_, index) => savedCuts.has(index));
+
   const grandTotals = useMemo(() => {
     return totals.reduce(
       (acc, current) => ({
@@ -129,6 +212,8 @@ const ProgrammerJobForm = ({
         {cuts.map((cut, index) => {
           const isCollapsed = index === 0 ? false : collapsedCuts.has(index);
           const cutTotals = totals[index] ?? { totalHrs: 0, totalAmount: 0 };
+          const isSaved = savedCuts.has(index);
+          const fieldErrors = cutValidationErrors[index] ?? {};
 
           return (
             <div
@@ -174,6 +259,13 @@ const ProgrammerJobForm = ({
                       <option value="Low">Low</option>
                     </select>
                   </div>
+                  <span
+                    className={`cut-save-status ${
+                      isSaved ? "cut-save-status-saved" : "cut-save-status-pending"
+                    }`}
+                  >
+                    {isSaved ? "Saved" : "Not saved"}
+                  </span>
                   {index > 0 && (
                     <button
                       type="button"
@@ -196,43 +288,25 @@ const ProgrammerJobForm = ({
                 </div>
               </div>
                 <div className="cut-section-body">
-                <div className="job-form-image">
-                  {cut.cutImage ? (
-                    <>
-                      <img src={cut.cutImage} alt={`${cutLabels[index]} preview`} />
-                      <button
-                        type="button"
-                        className="image-remove"
-                        onClick={(event) => {
-                          event.preventDefault();
-                          event.stopPropagation();
-                          handleCutImageChange(index, null);
-                        }}
-                        aria-label={`Remove image for ${cutLabels[index]}`}
-                      >
-                        ×
-                      </button>
-                    </>
-                  ) : (
-                    <span className="image-placeholder">Upload Image</span>
-                  )}
-                  <input
-                    className="image-input"
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => handleCutImageChange(index, e.target.files?.[0])}
-                    aria-label={`Upload image for ${cutLabels[index]}`}
-                  />
-                </div>
+                <ImageUpload
+                  image={cut.cutImage}
+                  label={cutLabels[index]}
+                  onImageChange={(file) => handleCutImageChange(index, file)}
+                  onRemove={() => handleCutImageChange(index, null)}
+                />
                 <div className="cut-section-grid">
-                  <div className="input-pair">
-                    <label>Customer</label>
+                  <FormInput
+                    label="Customer"
+                    error={fieldErrors.customer}
+                    required
+                  >
                     <select
                       value={index === 0 ? cut.customer : cuts[0]?.customer ?? ""}
                       onChange={(e) =>
                         handleCutChange(index, "customer")(e.target.value)
                       }
                       disabled={index > 0}
+                      required
                     >
                       <option value="">Select Customer</option>
                       <option value="UPC001">UPC001</option>
@@ -241,9 +315,8 @@ const ProgrammerJobForm = ({
                       <option value="UPC004">UPC004</option>
                       <option value="UPC005">UPC005</option>
                     </select>
-                  </div>
-                  <div className="input-pair">
-                    <label>Rate (₹/hr)</label>
+                  </FormInput>
+                  <FormInput label="Rate (₹/hr)" error={fieldErrors.rate} required>
                     <input
                       type="number"
                       min="0"
@@ -252,10 +325,14 @@ const ProgrammerJobForm = ({
                       onChange={(e) =>
                         handleCutChange(index, "rate")(e.target.value)
                       }
+                      required
                     />
-                  </div>
-                  <div className="input-pair">
-                    <label>Cut Length (mm)</label>
+                  </FormInput>
+                  <FormInput
+                    label="Cut Length (mm)"
+                    error={fieldErrors.cut}
+                    required
+                  >
                     <input
                       type="number"
                       min="0"
@@ -264,10 +341,14 @@ const ProgrammerJobForm = ({
                       onChange={(e) =>
                         handleCutChange(index, "cut")(e.target.value)
                       }
+                      required
                     />
-                  </div>
-                  <div className="input-pair">
-                    <label>Thickness (mm)</label>
+                  </FormInput>
+                  <FormInput
+                    label="Thickness (mm)"
+                    error={fieldErrors.thickness}
+                    required
+                  >
                     <input
                       type="number"
                       min="0"
@@ -276,15 +357,16 @@ const ProgrammerJobForm = ({
                       onChange={(e) =>
                         handleCutChange(index, "thickness")(e.target.value)
                       }
+                      required
                     />
-                  </div>
-                  <div className="input-pair">
-                    <label>Pass</label>
+                  </FormInput>
+                  <FormInput label="Pass" error={fieldErrors.passLevel} required>
                     <select
                       value={cut.passLevel}
                       onChange={(e) =>
                         handleCutChange(index, "passLevel")(e.target.value)
                       }
+                      required
                     >
                       <option value="1">1.0x</option>
                       <option value="2">1.5x</option>
@@ -293,9 +375,12 @@ const ProgrammerJobForm = ({
                       <option value="5">2.5x</option>
                       <option value="6">2.75x</option>
                     </select>
-                  </div>
-                  <div className="input-pair">
-                    <label>Setting Level</label>
+                  </FormInput>
+                  <FormInput
+                    label="Setting Level"
+                    error={fieldErrors.setting}
+                    required
+                  >
                     <input
                       type="number"
                       min="0"
@@ -304,10 +389,10 @@ const ProgrammerJobForm = ({
                       onChange={(e) =>
                         handleCutChange(index, "setting")(e.target.value)
                       }
+                      required
                     />
-                  </div>
-                  <div className="input-pair">
-                    <label>Quantity</label>
+                  </FormInput>
+                  <FormInput label="Quantity" error={fieldErrors.qty} required>
                     <input
                       type="number"
                       min="1"
@@ -316,15 +401,24 @@ const ProgrammerJobForm = ({
                       onChange={(e) =>
                         handleCutChange(index, "qty")(e.target.value)
                       }
+                      required
                     />
-                  </div>
-                  <div className="input-pair">
-                    <label>SEDM</label>
+                  </FormInput>
+                  <FormInput
+                    label="SEDM"
+                    error={
+                      fieldErrors.sedmLengthValue && cut.sedm === "Yes"
+                        ? fieldErrors.sedmLengthValue
+                        : undefined
+                    }
+                    required
+                  >
                     <select
                       value={cut.sedm}
                       onChange={(e) =>
                         handleSedmChange(index, e.target.value as CutForm["sedm"])
                       }
+                      required
                     >
                       <option value="No">No</option>
                       <option value="Yes">Yes</option>
@@ -338,29 +432,31 @@ const ProgrammerJobForm = ({
                         Configure SEDM
                       </button>
                     )}
-                  </div>
+                  </FormInput>
                   {isAdmin && (
                     <>
-                      <div className="input-pair">
-                        <label>Total Hrs/Piece</label>
+                      <FormInput label="Total Hrs/Piece">
                         <input
                           type="text"
                           value={cutTotals.totalHrs.toFixed(3)}
                           readOnly
                         />
-                      </div>
-                      <div className="input-pair">
-                        <label>Total Amount (₹)</label>
+                      </FormInput>
+                      <FormInput label="Total Amount (₹)">
                         <input
                           type="text"
                           value={cutTotals.totalAmount.toFixed(2)}
                           readOnly
                         />
-                      </div>
+                      </FormInput>
                     </>
                   )}
-                  <div className="input-pair description-box">
-                    <label>Description</label>
+                  <FormInput
+                    label="Description"
+                    error={fieldErrors.description}
+                    required
+                    className="description-box"
+                  >
                     <textarea
                       rows={6}
                       value={cut.description}
@@ -370,8 +466,18 @@ const ProgrammerJobForm = ({
                           e.target.value.toUpperCase()
                         )
                       }
+                      required
                     />
-                  </div>
+                  </FormInput>
+                </div>
+                <div className="cut-section-actions">
+                  <button
+                    type="button"
+                    className="btn-success small"
+                    onClick={() => handleSaveCut(index)}
+                  >
+                    Save Cut
+                  </button>
                 </div>
               </div>
             </div>
@@ -391,7 +497,11 @@ const ProgrammerJobForm = ({
           </div>
         </div>
         <div className="form-action-buttons">
-          <button className="btn-success" onClick={onSave}>
+          <button
+            className="btn-success"
+            onClick={onSave}
+            disabled={!allCutsSaved}
+          >
             Save Job
           </button>
           <button className="btn-secondary" onClick={onCancel}>
@@ -400,59 +510,24 @@ const ProgrammerJobForm = ({
         </div>
       </div>
       {sedmModalIndex !== null && cuts[sedmModalIndex] && (
-        <div className="modal-overlay">
-          <div className="modal-card sedm-modal">
-            <div className="sedm-modal-header">
-              <h3>SEDM Details</h3>
-              <button
-                type="button"
-                className="sedm-close"
-                onClick={closeSedmModal}
-                aria-label="Close SEDM"
-              >
-                ×
-              </button>
-            </div>
-            <div className="sedm-grid">
-              <div className="input-pair">
-                <label>Length</label>
-                <select
-                  value={cuts[sedmModalIndex].sedmLengthValue}
-                  onChange={(event) =>
-                    handleCutChange(sedmModalIndex, "sedmLengthValue")(event.target.value)
-                  }
-                >
-                  <option value="">Select length</option>
-                  {Array.from({ length: 30 }, (_, idx) => (idx + 1) / 10).map((value) => (
-                    <option key={value} value={value.toFixed(1)}>
-                      {value.toFixed(1)}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="input-pair">
-                <label>Length Option</label>
-                <select
-                  value={cuts[sedmModalIndex].sedmLengthType}
-                  onChange={(event) =>
-                    handleCutChange(sedmModalIndex, "sedmLengthType")(
-                      event.target.value as CutForm["sedmLengthType"]
-                    )
-                  }
-                >
-                  <option value="min">Min 20mm</option>
-                  <option value="per">Greater than 20mm</option>
-                </select>
-              </div>
-            </div>
-            <p className="sedm-meta">
-              Quantity: {cuts[sedmModalIndex].qty || "0"}
-            </p>
-            <p className="sedm-amount">
-              SEDM Amount: ₹{calculateSedmAmount(cuts[sedmModalIndex]).toFixed(2)}
-            </p>
-          </div>
-        </div>
+        <SEDMModal
+          isOpen={true}
+          onClose={closeSedmModal}
+          cut={cuts[sedmModalIndex]}
+          onLengthChange={(value) =>
+            handleCutChange(sedmModalIndex, "sedmLengthValue")(value)
+          }
+          onLengthTypeChange={(value) =>
+            handleCutChange(sedmModalIndex, "sedmLengthType")(value)
+          }
+          onHolesChange={(value) =>
+            handleCutChange(sedmModalIndex, "sedmHoles")(value)
+          }
+          onApply={() => {
+            // Apply button clicked - modal will close automatically
+            // The changes are already applied via onLengthChange, onLengthTypeChange, and onHolesChange
+          }}
+        />
       )}
     </div>
   );

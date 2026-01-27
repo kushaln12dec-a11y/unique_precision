@@ -2,28 +2,18 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Sidebar from "../../components/Sidebar";
 import Header from "../../components/Header";
+import DataTable, { type Column } from "../../components/DataTable";
+import FilterModal, { type FilterField, type FilterValues, type FilterCategory } from "../../components/FilterModal";
+import FilterButton from "../../components/FilterButton";
 import { getUsers } from "../../services/userApi";
+import { getJobs, updateJob } from "../../services/jobApi";
 import type { User } from "../../types/user";
+import type { JobEntry } from "../../types/job";
 import { getUserRoleFromToken } from "../../utils/auth";
 import { formatDateValue, parseDateValue } from "../../utils/date";
+import { applyFilters, countActiveFilters } from "../../utils/filterUtils";
 import "../RoleBoard.css";
 import "../Programmer/Programmer.css";
-
-type JobEntry = {
-  id: number;
-  customer: string;
-  rate: string;
-  cut: string;
-  thickness: string;
-  passLevel: string;
-  setting: string;
-  qty: string;
-  totalHrs: number;
-  totalAmount: number;
-  createdAt: string;
-  createdBy: string;
-  assignedTo: string;
-};
 
 const STORAGE_KEY = "programmerJobs";
 
@@ -34,8 +24,14 @@ const Operator = () => {
   const [jobsPerPage, setJobsPerPage] = useState(5);
   const [sortField, setSortField] = useState<keyof JobEntry | null>(null);
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
-  const [selectedJobIds, setSelectedJobIds] = useState<Set<number>>(new Set());
+  const [selectedJobIds, setSelectedJobIds] = useState<Set<number | string>>(new Set());
   const [operatorUsers, setOperatorUsers] = useState<User[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
+  const [filters, setFilters] = useState<FilterValues>({});
+  const [showFilterModal, setShowFilterModal] = useState(false);
+  const [customerFilter, setCustomerFilter] = useState("");
+  const [createdByFilter, setCreatedByFilter] = useState("");
+  const [assignedToFilter, setAssignedToFilter] = useState("");
 
   const userRole = getUserRoleFromToken();
   const canAssign = userRole === "ADMIN" || userRole === "OPERATOR";
@@ -48,67 +44,106 @@ const Operator = () => {
   }, [navigate]);
 
   useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
+    const fetchJobs = async () => {
       try {
-        const parsed = JSON.parse(stored) as JobEntry[];
-        if (Array.isArray(parsed)) {
-          setJobs(
-            parsed.map((job) => ({
-              ...job,
-              assignedTo: job.assignedTo || "Unassigned",
-            }))
-          );
-        }
+        const fetchedJobs = await getJobs();
+        setJobs(fetchedJobs);
       } catch (error) {
-        console.error("Failed to parse jobs from storage", error);
+        console.error("Failed to fetch jobs", error);
+        // Fallback to localStorage if API fails
+        const stored = localStorage.getItem(STORAGE_KEY);
+        if (stored) {
+          try {
+            const parsed = JSON.parse(stored) as JobEntry[];
+            if (Array.isArray(parsed)) {
+              setJobs(
+                parsed.map((job) => ({
+                  ...job,
+                  assignedTo: job.assignedTo || "Unassigned",
+                }))
+              );
+            }
+          } catch (parseError) {
+            console.error("Failed to parse jobs from storage", parseError);
+          }
+        }
       }
-    }
+    };
+    fetchJobs();
   }, []);
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(jobs));
-  }, [jobs]);
 
   useEffect(() => {
     const fetchOperators = async () => {
       try {
-        const users = await getUsers();
-        setOperatorUsers(users.filter((user) => user.role === "OPERATOR"));
+        const userList = await getUsers();
+        setOperatorUsers(userList.filter((user) => user.role === "OPERATOR"));
+        setUsers(userList);
       } catch (error) {
         console.error("Failed to fetch operators", error);
       }
     };
     if (canAssign) {
       fetchOperators();
+    } else {
+      const fetchUsers = async () => {
+        try {
+          const userList = await getUsers();
+          setUsers(userList);
+        } catch (error) {
+          console.error("Failed to fetch users", error);
+        }
+      };
+      fetchUsers();
     }
   }, [canAssign]);
 
+  const filteredJobs = useMemo(() => {
+    let result = jobs;
+    
+    // Apply inline filters
+    if (customerFilter) {
+      result = result.filter((job) =>
+        job.customer?.toLowerCase().includes(customerFilter.toLowerCase())
+      );
+    }
+    
+    if (createdByFilter) {
+      result = result.filter((job) => job.createdBy === createdByFilter);
+    }
+    
+    if (assignedToFilter) {
+      result = result.filter((job) => job.assignedTo === assignedToFilter);
+    }
+    
+    // Apply modal filters
+    result = applyFilters(result, filters);
+    
+    return result;
+  }, [jobs, filters, customerFilter, createdByFilter, assignedToFilter]);
+
   const sortedJobs = useMemo(() => {
-    if (!sortField) return jobs;
+    if (!sortField) return filteredJobs;
     const direction = sortDirection === "asc" ? 1 : -1;
-    return [...jobs].sort((a, b) => {
-      const getValue = (job: JobEntry) => {
+    return [...filteredJobs].sort((a, b) => {
+      const getValue = (job: JobEntry): string | number => {
         if (sortField === "createdAt") return parseDateValue(job.createdAt);
         if (sortField === "createdBy") return job.createdBy.toLowerCase();
-        if (typeof job[sortField] === "string") {
-          return job[sortField].toString().toLowerCase();
+        const fieldValue = job[sortField];
+        if (fieldValue === null || fieldValue === undefined) return "";
+        if (typeof fieldValue === "string") {
+          return fieldValue.toLowerCase();
         }
-        return job[sortField];
+        return fieldValue;
       };
       const valueA = getValue(a);
       const valueB = getValue(b);
+      if (valueA === null || valueA === undefined || valueA === "") return 1 * direction;
+      if (valueB === null || valueB === undefined || valueB === "") return -1 * direction;
       if (valueA < valueB) return -1 * direction;
       if (valueA > valueB) return 1 * direction;
       return 0;
     });
-  }, [jobs, sortField, sortDirection]);
-
-  const totalEntries = sortedJobs.length;
-  const totalPages = Math.max(1, Math.ceil(totalEntries / jobsPerPage));
-  const indexOfFirstJob = (currentPage - 1) * jobsPerPage;
-  const indexOfLastJob = Math.min(indexOfFirstJob + jobsPerPage, totalEntries);
-  const currentJobs = sortedJobs.slice(indexOfFirstJob, indexOfLastJob);
+  }, [filteredJobs, sortField, sortDirection]);
 
   const handleSort = (field: keyof JobEntry) => {
     if (sortField === field) {
@@ -119,47 +154,25 @@ const Operator = () => {
     }
   };
 
-  const renderSortIcon = (field: keyof JobEntry) => {
-    const isActive = sortField === field;
-    const isAsc = sortDirection === "asc";
-    return (
-      <span className="sort-icon">
-        <span className={`sort-arrow up ${isActive && isAsc ? "active" : ""}`}>
-          ▴
-        </span>
-        <span className={`sort-arrow down ${isActive && !isAsc ? "active" : ""}`}>
-          ▾
-        </span>
-      </span>
-    );
-  };
-
   const handlePageChange = (pageNumber: number) => {
     setCurrentPage(pageNumber);
   };
 
-  const handlePreviousPage = () => {
-    setCurrentPage((prev) => Math.max(1, prev - 1));
+  const handleAssignChange = async (jobId: number | string, value: string) => {
+    try {
+      await updateJob(String(jobId), { assignedTo: value });
+      setJobs((prev) =>
+        prev.map((job) => (job.id === jobId ? { ...job, assignedTo: value } : job))
+      );
+    } catch (error) {
+      console.error("Failed to update job assignment", error);
+      alert("Failed to update assignment. Please try again.");
+    }
   };
 
-  const handleNextPage = () => {
-    setCurrentPage((prev) => Math.min(totalPages, prev + 1));
-  };
-
-  const handleEntriesChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setJobsPerPage(Number(e.target.value));
-    setCurrentPage(1);
-  };
-
-  const handleAssignChange = (jobId: number, value: string) => {
-    setJobs((prev) =>
-      prev.map((job) => (job.id === jobId ? { ...job, assignedTo: value } : job))
-    );
-  };
-
-  const handleSelectJob = (jobId: number) => {
+  const handleSelectJob = (jobId: number | string) => {
     setSelectedJobIds((prev) => {
-      const updated = new Set(prev);
+      const updated = new Set<number | string>(prev);
       if (updated.has(jobId)) {
         updated.delete(jobId);
       } else {
@@ -169,192 +182,344 @@ const Operator = () => {
     });
   };
 
+  const handleApplyFilters = (newFilters: FilterValues) => {
+    setFilters(newFilters);
+    setCurrentPage(1);
+  };
+
+  const handleClearFilters = () => {
+    setFilters({});
+    setCurrentPage(1);
+  };
+
+  const filterCategories: FilterCategory[] = [
+    { id: "dimensions", label: "Dimensions", icon: "📏" },
+    { id: "production", label: "Production", icon: "⚙️" },
+    { id: "financial", label: "Financial", icon: "💰" },
+    { id: "dates", label: "Dates", icon: "📅" },
+  ];
+
+  const filterFields: FilterField[] = [
+    {
+      key: "cut",
+      label: "Cut (mm)",
+      type: "numberRange",
+      category: "dimensions",
+      min: 0,
+      max: 1000,
+      step: 0.1,
+      unit: "mm",
+    },
+    {
+      key: "thickness",
+      label: "Thickness (mm)",
+      type: "numberRange",
+      category: "dimensions",
+      min: 0,
+      max: 500,
+      step: 0.1,
+      unit: "mm",
+    },
+    {
+      key: "passLevel",
+      label: "Pass Level",
+      type: "select",
+      options: [
+        { value: "1", label: "1" },
+        { value: "2", label: "2" },
+        { value: "3", label: "3" },
+        { value: "4", label: "4" },
+        { value: "5", label: "5" },
+        { value: "6", label: "6" },
+      ],
+      category: "production",
+    },
+    {
+      key: "setting",
+      label: "Setting",
+      type: "text",
+      placeholder: "Enter setting",
+      category: "production",
+    },
+    {
+      key: "qty",
+      label: "Quantity",
+      type: "numberRange",
+      category: "production",
+      min: 0,
+      max: 10000,
+      step: 1,
+    },
+    {
+      key: "rate",
+      label: "Rate (₹)",
+      type: "numberRange",
+      category: "financial",
+      min: 0,
+      max: 100000,
+      step: 0.01,
+      unit: "₹",
+    },
+    {
+      key: "totalHrs",
+      label: "Total Hours",
+      type: "numberRange",
+      category: "financial",
+      min: 0,
+      max: 1000,
+      step: 0.001,
+      unit: "hrs",
+    },
+    {
+      key: "totalAmount",
+      label: "Total Amount (₹)",
+      type: "numberRange",
+      category: "financial",
+      min: 0,
+      max: 1000000,
+      step: 0.01,
+      unit: "₹",
+    },
+    {
+      key: "createdAt",
+      label: "Created Date",
+      type: "dateRange",
+      category: "dates",
+    },
+  ];
+
+  const activeFilterCount = useMemo(() => countActiveFilters(filters), [filters]);
+
+  const columns: Column<JobEntry>[] = useMemo(
+    () => [
+      {
+        key: "select",
+        label: "",
+        sortable: false,
+        render: (job) => (
+          <input
+            type="checkbox"
+            checked={selectedJobIds.has(job.id)}
+            onChange={() => handleSelectJob(job.id)}
+            aria-label={`Select ${job.customer || String(job.id)}`}
+          />
+        ),
+      },
+      {
+        key: "customer",
+        label: "Customer",
+        sortable: true,
+        sortKey: "customer",
+        render: (job) => job.customer || "—",
+      },
+      {
+        key: "rate",
+        label: "Rate",
+        sortable: true,
+        sortKey: "rate",
+        render: (job) => `₹${Number(job.rate || 0).toFixed(2)}`,
+      },
+      {
+        key: "cut",
+        label: "Cut (mm)",
+        sortable: true,
+        sortKey: "cut",
+        render: (job) => Number(job.cut || 0).toFixed(2),
+      },
+      {
+        key: "thickness",
+        label: "Thickness (mm)",
+        sortable: true,
+        sortKey: "thickness",
+        render: (job) => Number(job.thickness || 0).toFixed(2),
+      },
+      {
+        key: "passLevel",
+        label: "Pass",
+        sortable: true,
+        sortKey: "passLevel",
+        render: (job) => job.passLevel,
+      },
+      {
+        key: "setting",
+        label: "Setting",
+        sortable: true,
+        sortKey: "setting",
+        render: (job) => job.setting,
+      },
+      {
+        key: "qty",
+        label: "Qty",
+        sortable: true,
+        sortKey: "qty",
+        render: (job) => Number(job.qty || 0).toString(),
+      },
+      {
+        key: "createdAt",
+        label: "Created At",
+        sortable: true,
+        sortKey: "createdAt",
+        render: (job) => formatDateValue(job.createdAt),
+      },
+      {
+        key: "createdBy",
+        label: "Created By",
+        sortable: true,
+        sortKey: "createdBy",
+        render: (job) => job.createdBy,
+      },
+      {
+        key: "assignedTo",
+        label: "Assigned To",
+        sortable: false,
+        render: (job) =>
+          canAssign ? (
+            <select
+              value={job.assignedTo || "Unassigned"}
+              onChange={(event) =>
+                handleAssignChange(job.id, event.target.value)
+              }
+            >
+              <option value="Unassigned">Unassigned</option>
+              {operatorUsers.map((user) => (
+                <option
+                  key={user._id}
+                  value={`${user.firstName} ${user.lastName}`}
+                >
+                  {user.firstName} {user.lastName}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <span>{job.assignedTo || "Unassigned"}</span>
+          ),
+      },
+      {
+        key: "totalHrs",
+        label: "Total Hrs/Piece",
+        sortable: false,
+        render: (job) => (job.totalHrs ? job.totalHrs.toFixed(3) : "—"),
+      },
+      {
+        key: "totalAmount",
+        label: "Total Amount (₹)",
+        sortable: false,
+        render: (job) =>
+          job.totalAmount ? `₹${job.totalAmount.toFixed(2)}` : "—",
+      },
+    ],
+    [selectedJobIds, canAssign, operatorUsers]
+  );
+
   return (
     <div className="roleboard-container">
       <Sidebar currentPath="/operator" onNavigate={(path) => navigate(path)} />
       <div className="roleboard-content">
         <Header title="Operator" />
 
-          <div className="programmer-panel">
-            <div className="panel-header">
-              <h2>Jobs</h2>
-            </div>
-            <div className="jobs-table-wrapper">
-              <table className="jobs-table">
-                <thead>
-                  <tr>
-                    <th aria-label="Select" />
-                    <th onClick={() => handleSort("customer")} className="sortable">
-                      <span className="th-content">
-                        Customer
-                        {renderSortIcon("customer")}
-                      </span>
-                    </th>
-                    <th onClick={() => handleSort("rate")} className="sortable">
-                      <span className="th-content">
-                        Rate
-                        {renderSortIcon("rate")}
-                      </span>
-                    </th>
-                    <th onClick={() => handleSort("cut")} className="sortable">
-                      <span className="th-content">
-                        Cut (mm)
-                        {renderSortIcon("cut")}
-                      </span>
-                    </th>
-                    <th onClick={() => handleSort("thickness")} className="sortable">
-                      <span className="th-content">
-                        Thickness (mm)
-                        {renderSortIcon("thickness")}
-                      </span>
-                    </th>
-                    <th onClick={() => handleSort("passLevel")} className="sortable">
-                      <span className="th-content">
-                        Pass
-                        {renderSortIcon("passLevel")}
-                      </span>
-                    </th>
-                    <th onClick={() => handleSort("setting")} className="sortable">
-                      <span className="th-content">
-                        Setting
-                        {renderSortIcon("setting")}
-                      </span>
-                    </th>
-                    <th onClick={() => handleSort("qty")} className="sortable">
-                      <span className="th-content">
-                        Qty
-                        {renderSortIcon("qty")}
-                      </span>
-                    </th>
-                    <th onClick={() => handleSort("createdAt")} className="sortable">
-                      <span className="th-content">
-                        Created At
-                        {renderSortIcon("createdAt")}
-                      </span>
-                    </th>
-                    <th onClick={() => handleSort("createdBy")} className="sortable">
-                      <span className="th-content">
-                        Created By
-                        {renderSortIcon("createdBy")}
-                      </span>
-                    </th>
-                    <th>Assigned To</th>
-                    <th>Total Hrs/Piece</th>
-                    <th>Total Amount (₹)</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {sortedJobs.length === 0 && (
-                    <tr>
-                      <td colSpan={13} className="empty-state-row">
-                        No jobs added yet. Use “New Job” to add an entry.
-                      </td>
-                    </tr>
+        <div className="programmer-panel">
+          <div className="panel-header">
+            <div className="inline-filters">
+              <div className="filter-group">
+                <label htmlFor="customer-search">Customer</label>
+                <input
+                  id="customer-search"
+                  type="text"
+                  placeholder="Search customer..."
+                  value={customerFilter}
+                  onChange={(e) => setCustomerFilter(e.target.value)}
+                  className="filter-input"
+                />
+              </div>
+              <div className="filter-group">
+                <label htmlFor="created-by-select">Created By</label>
+                <select
+                  id="created-by-select"
+                  value={createdByFilter}
+                  onChange={(e) => setCreatedByFilter(e.target.value)}
+                  className="filter-select"
+                >
+                  <option value="">All Users</option>
+                  {users.map((user) => {
+                    const displayName = `${user.firstName} ${user.lastName}`.trim() || user.email;
+                    return (
+                      <option key={user._id} value={displayName}>
+                        {displayName}
+                      </option>
+                    );
+                  })}
+                </select>
+              </div>
+              <div className="filter-group">
+                <label htmlFor="assigned-to-select">Assigned To</label>
+                <select
+                  id="assigned-to-select"
+                  value={assignedToFilter}
+                  onChange={(e) => setAssignedToFilter(e.target.value)}
+                  className="filter-select"
+                >
+                  <option value="">All</option>
+                  <option value="Unassigned">Unassigned</option>
+                  {operatorUsers.length > 0 ? (
+                    operatorUsers.map((user) => {
+                      const displayName = `${user.firstName} ${user.lastName}`.trim() || user.email;
+                      return (
+                        <option key={user._id} value={displayName}>
+                          {displayName}
+                        </option>
+                      );
+                    })
+                  ) : (
+                    users.map((user) => {
+                      const displayName = `${user.firstName} ${user.lastName}`.trim() || user.email;
+                      return (
+                        <option key={user._id} value={displayName}>
+                          {displayName}
+                        </option>
+                      );
+                    })
                   )}
-                  {currentJobs.map((job) => (
-                    <tr key={job.id}>
-                      <td>
-                        <input
-                          type="checkbox"
-                          checked={selectedJobIds.has(job.id)}
-                          onChange={() => handleSelectJob(job.id)}
-                          aria-label={`Select job ${job.customer || job.id}`}
-                        />
-                      </td>
-                      <td>{job.customer || "—"}</td>
-                      <td>₹{Number(job.rate || 0).toFixed(2)}</td>
-                      <td>{Number(job.cut || 0).toFixed(2)}</td>
-                      <td>{Number(job.thickness || 0).toFixed(2)}</td>
-                      <td>{job.passLevel}</td>
-                      <td>{job.setting}</td>
-                      <td>{Number(job.qty || 0).toString()}</td>
-                      <td>{formatDateValue(job.createdAt)}</td>
-                      <td>{job.createdBy}</td>
-                      <td>
-                        {canAssign ? (
-                          <select
-                            value={job.assignedTo || "Unassigned"}
-                            onChange={(event) =>
-                              handleAssignChange(job.id, event.target.value)
-                            }
-                          >
-                            <option value="Unassigned">Unassigned</option>
-                            {operatorUsers.map((user) => (
-                              <option
-                                key={user._id}
-                                value={`${user.firstName} ${user.lastName}`}
-                              >
-                                {user.firstName} {user.lastName}
-                              </option>
-                            ))}
-                          </select>
-                        ) : (
-                          <span>{job.assignedTo || "Unassigned"}</span>
-                        )}
-                      </td>
-                      <td>{job.totalHrs ? job.totalHrs.toFixed(3) : "—"}</td>
-                      <td>{job.totalAmount ? `₹${job.totalAmount.toFixed(2)}` : "—"}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-
-              {sortedJobs.length > 0 && (
-                <div className="pagination">
-                  <div className="pagination-left">
-                    <span className="show-label">Show</span>
-                    <select
-                      className="entries-selector"
-                      value={jobsPerPage}
-                      onChange={handleEntriesChange}
-                    >
-                      <option value={5}>5</option>
-                      <option value={10}>10</option>
-                      <option value={15}>15</option>
-                      <option value={25}>25</option>
-                    </select>
-                  </div>
-
-                  <div className="pagination-center">
-                    <button
-                      className="pagination-arrow"
-                      onClick={handlePreviousPage}
-                      disabled={currentPage === 1}
-                    >
-                      ‹
-                    </button>
-
-                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(
-                      (pageNumber) => (
-                        <button
-                          key={pageNumber}
-                          className={`pagination-page ${
-                            currentPage === pageNumber ? "active" : ""
-                          }`}
-                          onClick={() => handlePageChange(pageNumber)}
-                        >
-                          {pageNumber}
-                        </button>
-                      )
-                    )}
-
-                    <button
-                      className="pagination-arrow"
-                      onClick={handleNextPage}
-                      disabled={currentPage === totalPages}
-                    >
-                      ›
-                    </button>
-                  </div>
-
-                  <div className="pagination-right">
-                    Showing {totalEntries === 0 ? 0 : indexOfFirstJob + 1} -{" "}
-                    {indexOfLastJob} of {totalEntries} entries
-                  </div>
-                </div>
-              )}
+                </select>
+              </div>
+            </div>
+            <div className="panel-header-actions">
+              <FilterButton
+                onClick={() => setShowFilterModal(true)}
+                activeFilterCount={activeFilterCount}
+              />
             </div>
           </div>
+          <FilterModal
+            isOpen={showFilterModal}
+            onClose={() => setShowFilterModal(false)}
+            fields={filterFields}
+            categories={filterCategories}
+            initialValues={filters}
+            onApply={handleApplyFilters}
+            onClear={handleClearFilters}
+          />
+          <DataTable
+            columns={columns}
+            data={sortedJobs}
+            sortField={sortField}
+            sortDirection={sortDirection}
+            onSort={(field) => handleSort(field as keyof JobEntry)}
+            emptyMessage='No entries added yet.'
+            getRowKey={(job) => job.id}
+            className="jobs-table-wrapper"
+            pagination={{
+              currentPage,
+              entriesPerPage: jobsPerPage,
+              totalEntries: sortedJobs.length,
+              onPageChange: handlePageChange,
+              onEntriesPerPageChange: (entries) => {
+                setJobsPerPage(entries);
+                setCurrentPage(1);
+              },
+              entriesPerPageOptions: [5, 10, 15, 25, 50],
+            }}
+          />
+        </div>
       </div>
     </div>
   );
