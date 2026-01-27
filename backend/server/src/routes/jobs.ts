@@ -4,14 +4,85 @@ import { authMiddleware } from "../middleware/auth";
 
 const router = Router();
 
+// Convert ISO date (YYYY-MM-DD) to format used in database (DD MMM YYYY)
+const formatDateForQuery = (isoDate: string): string => {
+  const date = new Date(isoDate);
+  const day = date.getDate().toString().padStart(2, "0");
+  const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const month = months[date.getMonth()];
+  const year = date.getFullYear();
+  return `${day} ${month} ${year}`;
+};
+
 // All routes require authentication
 router.use(authMiddleware);
 
-// Get all jobs
+// Get all jobs with optional filters
 router.get("/", async (req, res) => {
   try {
+    const query: any = {};
+
+    // Inline filters
+    if (req.query.customer) {
+      query.customer = { $regex: req.query.customer, $options: "i" };
+    }
+    if (req.query.createdBy) {
+      query.createdBy = req.query.createdBy;
+    }
+    if (req.query.assignedTo) {
+      query.assignedTo = req.query.assignedTo;
+    }
+
+    // Number range filters
+    const numberRangeFields = ["cut", "thickness", "qty", "rate", "totalHrs", "totalAmount"];
+    numberRangeFields.forEach((field) => {
+      if (req.query[`${field}_min`] !== undefined || req.query[`${field}_max`] !== undefined) {
+        query[field] = {};
+        if (req.query[`${field}_min`] !== undefined) {
+          query[field].$gte = Number(req.query[`${field}_min`]);
+        }
+        if (req.query[`${field}_max`] !== undefined) {
+          query[field].$lte = Number(req.query[`${field}_max`]);
+        }
+      }
+    });
+
+    // Exact match filters
+    if (req.query.passLevel) {
+      query.passLevel = req.query.passLevel;
+    }
+    if (req.query.setting) {
+      query.setting = { $regex: req.query.setting, $options: "i" };
+    }
+    if (req.query.priority) {
+      query.priority = req.query.priority;
+    }
+    if (req.query.critical !== undefined) {
+      query.critical = req.query.critical === "true";
+    }
+    if (req.query.pipFinish !== undefined) {
+      query.pipFinish = req.query.pipFinish === "true";
+    }
+    if (req.query.sedm) {
+      query.sedm = req.query.sedm;
+    }
+
+    // Date range filter for createdAt
+    if (req.query.createdAt_min || req.query.createdAt_max) {
+      query.createdAt = {};
+      if (req.query.createdAt_min) {
+        // Convert ISO date (YYYY-MM-DD) to database format (DD MMM YYYY)
+        const minDate = formatDateForQuery(req.query.createdAt_min as string);
+        query.createdAt.$gte = minDate;
+      }
+      if (req.query.createdAt_max) {
+        const maxDate = formatDateForQuery(req.query.createdAt_max as string);
+        query.createdAt.$lte = maxDate;
+      }
+    }
+
     // Sort by createdAt string (format: "DD MMM YYYY") - descending (newest first)
-    const jobs = await Job.find().sort({ createdAt: -1 });
+    const jobs = await Job.find(query).sort({ createdAt: -1 });
     res.json(jobs);
   } catch (error: any) {
     console.error("Error fetching jobs:", error);
