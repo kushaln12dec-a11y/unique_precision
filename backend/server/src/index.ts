@@ -5,6 +5,7 @@ import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import authRoutes from "./routes/auth";
 import userRoutes from "./routes/users";
+import jobRoutes from "./routes/jobs";
 import { authMiddleware } from "./middleware/auth";
 import { connectDB } from "./config/database";
 
@@ -42,6 +43,9 @@ app.use("/api/auth", authRoutes);
 
 // User routes
 app.use("/api/users", userRoutes);
+
+// Job routes
+app.use("/api/jobs", jobRoutes);
 
 
 
