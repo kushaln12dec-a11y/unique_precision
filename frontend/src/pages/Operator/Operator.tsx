@@ -17,6 +17,7 @@ import ChildCutsTable from "../Programmer/components/ChildCutsTable";
 import ArrowOutwardIcon from "@mui/icons-material/ArrowOutward";
 import ArrowForwardIosSharpIcon from "@mui/icons-material/ArrowForwardIosSharp";
 import DownloadIcon from "@mui/icons-material/Download";
+import { PencilIcon } from "../../utils/icons";
 import "../RoleBoard.css";
 import "../Programmer/Programmer.css";
 import "./Operator.css";
@@ -260,7 +261,7 @@ const Operator = () => {
   };
 
   const handleDownloadCSV = () => {
-    const headers = ["Customer", "Rate", "Cut (mm)", "Thickness (mm)", "Pass", "Setting", "Qty", "Created At", "Created By", "Assigned To", "Total Hrs/Piece", "Total Amount (₹)", "Priority", "Critical"];
+    const headers = ["Customer", "Rate", "Cut (mm)", "Thickness (mm)", "Pass", "Setting", "Qty", "Created At", "Created By", "Assigned To", "Total Hrs/Piece", "Total Amount (₹)", "Priority", "Complex"];
     const rows = tableData.map((row) => [
       row.parent.customer || "",
       `₹${Number(row.parent.rate || 0).toFixed(2)}`,
@@ -414,6 +415,10 @@ const Operator = () => {
 
   const handleViewJob = (groupId: number) => {
     navigate(`/operator/viewpage?groupId=${groupId}`);
+  };
+
+  const handleEditJob = (groupId: number) => {
+    navigate(`/programmer/edit/${groupId}`);
   };
 
   const expandableRows = useMemo(() => {
@@ -619,12 +624,23 @@ const Operator = () => {
                 />
               </button>
             )}
-            {!isAdmin && <span style={{ color: "#64748b" }}>—</span>}
+            {(isAdmin || userRole === "OPERATOR") && (
+              <button
+                type="button"
+                className="action-icon-button"
+                onClick={() => handleEditJob(row.groupId)}
+                aria-label={`Edit ${row.parent.customer || "entry"}`}
+                title="Edit Job"
+              >
+                <PencilIcon fontSize="small" />
+              </button>
+            )}
+            {!isAdmin && userRole !== "OPERATOR" && <span style={{ color: "#64748b" }}>—</span>}
           </div>
         ),
       },
     ],
-    [canAssign, operatorUsers, handleAssignChange, expandableRows, isAdmin]
+    [canAssign, operatorUsers, handleAssignChange, expandableRows, isAdmin, userRole, handleEditJob]
   );
 
   return (

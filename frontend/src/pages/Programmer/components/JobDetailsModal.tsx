@@ -1,5 +1,6 @@
-import React from "react";
+import React, { useMemo } from "react";
 import type { JobEntry } from "../../../types/job";
+import { calculateTotals, type CutForm } from "../programmerUtils";
 import "./JobDetailsModal.css";
 
 interface JobDetailsModalProps {
@@ -17,6 +18,18 @@ interface JobDetailsModalProps {
 const JobDetailsModal: React.FC<JobDetailsModalProps> = ({ job, userRole, onClose }) => {
   const isProgrammer = userRole === "PROGRAMMER";
   if (!job) return null;
+
+  // Calculate WEDM and SEDM amounts for all cuts
+  const amounts = useMemo(() => {
+    const totals = job.entries.map((entry) => calculateTotals(entry as CutForm));
+    const totalWedmAmount = totals.reduce((sum, t) => sum + t.wedmAmount, 0);
+    const totalSedmAmount = totals.reduce((sum, t) => sum + t.sedmAmount, 0);
+    return {
+      perCut: totals.map((t) => ({ wedmAmount: t.wedmAmount, sedmAmount: t.sedmAmount })),
+      totalWedmAmount,
+      totalSedmAmount,
+    };
+  }, [job.entries]);
 
   const formatDate = (dateString: string) => {
     const parsed = new Date(dateString);
@@ -66,7 +79,7 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({ job, userRole, onClos
                 <span>{job.parent.priority || "—"}</span>
               </div>
               <div className="job-details-item">
-                <label>Critical:</label>
+                <label>Complex:</label>
                 <span>{job.parent.critical ? "Yes" : "No"}</span>
               </div>
             </div>
@@ -118,10 +131,16 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({ job, userRole, onClos
                       <span>{cut.totalHrs ? cut.totalHrs.toFixed(3) : "0.000"}</span>
                     </div>
                     {!isProgrammer && (
-                      <div className="cut-detail">
-                        <label>Total Amount (₹):</label>
-                        <span>₹{cut.totalAmount ? cut.totalAmount.toFixed(2) : "0.00"}</span>
-                      </div>
+                      <>
+                        <div className="cut-detail">
+                          <label>WEDM Amount (₹):</label>
+                          <span>₹{amounts.perCut[index]?.wedmAmount.toFixed(2) || "0.00"}</span>
+                        </div>
+                        <div className="cut-detail">
+                          <label>SEDM Amount (₹):</label>
+                          <span>₹{amounts.perCut[index]?.sedmAmount.toFixed(2) || "0.00"}</span>
+                        </div>
+                      </>
                     )}
                     {cut.description && (
                       <div className="cut-detail full-width">
@@ -141,10 +160,20 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({ job, userRole, onClos
               <span>{job.groupTotalHrs ? job.groupTotalHrs.toFixed(3) : "0.000"}</span>
             </div>
             {!isProgrammer && (
-              <div className="total-row">
-                <label>Total Amount (₹):</label>
-                <span>₹{job.groupTotalAmount ? job.groupTotalAmount.toFixed(2) : "0.00"}</span>
-              </div>
+              <>
+                <div className="total-row">
+                  <label>WEDM Amount (₹):</label>
+                  <span>₹{amounts.totalWedmAmount.toFixed(2)}</span>
+                </div>
+                <div className="total-row">
+                  <label>SEDM Amount (₹):</label>
+                  <span>₹{amounts.totalSedmAmount.toFixed(2)}</span>
+                </div>
+                <div className="total-row">
+                  <label>Total Amount (₹):</label>
+                  <span>₹{job.groupTotalAmount ? job.groupTotalAmount.toFixed(2) : "0.00"}</span>
+                </div>
+              </>
             )}
           </div>
         </div>

@@ -16,7 +16,7 @@ const buildQueryParams = (
   createdByFilter?: string,
   assignedToFilter?: string,
   criticalFilter?: boolean,
-  refNumberFilter?: string
+  descriptionFilter?: string
 ): string => {
   const params = new URLSearchParams();
 
@@ -24,8 +24,8 @@ const buildQueryParams = (
   if (customerFilter) {
     params.append("customer", customerFilter);
   }
-  if (refNumberFilter) {
-    params.append("refNumber", refNumberFilter);
+  if (descriptionFilter) {
+    params.append("description", descriptionFilter);
   }
   if (createdByFilter) {
     params.append("createdBy", createdByFilter);
@@ -84,9 +84,9 @@ export const getJobs = async (
   createdByFilter?: string,
   assignedToFilter?: string,
   criticalFilter?: boolean,
-  refNumberFilter?: string
+  descriptionFilter?: string
 ): Promise<JobEntry[]> => {
-  const queryString = buildQueryParams(filters, customerFilter, createdByFilter, assignedToFilter, criticalFilter, refNumberFilter);
+  const queryString = buildQueryParams(filters, customerFilter, createdByFilter, assignedToFilter, criticalFilter, descriptionFilter);
   const url = queryString ? `/api/jobs?${queryString}` : "/api/jobs";
 
   const res = await fetch(url, {

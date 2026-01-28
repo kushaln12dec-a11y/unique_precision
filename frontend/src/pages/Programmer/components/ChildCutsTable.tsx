@@ -8,7 +8,7 @@ type ChildCutsTableProps = {
 const ChildCutsTable: React.FC<ChildCutsTableProps> = ({ entries }) => {
   const getRowClassName = (entry: JobEntry): string => {
     const classes = ["child-row"];
-    // Critical takes priority over flag
+    // Complex takes priority over flag
     if (entry.critical) {
       classes.push("child-critical-row");
     } else if (entry.priority) {
@@ -30,7 +30,7 @@ const ChildCutsTable: React.FC<ChildCutsTableProps> = ({ entries }) => {
           <th>Setting</th>
           <th>Qty</th>
           <th>SEDM</th>
-          <th>Critical</th>
+          <th>Complex</th>
           <th>PIP Finish</th>
           <th>Total Hrs/Piece</th>
           <th>Total Amount (₹)</th>

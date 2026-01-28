@@ -45,7 +45,7 @@ const Programmer = () => {
   const [filters, setFilters] = useState<FilterValues>({});
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [customerFilter, setCustomerFilter] = useState("");
-  const [refNumberFilter, setRefNumberFilter] = useState("");
+  const [descriptionFilter, setDescriptionFilter] = useState("");
   const [createdByFilter, setCreatedByFilter] = useState("");
   const [criticalFilter, setCriticalFilter] = useState(false); // Default to unchecked - no filter
   const [users, setUsers] = useState<User[]>([]);
@@ -80,7 +80,7 @@ const Programmer = () => {
           createdByFilter, 
           undefined,
           criticalFilter ? true : undefined,
-          refNumberFilter
+          descriptionFilter
         );
         setJobs(fetchedJobs);
       } catch (error) {
@@ -110,7 +110,7 @@ const Programmer = () => {
       }
     };
     fetchJobs();
-  }, [filters, customerFilter, refNumberFilter, createdByFilter, criticalFilter]);
+  }, [filters, customerFilter, descriptionFilter, createdByFilter, criticalFilter]);
 
   // Handle URL params for editing and form visibility
   useEffect(() => {
@@ -149,6 +149,8 @@ const Programmer = () => {
                   ? job.sedmRangeKey ?? ""
                   : job.sedmStandardValue ?? ""),
               sedmHoles: job.sedmHoles ?? "1",
+              sedmEntriesJson: (job as any).sedmEntriesJson ?? "",
+              material: (job as any).material ?? "",
               priority: job.priority,
               description: job.description,
               cutImage: job.cutImage ?? null,
@@ -596,13 +598,6 @@ const Programmer = () => {
         },
       },
       {
-        key: "createdBy",
-        label: "Created By",
-        sortable: true,
-        sortKey: "createdBy",
-        render: (row) => row.parent.createdBy,
-      },
-      {
         key: "totalHrs",
         label: "Total Hrs/Piece",
         sortable: true,
@@ -620,6 +615,13 @@ const Programmer = () => {
             ? `₹${row.groupTotalAmount.toFixed(2)}`
             : "—",
       }] : []),
+      {
+        key: "createdBy",
+        label: "Created By",
+        sortable: true,
+        sortKey: "createdBy",
+        render: (row) => row.parent.createdBy,
+      },
       {
         key: "action",
         label: "Action",
@@ -641,7 +643,7 @@ const Programmer = () => {
             >
               <VisibilityIcon fontSize="small" />
             </button>
-            {isAdmin && (
+            {(isAdmin || getUserRoleFromToken() === "PROGRAMMER") && (
               <>
                 <button
                   type="button"
@@ -654,17 +656,19 @@ const Programmer = () => {
                 >
                   <PencilIcon fontSize="small" />
                 </button>
-                <button
-                  type="button"
-                  className="action-icon-button danger"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleDeleteClick(row.groupId, row.parent.customer || "entry");
-                  }}
-                  aria-label={`Delete ${row.parent.customer || "entry"}`}
-                >
-                  <DustbinIcon fontSize="small" />
-                </button>
+                {isAdmin && (
+                  <button
+                    type="button"
+                    className="action-icon-button danger"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteClick(row.groupId, row.parent.customer || "entry");
+                    }}
+                    aria-label={`Delete ${row.parent.customer || "entry"}`}
+                  >
+                    <DustbinIcon fontSize="small" />
+                  </button>
+                )}
               </>
             )}
           </div>
@@ -686,8 +690,8 @@ const Programmer = () => {
     if (type === "inline") {
       if (key === "customer") {
         setCustomerFilter("");
-      } else if (key === "refNumber") {
-        setRefNumberFilter("");
+      } else if (key === "description") {
+        setDescriptionFilter("");
       } else if (key === "createdBy") {
         setCreatedByFilter("");
       }
@@ -702,7 +706,7 @@ const Programmer = () => {
   };
 
   const handleDownloadCSV = () => {
-    const headers = ["Customer", "Rate", "Cut (mm)", "Thickness (mm)", "Pass", "Setting", "Qty", "Created At", "Created By", "Total Hrs/Piece", ...(isAdmin ? ["Total Amount (₹)"] : []), "Priority", "Critical"];
+    const headers = ["Customer", "Rate", "Cut (mm)", "Thickness (mm)", "Pass", "Setting", "Qty", "Created At", "Total Hrs/Piece", ...(isAdmin ? ["Total Amount (₹)"] : []), "Created By", "Priority", "Complex"];
     const rows = tableData.map((row) => [
       row.parent.customer || "",
       `₹${Number(row.parent.rate || 0).toFixed(2)}`,
@@ -723,9 +727,9 @@ const Programmer = () => {
         const minutes = date.getMinutes().toString().padStart(2, "0");
         return `${day} ${month} ${year} ${hours}:${minutes}`;
       })(),
-      row.parent.createdBy || "",
       row.groupTotalHrs ? formatHoursToHHMM(row.groupTotalHrs) : "",
       ...(isAdmin ? [row.groupTotalAmount ? `₹${row.groupTotalAmount.toFixed(2)}` : ""] : []),
+      row.parent.createdBy || "",
       row.parent.priority || "",
       row.parent.critical ? "Yes" : "No",
     ]);
@@ -894,13 +898,13 @@ const Programmer = () => {
                     />
                   </div>
                   <div className="filter-group">
-                    <label htmlFor="ref-number-search">Ref Number</label>
+                    <label htmlFor="description-search">Description</label>
                     <input
-                      id="ref-number-search"
+                      id="description-search"
                       type="text"
-                      placeholder="Search by ref number..."
-                      value={refNumberFilter}
-                      onChange={(e) => setRefNumberFilter(e.target.value)}
+                      placeholder="Search by description..."
+                      value={descriptionFilter}
+                      onChange={(e) => setDescriptionFilter(e.target.value)}
                       className="filter-input"
                     />
                   </div>
@@ -932,7 +936,7 @@ const Programmer = () => {
                         onChange={(e) => setCriticalFilter(e.target.checked)}
                         className="critical-checkbox"
                       />
-                      Critical
+                      Complex
                     </label>
                   </div>
                 </div>
@@ -1005,11 +1009,11 @@ const Programmer = () => {
                 if (expandedGroups.has(row.groupId)) {
                   classes.push("group-row-expanded");
                 }
-                // Critical takes priority over flag
+                // Complex takes priority over flag
                 if (row.parent.critical) {
                   classes.push("critical-row");
                 } else if (row.parent.priority) {
-                  // Apply priority-based colors only if not critical
+                  // Apply priority-based colors only if not complex
                   classes.push(`priority-row priority-${row.parent.priority.toLowerCase()}`);
                 }
                 return classes.join(" ");

@@ -139,6 +139,33 @@ const ProgrammerJobForm = ({
     });
   };
 
+  const handleClearCut = (index: number) => {
+    setCuts((prev) =>
+      prev.map((cut, idx) => (idx === index ? { ...DEFAULT_CUT } : cut))
+    );
+    // Clear validation errors for this cut
+    setCutValidationErrors((prev) => {
+      const next = { ...prev };
+      delete next[index];
+      return next;
+    });
+    // Mark as unsaved
+    setSavedCuts((prev) => {
+      const next = new Set(prev);
+      next.delete(index);
+      return next;
+    });
+  };
+
+  const handleClearAll = () => {
+    if (cuts.length === 0) return;
+    // Keep only the first cut and reset it, or reset all cuts
+    setCuts([{ ...DEFAULT_CUT }]);
+    setCutValidationErrors({});
+    setSavedCuts(new Set());
+    setCollapsedCuts(new Set());
+  };
+
   const handleCutImageChange = (index: number, file?: File | null) => {
     if (!file) {
       handleCutChange(index, "cutImage")(null);
@@ -268,7 +295,7 @@ const ProgrammerJobForm = ({
                         handleCutChange(index, "critical")(e.target.checked)
                       }
                     />
-                    Critical
+                    Complex
                   </label>
                   <label className="header-checkbox">
                     <input
@@ -442,16 +469,16 @@ const ProgrammerJobForm = ({
                       }
                       required
                     >
-                      <option value="1">1.0x</option>
-                      <option value="2">1.5x</option>
-                      <option value="3">1.75x</option>
-                      <option value="4">2.0x</option>
-                      <option value="5">2.5x</option>
-                      <option value="6">2.75x</option>
+                      <option value="1">1</option>
+                      <option value="2">2</option>
+                      <option value="3">3</option>
+                      <option value="4">4</option>
+                      <option value="5">5</option>
+                      <option value="6">6</option>
                     </select>
                   </FormInput>
                   <FormInput
-                    label="Setting Level"
+                    label="Setting Hrs"
                     error={fieldErrors.setting}
                     required
                   >
@@ -464,7 +491,11 @@ const ProgrammerJobForm = ({
                         handleCutChange(index, "setting")(e.target.value)
                       }
                       required
+                      title="1 = 0.5hrs, 2 = 1hrs, 3 = 1.5hrs, and so on"
                     />
+                    <small style={{ fontSize: "0.7rem", color: "#94a3b8", marginTop: "0.25rem", display: "block" }}>
+                      1 = 0.5hrs, 2 = 1hrs, 3 = 1.5hrs, and so on
+                    </small>
                   </FormInput>
                   <FormInput label="Quantity" error={fieldErrors.qty} required>
                     <input
@@ -507,6 +538,19 @@ const ProgrammerJobForm = ({
                       </button>
                     )}
                   </FormInput>
+                  <FormInput
+                    label="Material"
+                    error={fieldErrors.material}
+                  >
+                    <input
+                      type="text"
+                      value={cut.material || ""}
+                      onChange={(e) =>
+                        handleCutChange(index, "material")(e.target.value)
+                      }
+                      placeholder="Enter material"
+                    />
+                  </FormInput>
                   <FormInput label="Total Hrs/Piece">
                     <input
                       type="text"
@@ -530,7 +574,7 @@ const ProgrammerJobForm = ({
                     className="description-box"
                   >
                     <textarea
-                      rows={6}
+                      rows={1}
                       value={cut.description}
                       placeholder="Enter description"
                       onChange={(e) =>
@@ -549,6 +593,13 @@ const ProgrammerJobForm = ({
                     onClick={() => handleSaveCut(index)}
                   >
                     Save Cut
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-clear small"
+                    onClick={() => handleClearCut(index)}
+                  >
+                    Clear
                   </button>
                 </div>
               </div>
@@ -573,6 +624,13 @@ const ProgrammerJobForm = ({
           </div>
         </div>
         <div className="form-action-buttons">
+          <button
+            className="btn-clear-all"
+            onClick={handleClearAll}
+            disabled={cuts.length === 0}
+          >
+            Clear All
+          </button>
           <button
             className="btn-success"
             onClick={onSave}
@@ -599,9 +657,15 @@ const ProgrammerJobForm = ({
           onHolesChange={(value) =>
             handleCutChange(sedmModalIndex, "sedmHoles")(value)
           }
+          onThicknessChange={(value) =>
+            handleCutChange(sedmModalIndex, "thickness")(value)
+          }
+          onSedmEntriesJsonChange={(value) =>
+            handleCutChange(sedmModalIndex, "sedmEntriesJson")(value)
+          }
           onApply={() => {
             // Apply button clicked - modal will close automatically
-            // The changes are already applied via onLengthChange, onLengthTypeChange, and onHolesChange
+            // The changes are already applied via the change handlers
           }}
         />
       )}
