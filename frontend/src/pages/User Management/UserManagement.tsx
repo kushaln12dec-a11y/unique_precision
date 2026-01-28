@@ -2,13 +2,14 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
+import DownloadIcon from "@mui/icons-material/Download";
 import Sidebar from "../../components/Sidebar";
 import Header from "../../components/Header";
 import DataTable, { type Column } from "../../components/DataTable";
 import { getUsers, createUser, updateUser, deleteUser } from "../../services/userApi";
 import type { User, CreateUserData, UpdateUserData, UserRole } from "../../types/user";
 import "./UserManagement.css";
-import ConfirmDeleteModal from "./components/ConfirmDeleteModal";
+import ConfirmDeleteModal from "../../components/ConfirmDeleteModal";
 import {
   filterUsers,
   sanitizePhoneInput,
@@ -166,6 +167,38 @@ const UserManagement = () => {
   const handleDeleteCancel = () => {
     setShowDeleteModal(false);
     setUserToDelete(null);
+  };
+
+  const getDeleteModalDetails = (user: User) => [
+    { label: "Name", value: `${user.firstName} ${user.lastName}` },
+    { label: "Email", value: user.email },
+    { label: "Role", value: user.role },
+  ];
+
+  const handleDownloadCSV = () => {
+    const headers = ["Name", "Email", "Phone", "Emp ID", "Role"];
+    const rows = sortedUsers.map((user) => [
+      `${user.firstName} ${user.lastName}`,
+      user.email,
+      user.phone || "",
+      user.empId || "",
+      user.role,
+    ]);
+
+    const csvContent = [
+      headers.join(","),
+      ...rows.map((row) => row.map((cell) => `"${cell}"`).join(",")),
+    ].join("\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", `users_${new Date().toISOString().split("T")[0]}.csv`);
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   const handleNavigation = (path: string) => {
@@ -437,9 +470,35 @@ const UserManagement = () => {
                   </select>
                 </div>
               </div>
-              <button className="btn-add-user" onClick={handleNewUser}>
-                + Add New User
-              </button>
+              <div style={{ display: "flex", gap: "0.75rem", alignItems: "center" }}>
+                <button
+                  className="btn-download-csv"
+                  onClick={() => handleDownloadCSV()}
+                  title="Download CSV"
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "0.5rem",
+                    padding: "0.5rem 1rem",
+                    background: "#ffffff",
+                    border: "1px solid #e2e8f0",
+                    borderRadius: "6px",
+                    color: "#1e293b",
+                    fontSize: "0.875rem",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    transition: "all 0.3s ease",
+                    height: "38px",
+                    boxSizing: "border-box",
+                  }}
+                >
+                  <DownloadIcon sx={{ fontSize: "1rem" }} />
+                  CSV
+                </button>
+                <button className="btn-add-user" onClick={handleNewUser}>
+                  + Add New User
+                </button>
+              </div>
             </div>
 
             <DataTable
@@ -470,9 +529,12 @@ const UserManagement = () => {
 
         {showDeleteModal && userToDelete && (
           <ConfirmDeleteModal
-            user={userToDelete}
-            onCancel={handleDeleteCancel}
+            title="Confirm Delete"
+            message="Are you sure you want to delete this user?"
+            details={getDeleteModalDetails(userToDelete)}
+            confirmButtonText="Delete User"
             onConfirm={handleDeleteConfirm}
+            onCancel={handleDeleteCancel}
           />
         )}
       </div>

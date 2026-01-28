@@ -44,6 +44,10 @@ type DataTableProps<T> = {
   getRowClassName?: (row: T, index: number) => string;
   className?: string;
   pagination?: PaginationConfig;
+  showCheckboxes?: boolean;
+  selectedRows?: Set<string | number>;
+  onRowSelect?: (rowKey: string | number, selected: boolean) => void;
+  onRowClick?: (row: T) => void;
 };
 
 function DataTable<T extends Record<string, any>>({
@@ -59,6 +63,10 @@ function DataTable<T extends Record<string, any>>({
   getRowClassName,
   className = "",
   pagination,
+  showCheckboxes = false,
+  selectedRows = new Set(),
+  onRowSelect,
+  onRowClick,
 }: DataTableProps<T>) {
   const handleSort = (column: Column<T>) => {
     if (column.sortable && onSort) {
@@ -66,7 +74,7 @@ function DataTable<T extends Record<string, any>>({
     }
   };
 
-  const totalColumns = columns.length + (showAccordion ? 1 : 0);
+  const totalColumns = columns.length + (showAccordion ? 1 : 0) + (showCheckboxes ? 1 : 0);
 
   // Calculate pagination values if pagination is enabled
   const displayData = pagination
@@ -97,6 +105,21 @@ function DataTable<T extends Record<string, any>>({
         <table className="data-table">
           <thead>
             <tr>
+              {showCheckboxes && (
+                <th className="checkbox-header-cell" style={{ width: "40px" }}>
+                  <input
+                    type="checkbox"
+                    checked={selectedRows.size > 0 && selectedRows.size === displayData.length && displayData.length > 0}
+                    onChange={(e) => {
+                      displayData.forEach((row, idx) => {
+                        const rowKey = getRowKey(row, idx);
+                        onRowSelect?.(rowKey, e.target.checked);
+                      });
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                </th>
+              )}
               {showAccordion && <th className="accordion-header-cell" />}
               {columns.map((column) => (
                 <th
@@ -135,9 +158,27 @@ function DataTable<T extends Record<string, any>>({
                 ? getRowClassName(row, index)
                 : "";
 
+              const isSelected = selectedRows.has(rowKey);
+
               return (
                 <React.Fragment key={rowKey}>
-                  <tr className={rowClassName}>
+                  <tr 
+                    className={rowClassName}
+                    onClick={() => onRowClick?.(row)}
+                    style={{ cursor: onRowClick ? "pointer" : "default" }}
+                  >
+                    {showCheckboxes && (
+                      <td className="checkbox-cell" onClick={(e) => e.stopPropagation()}>
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={(e) => {
+                            e.stopPropagation();
+                            onRowSelect?.(rowKey, e.target.checked);
+                          }}
+                        />
+                      </td>
+                    )}
                     {showAccordion && expandable && (
                       <AccordionToggle
                         isExpanded={expandable.isExpanded}
@@ -158,7 +199,7 @@ function DataTable<T extends Record<string, any>>({
                   </tr>
                   {expandable && expandable.isExpanded && (
                     <tr className="child-row">
-                      <td colSpan={columns.length} className="child-row-content">
+                      <td colSpan={totalColumns} className="child-row-content">
                         {expandable.expandedContent}
                       </td>
                     </tr>

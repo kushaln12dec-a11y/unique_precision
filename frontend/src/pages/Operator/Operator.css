@@ -273,10 +273,44 @@
   gap: 0.2rem !important;
 }
 
+/* Style for Operator accordion toggle icon */
+.operator-table-no-scroll .data-table td .operator-accordion-toggle {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.operator-table-no-scroll .data-table td .operator-accordion-toggle svg {
+  font-size: 0.7rem !important;
+  width: 0.7rem !important;
+  height: 0.7rem !important;
+  color: #1e293b !important;
+}
+
 /* Reduce sort icon sizes */
 .operator-table-no-scroll .data-table th .sort-icon {
   font-size: 0.5rem !important;
   margin-left: 0.15rem !important;
+}
+
+/* Ensure child row spans full width in Operator screen */
+.operator-table-no-scroll .child-row-content {
+  width: 100% !important;
+  max-width: 100% !important;
+  padding: 0.75rem !important;
+  box-sizing: border-box !important;
+}
+
+.operator-table-no-scroll .child-row-content .child-jobs-table {
+  width: 100% !important;
+  max-width: 100% !important;
+  table-layout: auto !important;
+  box-sizing: border-box !important;
+}
+
+.operator-table-no-scroll .child-row-content > * {
+  width: 100% !important;
+  max-width: 100% !important;
 }
 
 /* Reduce all icon sizes */
@@ -307,4 +341,12 @@
     padding: 0.12rem 0.06rem;
     font-size: 0.48rem;
   }
+}
+
+/* Add search icon to Customer search input */
+.filter-input {
+  padding-left: 2.5rem !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: 0.75rem center !important;
 }

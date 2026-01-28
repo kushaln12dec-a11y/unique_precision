@@ -11,10 +11,12 @@ import { getJobs, updateJob } from "../../services/jobApi";
 import type { User } from "../../types/user";
 import type { JobEntry } from "../../types/job";
 import { getUserRoleFromToken } from "../../utils/auth";
-import { formatDateValue, parseDateValue } from "../../utils/date";
+import { formatHoursToHHMM, parseDateValue } from "../../utils/date";
 import { countActiveFilters } from "../../utils/filterUtils";
 import ChildCutsTable from "../Programmer/components/ChildCutsTable";
 import ArrowOutwardIcon from "@mui/icons-material/ArrowOutward";
+import ArrowForwardIosSharpIcon from "@mui/icons-material/ArrowForwardIosSharp";
+import DownloadIcon from "@mui/icons-material/Download";
 import "../RoleBoard.css";
 import "../Programmer/Programmer.css";
 import "./Operator.css";
@@ -41,6 +43,7 @@ const Operator = () => {
 
   const userRole = getUserRoleFromToken();
   const canAssign = userRole === "ADMIN" || userRole === "OPERATOR";
+  const isAdmin = userRole === "ADMIN";
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -93,7 +96,8 @@ const Operator = () => {
     } else {
       const fetchUsers = async () => {
         try {
-          const userList = await getUsers();
+          // Fetch only ADMIN and PROGRAMMER users for Created By filter
+          const userList = await getUsers(["ADMIN", "PROGRAMMER"]);
           setUsers(userList);
         } catch (error) {
           console.error("Failed to fetch users", error);
@@ -255,6 +259,52 @@ const Operator = () => {
     setCurrentPage(1);
   };
 
+  const handleDownloadCSV = () => {
+    const headers = ["Customer", "Rate", "Cut (mm)", "Thickness (mm)", "Pass", "Setting", "Qty", "Created At", "Created By", "Assigned To", "Total Hrs/Piece", "Total Amount (₹)", "Priority", "Critical"];
+    const rows = tableData.map((row) => [
+      row.parent.customer || "",
+      `₹${Number(row.parent.rate || 0).toFixed(2)}`,
+      Number(row.parent.cut || 0).toFixed(2),
+      Number(row.parent.thickness || 0).toFixed(2),
+      row.parent.passLevel || "",
+      row.parent.setting || "",
+      Number(row.parent.qty || 0).toString(),
+      (() => {
+        const parsed = parseDateValue(row.parent.createdAt);
+        if (!parsed) return "—";
+        const date = new Date(parsed);
+        const day = date.getDate().toString().padStart(2, "0");
+        const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+        const month = months[date.getMonth()];
+        const year = date.getFullYear();
+        const hours = date.getHours().toString().padStart(2, "0");
+        const minutes = date.getMinutes().toString().padStart(2, "0");
+        return `${day} ${month} ${year} ${hours}:${minutes}`;
+      })(),
+      row.parent.createdBy || "",
+      row.parent.assignedTo || "",
+      row.groupTotalHrs ? formatHoursToHHMM(row.groupTotalHrs) : "",
+      row.groupTotalAmount ? `₹${row.groupTotalAmount.toFixed(2)}` : "",
+      row.parent.priority || "",
+      row.parent.critical ? "Yes" : "No",
+    ]);
+
+    const csvContent = [
+      headers.join(","),
+      ...rows.map((row) => row.map((cell) => `"${cell}"`).join(",")),
+    ].join("\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", `operator_jobs_${new Date().toISOString().split("T")[0]}.csv`);
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   const filterCategories: FilterCategory[] = [
     { id: "dimensions", label: "Dimensions", icon: "📏" },
     { id: "production", label: "Production", icon: "⚙️" },
@@ -399,7 +449,7 @@ const Operator = () => {
               {expandable && (
                 <button
                   type="button"
-                  className="accordion-toggle-button"
+                  className="accordion-toggle-button operator-accordion-toggle"
                   onClick={(event) => {
                     event.stopPropagation();
                     expandable.onToggle();
@@ -413,15 +463,16 @@ const Operator = () => {
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    fontSize: "0.5rem",
                     color: "#1a1a2e",
-                    minWidth: "0.8rem",
-                    width: "0.8rem",
+                    minWidth: "1rem",
+                    width: "1rem",
+                    transition: "transform 0.2s ease",
+                    transform: isExpanded ? "rotate(90deg)" : "rotate(0deg)",
                   }}
                 >
-                  <span style={{ fontSize: "0.5rem", lineHeight: "1" }}>
-                    {isExpanded ? "▴" : "▾"}
-                  </span>
+                  <ArrowForwardIosSharpIcon 
+                    sx={{ fontSize: "0.7rem" }}
+                  />
                 </button>
               )}
               {!expandable && <span style={{ width: "1rem" }} />}
@@ -477,7 +528,19 @@ const Operator = () => {
         label: "Created At",
         sortable: true,
         sortKey: "createdAt",
-        render: (row) => formatDateValue(row.parent.createdAt),
+        render: (row) => {
+          // Format: "DD MMM YYYY HH:MM"
+          const parsed = parseDateValue(row.parent.createdAt);
+          if (!parsed) return "—";
+          const date = new Date(parsed);
+          const day = date.getDate().toString().padStart(2, "0");
+          const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+          const month = months[date.getMonth()];
+          const year = date.getFullYear();
+          const hours = date.getHours().toString().padStart(2, "0");
+          const minutes = date.getMinutes().toString().padStart(2, "0");
+          return `${day} ${month} ${year} ${hours}:${minutes}`;
+        },
       },
       {
         key: "createdBy",
@@ -522,7 +585,7 @@ const Operator = () => {
         sortable: true,
         sortKey: "totalHrs",
         render: (row) =>
-          row.groupTotalHrs ? row.groupTotalHrs.toFixed(3) : "—",
+          row.groupTotalHrs ? formatHoursToHHMM(row.groupTotalHrs) : "—",
       },
       {
         key: "totalAmount",
@@ -542,23 +605,26 @@ const Operator = () => {
         headerClassName: "action-header",
         render: (row) => (
           <div className="action-buttons">
-            <button
-              type="button"
-              className="action-icon-button operator-action-button"
-              onClick={() => handleViewJob(row.groupId)}
-              aria-label={`View ${row.parent.customer || "entry"}`}
-              title="View Details"
-            >
-              <ArrowOutwardIcon 
-                fontSize="small" 
-                style={{ color: "#dc2626", fontSize: "1.1rem" }}
-              />
-            </button>
+            {isAdmin && (
+              <button
+                type="button"
+                className="action-icon-button operator-action-button"
+                onClick={() => handleViewJob(row.groupId)}
+                aria-label={`View ${row.parent.customer || "entry"}`}
+                title="View Details"
+              >
+                <ArrowOutwardIcon 
+                  fontSize="small" 
+                  style={{ color: "#dc2626", fontSize: "1.1rem" }}
+                />
+              </button>
+            )}
+            {!isAdmin && <span style={{ color: "#64748b" }}>—</span>}
           </div>
         ),
       },
     ],
-    [canAssign, operatorUsers, handleAssignChange, expandableRows]
+    [canAssign, operatorUsers, handleAssignChange, expandableRows, isAdmin]
   );
 
   return (
@@ -633,6 +699,14 @@ const Operator = () => {
               </div>
             </div>
             <div className="panel-header-actions">
+              <button
+                className="btn-download-csv"
+                onClick={() => handleDownloadCSV()}
+                title="Download CSV"
+              >
+                <DownloadIcon sx={{ fontSize: "1rem" }} />
+                CSV
+              </button>
               <FilterButton
                 onClick={() => setShowFilterModal(true)}
                 activeFilterCount={activeFilterCount}

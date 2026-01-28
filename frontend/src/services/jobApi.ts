@@ -14,7 +14,9 @@ const buildQueryParams = (
   filters?: FilterValues,
   customerFilter?: string,
   createdByFilter?: string,
-  assignedToFilter?: string
+  assignedToFilter?: string,
+  criticalFilter?: boolean,
+  refNumberFilter?: string
 ): string => {
   const params = new URLSearchParams();
 
@@ -22,11 +24,18 @@ const buildQueryParams = (
   if (customerFilter) {
     params.append("customer", customerFilter);
   }
+  if (refNumberFilter) {
+    params.append("refNumber", refNumberFilter);
+  }
   if (createdByFilter) {
     params.append("createdBy", createdByFilter);
   }
   if (assignedToFilter) {
     params.append("assignedTo", assignedToFilter);
+  }
+  // Only add critical filter if explicitly true (checked)
+  if (criticalFilter === true) {
+    params.append("critical", "true");
   }
 
   // Modal filters
@@ -73,9 +82,11 @@ export const getJobs = async (
   filters?: FilterValues,
   customerFilter?: string,
   createdByFilter?: string,
-  assignedToFilter?: string
+  assignedToFilter?: string,
+  criticalFilter?: boolean,
+  refNumberFilter?: string
 ): Promise<JobEntry[]> => {
-  const queryString = buildQueryParams(filters, customerFilter, createdByFilter, assignedToFilter);
+  const queryString = buildQueryParams(filters, customerFilter, createdByFilter, assignedToFilter, criticalFilter, refNumberFilter);
   const url = queryString ? `/api/jobs?${queryString}` : "/api/jobs";
 
   const res = await fetch(url, {
@@ -182,6 +193,41 @@ export const updateJob = async (id: string, jobData: Partial<JobEntry>): Promise
     groupId: job.groupId ?? job.id,
     assignedTo: job.assignedTo || "Unassigned",
   };
+};
+
+export const updateJobsByGroupId = async (groupId: number, jobs: JobEntry[]): Promise<JobEntry[]> => {
+  // Get existing jobs for this group
+  const existingJobs = await getJobsByGroupId(groupId);
+  
+  const updatedJobs: JobEntry[] = [];
+  
+  // Update existing jobs or create new ones
+  for (let i = 0; i < jobs.length; i++) {
+    const jobData = jobs[i];
+    const existingJob = existingJobs[i];
+    
+    if (existingJob && existingJob.id) {
+      // Update existing job using PUT
+      const updated = await updateJob(String(existingJob.id), jobData);
+      updatedJobs.push(updated);
+    } else {
+      // Create new job if there are more cuts than before
+      const created = await createJobs([jobData]);
+      updatedJobs.push(...created);
+    }
+  }
+  
+  // Delete extra jobs if there are fewer cuts than before
+  if (existingJobs.length > jobs.length) {
+    const jobsToDelete = existingJobs.slice(jobs.length);
+    for (const jobToDelete of jobsToDelete) {
+      if (jobToDelete.id) {
+        await deleteJob(String(jobToDelete.id));
+      }
+    }
+  }
+  
+  return updatedJobs;
 };
 
 export const deleteJob = async (id: string): Promise<void> => {

@@ -19,6 +19,7 @@ export type CutForm = {
   cutImage: string | null;
   critical: boolean;
   pipFinish: boolean;
+  refNumber?: string;
 };
 
 export const SEDM_PRICING = [
@@ -95,7 +96,7 @@ export const DEFAULT_CUT: CutForm = {
   cut: "",
   thickness: "",
   passLevel: "1",
-  setting: "0",
+  setting: "1",
   qty: "1",
   sedm: "No",
   sedmSelectionType: "range",
@@ -104,6 +105,7 @@ export const DEFAULT_CUT: CutForm = {
   sedmLengthType: "min",
   sedmOver20Length: "",
   sedmLengthValue: "",
+  refNumber: "",
   sedmHoles: "1", // Default to 1 hole per piece
   priority: "Medium",
   description: "",

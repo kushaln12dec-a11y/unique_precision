@@ -1,3 +1,5 @@
+import ArrowForwardIosSharpIcon from "@mui/icons-material/ArrowForwardIosSharp";
+
 type AccordionToggleProps = {
   isExpanded: boolean;
   onToggle: () => void;
@@ -19,10 +21,14 @@ const AccordionToggle: React.FC<AccordionToggleProps> = ({
           onToggle();
         }}
         aria-label={ariaLabel}
+        style={{
+          transform: isExpanded ? "rotate(90deg)" : "rotate(0deg)",
+          transition: "transform 0.2s ease",
+        }}
       >
-        <span className="accordion-toggle-icon">
-          {isExpanded ? "▴" : "▾"}
-        </span>
+        <ArrowForwardIosSharpIcon 
+          sx={{ fontSize: "0.7rem", color: "#1e293b" }}
+        />
       </button>
     </td>
   );

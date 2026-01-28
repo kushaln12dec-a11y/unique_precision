@@ -62,5 +62,27 @@ export const parseDateValue = (value: string) => {
 export const formatDateValue = (value: string) => {
   const parsed = parseDateValue(value);
   if (!parsed) return value || "—";
-  return formatDateLabel(new Date(parsed));
+  const date = new Date(parsed);
+  const day = pad(date.getDate());
+  const month = MONTHS[date.getMonth()];
+  const year = date.getFullYear();
+  const hours = pad(date.getHours());
+  const minutes = pad(date.getMinutes());
+  return `${day} ${month} ${year} ${hours}:${minutes}`;
+};
+
+export const formatTimeOnly = (value: string) => {
+  const parsed = parseDateValue(value);
+  if (!parsed) return "—";
+  const date = new Date(parsed);
+  const hours = pad(date.getHours());
+  const minutes = pad(date.getMinutes());
+  return `${hours}:${minutes}`;
+};
+
+export const formatHoursToHHMM = (decimalHours: number): string => {
+  if (isNaN(decimalHours) || decimalHours < 0) return "00.00";
+  const hours = Math.floor(decimalHours);
+  const minutes = Math.round((decimalHours - hours) * 60);
+  return `${pad(hours)}.${pad(minutes)}`;
 };

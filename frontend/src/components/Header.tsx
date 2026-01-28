@@ -79,11 +79,25 @@ const Header = ({ title }: HeaderProps) => {
     ],
   };
 
-  const breadcrumbs =
-    breadcrumbMap[location.pathname] ||
-    (title
-      ? [{ label: title, path: location.pathname, icon: DashboardIcon }]
-      : breadcrumbMap["/dashboard"]);
+  // Handle dynamic routes for programmer
+  let breadcrumbs = breadcrumbMap[location.pathname];
+  
+  if (!breadcrumbs) {
+    // Check for edit route: /programmer/edit/:groupId
+    if (location.pathname.match(/^\/programmer\/edit\/\d+$/)) {
+      breadcrumbs = [
+        { label: "Dashboard", path: "/dashboard", icon: DashboardIcon },
+        { label: "Programmer", path: "/programmer", icon: CodeIcon },
+        { label: "Edit Job", path: location.pathname, icon: AddCircleOutlineIcon },
+      ];
+    }
+    // Fallback
+    else {
+      breadcrumbs = title
+        ? [{ label: title, path: location.pathname, icon: DashboardIcon }]
+        : breadcrumbMap["/dashboard"];
+    }
+  }
 
   const handleBreadcrumbClick = (path: string, isLast: boolean) => {
     if (!isLast) {
@@ -197,12 +211,6 @@ const Header = ({ title }: HeaderProps) => {
       </div>
       
       <div className="header-right">
-        {displayName && (
-          <div className="user-pill" title={displayName}>
-            <span className="user-label">Logged in as</span>
-            <span className="user-name">{displayName}</span>
-          </div>
-        )}
         <div className="calendar-container">
           <button className="calendar-button" onClick={toggleCalendar}>
             <CalendarMonthIcon />
@@ -233,6 +241,12 @@ const Header = ({ title }: HeaderProps) => {
             </>
           )}
         </div>
+        {displayName && (
+          <div className="user-pill" title={displayName}>
+            <span className="user-label">Logged in as</span>
+            <span className="user-name">{displayName}</span>
+          </div>
+        )}
       </div>
     </div>
   );

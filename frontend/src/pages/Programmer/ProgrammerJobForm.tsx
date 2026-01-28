@@ -6,6 +6,10 @@ import { DEFAULT_CUT } from "./programmerUtils";
 import SEDMModal from "./components/SEDMModal";
 import ImageUpload from "./components/ImageUpload";
 import { FormInput } from "./components/FormInput";
+import CustomerAutocomplete from "./components/CustomerAutocomplete";
+import FlagIcon from "@mui/icons-material/Flag";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import "./components/CustomerAutocomplete.css";
 
 type CutTotals = {
   totalHrs: number;
@@ -19,6 +23,7 @@ type ProgrammerJobFormProps = {
   onCancel: () => void;
   totals: CutTotals[];
   isAdmin: boolean;
+  refNumber?: string;
 };
 
 const ProgrammerJobForm = ({
@@ -28,6 +33,7 @@ const ProgrammerJobForm = ({
   onCancel,
   totals,
   isAdmin,
+  refNumber = "",
 }: ProgrammerJobFormProps) => {
   const [collapsedCuts, setCollapsedCuts] = useState<Set<number>>(new Set());
   const [sedmModalIndex, setSedmModalIndex] = useState<number | null>(null);
@@ -35,38 +41,63 @@ const ProgrammerJobForm = ({
   const [cutValidationErrors, setCutValidationErrors] = useState<
     Record<number, Record<string, string>>
   >({});
+  const [openPriorityDropdown, setOpenPriorityDropdown] = useState<number | null>(null);
 
   useEffect(() => {
     // Remove saved/validation state for cuts that no longer exist
     setSavedCuts((prev) => {
       const next = new Set<number>();
-      cuts.forEach((_, index) => {
-        if (prev.has(index)) next.add(index);
+      prev.forEach((index) => {
+        if (index < cuts.length) {
+          next.add(index);
+        }
       });
       return next;
     });
     setCutValidationErrors((prev) => {
       const next: Record<number, Record<string, string>> = {};
-      cuts.forEach((_, index) => {
-        if (prev[index]) {
+      Object.keys(prev).forEach((key) => {
+        const index = Number(key);
+        if (!isNaN(index) && index < cuts.length && prev[index]) {
           next[index] = prev[index];
         }
       });
       return next;
     });
-  }, [cuts]);
+  }, [cuts.length]);
 
   useEffect(() => {
     const primaryCustomer = cuts[0]?.customer ?? "";
     if (!primaryCustomer || cuts.length <= 1) return;
-    setCuts((prev) =>
-      prev.map((cut, idx) =>
+    setCuts((prev) => {
+      const needsUpdate = prev.some((cut, idx) => idx > 0 && cut.customer !== primaryCustomer);
+      if (!needsUpdate) return prev;
+      return prev.map((cut, idx) =>
         idx === 0 || cut.customer === primaryCustomer
           ? cut
           : { ...cut, customer: primaryCustomer }
-      )
-    );
-  }, [cuts.length, cuts[0]?.customer, setCuts]);
+      );
+    });
+  }, [cuts.length, cuts[0]?.customer]);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (openPriorityDropdown !== null) {
+        const target = event.target as HTMLElement;
+        if (!target.closest('.priority-dropdown')) {
+          setOpenPriorityDropdown(null);
+        }
+      }
+    };
+
+    if (openPriorityDropdown !== null) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+      };
+    }
+  }, [openPriorityDropdown]);
 
   const toggleCut = (index: number) => {
     if (index === 0) return;
@@ -203,7 +234,13 @@ const ProgrammerJobForm = ({
   return (
     <div className="job-form-card">
       <div className="job-form-grid">
-        <div className="cut-actions">
+        <div className="cut-actions" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%" }}>
+          <div className="ref-number-field" style={{ flex: 1, marginRight: "1rem", maxWidth: "300px", display: "flex", alignItems: "center" }}>
+            <span style={{ fontSize: "0.875rem", fontWeight: 600, color: "rgb(201, 223, 255)", marginRight: "0.5rem" }}>Ref Number:</span>
+            <span style={{ fontSize: "1rem", color: "rgb(255, 255, 255)", fontWeight: 500 }}>
+              #{refNumber || "—"}
+            </span>
+          </div>
           <button className="btn-new-job btn-add-cut" onClick={addCut}>
             Add new cut length
           </button>
@@ -244,20 +281,64 @@ const ProgrammerJobForm = ({
                     PIP Finish
                   </label>
                   <div className="priority-dropdown compact">
-                    <select
-                      className="priority-trigger"
-                      value={cut.priority}
-                      onChange={(e) =>
-                        handleCutChange(index, "priority")(
-                          e.target.value as CutForm["priority"]
-                        )
-                      }
+                    <button
+                      type="button"
+                      className={`priority-trigger priority-${cut.priority.toLowerCase()}`}
+                      onClick={() => setOpenPriorityDropdown(openPriorityDropdown === index ? null : index)}
                       aria-label="Priority"
                     >
-                      <option value="High">High</option>
-                      <option value="Medium">Medium</option>
-                      <option value="Low">Low</option>
-                    </select>
+                      <div className="priority-flag-wrapper">
+                        <FlagIcon 
+                          className={`priority-flag priority-flag-${cut.priority.toLowerCase()}`}
+                          sx={{ fontSize: "1rem" }}
+                        />
+                        <span className="priority-text">{cut.priority}</span>
+                      </div>
+                      <ExpandMoreIcon 
+                        className={`priority-caret ${openPriorityDropdown === index ? "open" : ""}`}
+                        sx={{ fontSize: "0.9rem" }}
+                      />
+                    </button>
+                    {openPriorityDropdown === index && (
+                      <div className="priority-menu">
+                        <button
+                          type="button"
+                          className={`priority-option ${cut.priority === "High" ? "selected" : ""}`}
+                          data-priority="High"
+                          onClick={() => {
+                            handleCutChange(index, "priority")("High");
+                            setOpenPriorityDropdown(null);
+                          }}
+                        >
+                          <FlagIcon className="priority-flag priority-flag-high" sx={{ fontSize: "1rem" }} />
+                          <span>High</span>
+                        </button>
+                        <button
+                          type="button"
+                          className={`priority-option ${cut.priority === "Medium" ? "selected" : ""}`}
+                          data-priority="Medium"
+                          onClick={() => {
+                            handleCutChange(index, "priority")("Medium");
+                            setOpenPriorityDropdown(null);
+                          }}
+                        >
+                          <FlagIcon className="priority-flag priority-flag-medium" sx={{ fontSize: "1rem" }} />
+                          <span>Medium</span>
+                        </button>
+                        <button
+                          type="button"
+                          className={`priority-option ${cut.priority === "Low" ? "selected" : ""}`}
+                          data-priority="Low"
+                          onClick={() => {
+                            handleCutChange(index, "priority")("Low");
+                            setOpenPriorityDropdown(null);
+                          }}
+                        >
+                          <FlagIcon className="priority-flag priority-flag-low" sx={{ fontSize: "1rem" }} />
+                          <span>Low</span>
+                        </button>
+                      </div>
+                    )}
                   </div>
                   <span
                     className={`cut-save-status ${
@@ -300,21 +381,14 @@ const ProgrammerJobForm = ({
                     error={fieldErrors.customer}
                     required
                   >
-                    <select
+                    <CustomerAutocomplete
                       value={index === 0 ? cut.customer : cuts[0]?.customer ?? ""}
-                      onChange={(e) =>
-                        handleCutChange(index, "customer")(e.target.value)
+                      onChange={(value) =>
+                        handleCutChange(index, "customer")(value)
                       }
                       disabled={index > 0}
                       required
-                    >
-                      <option value="">Select Customer</option>
-                      <option value="UPC001">UPC001</option>
-                      <option value="UPC002">UPC002</option>
-                      <option value="UPC003">UPC003</option>
-                      <option value="UPC004">UPC004</option>
-                      <option value="UPC005">UPC005</option>
-                    </select>
+                    />
                   </FormInput>
                   <FormInput label="Rate (₹/hr)" error={fieldErrors.rate} required>
                     <input
@@ -433,23 +507,21 @@ const ProgrammerJobForm = ({
                       </button>
                     )}
                   </FormInput>
+                  <FormInput label="Total Hrs/Piece">
+                    <input
+                      type="text"
+                      value={cutTotals.totalHrs.toFixed(3)}
+                      readOnly
+                    />
+                  </FormInput>
                   {isAdmin && (
-                    <>
-                      <FormInput label="Total Hrs/Piece">
-                        <input
-                          type="text"
-                          value={cutTotals.totalHrs.toFixed(3)}
-                          readOnly
-                        />
-                      </FormInput>
-                      <FormInput label="Total Amount (₹)">
-                        <input
-                          type="text"
-                          value={cutTotals.totalAmount.toFixed(2)}
-                          readOnly
-                        />
-                      </FormInput>
-                    </>
+                    <FormInput label="Total Amount (₹)">
+                      <input
+                        type="text"
+                        value={cutTotals.totalAmount.toFixed(2)}
+                        readOnly
+                      />
+                    </FormInput>
                   )}
                   <FormInput
                     label="Description"
@@ -492,8 +564,12 @@ const ProgrammerJobForm = ({
             <span className="form-total-value">{grandTotals.totalHrs.toFixed(3)}</span>
           </div>
           <div>
-            <span className="form-total-label">Total Amount (₹)</span>
-            <span className="form-total-value">{grandTotals.totalAmount.toFixed(2)}</span>
+            {isAdmin && (
+              <>
+                <span className="form-total-label">Total Amount (₹)</span>
+                <span className="form-total-value">{grandTotals.totalAmount.toFixed(2)}</span>
+              </>
+            )}
           </div>
         </div>
         <div className="form-action-buttons">

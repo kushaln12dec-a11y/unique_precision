@@ -8,8 +8,16 @@ const getAuthHeaders = () => {
   };
 };
 
-export const getUsers = async (): Promise<User[]> => {
-  const res = await fetch("/api/users", {
+export const getUsers = async (roles?: string[]): Promise<User[]> => {
+  let url = "/api/users";
+  
+  // Add roles query parameter if provided
+  if (roles && roles.length > 0) {
+    const rolesParam = roles.join(",");
+    url += `?roles=${encodeURIComponent(rolesParam)}`;
+  }
+  
+  const res = await fetch(url, {
     method: "GET",
     headers: getAuthHeaders(),
   });

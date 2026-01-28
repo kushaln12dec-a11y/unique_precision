@@ -1,22 +1,30 @@
 import { useEffect, useMemo, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import Sidebar from "../../components/Sidebar";
 import Header from "../../components/Header";
 import DataTable, { type Column } from "../../components/DataTable";
 import FilterModal, { type FilterField, type FilterValues, type FilterCategory } from "../../components/FilterModal";
 import FilterButton from "../../components/FilterButton";
 import FilterBadges from "../../components/FilterBadges";
+import Toast from "../../components/Toast";
+import ConfirmDeleteModal from "../../components/ConfirmDeleteModal";
 import { getUserDisplayNameFromToken, getUserRoleFromToken } from "../../utils/auth";
+// Import debug utility to make it available
+import "../../utils/tokenDebug";
 import { getUsers } from "../../services/userApi";
-import { getJobs, createJobs, deleteJobsByGroupId } from "../../services/jobApi";
+import { getJobs, createJobs, updateJobsByGroupId, deleteJobsByGroupId } from "../../services/jobApi";
 import type { User } from "../../types/user";
 import ProgrammerJobForm from "./ProgrammerJobForm.tsx";
+import JobDetailsModal from "./components/JobDetailsModal";
 import { calculateTotals, DEFAULT_CUT, type CutForm } from "./programmerUtils";
 import { DustbinIcon, PencilIcon } from "../../utils/icons";
-import { formatDateLabel, formatDateValue, parseDateValue } from "../../utils/date";
+import { formatDateLabel, formatHoursToHHMM, parseDateValue } from "../../utils/date";
 import { countActiveFilters } from "../../utils/filterUtils";
 import ChildCutsTable from "./components/ChildCutsTable";
 import type { JobEntry } from "../../types/job";
+import ArrowForwardIosSharpIcon from "@mui/icons-material/ArrowForwardIosSharp";
+import DownloadIcon from "@mui/icons-material/Download";
+import VisibilityIcon from "@mui/icons-material/Visibility";
 import "./Programmer.css";
 
 const STORAGE_KEY = "programmerJobs";
@@ -24,6 +32,7 @@ const STORAGE_KEY = "programmerJobs";
 const Programmer = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const params = useParams<{ groupId?: string }>();
   const [jobs, setJobs] = useState<JobEntry[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [cuts, setCuts] = useState<CutForm[]>([DEFAULT_CUT]);
@@ -36,12 +45,26 @@ const Programmer = () => {
   const [filters, setFilters] = useState<FilterValues>({});
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [customerFilter, setCustomerFilter] = useState("");
+  const [refNumberFilter, setRefNumberFilter] = useState("");
   const [createdByFilter, setCreatedByFilter] = useState("");
+  const [criticalFilter, setCriticalFilter] = useState(false); // Default to unchecked - no filter
   const [users, setUsers] = useState<User[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [entriesPerPage, setEntriesPerPage] = useState(10);
+  const [toast, setToast] = useState<{ message: string; variant: "success" | "error" | "info"; visible: boolean }>({
+    message: "",
+    variant: "success",
+    visible: false,
+  });
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [jobToDelete, setJobToDelete] = useState<{ groupId: number; customer: string } | null>(null);
+  const [selectedJobIds, setSelectedJobIds] = useState<Set<number>>(new Set());
+  const [showJobViewModal, setShowJobViewModal] = useState(false);
+  const [viewingJob, setViewingJob] = useState<TableRow | null>(null);
+  const [refNumber, setRefNumber] = useState<string>("");
   const isAdmin = getUserRoleFromToken() === "ADMIN";
   const isNewJobRoute = location.pathname === "/programmer/newjob";
+  const isEditRoute = location.pathname.startsWith("/programmer/edit/");
 
   const handleNavigation = (path: string) => {
     navigate(path);
@@ -50,7 +73,15 @@ const Programmer = () => {
   useEffect(() => {
     const fetchJobs = async () => {
       try {
-        const fetchedJobs = await getJobs(filters, customerFilter, createdByFilter);
+        // Only pass criticalFilter if it's explicitly checked (true), otherwise don't filter
+        const fetchedJobs = await getJobs(
+          filters, 
+          customerFilter, 
+          createdByFilter, 
+          undefined,
+          criticalFilter ? true : undefined,
+          refNumberFilter
+        );
         setJobs(fetchedJobs);
       } catch (error) {
         console.error("Failed to fetch jobs", error);
@@ -60,8 +91,12 @@ const Programmer = () => {
           try {
             const parsed = JSON.parse(stored) as JobEntry[];
             if (Array.isArray(parsed)) {
+              let filtered = parsed;
+              if (criticalFilter) {
+                filtered = parsed.filter((job) => job.critical === true);
+              }
               setJobs(
-                parsed.map((job) => ({
+                filtered.map((job) => ({
                   ...job,
                   assignedTo: job.assignedTo || "Unassigned",
                   groupId: job.groupId ?? job.id,
@@ -75,12 +110,89 @@ const Programmer = () => {
       }
     };
     fetchJobs();
-  }, [filters, customerFilter, createdByFilter]);
+  }, [filters, customerFilter, refNumberFilter, createdByFilter, criticalFilter]);
+
+  // Handle URL params for editing and form visibility
+  useEffect(() => {
+    // Show form only if we're on newjob or edit route
+    if (isEditRoute && params.groupId) {
+      const groupId = Number(params.groupId);
+      if (!isNaN(groupId) && groupId !== editingGroupId) {
+        // Load job data for editing
+        const groupCuts = jobs
+          .filter((job) => job.groupId === groupId)
+          .sort((a, b) => {
+            const idA = typeof a.id === 'number' ? a.id : Number(a.id) || 0;
+            const idB = typeof b.id === 'number' ? b.id : Number(b.id) || 0;
+            return idA - idB;
+          });
+        if (groupCuts.length > 0) {
+          setEditingGroupId(groupId);
+              setCuts(
+            groupCuts.map((job) => ({
+              customer: job.customer,
+              rate: job.rate,
+              cut: job.cut,
+              thickness: job.thickness,
+              passLevel: job.passLevel,
+              setting: job.setting,
+              qty: job.qty,
+              sedm: job.sedm,
+              sedmSelectionType: job.sedmSelectionType ?? "range",
+              sedmRangeKey: job.sedmRangeKey ?? "0.3-0.4",
+              sedmStandardValue: job.sedmStandardValue ?? "",
+              sedmLengthType: job.sedmLengthType ?? "min",
+              sedmOver20Length: job.sedmOver20Length ?? "",
+              sedmLengthValue:
+                job.sedmLengthValue ??
+                (job.sedmSelectionType === "range"
+                  ? job.sedmRangeKey ?? ""
+                  : job.sedmStandardValue ?? ""),
+              sedmHoles: job.sedmHoles ?? "1",
+              priority: job.priority,
+              description: job.description,
+              cutImage: job.cutImage ?? null,
+              critical: job.critical,
+              pipFinish: job.pipFinish,
+              refNumber: (job as any).refNumber || "",
+            }))
+          );
+          // Load refNumber from first job in group, or use groupId
+          const firstJob = groupCuts[0];
+          if (firstJob && (firstJob as any).refNumber) {
+            setRefNumber((firstJob as any).refNumber);
+          } else {
+            setRefNumber(String(groupId));
+          }
+          setShowForm(true);
+        }
+      }
+    } else if (isNewJobRoute) {
+      // Show form for new job route
+      if (editingGroupId !== null) {
+        setEditingGroupId(null);
+      }
+      if (cuts.length === 0 || (cuts.length === 1 && !cuts[0].customer)) {
+        setCuts([DEFAULT_CUT]);
+      }
+      setShowForm(true);
+    } else {
+      // Hide form when on base /programmer route (not newjob or edit)
+      setShowForm(false);
+      if (editingGroupId !== null) {
+        setEditingGroupId(null);
+      }
+      if (cuts.length > 0 && cuts[0]?.customer) {
+        setCuts([DEFAULT_CUT]);
+      }
+    }
+  }, [location.pathname, isEditRoute, params.groupId, jobs, editingGroupId, isNewJobRoute]);
 
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const userList = await getUsers();
+        // Fetch only ADMIN and PROGRAMMER users
+        const userList = await getUsers(["ADMIN", "PROGRAMMER"]);
         setUsers(userList);
       } catch (error) {
         console.error("Failed to fetch users", error);
@@ -97,21 +209,25 @@ const Programmer = () => {
   const handleNewJob = () => {
     setEditingGroupId(null);
     setCuts([DEFAULT_CUT]);
+    const newGroupId = Date.now();
+    setRefNumber(String(newGroupId));
     navigate("/programmer/newjob");
   };
 
   const handleCancel = () => {
-    if (isNewJobRoute) {
+    if (isNewJobRoute || isEditRoute) {
       navigate("/programmer");
     }
     setShowForm(false);
     setCuts([DEFAULT_CUT]);
     setEditingGroupId(null);
+    setRefNumber("");
   };
 
   const handleSaveJob = async () => {
     try {
-      const createdBy = getUserDisplayNameFromToken() || "User";
+      const displayName = getUserDisplayNameFromToken();
+      const createdBy = displayName || "Unknown User";
       const createdAt = formatDateLabel(new Date());
       const groupId = editingGroupId || Date.now();
       
@@ -119,6 +235,7 @@ const Programmer = () => {
         const cutTotals = totals[index] ?? calculateTotals(cut);
         return {
           ...cut,
+          refNumber: refNumber || String(groupId) || cut.refNumber || "",
           id: groupId + index,
           groupId,
           totalHrs: cutTotals.totalHrs,
@@ -132,77 +249,108 @@ const Programmer = () => {
       });
 
       if (editingGroupId) {
-        // Delete existing jobs in the group
-        await deleteJobsByGroupId(editingGroupId);
-        // Create updated jobs
-        const createdJobs = await createJobs(entries);
+        // Update existing jobs using PUT API
+        const updatedJobs = await updateJobsByGroupId(editingGroupId, entries);
         setJobs((prev) => [
-          ...createdJobs,
+          ...updatedJobs,
           ...prev.filter((job) => job.groupId !== editingGroupId),
         ]);
+        setToast({ message: "Job updated successfully!", variant: "success", visible: true });
+        setTimeout(() => setToast({ message: "", variant: "success", visible: false }), 3000);
+        // Reset form state first
+        setShowForm(false);
+        setEditingGroupId(null);
+        setCuts([DEFAULT_CUT]);
+        // Then navigate back to programmer list after update
+        navigate("/programmer");
       } else {
         // Create new jobs
         const createdJobs = await createJobs(entries);
         setJobs((prev) => [...createdJobs, ...prev]);
+        setToast({ message: "Job created successfully!", variant: "success", visible: true });
+        setTimeout(() => setToast({ message: "", variant: "success", visible: false }), 3000);
+        // Reset form state first
+        setShowForm(false);
+        setEditingGroupId(null);
+        setCuts([DEFAULT_CUT]);
+        // Then navigate back to programmer list after creation
+        navigate("/programmer");
       }
-      
-      handleCancel();
     } catch (error) {
       console.error("Failed to save job", error);
-      alert("Failed to save job. Please try again.");
+      setToast({ message: "Failed to save job. Please try again.", variant: "error", visible: true });
+      setTimeout(() => setToast({ message: "", variant: "error", visible: false }), 3000);
     }
   };
 
   const handleEditJob = (groupId: number) => {
-    const groupCuts = jobs
-      .filter((job) => job.groupId === groupId)
-      .sort((a, b) => {
-        const idA = typeof a.id === 'number' ? a.id : Number(a.id) || 0;
-        const idB = typeof b.id === 'number' ? b.id : Number(b.id) || 0;
-        return idA - idB;
-      });
-    if (groupCuts.length === 0) return;
-    setEditingGroupId(groupId);
-    setCuts(
-      groupCuts.map((job) => ({
-        customer: job.customer,
-        rate: job.rate,
-        cut: job.cut,
-        thickness: job.thickness,
-        passLevel: job.passLevel,
-        setting: job.setting,
-        qty: job.qty,
-        sedm: job.sedm,
-        sedmSelectionType: job.sedmSelectionType ?? "range",
-        sedmRangeKey: job.sedmRangeKey ?? "0.3-0.4",
-        sedmStandardValue: job.sedmStandardValue ?? "",
-        sedmLengthType: job.sedmLengthType ?? "min",
-        sedmOver20Length: job.sedmOver20Length ?? "",
-        sedmLengthValue:
-          job.sedmLengthValue ??
-          (job.sedmSelectionType === "range"
-            ? job.sedmRangeKey ?? ""
-            : job.sedmStandardValue ?? ""),
-        sedmHoles: job.sedmHoles ?? "1",
-        priority: job.priority,
-        description: job.description,
-        cutImage: job.cutImage ?? null,
-        critical: job.critical,
-        pipFinish: job.pipFinish,
-      }))
-    );
-    setShowForm(true);
-    navigate("/programmer/newjob");
+    navigate(`/programmer/edit/${groupId}`);
   };
 
-  const handleDeleteJob = async (groupId: number) => {
+  const handleDeleteClick = (groupId: number, customer: string) => {
+    setJobToDelete({ groupId, customer });
+    setShowDeleteModal(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!jobToDelete) return;
     try {
-      await deleteJobsByGroupId(groupId);
-      setJobs((prev) => prev.filter((job) => job.groupId !== groupId));
+      await deleteJobsByGroupId(jobToDelete.groupId);
+      setJobs((prev) => prev.filter((job) => job.groupId !== jobToDelete.groupId));
+      setToast({ message: "Job deleted successfully!", variant: "success", visible: true });
+      setTimeout(() => setToast({ message: "", variant: "success", visible: false }), 3000);
+      setShowDeleteModal(false);
+      setJobToDelete(null);
     } catch (error) {
       console.error("Failed to delete job", error);
-      alert("Failed to delete job. Please try again.");
+      setToast({ message: "Failed to delete job. Please try again.", variant: "error", visible: true });
+      setTimeout(() => setToast({ message: "", variant: "error", visible: false }), 3000);
     }
+  };
+
+
+  const handleRowSelect = (rowKey: string | number, selected: boolean) => {
+    const groupId = typeof rowKey === 'number' ? rowKey : Number(rowKey);
+    if (isNaN(groupId)) return;
+    
+    setSelectedJobIds((prev) => {
+      const next = new Set(prev);
+      if (selected) {
+        next.add(groupId);
+      } else {
+        next.delete(groupId);
+      }
+      return next;
+    });
+  };
+
+  const handleMassDelete = async () => {
+    if (selectedJobIds.size === 0) return;
+    
+    try {
+      const deletePromises = Array.from(selectedJobIds).map((groupId) =>
+        deleteJobsByGroupId(groupId)
+      );
+      await Promise.all(deletePromises);
+      
+      setJobs((prev) => prev.filter((job) => !selectedJobIds.has(job.groupId)));
+      setToast({ 
+        message: `${selectedJobIds.size} job(s) deleted successfully!`, 
+        variant: "success", 
+        visible: true 
+      });
+      setTimeout(() => setToast({ message: "", variant: "success", visible: false }), 3000);
+      setSelectedJobIds(new Set());
+    } catch (error) {
+      console.error("Failed to delete jobs", error);
+      setToast({ message: "Failed to delete jobs. Please try again.", variant: "error", visible: true });
+      setTimeout(() => setToast({ message: "", variant: "error", visible: false }), 3000);
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setShowDeleteModal(false);
+    setJobToDelete(null);
   };
 
   const handleSort = (field: keyof JobEntry) => {
@@ -321,6 +469,24 @@ const Programmer = () => {
       .filter((row): row is TableRow => row !== null);
   }, [sortedGroups]);
 
+  const expandableRows = useMemo(() => {
+    const map = new Map<number, any>();
+    tableData.forEach((row) => {
+      const hasChildren = row.entries.length > 1;
+      if (hasChildren) {
+        map.set(row.groupId, {
+          isExpanded: expandedGroups.has(row.groupId),
+          onToggle: () => toggleGroup(row.groupId),
+          expandedContent: <ChildCutsTable entries={row.entries} />,
+          ariaLabel: expandedGroups.has(row.groupId)
+            ? "Collapse cuts"
+            : "Expand cuts",
+        });
+      }
+    });
+    return map;
+  }, [tableData, expandedGroups, toggleGroup]);
+
   const columns: Column<TableRow>[] = useMemo(
     () => [
       {
@@ -328,7 +494,45 @@ const Programmer = () => {
         label: "Customer",
         sortable: true,
         sortKey: "customer",
-        render: (row) => row.parent.customer || "—",
+        render: (row) => {
+          const expandable = expandableRows?.get(row.groupId);
+          const isExpanded = expandable?.isExpanded || false;
+          return (
+            <div style={{ display: "flex", alignItems: "center", gap: "0.2rem" }}>
+              {expandable && (
+                <button
+                  type="button"
+                  className="accordion-toggle-button programmer-accordion-toggle"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    expandable.onToggle();
+                  }}
+                  aria-label={expandable.ariaLabel}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
+                    padding: "0",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    color: "#1a1a2e",
+                    minWidth: "1rem",
+                    width: "1rem",
+                    transition: "transform 0.2s ease",
+                    transform: isExpanded ? "rotate(90deg)" : "rotate(0deg)",
+                  }}
+                >
+                  <ArrowForwardIosSharpIcon 
+                    sx={{ fontSize: "0.7rem" }}
+                  />
+                </button>
+              )}
+              {!expandable && <span style={{ width: "1rem" }} />}
+              <span>{row.parent.customer || "—"}</span>
+            </div>
+          );
+        },
       },
       {
         key: "rate",
@@ -377,7 +581,19 @@ const Programmer = () => {
         label: "Created At",
         sortable: true,
         sortKey: "createdAt",
-        render: (row) => formatDateValue(row.parent.createdAt),
+        render: (row) => {
+          // Format: "DD MMM YYYY HH:MM"
+          const parsed = parseDateValue(row.parent.createdAt);
+          if (!parsed) return "—";
+          const date = new Date(parsed);
+          const day = date.getDate().toString().padStart(2, "0");
+          const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+          const month = months[date.getMonth()];
+          const year = date.getFullYear();
+          const hours = date.getHours().toString().padStart(2, "0");
+          const minutes = date.getMinutes().toString().padStart(2, "0");
+          return `${day} ${month} ${year} ${hours}:${minutes}`;
+        },
       },
       {
         key: "createdBy",
@@ -392,18 +608,18 @@ const Programmer = () => {
         sortable: true,
         sortKey: "totalHrs",
         render: (row) =>
-          row.groupTotalHrs ? row.groupTotalHrs.toFixed(3) : "—",
+          row.groupTotalHrs ? formatHoursToHHMM(row.groupTotalHrs) : "—",
       },
-      {
+      ...(isAdmin ? [{
         key: "totalAmount",
         label: "Total Amount (₹)",
         sortable: true,
         sortKey: "totalAmount",
-        render: (row) =>
+        render: (row: TableRow) =>
           row.groupTotalAmount
             ? `₹${row.groupTotalAmount.toFixed(2)}`
             : "—",
-      },
+      }] : []),
       {
         key: "action",
         label: "Action",
@@ -411,47 +627,52 @@ const Programmer = () => {
         className: "action-cell",
         headerClassName: "action-header",
         render: (row) => (
-          <div className="action-buttons">
+          <div className="action-buttons" onClick={(e) => e.stopPropagation()}>
             <button
               type="button"
               className="action-icon-button"
-              onClick={() => handleEditJob(row.groupId)}
-              aria-label={`Edit ${row.parent.customer || "entry"}`}
+              onClick={(e) => {
+                e.stopPropagation();
+                setViewingJob(row);
+                setShowJobViewModal(true);
+              }}
+              aria-label={`View ${row.parent.customer || "entry"}`}
+              title="View Details"
             >
-              <PencilIcon fontSize="small" />
+              <VisibilityIcon fontSize="small" />
             </button>
-            <button
-              type="button"
-              className="action-icon-button danger"
-              onClick={() => handleDeleteJob(row.groupId)}
-              aria-label={`Delete ${row.parent.customer || "entry"}`}
-            >
-              <DustbinIcon fontSize="small" />
-            </button>
+            {isAdmin && (
+              <>
+                <button
+                  type="button"
+                  className="action-icon-button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleEditJob(row.groupId);
+                  }}
+                  aria-label={`Edit ${row.parent.customer || "entry"}`}
+                >
+                  <PencilIcon fontSize="small" />
+                </button>
+                <button
+                  type="button"
+                  className="action-icon-button danger"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDeleteClick(row.groupId, row.parent.customer || "entry");
+                  }}
+                  aria-label={`Delete ${row.parent.customer || "entry"}`}
+                >
+                  <DustbinIcon fontSize="small" />
+                </button>
+              </>
+            )}
           </div>
         ),
       },
     ],
-    [handleEditJob, handleDeleteJob]
+    [handleEditJob, expandableRows, isAdmin]
   );
-
-  const expandableRows = useMemo(() => {
-    const map = new Map<number, any>();
-    tableData.forEach((row) => {
-      const hasChildren = row.entries.length > 1;
-      if (hasChildren) {
-        map.set(row.groupId, {
-          isExpanded: expandedGroups.has(row.groupId),
-          onToggle: () => toggleGroup(row.groupId),
-          expandedContent: <ChildCutsTable entries={row.entries} />,
-          ariaLabel: expandedGroups.has(row.groupId)
-            ? "Collapse cuts"
-            : "Expand cuts",
-        });
-      }
-    });
-    return map;
-  }, [tableData, expandedGroups, toggleGroup]);
 
   const handleApplyFilters = (newFilters: FilterValues) => {
     setFilters(newFilters);
@@ -465,6 +686,8 @@ const Programmer = () => {
     if (type === "inline") {
       if (key === "customer") {
         setCustomerFilter("");
+      } else if (key === "refNumber") {
+        setRefNumberFilter("");
       } else if (key === "createdBy") {
         setCreatedByFilter("");
       }
@@ -476,6 +699,51 @@ const Programmer = () => {
         return updated;
       });
     }
+  };
+
+  const handleDownloadCSV = () => {
+    const headers = ["Customer", "Rate", "Cut (mm)", "Thickness (mm)", "Pass", "Setting", "Qty", "Created At", "Created By", "Total Hrs/Piece", ...(isAdmin ? ["Total Amount (₹)"] : []), "Priority", "Critical"];
+    const rows = tableData.map((row) => [
+      row.parent.customer || "",
+      `₹${Number(row.parent.rate || 0).toFixed(2)}`,
+      Number(row.parent.cut || 0).toFixed(2),
+      Number(row.parent.thickness || 0).toFixed(2),
+      row.parent.passLevel || "",
+      row.parent.setting || "",
+      Number(row.parent.qty || 0).toString(),
+      (() => {
+        const parsed = parseDateValue(row.parent.createdAt);
+        if (!parsed) return "—";
+        const date = new Date(parsed);
+        const day = date.getDate().toString().padStart(2, "0");
+        const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+        const month = months[date.getMonth()];
+        const year = date.getFullYear();
+        const hours = date.getHours().toString().padStart(2, "0");
+        const minutes = date.getMinutes().toString().padStart(2, "0");
+        return `${day} ${month} ${year} ${hours}:${minutes}`;
+      })(),
+      row.parent.createdBy || "",
+      row.groupTotalHrs ? formatHoursToHHMM(row.groupTotalHrs) : "",
+      ...(isAdmin ? [row.groupTotalAmount ? `₹${row.groupTotalAmount.toFixed(2)}` : ""] : []),
+      row.parent.priority || "",
+      row.parent.critical ? "Yes" : "No",
+    ]);
+
+    const csvContent = [
+      headers.join(","),
+      ...rows.map((row) => row.map((cell) => `"${cell}"`).join(",")),
+    ].join("\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", `programmer_jobs_${new Date().toISOString().split("T")[0]}.csv`);
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   const filterCategories: FilterCategory[] = [
@@ -549,12 +817,6 @@ const Programmer = () => {
       category: "additional",
     },
     {
-      key: "critical",
-      label: "Critical",
-      type: "boolean",
-      category: "additional",
-    },
-    {
       key: "pipFinish",
       label: "PIP Finish",
       type: "boolean",
@@ -617,7 +879,7 @@ const Programmer = () => {
         <Header title="Programmer" />
         <div className="programmer-panel">
           <div className="panel-header">
-            {!isNewJobRoute && (
+            {!isNewJobRoute && !isEditRoute && (
               <>
                 <div className="inline-filters">
                   <div className="filter-group">
@@ -628,6 +890,17 @@ const Programmer = () => {
                       placeholder="Search customer..."
                       value={customerFilter}
                       onChange={(e) => setCustomerFilter(e.target.value)}
+                      className="filter-input"
+                    />
+                  </div>
+                  <div className="filter-group">
+                    <label htmlFor="ref-number-search">Ref Number</label>
+                    <input
+                      id="ref-number-search"
+                      type="text"
+                      placeholder="Search by ref number..."
+                      value={refNumberFilter}
+                      onChange={(e) => setRefNumberFilter(e.target.value)}
                       className="filter-input"
                     />
                   </div>
@@ -650,8 +923,28 @@ const Programmer = () => {
                       })}
                     </select>
                   </div>
+                  <div className="filter-group">
+                    <label htmlFor="critical-filter" className="critical-filter-label">
+                      <input
+                        id="critical-filter"
+                        type="checkbox"
+                        checked={criticalFilter}
+                        onChange={(e) => setCriticalFilter(e.target.checked)}
+                        className="critical-checkbox"
+                      />
+                      Critical
+                    </label>
+                  </div>
                 </div>
                 <div className="panel-header-actions">
+                  <button
+                    className="btn-download-csv"
+                    onClick={() => handleDownloadCSV()}
+                    title="Download CSV"
+                  >
+                    <DownloadIcon sx={{ fontSize: "1rem" }} />
+                    CSV
+                  </button>
                   <FilterButton
                     onClick={() => setShowFilterModal(true)}
                     activeFilterCount={activeFilterCount}
@@ -692,6 +985,7 @@ const Programmer = () => {
               onCancel={handleCancel}
               totals={totals}
               isAdmin={isAdmin}
+              refNumber={refNumber}
             />
           )}
 
@@ -704,14 +998,26 @@ const Programmer = () => {
               onSort={(field) => handleSort(field as keyof JobEntry)}
               emptyMessage='No entries added yet. Use "New" to add an entry.'
               expandableRows={expandableRows}
-              showAccordion={true}
+              showAccordion={false}
               getRowKey={(row) => row.groupId}
-              getRowClassName={(row) =>
-                `group-row ${
-                  expandedGroups.has(row.groupId) ? "group-row-expanded" : ""
-                }`
-              }
+              getRowClassName={(row) => {
+                const classes = ["group-row"];
+                if (expandedGroups.has(row.groupId)) {
+                  classes.push("group-row-expanded");
+                }
+                // Critical takes priority over flag
+                if (row.parent.critical) {
+                  classes.push("critical-row");
+                } else if (row.parent.priority) {
+                  // Apply priority-based colors only if not critical
+                  classes.push(`priority-row priority-${row.parent.priority.toLowerCase()}`);
+                }
+                return classes.join(" ");
+              }}
               className="jobs-table-wrapper"
+              showCheckboxes={true}
+              selectedRows={selectedJobIds}
+              onRowSelect={handleRowSelect}
               pagination={{
                 currentPage,
                 entriesPerPage,
@@ -727,6 +1033,82 @@ const Programmer = () => {
           )}
         </div>
       </div>
+      <Toast
+        message={toast.message}
+        visible={toast.visible}
+        variant={toast.variant}
+        onClose={() => setToast({ ...toast, visible: false })}
+      />
+      {showDeleteModal && jobToDelete && (
+        <ConfirmDeleteModal
+          title="Confirm Delete"
+          message="Are you sure you want to delete this job?"
+          details={[
+            { label: "Customer", value: jobToDelete.customer },
+          ]}
+          confirmButtonText="Delete Job"
+          onConfirm={handleDeleteConfirm}
+          onCancel={handleDeleteCancel}
+        />
+      )}
+
+      {showJobViewModal && viewingJob && (
+        <JobDetailsModal
+          job={viewingJob}
+          userRole={getUserRoleFromToken()}
+          onClose={() => {
+            setShowJobViewModal(false);
+            setViewingJob(null);
+          }}
+        />
+      )}
+
+      {selectedJobIds.size > 0 && isAdmin && (
+        <div style={{
+          position: "fixed",
+          bottom: "2rem",
+          right: "2rem",
+          background: "#ffffff",
+          padding: "1rem 1.5rem",
+          borderRadius: "8px",
+          boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
+          display: "flex",
+          alignItems: "center",
+          gap: "1rem",
+          zIndex: 1000
+        }}>
+          <span>{selectedJobIds.size} job(s) selected</span>
+          <button 
+            className="btn-danger"
+            onClick={handleMassDelete}
+            style={{
+              background: "linear-gradient(135deg, #ef4444 0%, #dc2626 100%)",
+              color: "#ffffff",
+              border: "none",
+              padding: "0.5rem 1rem",
+              borderRadius: "6px",
+              cursor: "pointer",
+              fontWeight: 600
+            }}
+          >
+            Delete Selected
+          </button>
+          <button 
+            onClick={() => setSelectedJobIds(new Set())}
+            style={{
+              background: "#64748b",
+              color: "#ffffff",
+              border: "none",
+              padding: "0.5rem 1rem",
+              borderRadius: "6px",
+              cursor: "pointer",
+              fontWeight: 600
+            }}
+          >
+            Clear
+          </button>
+        </div>
+      )}
     </div>
   );
 };

@@ -36,12 +36,17 @@ export const getUserDisplayNameFromToken = (): string | null => {
       .replace(/-/g, "+")
       .replace(/_/g, "/");
     const decoded = JSON.parse(atob(payload));
-    return (
+    
+    // Prioritize fullName from token, then construct from firstName/lastName, then fallback
+    const displayName = 
       decoded.fullName ||
+      (decoded.firstName && decoded.lastName ? `${decoded.firstName} ${decoded.lastName}`.trim() : null) ||
+      (decoded.firstName || decoded.lastName ? `${decoded.firstName || ""} ${decoded.lastName || ""}`.trim() : null) ||
       decoded.name ||
       decoded.username ||
-      (decoded.email ? "User" : null)
-    );
+      (decoded.email ? "User" : null);
+    
+    return displayName;
   } catch {
     return null;
   }

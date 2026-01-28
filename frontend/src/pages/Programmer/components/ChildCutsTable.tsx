@@ -1,14 +1,26 @@
 import type { JobEntry } from "../../../types/job";
+import { formatHoursToHHMM } from "../../../utils/date";
 
 type ChildCutsTableProps = {
   entries: JobEntry[];
 };
 
 const ChildCutsTable: React.FC<ChildCutsTableProps> = ({ entries }) => {
+  const getRowClassName = (entry: JobEntry): string => {
+    const classes = ["child-row"];
+    // Critical takes priority over flag
+    if (entry.critical) {
+      classes.push("child-critical-row");
+    } else if (entry.priority) {
+      classes.push(`child-priority-row child-priority-${entry.priority.toLowerCase()}`);
+    }
+    return classes.join(" ");
+  };
+
   return (
     <table className="child-jobs-table">
       <thead>
-        <tr>
+        <tr className="child-table-header">
           <th>Cut #</th>
           <th>Customer</th>
           <th>Rate (₹/hr)</th>
@@ -26,7 +38,7 @@ const ChildCutsTable: React.FC<ChildCutsTableProps> = ({ entries }) => {
       </thead>
       <tbody>
         {entries.map((entry, index) => (
-          <tr key={entry.id}>
+          <tr key={entry.id} className={getRowClassName(entry)}>
             <td>{index + 1}</td>
             <td>{entry.customer || "—"}</td>
             <td>₹{Number(entry.rate || 0).toFixed(2)}</td>
@@ -39,7 +51,7 @@ const ChildCutsTable: React.FC<ChildCutsTableProps> = ({ entries }) => {
             <td>{entry.critical ? "Yes" : "No"}</td>
             <td>{entry.pipFinish ? "Yes" : "No"}</td>
             <td>
-              {entry.totalHrs ? entry.totalHrs.toFixed(3) : "—"}
+              {entry.totalHrs ? formatHoursToHHMM(entry.totalHrs) : "—"}
             </td>
             <td>
               {entry.totalAmount ? `₹${entry.totalAmount.toFixed(2)}` : "—"}

@@ -1,4 +1,5 @@
 import React from "react";
+import TuneIcon from "@mui/icons-material/Tune";
 import "./FilterButton.css";
 
 type FilterButtonProps = {
@@ -14,7 +15,7 @@ const FilterButton: React.FC<FilterButtonProps> = ({ onClick, activeFilterCount 
       onClick={onClick}
       aria-label="Filter jobs"
     >
-      <span className="filter-icon">🔍</span>
+      <TuneIcon className="filter-icon" />
       Filter
       {activeFilterCount > 0 && (
         <span className="filter-badge">{activeFilterCount}</span>

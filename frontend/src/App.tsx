@@ -39,6 +39,14 @@ function App() {
           }
         />
         <Route
+          path="/programmer/edit/:groupId"
+          element={
+            <ProtectedRoute>
+              <Programmer />
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/operator"
           element={
             <ProtectedRoute>
