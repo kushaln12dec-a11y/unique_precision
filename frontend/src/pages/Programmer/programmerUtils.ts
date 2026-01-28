@@ -165,29 +165,6 @@ const findClosestElectrode = (electrodeSize: number): string | null => {
   return closest;
 };
 
-const resolveSedmPricing = (form: CutForm) => {
-  if (form.sedm !== "Yes") return null;
-  const rawValue = form.sedmLengthValue?.trim();
-  if (rawValue) {
-    const numericValue = Number(rawValue);
-    if (!Number.isNaN(numericValue)) {
-      return (
-        SEDM_PRICING.find(
-          (item) => numericValue >= item.min && numericValue <= item.max
-        ) || null
-      );
-    }
-  }
-  if (form.sedmSelectionType === "range") {
-    return SEDM_PRICING.find((item) => item.key === form.sedmRangeKey) || null;
-  }
-  const standardValue = Number(form.sedmStandardValue);
-  if (!standardValue) return null;
-  return (
-    SEDM_PRICING.find((item) => standardValue >= item.min && standardValue <= item.max) ||
-    null
-  );
-};
 
 // Calculate SEDM amount based on: Total holes × Rate
 // Total holes = Qty × Holes per piece

@@ -49,7 +49,7 @@ const RangeSlider: React.FC<RangeSliderProps> = ({
     setSliderValue([minValue, maxValue]);
   }, [minValue, maxValue]);
 
-  const handleChange = (event: Event, newValue: number | number[]) => {
+  const handleChange = (_event: Event, newValue: number | number[]) => {
     const range = newValue as number[];
     setSliderValue(range);
     onChange({

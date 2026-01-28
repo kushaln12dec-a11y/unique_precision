@@ -15,7 +15,7 @@ export type Column<T> = {
   headerClassName?: string;
 };
 
-export type ExpandableRow<T> = {
+export type ExpandableRow<_T = any> = {
   isExpanded: boolean;
   onToggle: () => void;
   expandedContent: ReactNode;
@@ -38,7 +38,7 @@ type DataTableProps<T> = {
   sortDirection?: "asc" | "desc";
   onSort?: (field: string) => void;
   emptyMessage?: string;
-  expandableRows?: Map<string | number, ExpandableRow<T>>;
+  expandableRows?: Map<string | number, ExpandableRow>;
   showAccordion?: boolean;
   getRowKey: (row: T, index: number) => string | number;
   getRowClassName?: (row: T, index: number) => string;

@@ -68,7 +68,7 @@ const FilterModal: React.FC<FilterModalProps> = ({
   }, [isOpen, groupedFields, categories]);
 
   // Get category list
-  const categoryList = React.useMemo(() => {
+  const categoryList = React.useMemo<FilterCategory[]>(() => {
     if (categories && categories.length > 0) {
       return categories.filter((cat) => groupedFields[cat.id]?.length > 0);
     }
@@ -253,14 +253,6 @@ const FilterModal: React.FC<FilterModalProps> = ({
     }
   };
 
-  const hasActiveFilters = Object.keys(filterValues).some(
-    (key) =>
-      filterValues[key] !== undefined &&
-      filterValues[key] !== null &&
-      filterValues[key] !== "" &&
-      (typeof filterValues[key] !== "object" ||
-        (filterValues[key].min !== undefined || filterValues[key].max !== undefined))
-  );
 
   const currentFields = groupedFields[activeCategory] || [];
 

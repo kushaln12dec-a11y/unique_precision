@@ -11,7 +11,7 @@ type FormInputProps = {
 export const FormInput: React.FC<FormInputProps> = ({
   label,
   error,
-  required,
+  required: _required,
   children,
   className = "",
 }) => {
