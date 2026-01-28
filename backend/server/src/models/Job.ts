@@ -69,6 +69,14 @@ const jobSchema = new mongoose.Schema({
     type: String,
     default: "1",
   },
+  sedmEntriesJson: {
+    type: String,
+    default: "",
+  },
+  material: {
+    type: String,
+    default: "",
+  },
   priority: {
     type: String,
     enum: ["Low", "Medium", "High"],
