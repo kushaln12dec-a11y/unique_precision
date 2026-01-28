@@ -26,6 +26,9 @@ router.get("/", async (req, res) => {
     if (req.query.customer) {
       query.customer = { $regex: req.query.customer, $options: "i" };
     }
+    if (req.query.refNumber) {
+      query.refNumber = { $regex: req.query.refNumber, $options: "i" };
+    }
     if (req.query.createdBy) {
       query.createdBy = req.query.createdBy;
     }

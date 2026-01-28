@@ -25,13 +25,32 @@ router.post("/login", async (req, res) => {
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) return res.status(401).json({ message: "Invalid credentials" });
 
+    const fullName = `${user.firstName || ""} ${user.lastName || ""}`.trim() || null;
+    
     const token = jwt.sign(
-      { userId: user._id, email: user.email, role: user.role || "OPERATOR" },
+      { 
+        userId: user._id, 
+        email: user.email, 
+        role: user.role || "OPERATOR",
+        firstName: user.firstName || null,
+        lastName: user.lastName || null,
+        fullName: fullName
+      },
       process.env.JWT_SECRET,
       { expiresIn: "7d" }
     );
 
-    res.json({ token, user: { id: user._id, email: user.email, role: user.role || "OPERATOR" } });
+    res.json({ 
+      token, 
+      user: { 
+        id: user._id, 
+        email: user.email, 
+        role: user.role || "OPERATOR",
+        firstName: user.firstName,
+        lastName: user.lastName,
+        fullName: fullName
+      } 
+    });
   } catch (error: any) {
     res.status(500).json({ message: "Error during login" });
   }

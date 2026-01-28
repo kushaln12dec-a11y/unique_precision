@@ -110,6 +110,10 @@ const jobSchema = new mongoose.Schema({
     type: String,
     default: "Unassigned",
   },
+  refNumber: {
+    type: String,
+    default: "",
+  },
 }, {
   timestamps: false, // Disable automatic timestamps since we use custom createdAt string
 });

@@ -12,7 +12,18 @@ router.use(adminMiddleware);
 // Get all users
 router.get("/", async (req, res) => {
   try {
-    const users = await User.find().select("-password");
+    const { roles } = req.query;
+    
+    // Build query filter
+    const query: any = {};
+    
+    // If roles query parameter is provided, filter by roles
+    if (roles) {
+      const roleArray = Array.isArray(roles) ? roles : roles.toString().split(",");
+      query.role = { $in: roleArray };
+    }
+    
+    const users = await User.find(query).select("-password");
     res.json(users);
   } catch (error: any) {
     res.status(500).json({ message: "Error fetching users" });
