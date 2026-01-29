@@ -19,7 +19,6 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({ job, userRole, onClos
   const isProgrammer = userRole === "PROGRAMMER";
   if (!job) return null;
 
-  // Calculate WEDM and SEDM amounts for all cuts
   const amounts = useMemo(() => {
     const totals = job.entries.map((entry) => calculateTotals(entry as CutForm));
     const totalWedmAmount = totals.reduce((sum, t) => sum + t.wedmAmount, 0);

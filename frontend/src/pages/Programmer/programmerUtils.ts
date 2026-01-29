@@ -70,19 +70,16 @@ export const DEFAULT_CUT: CutForm = {
   pipFinish: false,
 };
 
-// Get effective thickness (minimum 20 rule)
 export const getEffectiveThickness = (thickness: number): number => {
   return thickness < 20 ? 20 : thickness;
 };
 
-// Get electrode size from form (from sedmLengthValue or sedmRangeKey)
 export const getElectrodeSize = (form: CutForm): number | null => {
   if (form.sedmLengthValue?.trim()) {
     const numericValue = Number(form.sedmLengthValue);
     if (!Number.isNaN(numericValue)) return numericValue;
   }
   if (form.sedmSelectionType === "range" && form.sedmRangeKey) {
-    // Extract min value from range key (e.g., "0.3-0.4" → 0.3)
     const match = form.sedmRangeKey.match(/^(\d+\.?\d*)/);
     if (match) return Number(match[1]);
   }
@@ -93,7 +90,6 @@ export const getElectrodeSize = (form: CutForm): number | null => {
   return null;
 };
 
-// Calculate SEDM amount for a single entry
 const calculateSingleSedmEntry = (
   thickness: number,
   lengthValue: string,
@@ -119,14 +115,9 @@ const calculateSingleSedmEntry = (
   return baseValue * holes * qty;
 };
 
-// Calculate SEDM amount based on Excel logic:
-// Base value = min20 (if thickness <= 20) OR min20 + (thickness - 20) * perMm (if thickness > 20)
-// Final amount = baseValue × holes × qty
-// Supports multiple entries stored as JSON
 export const calculateSedmAmount = (form: CutForm) => {
   if (form.sedm !== "Yes") return 0;
   
-  // If multiple entries are stored as JSON, calculate sum of all entries
   if (form.sedmEntriesJson && form.sedmEntriesJson.trim()) {
     try {
       const entries: Array<{ thickness: string; lengthValue: string; lengthType?: string; holes: string }> = 
@@ -139,12 +130,10 @@ export const calculateSedmAmount = (form: CutForm) => {
         return sum + calculateSingleSedmEntry(thickness, entry.lengthValue, holes, qty);
       }, 0);
     } catch (e) {
-      // If JSON parsing fails, fall back to single entry calculation
       console.warn("Failed to parse SEDM entries JSON:", e);
     }
   }
   
-  // Single entry calculation (backward compatibility)
   const electrodeSize = getElectrodeSize(form);
   if (!electrodeSize) return 0;
   
@@ -168,17 +157,9 @@ export const calculateSedmAmount = (form: CutForm) => {
   return baseValue * holes * qty;
 };
 
-// Get thickness-based divisor for WEDM calculation
-// Divisors adjusted to match Excel exactly:
-// - Thickness < 20: Uses actual thickness with divisor ~1017 (matches XYZ: 3.08 hrs/piece, WEDM 1232)
-// - Thickness 20-100 → divisor 1465 (matches ABCD: 11.25 hrs/piece)
-// - Thickness 101-150 → divisor 1183 (matches BCD: 18.25 hrs/piece, WEDM 7300)
-// - Thickness 151-200 → divisor 1000
 const getThicknessDivisor = (thickness: number): number => {
-  // For WEDM, use actual thickness (not effective) to determine divisor range
   if (thickness < 20) {
-    // Special case: Excel uses actual thickness < 20 with divisor ~1017
-    return 1017.44; // Calculated from XYZ: (100 * 15) / 2.58 * 1.75 ≈ 1017.44
+    return 1017.44;
   }
   if (thickness <= 100) return 1465;
   if (thickness <= 150) return 1183;
@@ -193,31 +174,14 @@ export const calculateTotals = (form: CutForm) => {
   const settingLevel = Number(form.setting) || 0;
   const qty = Number(form.qty) || 0;
   
-  // Calculate SEDM amount (uses effective thickness internally)
   const sedmAmount = calculateSedmAmount(form);
-
-  // Calculate WEDM (Wire EDM) hours
-  // IMPORTANT: Excel uses ACTUAL thickness for WEDM hours, not effective thickness
-  // Effective thickness rule (minimum 20) only applies to SEDM calculations
-  // Use thickness-based divisor for hours calculation:
-  // - Thickness < 20 → divisor 1017.44 (matches XYZ: 3.08 hrs/piece, WEDM 1232)
-  // - Thickness 20-100 → divisor 1465 (matches ABCD: 11.25 hrs/piece)
-  // - Thickness 101-150 → divisor 1183 (matches BCD: 18.25 hrs/piece, WEDM 7300)
-  // - Thickness 151-200 → divisor 1000
   const thicknessDivisor = getThicknessDivisor(thickness);
-  
-  // Use actual thickness for WEDM hours calculation (Excel behavior)
   const cutHoursPerPiece = (cut * thickness) / thicknessDivisor * passMultiplier;
   const settingHours = settingLevel * 0.5;
   const extraHours =
     (form.critical ? 1 : 0) + (form.pipFinish ? 1 : 0);
   const totalHrs = cutHoursPerPiece + settingHours + extraHours;
-  
-  // WEDM amount = Total Hrs × Rate × Qty
-  // Using customer rate for WEDM cost calculation
   const wedmAmount = totalHrs * customerRate * qty;
-  
-  // Final Total = WEDM + SEDM
   const totalAmount = wedmAmount + sedmAmount;
 
   return {

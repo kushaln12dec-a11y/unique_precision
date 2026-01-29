@@ -24,7 +24,6 @@ type SEDMModalProps = {
   onApply?: () => void;
 };
 
-// Calculate SEDM amount for a single entry
 const calculateSingleSedmAmount = (entry: SEDMEntry, qty: number): number => {
   const electrodeSize = entry.lengthValue ? Number(entry.lengthValue) : null;
   if (!electrodeSize || !entry.lengthValue) return 0;
@@ -68,10 +67,8 @@ const SEDMModal: React.FC<SEDMModalProps> = ({
     },
   ]);
 
-  // Initialize entries when modal opens
   useEffect(() => {
     if (isOpen) {
-      // Check if multiple entries are stored as JSON
       if (cut.sedmEntriesJson) {
         try {
           const entries: Array<{ thickness: string; lengthValue: string; lengthType?: string; holes: string }> = 
@@ -89,11 +86,9 @@ const SEDMModal: React.FC<SEDMModalProps> = ({
             return;
           }
         } catch (e) {
-          // If JSON parsing fails, fall back to single entry
         }
       }
       
-      // Single entry (default or fallback)
       setSedmQuantity(1);
       setSedmEntries([
         {
@@ -107,10 +102,8 @@ const SEDMModal: React.FC<SEDMModalProps> = ({
   }, [isOpen, cut]);
 
   const handleQuantityChange = (value: string) => {
-    // Allow empty string for backspace/delete
     if (value === "" || value === null || value === undefined) {
       setSedmQuantity(1);
-      // Reset to single entry if cleared
       setSedmEntries([
         {
           thickness: cut.thickness || "",
@@ -125,10 +118,8 @@ const SEDMModal: React.FC<SEDMModalProps> = ({
     const qty = Math.max(1, Number(value) || 1);
     setSedmQuantity(qty);
     
-    // Adjust entries array
     const currentLength = sedmEntries.length;
     if (qty > currentLength) {
-      // Add new entries with default values
       const newEntries = Array.from({ length: qty - currentLength }, () => ({
         thickness: cut.thickness || "",
         lengthValue: "",
@@ -137,7 +128,6 @@ const SEDMModal: React.FC<SEDMModalProps> = ({
       }));
       setSedmEntries([...sedmEntries, ...newEntries]);
     } else if (qty < currentLength) {
-      // Remove excess entries
       setSedmEntries(sedmEntries.slice(0, qty));
     }
   };
@@ -149,12 +139,9 @@ const SEDMModal: React.FC<SEDMModalProps> = ({
   };
 
   const handleApply = () => {
-    // Save all entries as JSON for multiple entry support
-    // Also update first entry's values for backward compatibility
     if (sedmEntries.length > 0) {
       const firstEntry = sedmEntries[0];
       
-      // Store all entries as JSON for multiple entry calculation
       if (sedmEntries.length > 1) {
         const entriesJson = JSON.stringify(
           sedmEntries.map(e => ({
@@ -166,18 +153,15 @@ const SEDMModal: React.FC<SEDMModalProps> = ({
         );
         onSedmEntriesJsonChange?.(entriesJson);
         
-        // Calculate combined holes for backward compatibility
         const totalHoles = sedmEntries.reduce((sum, entry) => {
           return sum + (Number(entry.holes) || 1);
         }, 0);
         onHolesChange(String(totalHoles));
       } else {
-        // Single entry - clear JSON and use regular fields
         onSedmEntriesJsonChange?.("");
         onHolesChange(firstEntry.holes);
       }
       
-      // Update first entry's values for backward compatibility
       onThicknessChange?.(firstEntry.thickness);
       onLengthChange(firstEntry.lengthValue);
       onLengthTypeChange(firstEntry.lengthType);
@@ -216,9 +200,7 @@ const SEDMModal: React.FC<SEDMModalProps> = ({
             value={sedmQuantity}
             onChange={(e) => handleQuantityChange(e.target.value)}
             onKeyDown={(e) => {
-              // Allow backspace, delete, and arrow keys
               if (e.key === "Backspace" || e.key === "Delete") {
-                // Allow default behavior to clear the field
                 return;
               }
             }}

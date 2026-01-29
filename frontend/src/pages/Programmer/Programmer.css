@@ -582,7 +582,7 @@
 
 .description-box {
   grid-column: 5;
-  grid-row: 1 / span 3;
+  grid-row: 2;
 }
 
 .description-box textarea {

@@ -3,10 +3,11 @@ import type { Dispatch, SetStateAction } from "react";
 import type { CutForm } from "./programmerUtils";
 import { DustbinIcon } from "../../utils/icons";
 import { DEFAULT_CUT } from "./programmerUtils";
-import SEDMModal from "./components/SEDMModal";
+import SEDMModalWrapper from "./components/SEDMModalWrapper";
 import ImageUpload from "./components/ImageUpload";
 import { FormInput } from "./components/FormInput";
 import CustomerAutocomplete from "./components/CustomerAutocomplete";
+import MaterialAutocomplete from "./components/MaterialAutocomplete";
 import FlagIcon from "@mui/icons-material/Flag";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import "./components/CustomerAutocomplete.css";
@@ -44,7 +45,6 @@ const ProgrammerJobForm = ({
   const [openPriorityDropdown, setOpenPriorityDropdown] = useState<number | null>(null);
 
   useEffect(() => {
-    // Remove saved/validation state for cuts that no longer exist
     setSavedCuts((prev) => {
       const next = new Set<number>();
       prev.forEach((index) => {
@@ -80,7 +80,6 @@ const ProgrammerJobForm = ({
     });
   }, [cuts.length, cuts[0]?.customer]);
 
-  // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (openPriorityDropdown !== null) {
@@ -118,7 +117,6 @@ const ProgrammerJobForm = ({
       setCuts((prev) =>
         prev.map((cut, idx) => (idx === index ? { ...cut, [field]: value } : cut))
       );
-      // Any change makes the cut "unsaved" again
       setSavedCuts((prev) => {
         const next = new Set(prev);
         next.delete(index);
@@ -143,13 +141,11 @@ const ProgrammerJobForm = ({
     setCuts((prev) =>
       prev.map((cut, idx) => (idx === index ? { ...DEFAULT_CUT } : cut))
     );
-    // Clear validation errors for this cut
     setCutValidationErrors((prev) => {
       const next = { ...prev };
       delete next[index];
       return next;
     });
-    // Mark as unsaved
     setSavedCuts((prev) => {
       const next = new Set(prev);
       next.delete(index);
@@ -159,7 +155,6 @@ const ProgrammerJobForm = ({
 
   const handleClearAll = () => {
     if (cuts.length === 0) return;
-    // Keep only the first cut and reset it, or reset all cuts
     setCuts([{ ...DEFAULT_CUT }]);
     setCutValidationErrors({});
     setSavedCuts(new Set());
@@ -461,6 +456,17 @@ const ProgrammerJobForm = ({
                       required
                     />
                   </FormInput>
+                  <FormInput
+                    label="Material"
+                    error={fieldErrors.material}
+                  >
+                    <MaterialAutocomplete
+                      value={cut.material || ""}
+                      onChange={(value) =>
+                        handleCutChange(index, "material")(value)
+                      }
+                    />
+                  </FormInput>
                   <FormInput label="Pass" error={fieldErrors.passLevel} required>
                     <select
                       value={cut.passLevel}
@@ -493,9 +499,6 @@ const ProgrammerJobForm = ({
                       required
                       title="1 = 0.5hrs, 2 = 1hrs, 3 = 1.5hrs, and so on"
                     />
-                    <small style={{ fontSize: "0.7rem", color: "#94a3b8", marginTop: "0.25rem", display: "block" }}>
-                      1 = 0.5hrs, 2 = 1hrs, 3 = 1.5hrs, and so on
-                    </small>
                   </FormInput>
                   <FormInput label="Quantity" error={fieldErrors.qty} required>
                     <input
@@ -539,16 +542,21 @@ const ProgrammerJobForm = ({
                     )}
                   </FormInput>
                   <FormInput
-                    label="Material"
-                    error={fieldErrors.material}
+                    label="Description"
+                    error={fieldErrors.description}
+                    required
+                    className="description-box"
                   >
-                    <input
-                      type="text"
-                      value={cut.material || ""}
+                    <textarea
+                      rows={1}
+                      value={cut.description}
+                      placeholder="Enter description"
                       onChange={(e) =>
-                        handleCutChange(index, "material")(e.target.value)
+                        handleCutChange(index, "description")(
+                          e.target.value.toUpperCase()
+                        )
                       }
-                      placeholder="Enter material"
+                      required
                     />
                   </FormInput>
                   <FormInput label="Total Hrs/Piece">
@@ -567,24 +575,6 @@ const ProgrammerJobForm = ({
                       />
                     </FormInput>
                   )}
-                  <FormInput
-                    label="Description"
-                    error={fieldErrors.description}
-                    required
-                    className="description-box"
-                  >
-                    <textarea
-                      rows={1}
-                      value={cut.description}
-                      placeholder="Enter description"
-                      onChange={(e) =>
-                        handleCutChange(index, "description")(
-                          e.target.value.toUpperCase()
-                        )
-                      }
-                      required
-                    />
-                  </FormInput>
                 </div>
                 <div className="cut-section-actions">
                   <button
@@ -643,32 +633,26 @@ const ProgrammerJobForm = ({
           </button>
         </div>
       </div>
-      {sedmModalIndex !== null && cuts[sedmModalIndex] && (
-        <SEDMModal
-          isOpen={true}
-          onClose={closeSedmModal}
-          cut={cuts[sedmModalIndex]}
-          onLengthChange={(value) =>
-            handleCutChange(sedmModalIndex, "sedmLengthValue")(value)
-          }
-          onLengthTypeChange={(value) =>
-            handleCutChange(sedmModalIndex, "sedmLengthType")(value)
-          }
-          onHolesChange={(value) =>
-            handleCutChange(sedmModalIndex, "sedmHoles")(value)
-          }
-          onThicknessChange={(value) =>
-            handleCutChange(sedmModalIndex, "thickness")(value)
-          }
-          onSedmEntriesJsonChange={(value) =>
-            handleCutChange(sedmModalIndex, "sedmEntriesJson")(value)
-          }
-          onApply={() => {
-            // Apply button clicked - modal will close automatically
-            // The changes are already applied via the change handlers
-          }}
-        />
-      )}
+      <SEDMModalWrapper
+        sedmModalIndex={sedmModalIndex}
+        cuts={cuts}
+        onClose={closeSedmModal}
+        onLengthChange={(value) =>
+          handleCutChange(sedmModalIndex!, "sedmLengthValue")(value)
+        }
+        onLengthTypeChange={(value: "min" | "per") =>
+          handleCutChange(sedmModalIndex!, "sedmLengthType")(value)
+        }
+        onHolesChange={(value) =>
+          handleCutChange(sedmModalIndex!, "sedmHoles")(value)
+        }
+        onThicknessChange={(value) =>
+          handleCutChange(sedmModalIndex!, "thickness")(value)
+        }
+        onSedmEntriesJsonChange={(value) =>
+          handleCutChange(sedmModalIndex!, "sedmEntriesJson")(value)
+        }
+      />
     </div>
   );
 };

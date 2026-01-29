@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 
-interface CustomerAutocompleteProps {
+interface MaterialAutocompleteProps {
   value: string;
   onChange: (value: string) => void;
   disabled?: boolean;
@@ -8,15 +8,14 @@ interface CustomerAutocompleteProps {
   error?: string;
 }
 
-const CUSTOMER_OPTIONS = [
-  "UPC001",
-  "UPC002",
-  "UPC003",
-  "UPC004",
-  "UPC005",
+const MATERIAL_OPTIONS = [
+  "SS (Stainless Steel)",
+  "Copper",
+  "Brass",
+  "Carbide",
 ];
 
-const CustomerAutocomplete: React.FC<CustomerAutocompleteProps> = ({
+const MaterialAutocomplete: React.FC<MaterialAutocompleteProps> = ({
   value,
   onChange,
   disabled = false,
@@ -25,7 +24,7 @@ const CustomerAutocomplete: React.FC<CustomerAutocompleteProps> = ({
 }) => {
   const [inputValue, setInputValue] = useState(value);
   const [isOpen, setIsOpen] = useState(false);
-  const [filteredOptions, setFilteredOptions] = useState(CUSTOMER_OPTIONS);
+  const [filteredOptions, setFilteredOptions] = useState(MATERIAL_OPTIONS);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -53,10 +52,10 @@ const CustomerAutocomplete: React.FC<CustomerAutocompleteProps> = ({
     setInputValue(newValue);
     
     if (newValue.trim() === "") {
-      setFilteredOptions(CUSTOMER_OPTIONS);
+      setFilteredOptions(MATERIAL_OPTIONS);
     } else {
       setFilteredOptions(
-        CUSTOMER_OPTIONS.filter((option) =>
+        MATERIAL_OPTIONS.filter((option) =>
           option.toLowerCase().includes(newValue.toLowerCase())
         )
       );
@@ -69,7 +68,7 @@ const CustomerAutocomplete: React.FC<CustomerAutocompleteProps> = ({
   const handleInputFocus = () => {
     setIsOpen(true);
     if (inputValue.trim() === "") {
-      setFilteredOptions(CUSTOMER_OPTIONS);
+      setFilteredOptions(MATERIAL_OPTIONS);
     }
   };
 
@@ -102,7 +101,7 @@ const CustomerAutocomplete: React.FC<CustomerAutocompleteProps> = ({
           onKeyDown={handleInputKeyDown}
           disabled={disabled}
           required={required}
-          placeholder="Select or type customer..."
+          placeholder="Select or type material..."
           className="customer-autocomplete-input"
         />
         <span className="customer-autocomplete-arrow">▾</span>
@@ -127,4 +126,4 @@ const CustomerAutocomplete: React.FC<CustomerAutocompleteProps> = ({
   );
 };
 
-export default CustomerAutocomplete;
+export default MaterialAutocomplete;
