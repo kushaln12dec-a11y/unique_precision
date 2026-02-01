@@ -122,6 +122,47 @@ const jobSchema = new mongoose.Schema({
     type: String,
     default: "",
   },
+  // Operator-specific fields
+  startTime: {
+    type: String,
+    default: "",
+  },
+  endTime: {
+    type: String,
+    default: "",
+  },
+  machineHrs: {
+    type: String,
+    default: "",
+  },
+  machineNumber: {
+    type: String,
+    default: "",
+  },
+  opsName: {
+    type: String,
+    default: "",
+  },
+  idleTime: {
+    type: String,
+    default: "",
+  },
+  idleTimeDuration: {
+    type: String,
+    default: "",
+  },
+  lastImage: {
+    type: String,
+    default: null,
+  },
+  updatedBy: {
+    type: String,
+    default: "",
+  },
+  updatedAt: {
+    type: String,
+    default: "",
+  },
 }, {
   timestamps: false, // Disable automatic timestamps since we use custom createdAt string
 });

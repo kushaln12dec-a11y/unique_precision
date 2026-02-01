@@ -6,6 +6,8 @@ import rateLimit from "express-rate-limit";
 import authRoutes from "./routes/auth";
 import userRoutes from "./routes/users";
 import jobRoutes from "./routes/jobs";
+import operatorRoutes from "./routes/operator";
+import idleTimeConfigRoutes from "./routes/idleTimeConfig";
 import { authMiddleware } from "./middleware/auth";
 import { connectDB } from "./config/database";
 
@@ -46,6 +48,12 @@ app.use("/api/users", userRoutes);
 
 // Job routes
 app.use("/api/jobs", jobRoutes);
+
+// Operator routes
+app.use("/api/operator", operatorRoutes);
+
+// Idle time configuration routes
+app.use("/api/idle-time-config", idleTimeConfigRoutes);
 
 
 
