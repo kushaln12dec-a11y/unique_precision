@@ -5,7 +5,6 @@ import ActionButtons from "./ActionButtons";
 import JobDetailsModal from "./JobDetailsModal";
 import { getRowClassName } from "../utils/priorityUtils";
 import { getUserRoleFromToken } from "../../../utils/auth";
-import { updateOperatorJob } from "../../../services/operatorApi";
 
 type ChildCutsTableProps = {
   entries: JobEntry[];
