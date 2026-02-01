@@ -27,6 +27,7 @@ import { useJobData } from "./hooks/useJobData";
 import { useTableColumns } from "./hooks/useTableColumns";
 import { exportJobsToCSV } from "./utils/csvExport";
 import type { TableRow } from "./utils/jobDataTransform";
+import { getParentRowClassName } from "./utils/priorityUtils";
 
 const STORAGE_KEY = "programmerJobs";
 
@@ -101,18 +102,20 @@ const Programmer = () => {
     });
   };
 
+  const handleDeleteClick = (groupId: number, customer: string) => {
+    setJobToDelete({ groupId, customer });
+    setShowDeleteModal(true);
+  };
+
   const { tableData, expandableRows } = useJobData({
     jobs,
     sortField,
     sortDirection,
     expandedGroups,
     toggleGroup,
+    onEdit: handleEditJob,
+    onDelete: handleDeleteClick,
   });
-
-  const handleDeleteClick = (groupId: number, customer: string) => {
-    setJobToDelete({ groupId, customer });
-    setShowDeleteModal(true);
-  };
 
   const handleDeleteConfirm = async () => {
     if (!jobToDelete) return;
@@ -452,18 +455,13 @@ const Programmer = () => {
               expandableRows={expandableRows}
               showAccordion={false}
               getRowKey={(row) => row.groupId}
-              getRowClassName={(row) => {
-                const classes = ["group-row"];
-                if (expandedGroups.has(row.groupId)) {
-                  classes.push("group-row-expanded");
-                }
-                if (row.parent.critical) {
-                  classes.push("critical-row");
-                } else if (row.parent.priority) {
-                  classes.push(`priority-row priority-${row.parent.priority.toLowerCase()}`);
-                }
-                return classes.join(" ");
-              }}
+              getRowClassName={(row) =>
+                getParentRowClassName(
+                  row.parent,
+                  row.entries,
+                  expandedGroups.has(row.groupId)
+                )
+              }
               className="jobs-table-wrapper"
               showCheckboxes={true}
               selectedRows={selectedJobIds}

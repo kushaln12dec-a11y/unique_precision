@@ -350,3 +350,83 @@
   background-repeat: no-repeat !important;
   background-position: 0.75rem center !important;
 }
+
+/* Priority-based row colors for Operator screen - reuse from Programmer */
+.group-row {
+  background: #ffffff;
+}
+
+.group-row.critical-row {
+  background-color: #fee2e2 !important;
+  border-left: 4px solid #dc2626 !important;
+  box-shadow: 0 2px 4px rgba(220, 38, 38, 0.15);
+}
+
+.group-row.critical-row:hover {
+  background-color: #fecaca !important;
+  box-shadow: 0 4px 8px rgba(220, 38, 38, 0.2);
+}
+
+.group-row.critical-row td {
+  color: #0f172a !important;
+  font-weight: 500;
+}
+
+.group-row.priority-row.priority-high {
+  background-color: #fee2e2;
+  border-left: 3px solid #ef4444;
+}
+
+.group-row.priority-row.priority-high:hover {
+  background-color: #fecaca;
+}
+
+.group-row.priority-row.priority-high td {
+  color: #991b1b;
+}
+
+.group-row.priority-row.priority-medium {
+  background-color: #fef3c7;
+  border-left: 3px solid #f59e0b;
+}
+
+.group-row.priority-row.priority-medium:hover {
+  background-color: #fde68a;
+}
+
+.group-row.priority-row.priority-medium td {
+  color: #0f172a;
+}
+
+.group-row.priority-row.priority-low {
+  background-color: #d1fae5;
+  border-left: 3px solid #10b981;
+}
+
+.group-row.priority-row.priority-low:hover {
+  background-color: #a7f3d0;
+}
+
+.group-row.priority-row.priority-low td {
+  color: #0f172a;
+}
+
+.group-row-expanded {
+  background: #f9fafb;
+}
+
+.group-row-expanded.critical-row {
+  background-color: #fee2e2 !important;
+}
+
+.group-row-expanded.priority-row.priority-high {
+  background-color: #fee2e2;
+}
+
+.group-row-expanded.priority-row.priority-medium {
+  background-color: #fef3c7;
+}
+
+.group-row-expanded.priority-row.priority-low {
+  background-color: #d1fae5;
+}

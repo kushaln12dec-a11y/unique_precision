@@ -1,4 +1,6 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
+import ImageZoomModal from "../../../components/ImageZoomModal";
+import ZoomInIcon from "@mui/icons-material/ZoomIn";
 import type { JobEntry } from "../../../types/job";
 import { calculateTotals, type CutForm } from "../programmerUtils";
 import "./JobDetailsModal.css";
@@ -11,16 +13,27 @@ interface JobDetailsModalProps {
     groupTotalHrs: number;
     groupTotalAmount: number;
   } | null;
+  cut?: JobEntry | null;
+  cutIndex?: number;
   userRole?: string | null;
   onClose: () => void;
 }
 
-const JobDetailsModal: React.FC<JobDetailsModalProps> = ({ job, userRole, onClose }) => {
+const JobDetailsModal: React.FC<JobDetailsModalProps> = ({ job, cut, cutIndex, userRole, onClose }) => {
   const isProgrammer = userRole === "PROGRAMMER";
-  if (!job) return null;
+  const isSingleCut = !!cut;
+  const [zoomedImage, setZoomedImage] = useState<string | null>(null);
+  
+  if (!job && !cut) return null;
+
+  const displayCut = cut || (job ? job.parent : null);
+  const displayEntries = cut ? [cut] : (job ? job.entries : []);
+  const displayGroupId = cut ? cut.groupId : (job ? job.groupId : 0);
+  const displayGroupTotalHrs = cut ? (cut.totalHrs || 0) : (job ? job.groupTotalHrs : 0);
+  const displayGroupTotalAmount = cut ? (cut.totalAmount || 0) : (job ? job.groupTotalAmount : 0);
 
   const amounts = useMemo(() => {
-    const totals = job.entries.map((entry) => calculateTotals(entry as CutForm));
+    const totals = displayEntries.map((entry) => calculateTotals(entry as CutForm));
     const totalWedmAmount = totals.reduce((sum, t) => sum + t.wedmAmount, 0);
     const totalSedmAmount = totals.reduce((sum, t) => sum + t.sedmAmount, 0);
     return {
@@ -28,7 +41,7 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({ job, userRole, onClos
       totalWedmAmount,
       totalSedmAmount,
     };
-  }, [job.entries]);
+  }, [displayEntries]);
 
   const formatDate = (dateString: string) => {
     const parsed = new Date(dateString);
@@ -45,106 +58,233 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({ job, userRole, onClos
   return (
     <>
       <div className="job-details-overlay" onClick={onClose} />
-      <div className="job-details-modal">
+      <div className={`job-details-modal ${isSingleCut ? "cut-details-modal" : ""}`}>
         <div className="job-details-header">
-          <h2>Job Details - {job.parent.customer || "N/A"}</h2>
+          <h2>
+            {isSingleCut 
+              ? `Cut ${cutIndex || 1} Details - ${displayCut?.customer || "N/A"}`
+              : `Job Details - ${displayCut?.customer || "N/A"}`
+            }
+          </h2>
           <button className="job-details-close" onClick={onClose} aria-label="Close">
             ✕
           </button>
         </div>
 
         <div className="job-details-content">
-          <div className="job-details-section">
-            <h3>Job Information</h3>
-            <div className="job-details-grid">
-              <div className="job-details-item">
-                <label>Customer:</label>
-                <span>{job.parent.customer || "—"}</span>
-              </div>
-              <div className="job-details-item">
-                <label>Created At:</label>
-                <span>{formatDate(job.parent.createdAt)}</span>
-              </div>
-              <div className="job-details-item">
-                <label>Created By:</label>
-                <span>{job.parent.createdBy || "—"}</span>
-              </div>
-              <div className="job-details-item">
-                <label>Ref Number:</label>
-                <span>#{(job.parent as any).refNumber || job.groupId || "—"}</span>
-              </div>
-              <div className="job-details-item">
-                <label>Priority:</label>
-                <span>{job.parent.priority || "—"}</span>
-              </div>
-              <div className="job-details-item">
-                <label>Complex:</label>
-                <span>{job.parent.critical ? "Yes" : "No"}</span>
-              </div>
+          {!isSingleCut && (
+            <div className="job-details-section">
+              <h3>Job Information</h3>
+              <table className="job-details-table">
+                <tbody>
+                  <tr>
+                    <td className="job-details-label">Customer:</td>
+                    <td className="job-details-value">{displayCut?.customer || "—"}</td>
+                  </tr>
+                  <tr>
+                    <td className="job-details-label">Created By:</td>
+                    <td className="job-details-value">{displayCut?.createdBy || "—"}</td>
+                  </tr>
+                  <tr>
+                    <td className="job-details-label">Created At:</td>
+                    <td className="job-details-value">{formatDate(displayCut?.createdAt || "")}</td>
+                  </tr>
+                  {(displayCut as any)?.updatedBy && (
+                    <tr>
+                      <td className="job-details-label">Updated By:</td>
+                      <td className="job-details-value">{(displayCut as any).updatedBy || "—"}</td>
+                    </tr>
+                  )}
+                  {(displayCut as any)?.updatedAt && (
+                    <tr>
+                      <td className="job-details-label">Updated At:</td>
+                      <td className="job-details-value">{formatDate((displayCut as any).updatedAt)}</td>
+                    </tr>
+                  )}
+                  <tr>
+                    <td className="job-details-label">Ref Number:</td>
+                    <td className="job-details-value">#{(displayCut as any)?.refNumber || displayGroupId || "—"}</td>
+                  </tr>
+                  <tr>
+                    <td className="job-details-label">Priority:</td>
+                    <td className="job-details-value">{displayCut?.priority || "—"}</td>
+                  </tr>
+                  <tr>
+                    <td className="job-details-label">Complex:</td>
+                    <td className="job-details-value">{displayCut?.critical ? "Yes" : "No"}</td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
-          </div>
+          )}
 
           <div className="job-details-section">
-            <h3>Cuts ({job.entries.length})</h3>
+            <h3>{isSingleCut ? "Cut Information" : `Cuts (${displayEntries.length})`}</h3>
             <div className="cuts-container">
-              {job.entries.map((cut, index) => (
-                <div key={cut.id} className="cut-item">
-                  <div className="cut-item-header">
-                    <h4>Cut {index + 1}</h4>
-                  </div>
-                  <div className="cut-item-grid">
-                    <div className="cut-detail">
-                      <label>Rate (₹/hr):</label>
-                      <span>₹{Number(cut.rate || 0).toFixed(2)}</span>
+              {displayEntries.map((cutItem, index) => (
+                <div key={cutItem.id} className="cut-item">
+                  {!isSingleCut && (
+                    <div className="cut-item-header">
+                      <h4>Cut {index + 1}</h4>
                     </div>
-                    <div className="cut-detail">
-                      <label>Cut Length (mm):</label>
-                      <span>{Number(cut.cut || 0).toFixed(2)}</span>
-                    </div>
-                    <div className="cut-detail">
-                      <label>Thickness (mm):</label>
-                      <span>{Number(cut.thickness || 0).toFixed(2)}</span>
-                    </div>
-                    <div className="cut-detail">
-                      <label>Pass:</label>
-                      <span>{cut.passLevel || "—"}</span>
-                    </div>
-                    <div className="cut-detail">
-                      <label>Setting:</label>
-                      <span>{cut.setting || "—"}</span>
-                    </div>
-                    <div className="cut-detail">
-                      <label>Quantity:</label>
-                      <span>{Number(cut.qty || 0)}</span>
-                    </div>
-                    <div className="cut-detail">
-                      <label>SEDM:</label>
-                      <span>{cut.sedm || "—"}</span>
-                    </div>
-                    <div className="cut-detail">
-                      <label>PIP Finish:</label>
-                      <span>{cut.pipFinish ? "Yes" : "No"}</span>
-                    </div>
-                    <div className="cut-detail">
-                      <label>Total Hrs/Piece:</label>
-                      <span>{cut.totalHrs ? cut.totalHrs.toFixed(3) : "0.000"}</span>
-                    </div>
-                    {!isProgrammer && (
-                      <>
-                        <div className="cut-detail">
-                          <label>WEDM Amount (₹):</label>
-                          <span>₹{amounts.perCut[index]?.wedmAmount.toFixed(2) || "0.00"}</span>
-                        </div>
-                        <div className="cut-detail">
-                          <label>SEDM Amount (₹):</label>
-                          <span>₹{amounts.perCut[index]?.sedmAmount.toFixed(2) || "0.00"}</span>
-                        </div>
-                      </>
-                    )}
-                    {cut.description && (
-                      <div className="cut-detail full-width">
+                  )}
+                  <div className="cut-item-content-wrapper">
+                    <div className="cut-item-grid">
+                      <div className="cut-detail">
+                        <label>Customer:</label>
+                        <span>{cutItem.customer || "—"}</span>
+                      </div>
+                      <div className="cut-detail">
+                        <label>Rate (₹/hr):</label>
+                        <span>₹{Number(cutItem.rate || 0).toFixed(2)}</span>
+                      </div>
+                      <div className="cut-detail">
+                        <label>Cut Length (mm):</label>
+                        <span>{Number(cutItem.cut || 0).toFixed(2)}</span>
+                      </div>
+                      <div className="cut-detail">
                         <label>Description:</label>
-                        <span>{cut.description}</span>
+                        <span>{cutItem.description || "—"}</span>
+                      </div>
+                      <div className="cut-detail">
+                        <label>TH (MM):</label>
+                        <span>{Number(cutItem.thickness || 0).toFixed(2)}</span>
+                      </div>
+                      <div className="cut-detail">
+                        <label>Pass:</label>
+                        <span>{cutItem.passLevel || "—"}</span>
+                      </div>
+                      <div className="cut-detail">
+                        <label>Setting:</label>
+                        <span>{cutItem.setting || "—"}</span>
+                      </div>
+                      <div className="cut-detail">
+                        <label>Quantity:</label>
+                        <span>{Number(cutItem.qty || 0)}</span>
+                      </div>
+                      <div className="cut-detail">
+                        <label>SEDM:</label>
+                        <span>{cutItem.sedm || "—"}</span>
+                      </div>
+                      <div className="cut-detail">
+                        <label>Material:</label>
+                        <span>{cutItem.material || "—"}</span>
+                      </div>
+                      <div className="cut-detail">
+                        <label>PIP Finish:</label>
+                        <span>{cutItem.pipFinish ? "Yes" : "No"}</span>
+                      </div>
+                      <div className="cut-detail">
+                        <label>Complex:</label>
+                        <span>{cutItem.critical ? "Yes" : "No"}</span>
+                      </div>
+                      <div className="cut-detail">
+                        <label>Priority:</label>
+                        <span>{cutItem.priority || "—"}</span>
+                      </div>
+                      {isSingleCut && (
+                        <>
+                          <div className="cut-detail">
+                            <label>Created By:</label>
+                            <span>{cutItem.createdBy || "—"}</span>
+                          </div>
+                          <div className="cut-detail">
+                            <label>Created At:</label>
+                            <span>{formatDate(cutItem.createdAt)}</span>
+                          </div>
+                          {(cutItem as any).updatedBy && (
+                            <div className="cut-detail">
+                              <label>Updated By:</label>
+                              <span>{(cutItem as any).updatedBy || "—"}</span>
+                            </div>
+                          )}
+                          {(cutItem as any).updatedAt && (
+                            <div className="cut-detail">
+                              <label>Updated At:</label>
+                              <span>{formatDate((cutItem as any).updatedAt)}</span>
+                            </div>
+                          )}
+                        </>
+                      )}
+                      <div className="cut-detail">
+                        <label>Total Hrs/Piece:</label>
+                        <span>{cutItem.totalHrs ? cutItem.totalHrs.toFixed(3) : "0.000"}</span>
+                      </div>
+                      {!isProgrammer && (
+                        <>
+                          <div className="cut-detail">
+                            <label>WEDM Amount (₹):</label>
+                            <span>₹{amounts.perCut[index]?.wedmAmount.toFixed(2) || "0.00"}</span>
+                          </div>
+                          <div className="cut-detail">
+                            <label>SEDM Amount (₹):</label>
+                            <span>₹{amounts.perCut[index]?.sedmAmount.toFixed(2) || "0.00"}</span>
+                          </div>
+                          {/* Operator Input Details */}
+                          {(cutItem as any).startTime && (
+                            <div className="cut-detail">
+                              <label>Start Time:</label>
+                              <span>{(cutItem as any).startTime || "—"}</span>
+                            </div>
+                          )}
+                          {(cutItem as any).endTime && (
+                            <div className="cut-detail">
+                              <label>End Time:</label>
+                              <span>{(cutItem as any).endTime || "—"}</span>
+                            </div>
+                          )}
+                          {(cutItem as any).machineHrs && (
+                            <div className="cut-detail">
+                              <label>Machine Hrs:</label>
+                              <span>{(cutItem as any).machineHrs || "0.000"}</span>
+                            </div>
+                          )}
+                          {(cutItem as any).machineNumber && (
+                            <div className="cut-detail">
+                              <label>Machine #:</label>
+                              <span>{(cutItem as any).machineNumber || "—"}</span>
+                            </div>
+                          )}
+                          {(cutItem as any).opsName && (
+                            <div className="cut-detail">
+                              <label>Operator Name:</label>
+                              <span>{(cutItem as any).opsName || "—"}</span>
+                            </div>
+                          )}
+                          {(cutItem as any).idleTime && (
+                            <div className="cut-detail">
+                              <label>Idle Time:</label>
+                              <span>{(cutItem as any).idleTime || "—"}</span>
+                            </div>
+                          )}
+                          {(cutItem as any).idleTimeDuration && (
+                            <div className="cut-detail">
+                              <label>Idle Time Duration:</label>
+                              <span>{(cutItem as any).idleTimeDuration || "—"}</span>
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </div>
+                    {cutItem.cutImage && (
+                      <div className="cut-image-side">
+                        <label>Image:</label>
+                        <div className="cut-image-container">
+                          <img 
+                            src={cutItem.cutImage} 
+                            alt={`Cut ${index + 1} image`}
+                            className="cut-image-preview"
+                          />
+                          <button
+                            type="button"
+                            className="cut-image-zoom-btn"
+                            onClick={() => setZoomedImage(cutItem.cutImage || null)}
+                            aria-label={`Zoom cut ${index + 1} image`}
+                            title="Zoom image"
+                          >
+                            <ZoomInIcon fontSize="small" />
+                          </button>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -156,7 +296,7 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({ job, userRole, onClos
           <div className="job-details-totals">
             <div className="total-row">
               <label>Total Hrs/Piece:</label>
-              <span>{job.groupTotalHrs ? job.groupTotalHrs.toFixed(3) : "0.000"}</span>
+              <span>{displayGroupTotalHrs ? displayGroupTotalHrs.toFixed(3) : "0.000"}</span>
             </div>
             {!isProgrammer && (
               <>
@@ -170,7 +310,7 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({ job, userRole, onClos
                 </div>
                 <div className="total-row">
                   <label>Total Amount (₹):</label>
-                  <span>₹{job.groupTotalAmount ? job.groupTotalAmount.toFixed(2) : "0.00"}</span>
+                  <span>₹{displayGroupTotalAmount ? displayGroupTotalAmount.toFixed(2) : "0.00"}</span>
                 </div>
               </>
             )}
@@ -183,6 +323,9 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({ job, userRole, onClos
           </button>
         </div>
       </div>
+      {zoomedImage && (
+        <ImageZoomModal imageSrc={zoomedImage} onClose={() => setZoomedImage(null)} />
+      )}
     </>
   );
 };

@@ -214,7 +214,7 @@ const SEDMModal: React.FC<SEDMModalProps> = ({
           <h4 className="sedm-entry-title">SEDM Entry {index + 1}</h4>
           <div className="sedm-grid">
             <div className="input-pair">
-              <label>Thickness (mm)</label>
+              <label>TH (mm)</label>
               <input
                 type="number"
                 min="0"
@@ -225,12 +225,12 @@ const SEDMModal: React.FC<SEDMModalProps> = ({
               />
             </div>
             <div className="input-pair">
-              <label>Length</label>
+              <label>Electrode</label>
               <select
                 value={entry.lengthValue}
                 onChange={(event) => handleEntryChange(index, "lengthValue", event.target.value)}
               >
-                <option value="">Select length</option>
+                <option value="">Select electrode</option>
                 {Array.from({ length: 30 }, (_, idx) => (idx + 1) / 10).map(
                   (value) => (
                     <option key={value} value={value.toFixed(1)}>
@@ -241,7 +241,7 @@ const SEDMModal: React.FC<SEDMModalProps> = ({
               </select>
             </div>
             <div className="input-pair">
-              <label>Length Option</label>
+              <label>TH Option</label>
               <select
                 value={entry.lengthType}
                 onChange={(event) =>

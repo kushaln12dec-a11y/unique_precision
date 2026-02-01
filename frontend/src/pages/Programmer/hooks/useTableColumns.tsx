@@ -1,11 +1,9 @@
 import { useMemo } from "react";
 import type { Column } from "../../../components/DataTable";
 import { parseDateValue, formatHoursToHHMM } from "../../../utils/date";
-import { getUserRoleFromToken } from "../../../utils/auth";
-import { DustbinIcon, PencilIcon } from "../../../utils/icons";
-import VisibilityIcon from "@mui/icons-material/Visibility";
 import ArrowForwardIosSharpIcon from "@mui/icons-material/ArrowForwardIosSharp";
 import type { TableRow } from "../utils/jobDataTransform";
+import ActionButtons from "../components/ActionButtons";
 
 type UseTableColumnsProps = {
   expandableRows: Map<number, any>;
@@ -84,8 +82,15 @@ export const useTableColumns = ({
         render: (row) => Number(row.parent.cut || 0).toFixed(2),
       },
       {
+        key: "description",
+        label: "Description",
+        sortable: true,
+        sortKey: "description",
+        render: (row) => row.parent.description || "—",
+      },
+      {
         key: "thickness",
-        label: "Thickness (mm)",
+        label: "TH (MM)",
         sortable: true,
         sortKey: "thickness",
         render: (row) => Number(row.parent.thickness || 0).toFixed(2),
@@ -110,6 +115,32 @@ export const useTableColumns = ({
         sortable: true,
         sortKey: "qty",
         render: (row) => Number(row.parent.qty || 0).toString(),
+      },
+      {
+        key: "totalHrs",
+        label: "Total Hrs/Piece",
+        sortable: true,
+        sortKey: "totalHrs",
+        render: (row) => (row.groupTotalHrs ? formatHoursToHHMM(row.groupTotalHrs) : "—"),
+      },
+      ...(isAdmin
+        ? [
+            {
+              key: "totalAmount",
+              label: "Total Amount (₹)",
+              sortable: true,
+              sortKey: "totalAmount",
+              render: (row: TableRow) =>
+                row.groupTotalAmount ? `₹${row.groupTotalAmount.toFixed(2)}` : "—",
+            },
+          ]
+        : []),
+      {
+        key: "createdBy",
+        label: "Created By",
+        sortable: true,
+        sortKey: "createdBy",
+        render: (row) => row.parent.createdBy,
       },
       {
         key: "createdAt",
@@ -143,81 +174,23 @@ export const useTableColumns = ({
         },
       },
       {
-        key: "totalHrs",
-        label: "Total Hrs/Piece",
-        sortable: true,
-        sortKey: "totalHrs",
-        render: (row) => (row.groupTotalHrs ? formatHoursToHHMM(row.groupTotalHrs) : "—"),
-      },
-      ...(isAdmin
-        ? [
-            {
-              key: "totalAmount",
-              label: "Total Amount (₹)",
-              sortable: true,
-              sortKey: "totalAmount",
-              render: (row: TableRow) =>
-                row.groupTotalAmount ? `₹${row.groupTotalAmount.toFixed(2)}` : "—",
-            },
-          ]
-        : []),
-      {
-        key: "createdBy",
-        label: "Created By",
-        sortable: true,
-        sortKey: "createdBy",
-        render: (row) => row.parent.createdBy,
-      },
-      {
         key: "action",
         label: "Action",
         sortable: false,
         className: "action-cell",
         headerClassName: "action-header",
         render: (row) => (
-          <div className="action-buttons" onClick={(e) => e.stopPropagation()}>
-            <button
-              type="button"
-              className="action-icon-button"
-              onClick={(e) => {
-                e.stopPropagation();
-                setViewingJob(row);
-                setShowJobViewModal(true);
-              }}
-              aria-label={`View ${row.parent.customer || "entry"}`}
-              title="View Details"
-            >
-              <VisibilityIcon fontSize="small" />
-            </button>
-            {(isAdmin || getUserRoleFromToken() === "PROGRAMMER") && (
-              <>
-                <button
-                  type="button"
-                  className="action-icon-button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleEditJob(row.groupId);
-                  }}
-                  aria-label={`Edit ${row.parent.customer || "entry"}`}
-                >
-                  <PencilIcon fontSize="small" />
-                </button>
-                {isAdmin && (
-                  <button
-                    type="button"
-                    className="action-icon-button danger"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDeleteClick(row.groupId, row.parent.customer || "entry");
-                    }}
-                    aria-label={`Delete ${row.parent.customer || "entry"}`}
-                  >
-                    <DustbinIcon fontSize="small" />
-                  </button>
-                )}
-              </>
-            )}
-          </div>
+          <ActionButtons
+            onView={() => {
+              setViewingJob(row);
+              setShowJobViewModal(true);
+            }}
+            onEdit={() => handleEditJob(row.groupId)}
+            onDelete={() => handleDeleteClick(row.groupId, row.parent.customer || "entry")}
+            viewLabel={`View ${row.parent.customer || "entry"}`}
+            editLabel={`Edit ${row.parent.customer || "entry"}`}
+            deleteLabel={`Delete ${row.parent.customer || "entry"}`}
+          />
         ),
       },
     ],

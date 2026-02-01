@@ -7,17 +7,19 @@ import FilterModal, { type FilterField, type FilterValues, type FilterCategory }
 import FilterButton from "../../components/FilterButton";
 import FilterBadges from "../../components/FilterBadges";
 import { getUsers } from "../../services/userApi";
-import { getJobs, updateJob } from "../../services/jobApi";
+import { getJobs } from "../../services/jobApi";
+import { updateOperatorJob } from "../../services/operatorApi";
 import type { User } from "../../types/user";
 import type { JobEntry } from "../../types/job";
 import { getUserRoleFromToken } from "../../utils/auth";
 import { formatHoursToHHMM, parseDateValue } from "../../utils/date";
 import { countActiveFilters } from "../../utils/filterUtils";
 import ChildCutsTable from "../Programmer/components/ChildCutsTable";
-import ArrowOutwardIcon from "@mui/icons-material/ArrowOutward";
+import ActionButtons from "../Programmer/components/ActionButtons";
+import JobDetailsModal from "../Programmer/components/JobDetailsModal";
 import ArrowForwardIosSharpIcon from "@mui/icons-material/ArrowForwardIosSharp";
 import DownloadIcon from "@mui/icons-material/Download";
-import { PencilIcon } from "../../utils/icons";
+import { getParentRowClassName } from "../Programmer/utils/priorityUtils";
 import "../RoleBoard.css";
 import "../Programmer/Programmer.css";
 import "./Operator.css";
@@ -41,6 +43,9 @@ const Operator = () => {
   const [customerFilter, setCustomerFilter] = useState("");
   const [createdByFilter, setCreatedByFilter] = useState("");
   const [assignedToFilter, setAssignedToFilter] = useState("");
+  const [viewingJob, setViewingJob] = useState<TableRow | null>(null);
+  const [showJobViewModal, setShowJobViewModal] = useState(false);
+  const [selectedJobIds, setSelectedJobIds] = useState<Set<number>>(new Set());
 
   const userRole = getUserRoleFromToken();
   const canAssign = userRole === "ADMIN" || userRole === "OPERATOR";
@@ -86,7 +91,7 @@ const Operator = () => {
     const fetchOperators = async () => {
       try {
         const userList = await getUsers();
-        setOperatorUsers(userList.filter((user) => user.role === "OPERATOR"));
+        setOperatorUsers(userList.filter((user) => user.role === "OPERATOR" || user.role === "ADMIN"));
         setUsers(userList);
       } catch (error) {
         console.error("Failed to fetch operators", error);
@@ -219,7 +224,7 @@ const Operator = () => {
 
   const handleAssignChange = async (jobId: number | string, value: string) => {
     try {
-      await updateJob(String(jobId), { assignedTo: value });
+      await updateOperatorJob(String(jobId), { assignedTo: value });
       setJobs((prev) =>
         prev.map((job) => (job.id === jobId ? { ...job, assignedTo: value } : job))
       );
@@ -261,11 +266,12 @@ const Operator = () => {
   };
 
   const handleDownloadCSV = () => {
-    const headers = ["Customer", "Rate", "Cut (mm)", "Thickness (mm)", "Pass", "Setting", "Qty", "Created At", "Created By", "Assigned To", "Total Hrs/Piece", "Total Amount (₹)", "Priority", "Complex"];
+    const headers = ["Customer", "Rate", "Cut (mm)", "Description", "TH (MM)", "Pass", "Setting", "Qty", "Created At", "Created By", "Assigned To", "Total Hrs/Piece", "Total Amount (₹)", "Priority", "Complex"];
     const rows = tableData.map((row) => [
       row.parent.customer || "",
       `₹${Number(row.parent.rate || 0).toFixed(2)}`,
       Number(row.parent.cut || 0).toFixed(2),
+      row.parent.description || "",
       Number(row.parent.thickness || 0).toFixed(2),
       row.parent.passLevel || "",
       row.parent.setting || "",
@@ -413,13 +419,27 @@ const Operator = () => {
     }
   };
 
-  const handleViewJob = (groupId: number) => {
+  const handleViewJob = (row: TableRow) => {
+    setViewingJob(row);
+    setShowJobViewModal(true);
+  };
+
+  const handleImageInput = (groupId: number, cutId?: number): void => {
+    if (cutId) {
+      navigate(`/operator/viewpage?groupId=${groupId}&cutId=${cutId}`);
+    } else {
+      navigate(`/operator/viewpage?groupId=${groupId}`);
+    }
+  };
+
+  const handleSubmit = (groupId: number): void => {
     navigate(`/operator/viewpage?groupId=${groupId}`);
   };
 
   const handleEditJob = (groupId: number) => {
     navigate(`/programmer/edit/${groupId}`);
   };
+
 
   const expandableRows = useMemo(() => {
     const map = new Map<number, any>();
@@ -429,7 +449,19 @@ const Operator = () => {
         map.set(row.groupId, {
           isExpanded: expandedGroups.has(row.groupId),
           onToggle: () => toggleGroup(row.groupId),
-          expandedContent: <ChildCutsTable entries={row.entries} />,
+          expandedContent: (
+            <ChildCutsTable
+              entries={row.entries}
+              onEdit={undefined}
+              onImage={(groupId: number, cutId?: number) => handleImageInput(groupId, cutId)}
+              onAssignChange={handleAssignChange}
+              operatorUsers={operatorUsers.map((user) => ({
+                id: user._id,
+                name: `${user.firstName} ${user.lastName}`.trim(),
+              }))}
+              isOperator={true}
+            />
+          ),
           ariaLabel: expandedGroups.has(row.groupId)
             ? "Collapse cuts"
             : "Expand cuts",
@@ -437,7 +469,7 @@ const Operator = () => {
       }
     });
     return map;
-  }, [tableData, expandedGroups, toggleGroup]);
+      }, [tableData, expandedGroups, toggleGroup, handleImageInput, handleAssignChange, operatorUsers]);
 
   const columns: Column<TableRow>[] = useMemo(
     () => [
@@ -501,8 +533,15 @@ const Operator = () => {
         render: (row) => Number(row.parent.cut || 0).toFixed(2),
       },
       {
+        key: "description",
+        label: "Description",
+        sortable: true,
+        sortKey: "description",
+        render: (row) => row.parent.description || "—",
+      },
+      {
         key: "thickness",
-        label: "Thickness (mm)",
+        label: "TH (MM)",
         sortable: true,
         sortKey: "thickness",
         render: (row) => Number(row.parent.thickness || 0).toFixed(2),
@@ -609,38 +648,17 @@ const Operator = () => {
         className: "action-cell",
         headerClassName: "action-header",
         render: (row) => (
-          <div className="action-buttons">
-            {isAdmin && (
-              <button
-                type="button"
-                className="action-icon-button operator-action-button"
-                onClick={() => handleViewJob(row.groupId)}
-                aria-label={`View ${row.parent.customer || "entry"}`}
-                title="View Details"
-              >
-                <ArrowOutwardIcon 
-                  fontSize="small" 
-                  style={{ color: "#dc2626", fontSize: "1.1rem" }}
-                />
-              </button>
-            )}
-            {(isAdmin || userRole === "OPERATOR") && (
-              <button
-                type="button"
-                className="action-icon-button"
-                onClick={() => handleEditJob(row.groupId)}
-                aria-label={`Edit ${row.parent.customer || "entry"}`}
-                title="Edit Job"
-              >
-                <PencilIcon fontSize="small" />
-              </button>
-            )}
-            {!isAdmin && userRole !== "OPERATOR" && <span style={{ color: "#64748b" }}>—</span>}
-          </div>
+          <ActionButtons
+            onView={() => handleViewJob(row)}
+            onSubmit={() => handleSubmit(row.groupId)}
+            viewLabel={`View ${row.parent.customer || "entry"}`}
+            submitLabel={`Submit ${row.parent.customer || "entry"}`}
+            isOperator={true}
+          />
         ),
       },
     ],
-    [canAssign, operatorUsers, handleAssignChange, expandableRows, isAdmin, userRole, handleEditJob]
+    [canAssign, operatorUsers, handleAssignChange, expandableRows, isAdmin, userRole, handleEditJob, handleViewJob, handleSubmit]
   );
 
   return (
@@ -757,11 +775,28 @@ const Operator = () => {
             showAccordion={false}
             getRowKey={(row) => row.groupId}
             getRowClassName={(row) =>
-              `group-row ${
-                expandedGroups.has(row.groupId) ? "group-row-expanded" : ""
-              }`
+              getParentRowClassName(
+                row.parent,
+                row.entries,
+                expandedGroups.has(row.groupId)
+              )
             }
             className="jobs-table-wrapper"
+            showCheckboxes={true}
+            selectedRows={selectedJobIds}
+            onRowSelect={(rowKey, selected) => {
+              const groupId = typeof rowKey === 'number' ? rowKey : Number(rowKey);
+              if (isNaN(groupId)) return;
+              setSelectedJobIds((prev) => {
+                const next = new Set(prev);
+                if (selected) {
+                  next.add(groupId);
+                } else {
+                  next.delete(groupId);
+                }
+                return next;
+              });
+            }}
             pagination={{
               currentPage,
               entriesPerPage: jobsPerPage,
@@ -775,6 +810,18 @@ const Operator = () => {
             }}
           />
         </div>
+
+
+        {showJobViewModal && viewingJob && (
+          <JobDetailsModal
+            job={viewingJob}
+            userRole={getUserRoleFromToken()}
+            onClose={() => {
+              setShowJobViewModal(false);
+              setViewingJob(null);
+            }}
+          />
+        )}
       </div>
     </div>
   );

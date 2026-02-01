@@ -9,6 +9,8 @@ type UseJobDataProps = {
   sortDirection: "asc" | "desc";
   expandedGroups: Set<number>;
   toggleGroup: (groupId: number) => void;
+  onEdit?: (groupId: number) => void;
+  onDelete?: (groupId: number, customer: string) => void;
 };
 
 export const useJobData = ({
@@ -17,6 +19,8 @@ export const useJobData = ({
   sortDirection,
   expandedGroups,
   toggleGroup,
+  onEdit,
+  onDelete,
 }: UseJobDataProps) => {
   const filteredJobs = useMemo(() => jobs, [jobs]);
 
@@ -37,13 +41,13 @@ export const useJobData = ({
         map.set(row.groupId, {
           isExpanded: expandedGroups.has(row.groupId),
           onToggle: () => toggleGroup(row.groupId),
-          expandedContent: <ChildCutsTable entries={row.entries} />,
+          expandedContent: <ChildCutsTable entries={row.entries} onEdit={onEdit} onDelete={onDelete} />,
           ariaLabel: expandedGroups.has(row.groupId) ? "Collapse cuts" : "Expand cuts",
         });
       }
     });
     return map;
-  }, [tableData, expandedGroups, toggleGroup]);
+  }, [tableData, expandedGroups, toggleGroup, onEdit, onDelete]);
 
   return {
     tableData,

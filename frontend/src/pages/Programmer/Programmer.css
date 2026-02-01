@@ -230,6 +230,32 @@
   z-index: 1;
 }
 
+.image-zoom {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  background: rgba(37, 99, 235, 0.9);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  transition: all 0.2s ease;
+  padding: 0;
+}
+
+.image-zoom:hover {
+  background: rgba(37, 99, 235, 1);
+  transform: scale(1.1);
+}
+
 .image-remove {
   position: absolute;
   top: 8px;
@@ -1031,9 +1057,41 @@
   width: 100%;
 }
 
-/* Ensure Programmer table can scroll horizontally */
 .jobs-table-wrapper .data-table-wrapper {
   overflow-x: auto !important;
+}
+
+.jobs-table-wrapper .data-table {
+  width: 100%;
+  table-layout: auto;
+}
+
+.jobs-table-wrapper .data-table th,
+.jobs-table-wrapper .data-table td {
+  padding: 0.5rem 0.5rem;
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+.jobs-table-wrapper .data-table th {
+  font-size: 0.7rem;
+  padding: 0.5rem 0.3rem;
+  letter-spacing: 0.2px;
+}
+
+.jobs-table-wrapper .data-table .checkbox-header-cell,
+.jobs-table-wrapper .data-table td:has(input[type="checkbox"]) {
+  width: 40px;
+  min-width: 40px;
+  max-width: 40px;
+  padding: 0.5rem 0.25rem;
+}
+
+.jobs-table-wrapper .data-table th.action-header,
+.jobs-table-wrapper .data-table td.action-cell {
+  min-width: 100px;
+  max-width: 110px;
+  padding: 0.5rem 0.5rem;
 }
 
 .jobs-table {
@@ -1413,6 +1471,68 @@
   font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+}
+
+.child-jobs-table th:last-child,
+.child-jobs-table td:last-child {
+  min-width: 80px;
+  text-align: center;
+}
+
+.child-jobs-table .action-icon-button {
+  border: none;
+  background: transparent;
+  color: #2563eb !important;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.25rem;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.child-jobs-table .action-icon-button:hover {
+  color: #1d4ed8 !important;
+  background: rgba(37, 99, 235, 0.15);
+}
+
+.child-jobs-table .action-icon-button.danger.child-table-delete,
+.child-jobs-table .action-icon-button.danger.child-table-delete:hover {
+  color: #dc2626 !important;
+}
+
+.child-jobs-table .action-icon-button.danger.child-table-delete:hover {
+  background: rgba(220, 38, 38, 0.15);
+}
+
+.child-assigned-to-select {
+  padding: 0.25rem 0.5rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  background: #ffffff;
+  color: #1e293b;
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 12 12'%3E%3Cpath fill='%2364748b' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.4rem center;
+  padding-right: 1.5rem;
+  min-width: 100px;
+}
+
+.child-assigned-to-select:hover {
+  border-color: #94a3b8;
+  background-color: #f8fafc;
+}
+
+.child-assigned-to-select:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
 }
 
 /* Child row color coding - Complex takes priority */

@@ -65,6 +65,11 @@ const Header = ({ title }: HeaderProps) => {
       { label: "Dashboard", path: "/dashboard", icon: DashboardIcon },
       { label: "Operator", path: "/operator", icon: BuildIcon },
     ],
+    "/operator/viewpage": [
+      { label: "Dashboard", path: "/dashboard", icon: DashboardIcon },
+      { label: "Operator", path: "/operator", icon: BuildIcon },
+      { label: "Job Details", path: "/operator/viewpage", icon: BuildIcon },
+    ],
     "/qc": [
       { label: "Dashboard", path: "/dashboard", icon: DashboardIcon },
       { label: "QC", path: "/qc", icon: VerifiedUserIcon },
