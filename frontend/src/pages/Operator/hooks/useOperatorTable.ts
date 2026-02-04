@@ -1,27 +1,43 @@
 import { useMemo } from "react";
-import type { Column } from "../../../components/DataTable";
-import { parseDateValue, formatHoursToHHMM } from "../../../utils/date";
+import type { JobEntry } from "../../../types/job";
+import { formatHoursToHHMM, parseDateValue } from "../../../utils/date";
+import ChildCutsTable from "../../Programmer/components/ChildCutsTable";
+import ActionButtons from "../../Programmer/components/ActionButtons";
 import ArrowForwardIosSharpIcon from "@mui/icons-material/ArrowForwardIosSharp";
-import type { TableRow } from "../utils/jobDataTransform";
-import ActionButtons from "../components/ActionButtons";
+import type { Column } from "../../../components/DataTable";
 
-type UseTableColumnsProps = {
-  expandableRows: Map<number, any>;
-  isAdmin: boolean;
-  setViewingJob: (job: TableRow) => void;
-  setShowJobViewModal: (show: boolean) => void;
-  handleEditJob: (groupId: number) => void;
-  handleDeleteClick: (groupId: number, customer: string) => void;
+type TableRow = {
+  groupId: number;
+  parent: JobEntry;
+  groupTotalHrs: number;
+  groupTotalAmount: number;
+  entries: JobEntry[];
 };
 
-export const useTableColumns = ({
+type UseOperatorTableProps = {
+  tableData: TableRow[];
+  expandableRows: Map<number, any>;
+  canAssign: boolean;
+  operatorUsers: Array<{ id: string | number; name: string }>;
+  handleAssignChange: (jobId: number | string, value: string) => void;
+  handleViewJob: (row: TableRow) => void;
+  handleSubmit: (groupId: number) => void;
+  handleImageInput: (groupId: number, cutId?: number) => void;
+};
+
+/**
+ * Hook for generating operator table columns
+ */
+export const useOperatorTable = ({
+  tableData,
   expandableRows,
-  isAdmin,
-  setViewingJob,
-  setShowJobViewModal,
-  handleEditJob,
-  handleDeleteClick,
-}: UseTableColumnsProps): Column<TableRow>[] => {
+  canAssign,
+  operatorUsers,
+  handleAssignChange,
+  handleViewJob,
+  handleSubmit,
+  handleImageInput,
+}: UseOperatorTableProps): Column<TableRow>[] => {
   return useMemo(
     () => [
       {
@@ -37,7 +53,7 @@ export const useTableColumns = ({
               {expandable && (
                 <button
                   type="button"
-                  className="accordion-toggle-button programmer-accordion-toggle"
+                  className="accordion-toggle-button operator-accordion-toggle"
                   onClick={(event) => {
                     event.stopPropagation();
                     expandable.onToggle();
@@ -58,7 +74,9 @@ export const useTableColumns = ({
                     transform: isExpanded ? "rotate(90deg)" : "rotate(0deg)",
                   }}
                 >
-                  <ArrowForwardIosSharpIcon sx={{ fontSize: "0.7rem" }} />
+                  <ArrowForwardIosSharpIcon 
+                    sx={{ fontSize: "0.7rem" }}
+                  />
                 </button>
               )}
               {!expandable && <span style={{ width: "1rem" }} />}
@@ -83,7 +101,7 @@ export const useTableColumns = ({
       },
       {
         key: "description",
-        label: "Description1",
+        label: "Description",
         sortable: true,
         sortKey: "description",
         render: (row) => row.parent.description || "—",
@@ -117,24 +135,24 @@ export const useTableColumns = ({
         render: (row) => Number(row.parent.qty || 0).toString(),
       },
       {
-        key: "totalHrs",
-        label: "Total Hrs/Piece",
+        key: "createdAt",
+        label: "Created At",
         sortable: true,
-        sortKey: "totalHrs",
-        render: (row) => (row.groupTotalHrs ? formatHoursToHHMM(row.groupTotalHrs) : "—"),
+        sortKey: "createdAt",
+        render: (row) => {
+          // Format: "DD MMM YYYY HH:MM"
+          const parsed = parseDateValue(row.parent.createdAt);
+          if (!parsed) return "—";
+          const date = new Date(parsed);
+          const day = date.getDate().toString().padStart(2, "0");
+          const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+          const month = months[date.getMonth()];
+          const year = date.getFullYear();
+          const hours = date.getHours().toString().padStart(2, "0");
+          const minutes = date.getMinutes().toString().padStart(2, "0");
+          return `${day} ${month} ${year} ${hours}:${minutes}`;
+        },
       },
-      ...(isAdmin
-        ? [
-            {
-              key: "totalAmount",
-              label: "Total Amount (₹)",
-              sortable: true,
-              sortKey: "totalAmount",
-              render: (row: TableRow) =>
-                row.groupTotalAmount ? `₹${row.groupTotalAmount.toFixed(2)}` : "—",
-            },
-          ]
-        : []),
       {
         key: "createdBy",
         label: "Created By",
@@ -143,35 +161,52 @@ export const useTableColumns = ({
         render: (row) => row.parent.createdBy,
       },
       {
-        key: "createdAt",
-        label: "Created At",
+        key: "assignedTo",
+        label: (
+          <>
+            Assigned <br /> To
+          </>
+        ),
+        sortable: false,
+        render: (row) =>
+          canAssign ? (
+            <select
+              value={row.parent.assignedTo || "Unassigned"}
+              onChange={(event) =>
+                handleAssignChange(row.parent.id, event.target.value)
+              }
+            >
+              <option value="Unassigned">Unassigned</option>
+              {operatorUsers.map((user) => (
+                <option
+                  key={user.id}
+                  value={user.name}
+                >
+                  {user.name}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <span>{row.parent.assignedTo || "Unassigned"}</span>
+          ),
+      },
+      {
+        key: "totalHrs",
+        label: "Total Hrs/Piece",
         sortable: true,
-        sortKey: "createdAt",
-        render: (row) => {
-          const parsed = parseDateValue(row.parent.createdAt);
-          if (!parsed) return "—";
-          const date = new Date(parsed);
-          const day = date.getDate().toString().padStart(2, "0");
-          const months = [
-            "Jan",
-            "Feb",
-            "Mar",
-            "Apr",
-            "May",
-            "Jun",
-            "Jul",
-            "Aug",
-            "Sep",
-            "Oct",
-            "Nov",
-            "Dec",
-          ];
-          const month = months[date.getMonth()];
-          const year = date.getFullYear();
-          const hours = date.getHours().toString().padStart(2, "0");
-          const minutes = date.getMinutes().toString().padStart(2, "0");
-          return `${day} ${month} ${year} ${hours}:${minutes}`;
-        },
+        sortKey: "totalHrs",
+        render: (row) =>
+          row.groupTotalHrs ? formatHoursToHHMM(row.groupTotalHrs) : "—",
+      },
+      {
+        key: "totalAmount",
+        label: "Total Amount (₹)",
+        sortable: true,
+        sortKey: "totalAmount",
+        render: (row) =>
+          row.groupTotalAmount
+            ? `₹${row.groupTotalAmount.toFixed(2)}`
+            : "—",
       },
       {
         key: "action",
@@ -181,19 +216,15 @@ export const useTableColumns = ({
         headerClassName: "action-header",
         render: (row) => (
           <ActionButtons
-            onView={() => {
-              setViewingJob(row);
-              setShowJobViewModal(true);
-            }}
-            onEdit={() => handleEditJob(row.groupId)}
-            onDelete={() => handleDeleteClick(row.groupId, row.parent.customer || "entry")}
+            onView={() => handleViewJob(row)}
+            onSubmit={() => handleSubmit(row.groupId)}
             viewLabel={`View ${row.parent.customer || "entry"}`}
-            editLabel={`Edit ${row.parent.customer || "entry"}`}
-            deleteLabel={`Delete ${row.parent.customer || "entry"}`}
+            submitLabel={`Submit ${row.parent.customer || "entry"}`}
+            isOperator={true}
           />
         ),
       },
     ],
-    [expandableRows, isAdmin, setViewingJob, setShowJobViewModal, handleEditJob, handleDeleteClick]
+    [canAssign, operatorUsers, handleAssignChange, expandableRows, handleViewJob, handleSubmit]
   );
 };

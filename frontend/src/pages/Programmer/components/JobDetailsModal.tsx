@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from "react";
 import ImageZoomModal from "../../../components/ImageZoomModal";
-import ZoomInIcon from "@mui/icons-material/ZoomIn";
+import ImageUpload from "./ImageUpload";
 import type { JobEntry } from "../../../types/job";
 import { calculateTotals, type CutForm } from "../programmerUtils";
 import "./JobDetailsModal.css";
@@ -266,25 +266,16 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({ job, cut, cutIndex, u
                         </>
                       )}
                     </div>
-                    {cutItem.cutImage && (
+                    {(cutItem.cutImage && (Array.isArray(cutItem.cutImage) ? cutItem.cutImage.length > 0 : cutItem.cutImage)) && (
                       <div className="cut-image-side">
-                        <label>Image:</label>
-                        <div className="cut-image-container">
-                          <img 
-                            src={cutItem.cutImage} 
-                            alt={`Cut ${index + 1} image`}
-                            className="cut-image-preview"
-                          />
-                          <button
-                            type="button"
-                            className="cut-image-zoom-btn"
-                            onClick={() => setZoomedImage(cutItem.cutImage || null)}
-                            aria-label={`Zoom cut ${index + 1} image`}
-                            title="Zoom image"
-                          >
-                            <ZoomInIcon fontSize="small" />
-                          </button>
-                        </div>
+                        <label>Images:</label>
+                        <ImageUpload
+                          images={Array.isArray(cutItem.cutImage) ? cutItem.cutImage : (cutItem.cutImage ? [cutItem.cutImage] : [])}
+                          label={`Cut ${index + 1}`}
+                          onImageChange={() => {}}
+                          onRemove={() => {}}
+                          readOnly={true}
+                        />
                       </div>
                     )}
                   </div>

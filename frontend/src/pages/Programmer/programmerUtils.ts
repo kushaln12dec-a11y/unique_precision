@@ -18,7 +18,7 @@ export type CutForm = {
   material: string;
   priority: "Low" | "Medium" | "High";
   description: string;
-  cutImage: string | null;
+  cutImage: string[];
   critical: boolean;
   pipFinish: boolean;
   refNumber?: string;
@@ -65,7 +65,7 @@ export const DEFAULT_CUT: CutForm = {
   material: "",
   priority: "Medium",
   description: "",
-  cutImage: null,
+  cutImage: [],
   critical: false,
   pipFinish: false,
 };

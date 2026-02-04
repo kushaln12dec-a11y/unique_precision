@@ -16,7 +16,7 @@
   border-radius: 4px;
   font-size: 14px;
   transition: border-color 0.2s;
-  cursor: pointer;
+  cursor: text;
 }
 
 .datetime-input:focus {
@@ -45,75 +45,7 @@
 
 .datetime-icon-button:hover {
   color: #2563eb;
-}
-
-/* Ensure MUI DateTimePicker popup is accessible and clickable */
-.datetime-input-wrapper .MuiPickersPopper-root {
-  z-index: 10000 !important;
-  pointer-events: auto !important;
-}
-
-.datetime-input-wrapper .MuiPaper-root {
-  z-index: 10000 !important;
-  pointer-events: auto !important;
-  max-width: 320px !important;
-  width: 320px !important;
-}
-
-.datetime-input-wrapper .MuiPickersLayout-root {
-  z-index: 10000 !important;
-  pointer-events: auto !important;
-  max-width: 320px !important;
-  width: 320px !important;
-}
-
-/* Reduce calendar size */
-.datetime-input-wrapper .MuiDayCalendar-root {
-  width: 100% !important;
-  max-width: 280px !important;
-}
-
-.datetime-input-wrapper .MuiPickersCalendarHeader-root {
-  padding: 8px 12px !important;
-}
-
-.datetime-input-wrapper .MuiDayCalendar-weekContainer {
-  margin: 0 !important;
-}
-
-.datetime-input-wrapper .MuiPickersDay-root {
-  width: 32px !important;
-  height: 32px !important;
-  font-size: 0.875rem !important;
-  margin: 2px !important;
-}
-
-/* Reduce time picker size */
-.datetime-input-wrapper .MuiTimeClock-root {
-  width: 200px !important;
-  max-width: 200px !important;
-}
-
-.datetime-input-wrapper .MuiClock-root {
-  width: 180px !important;
-  height: 180px !important;
-}
-
-.datetime-input-wrapper .MuiClock-meridiemText {
-  font-size: 0.75rem !important;
-}
-
-.datetime-input-wrapper .MuiTimeClock-root {
-  pointer-events: auto !important;
-}
-
-.datetime-input-wrapper .MuiPickersToolbar-root {
-  pointer-events: auto !important;
-}
-
-.datetime-input-wrapper .MuiPickersToolbarButton-root {
-  pointer-events: auto !important;
-  cursor: pointer !important;
+  background-color: rgba(37, 99, 235, 0.1);
 }
 
 .datetime-input-wrapper .field-error {
