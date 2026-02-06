@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import { useMemo } from "react";
 import type { User } from "../../../types/user";
 import type { Column } from "../../../components/DataTable";
 

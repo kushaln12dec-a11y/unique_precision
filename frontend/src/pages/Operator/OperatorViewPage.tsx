@@ -32,6 +32,7 @@ const OperatorViewPage = () => {
     cutInputs,
     setCutInputs,
     expandedCuts,
+    setExpandedCuts,
     toggleCutExpansion,
   } = useOperatorViewData(groupId, cutIdParam);
 
@@ -47,7 +48,7 @@ const OperatorViewPage = () => {
     groupId,
     jobs,
     cutInputs,
-    toggleCutExpansion,
+    setExpandedCuts,
     setValidationErrors
   );
 

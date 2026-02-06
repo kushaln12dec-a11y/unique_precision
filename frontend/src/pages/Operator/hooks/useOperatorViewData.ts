@@ -3,7 +3,6 @@ import { getOperatorJobsByGroupId } from "../../../services/operatorApi";
 import { getIdleTimeConfigs } from "../../../services/idleTimeConfigApi";
 import type { JobEntry } from "../../../types/job";
 import type { CutInputData } from "../types/cutInput";
-import { createEmptyCutInputData } from "../types/cutInput";
 import { calculateMachineHrs } from "../utils/machineHrsCalculation";
 
 /**
@@ -123,6 +122,7 @@ export const useOperatorViewData = (groupId: string | null, cutIdParam: string |
     cutInputs,
     setCutInputs,
     expandedCuts,
+    setExpandedCuts,
     toggleCutExpansion,
   };
 };

@@ -16,7 +16,6 @@ type OperatorFiltersProps = {
   activeFilterCount: number;
   users: Array<{ _id: string; firstName: string; lastName: string; email: string }>;
   operatorUsers: Array<{ _id: string; firstName: string; lastName: string; email: string }>;
-  canAssign: boolean;
   onShowFilterModal: (show: boolean) => void;
   onApplyFilters: (filters: FilterValues) => void;
   onClearFilters: () => void;
@@ -38,7 +37,6 @@ export const OperatorFilters: React.FC<OperatorFiltersProps> = ({
   activeFilterCount,
   users,
   operatorUsers,
-  canAssign,
   onShowFilterModal,
   onApplyFilters,
   onClearFilters,

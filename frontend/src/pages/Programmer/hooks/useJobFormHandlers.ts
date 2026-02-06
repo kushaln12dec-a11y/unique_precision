@@ -4,7 +4,7 @@ import type { CutForm } from "../programmerUtils";
  * Hook for job form input handlers
  */
 export const useJobFormHandlers = (
-  cuts: CutForm[],
+  _cuts: CutForm[],
   setCuts: React.Dispatch<React.SetStateAction<CutForm[]>>,
   setSavedCuts: React.Dispatch<React.SetStateAction<Set<number>>>,
   setSedmModalIndex: React.Dispatch<React.SetStateAction<number | null>>

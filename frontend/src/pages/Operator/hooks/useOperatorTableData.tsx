@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import { useMemo } from "react";
 import type { JobEntry } from "../../../types/job";
 import { parseDateValue } from "../../../utils/date";
 import ChildCutsTable from "../../Programmer/components/ChildCutsTable";

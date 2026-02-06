@@ -182,7 +182,6 @@ const Operator = () => {
             activeFilterCount={activeFilterCount}
             users={users}
             operatorUsers={operatorUsers}
-            canAssign={canAssign}
             onShowFilterModal={setShowFilterModal}
             onApplyFilters={handleApplyFiltersWithPageReset}
             onClearFilters={handleClearFiltersWithPageReset}
