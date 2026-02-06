@@ -1,7 +1,6 @@
-import React, { useMemo } from "react";
+import { useMemo } from "react";
 import type { JobEntry } from "../../../types/job";
 import { formatHoursToHHMM, parseDateValue } from "../../../utils/date";
-import ChildCutsTable from "../../Programmer/components/ChildCutsTable";
 import ActionButtons from "../../Programmer/components/ActionButtons";
 import ArrowForwardIosSharpIcon from "@mui/icons-material/ArrowForwardIosSharp";
 import type { Column } from "../../../components/DataTable";
@@ -29,14 +28,12 @@ type UseOperatorTableProps = {
  * Hook for generating operator table columns
  */
 export const useOperatorTable = ({
-  tableData,
   expandableRows,
   canAssign,
   operatorUsers,
   handleAssignChange,
   handleViewJob,
   handleSubmit,
-  handleImageInput,
 }: UseOperatorTableProps): Column<TableRow>[] => {
   return useMemo(
     () => [
