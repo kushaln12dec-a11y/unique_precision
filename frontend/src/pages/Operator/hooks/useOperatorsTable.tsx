@@ -164,11 +164,7 @@ export const useOperatorTable = ({
       },
       {
         key: "assignedTo",
-        label: (
-          <>
-            Assigned <br /> To
-          </>
-        ),
+        label: "Assigned To",
         sortable: false,
         render: (row) =>
           canAssign ? (
