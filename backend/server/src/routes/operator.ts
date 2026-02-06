@@ -59,7 +59,7 @@ router.get("/jobs/group/:groupId", async (req, res) => {
 router.put("/jobs/:id", async (req, res) => {
   try {
     const { id, ...updateData } = req.body;
-    
+
     // Add updatedBy and updatedAt
     const now = new Date();
     const day = now.getDate().toString().padStart(2, "0");
@@ -69,14 +69,14 @@ router.put("/jobs/:id", async (req, res) => {
     const hours = now.getHours().toString().padStart(2, "0");
     const minutes = now.getMinutes().toString().padStart(2, "0");
     const updatedAt = `${day} ${month} ${year} ${hours}:${minutes}`;
-    
+
     updateData.updatedAt = updatedAt;
     if (req.user && (req.user as any).fullName) {
       updateData.updatedBy = (req.user as any).fullName;
     }
-    
+
     const job = await Job.findByIdAndUpdate(req.params.id, updateData, { new: true });
-    
+
     if (!job) {
       return res.status(404).json({ message: "Job not found" });
     }
@@ -88,11 +88,64 @@ router.put("/jobs/:id", async (req, res) => {
   }
 });
 
+// Capture operator input (POST)
+router.post("/jobs/:id/capture-input", async (req, res) => {
+  try {
+    const {
+      startTime,
+      endTime,
+      machineHrs,
+      machineNumber,
+      opsName,
+      idleTime,
+      idleTimeDuration,
+      lastImage
+    } = req.body;
+
+    // Add updatedBy and updatedAt
+    const now = new Date();
+    const day = now.getDate().toString().padStart(2, "0");
+    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const month = months[now.getMonth()];
+    const year = now.getFullYear();
+    const hours = now.getHours().toString().padStart(2, "0");
+    const minutes = now.getMinutes().toString().padStart(2, "0");
+    const updatedAt = `${day} ${month} ${year} ${hours}:${minutes}`;
+
+    const updateData: any = {
+      startTime,
+      endTime,
+      machineHrs,
+      machineNumber,
+      opsName,
+      idleTime,
+      idleTimeDuration,
+      lastImage,
+      updatedAt
+    };
+
+    if (req.user && (req.user as any).fullName) {
+      updateData.updatedBy = (req.user as any).fullName;
+    }
+
+    const job = await Job.findByIdAndUpdate(req.params.id, { $set: updateData }, { new: true });
+
+    if (!job) {
+      return res.status(404).json({ message: "Job not found" });
+    }
+
+    res.json(job);
+  } catch (error: any) {
+    console.error("Error capturing operator input:", error);
+    res.status(500).json({ message: "Error capturing operator input" });
+  }
+});
+
 // Update multiple jobs (for bulk operations)
 router.put("/jobs/bulk", async (req, res) => {
   try {
     const { jobIds, updateData } = req.body;
-    
+
     if (!Array.isArray(jobIds) || jobIds.length === 0) {
       return res.status(400).json({ message: "jobIds array is required" });
     }
@@ -106,7 +159,7 @@ router.put("/jobs/bulk", async (req, res) => {
     const hours = now.getHours().toString().padStart(2, "0");
     const minutes = now.getMinutes().toString().padStart(2, "0");
     const updatedAt = `${day} ${month} ${year} ${hours}:${minutes}`;
-    
+
     const finalUpdateData = {
       ...updateData,
       updatedAt,
@@ -120,9 +173,9 @@ router.put("/jobs/bulk", async (req, res) => {
       { $set: finalUpdateData }
     );
 
-    res.json({ 
+    res.json({
       message: "Jobs updated successfully",
-      modifiedCount: result.modifiedCount 
+      modifiedCount: result.modifiedCount
     });
   } catch (error: any) {
     console.error("Error updating operator jobs:", error);
