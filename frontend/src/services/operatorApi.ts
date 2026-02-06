@@ -101,6 +101,28 @@ export const updateOperatorJob = async (id: string, jobData: Partial<JobEntry>):
   };
 };
 
+// Capture operator input (POST)
+export const captureOperatorInput = async (id: string, inputData: any): Promise<JobEntry> => {
+  const res = await fetch(`/api/operator/jobs/${id}/capture-input`, {
+    method: "POST",
+    headers: getAuthHeaders(),
+    body: JSON.stringify(inputData),
+  });
+
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.message || "Failed to capture operator input");
+  }
+
+  const job = await res.json();
+  return {
+    ...job,
+    id: job._id || job.id,
+    groupId: job.groupId ?? job.id,
+    assignedTo: job.assignedTo || "Unassigned",
+  };
+};
+
 // Bulk update operator jobs
 export const bulkUpdateOperatorJobs = async (
   jobIds: (string | number)[],

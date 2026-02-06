@@ -55,6 +55,7 @@ const ChildCutsTable: React.FC<ChildCutsTableProps> = ({
             <th>Cut #</th>
             <th>Customer</th>
             <th>Rate (₹/hr)</th>
+            <th>Description</th>
             <th>Cut (mm)</th>
             <th>TH (MM)</th>
             <th>Pass</th>
@@ -75,6 +76,7 @@ const ChildCutsTable: React.FC<ChildCutsTableProps> = ({
               <td>{index + 1}</td>
               <td>{entry.customer || "—"}</td>
               <td>₹{Number(entry.rate || 0).toFixed(2)}</td>
+              <td>{entry.description || "—"}</td>
               <td>{Number(entry.cut || 0).toFixed(2)}</td>
               <td>{Number(entry.thickness || 0).toFixed(2)}</td>
               <td>{entry.passLevel}</td>

@@ -93,19 +93,20 @@ export const useOperatorTable = ({
         render: (row) => `₹${Number(row.parent.rate || 0).toFixed(2)}`,
       },
       {
-        key: "cut",
-        label: "Cut (mm)",
-        sortable: true,
-        sortKey: "cut",
-        render: (row) => Number(row.parent.cut || 0).toFixed(2),
-      },
-      {
         key: "description",
         label: "Description",
         sortable: true,
         sortKey: "description",
         render: (row) => row.parent.description || "—",
       },
+      {
+        key: "cut",
+        label: "Cut (mm)",
+        sortable: true,
+        sortKey: "cut",
+        render: (row) => Number(row.parent.cut || 0).toFixed(2),
+      },
+
       {
         key: "thickness",
         label: "TH (MM)",
@@ -134,32 +135,7 @@ export const useOperatorTable = ({
         sortKey: "qty",
         render: (row) => Number(row.parent.qty || 0).toString(),
       },
-      {
-        key: "createdAt",
-        label: "Created At",
-        sortable: true,
-        sortKey: "createdAt",
-        render: (row) => {
-          // Format: "DD MMM YYYY HH:MM"
-          const parsed = parseDateValue(row.parent.createdAt);
-          if (!parsed) return "—";
-          const date = new Date(parsed);
-          const day = date.getDate().toString().padStart(2, "0");
-          const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-          const month = months[date.getMonth()];
-          const year = date.getFullYear();
-          const hours = date.getHours().toString().padStart(2, "0");
-          const minutes = date.getMinutes().toString().padStart(2, "0");
-          return `${day} ${month} ${year} ${hours}:${minutes}`;
-        },
-      },
-      {
-        key: "createdBy",
-        label: "Created By",
-        sortable: true,
-        sortKey: "createdBy",
-        render: (row) => row.parent.createdBy,
-      },
+
       {
         key: "assignedTo",
         label: (
@@ -207,6 +183,32 @@ export const useOperatorTable = ({
           row.groupTotalAmount
             ? `₹${row.groupTotalAmount.toFixed(2)}`
             : "—",
+      },
+      {
+        key: "createdBy",
+        label: "Created By",
+        sortable: true,
+        sortKey: "createdBy",
+        render: (row) => row.parent.createdBy,
+      },
+      {
+        key: "createdAt",
+        label: "Created At",
+        sortable: true,
+        sortKey: "createdAt",
+        render: (row) => {
+          // Format: "DD MMM YYYY HH:MM"
+          const parsed = parseDateValue(row.parent.createdAt);
+          if (!parsed) return "—";
+          const date = new Date(parsed);
+          const day = date.getDate().toString().padStart(2, "0");
+          const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+          const month = months[date.getMonth()];
+          const year = date.getFullYear();
+          const hours = date.getHours().toString().padStart(2, "0");
+          const minutes = date.getMinutes().toString().padStart(2, "0");
+          return `${day} ${month} ${year} ${hours}:${minutes}`;
+        },
       },
       {
         key: "action",

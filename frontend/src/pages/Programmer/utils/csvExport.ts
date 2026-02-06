@@ -13,8 +13,8 @@ export const exportJobsToCSV = (tableData: TableRow[], isAdmin: boolean): void =
   const headers = [
     "Customer",
     "Rate",
-    "Cut (mm)",
     "Description",
+    "Cut (mm)",
     "TH (MM)",
     "Pass",
     "Setting",

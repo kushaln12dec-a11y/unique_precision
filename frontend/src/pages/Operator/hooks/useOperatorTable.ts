@@ -91,13 +91,7 @@ export const useOperatorTable = ({
         sortable: true,
         sortKey: "rate",
         render: (row) => `₹${Number(row.parent.rate || 0).toFixed(2)}`,
-      },
-      {
-        key: "cut",
-        label: "Cut (mm)",
-        sortable: true,
-        sortKey: "cut",
-        render: (row) => Number(row.parent.cut || 0).toFixed(2),
+        
       },
       {
         key: "description",
@@ -106,6 +100,14 @@ export const useOperatorTable = ({
         sortKey: "description",
         render: (row) => row.parent.description || "—",
       },
+      {
+        key: "cut",
+        label: "Cut (mm)",
+        sortable: true,
+        sortKey: "cut",
+        render: (row) => Number(row.parent.cut || 0).toFixed(2),
+      },
+
       {
         key: "thickness",
         label: "TH (MM)",

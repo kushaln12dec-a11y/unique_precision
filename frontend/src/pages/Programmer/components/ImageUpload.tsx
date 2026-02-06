@@ -5,6 +5,7 @@ import AttachFileIcon from "@mui/icons-material/AttachFile";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import "./ImageUpload.css";
+import "../../../components/ConfirmDeleteModal.css";
 
 type ImageUploadProps = {
   images: string[];
@@ -24,6 +25,8 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
   const [zoomedImage, setZoomedImage] = useState<string | null>(null);
   const [isPasteFocused, setIsPasteFocused] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [showRemoveConfirm, setShowRemoveConfirm] = useState(false);
+  const [pendingRemoveIndex, setPendingRemoveIndex] = useState<number | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -112,6 +115,29 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
     setCurrentImageIndex((prev) => (prev < images.length - 1 ? prev + 1 : 0));
   };
 
+  const handleRemoveClick = (e: React.MouseEvent, index: number) => {
+    e.stopPropagation();
+    if (readOnly) return;
+    setPendingRemoveIndex(index);
+    setShowRemoveConfirm(true);
+  };
+
+  const handleConfirmRemove = () => {
+    if (pendingRemoveIndex !== null) {
+      onRemove(pendingRemoveIndex);
+      if (currentImageIndex >= images.length - 1 && currentImageIndex > 0) {
+        setCurrentImageIndex(currentImageIndex - 1);
+      }
+    }
+    setShowRemoveConfirm(false);
+    setPendingRemoveIndex(null);
+  };
+
+  const handleCancelRemove = () => {
+    setShowRemoveConfirm(false);
+    setPendingRemoveIndex(null);
+  };
+
   const currentImage = images.length > 0 ? images[currentImageIndex] : null;
 
   return (
@@ -190,13 +216,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
                   <button
                     type="button"
                     className="image-remove-btn"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onRemove(currentImageIndex);
-                      if (currentImageIndex >= images.length - 1 && currentImageIndex > 0) {
-                        setCurrentImageIndex(currentImageIndex - 1);
-                      }
-                    }}
+                    onClick={(e) => handleRemoveClick(e, currentImageIndex)}
                     aria-label={`Remove image ${currentImageIndex + 1}`}
                     title="Remove image"
                   >
@@ -246,6 +266,33 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
       </div>
       {zoomedImage && (
         <ImageZoomModal imageSrc={zoomedImage} onClose={() => setZoomedImage(null)} />
+      )}
+      {showRemoveConfirm && (
+        <>
+          <div className="modal-overlay" onClick={handleCancelRemove} />
+          <div className="delete-modal">
+            <div className="modal-header">
+              <h3>Remove Image</h3>
+              <button className="modal-close" onClick={handleCancelRemove} aria-label="Close">
+                ✕
+              </button>
+            </div>
+            <div className="modal-body">
+              <p className="delete-warning">
+                Are you sure you want to remove this image?
+              </p>
+              <p className="delete-note">This action cannot be undone.</p>
+            </div>
+            <div className="modal-footer">
+              <button className="btn-secondary" onClick={handleCancelRemove}>
+                Cancel
+              </button>
+              <button className="btn-delete-confirm" onClick={handleConfirmRemove}>
+                Remove
+              </button>
+            </div>
+          </div>
+        </>
       )}
     </>
   );

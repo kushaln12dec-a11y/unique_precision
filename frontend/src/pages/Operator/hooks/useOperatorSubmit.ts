@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { updateOperatorJob } from "../../../services/operatorApi";
+import { captureOperatorInput } from "../../../services/operatorApi";
 import type { JobEntry } from "../../../types/job";
 import type { CutInputData } from "../types/cutInput";
 import { validateCutInputs } from "../utils/validation";
@@ -24,11 +24,11 @@ export const useOperatorSubmit = (
 
   const handleSubmit = async () => {
     if (!groupId || jobs.length === 0) return;
-    
+
     // Validate all cuts and collect errors
     const newErrors = new Map<number | string, Record<string, string>>();
     let hasErrors = false;
-    
+
     for (const job of jobs) {
       const cutData = cutInputs.get(job.id as number);
       if (cutData) {
@@ -45,7 +45,7 @@ export const useOperatorSubmit = (
         }
       }
     }
-    
+
     if (hasErrors) {
       setValidationErrors(newErrors);
       // Scroll to first error
@@ -58,13 +58,13 @@ export const useOperatorSubmit = (
       }
       return;
     }
-    
+
     // Clear errors if validation passes
     setValidationErrors(new Map());
-    
+
     try {
       const updatePromises: Promise<any>[] = [];
-      
+
       for (const job of jobs) {
         const cutData = cutInputs.get(job.id as number);
         if (cutData) {
@@ -80,11 +80,9 @@ export const useOperatorSubmit = (
               reader.readAsDataURL(cutData.lastImageFile!);
             });
           }
-          
+
           updatePromises.push(
-            updateOperatorJob(String(job.id), {
-              ...job,
-              lastImage: imageBase64,
+            captureOperatorInput(String(job.id), {
               startTime: cutData.startTime,
               endTime: cutData.endTime,
               machineHrs: cutData.machineHrs,
@@ -92,11 +90,12 @@ export const useOperatorSubmit = (
               opsName: cutData.opsName,
               idleTime: cutData.idleTime || "",
               idleTimeDuration: cutData.idleTimeDuration || "",
-            } as any)
+              lastImage: imageBase64,
+            })
           );
         }
       }
-      
+
       await Promise.all(updatePromises);
       setToast({ message: "Job details updated successfully!", variant: "success", visible: true });
       setTimeout(() => {

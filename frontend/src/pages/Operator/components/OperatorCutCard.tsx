@@ -54,12 +54,12 @@ export const OperatorCutCard: React.FC<OperatorCutCardProps> = ({
                 <span>₹{Number(cutItem.rate || 0).toFixed(2)}</span>
               </div>
               <div className="cut-detail-item">
-                <label>Cut Length (mm)</label>
-                <span>{Number(cutItem.cut || 0).toFixed(2)}</span>
-              </div>
-              <div className="cut-detail-item">
                 <label>Description</label>
                 <span>{cutItem.description || "—"}</span>
+              </div>
+              <div className="cut-detail-item">
+                <label>Cut Length (mm)</label>
+                <span>{Number(cutItem.cut || 0).toFixed(2)}</span>
               </div>
               <div className="cut-detail-item">
                 <label>TH (MM)</label>
@@ -126,7 +126,7 @@ export const OperatorCutCard: React.FC<OperatorCutCardProps> = ({
                     onImageChange([]);
                   }
                 }}
-                readOnly={false}
+                readOnly={true}
               />
             </div>
           </div>

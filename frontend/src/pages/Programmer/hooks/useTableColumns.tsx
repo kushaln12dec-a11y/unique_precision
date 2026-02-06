@@ -75,19 +75,20 @@ export const useTableColumns = ({
         render: (row) => `₹${Number(row.parent.rate || 0).toFixed(2)}`,
       },
       {
+        key: "description",
+        label: "Description",
+        sortable: true,
+        sortKey: "description",
+        render: (row) => row.parent.description || "—",
+      },
+      {
         key: "cut",
         label: "Cut (mm)",
         sortable: true,
         sortKey: "cut",
         render: (row) => Number(row.parent.cut || 0).toFixed(2),
       },
-      {
-        key: "description",
-        label: "Description1",
-        sortable: true,
-        sortKey: "description",
-        render: (row) => row.parent.description || "—",
-      },
+
       {
         key: "thickness",
         label: "TH (MM)",
