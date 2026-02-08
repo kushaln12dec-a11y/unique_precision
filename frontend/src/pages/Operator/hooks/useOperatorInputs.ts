@@ -162,17 +162,17 @@ export const useOperatorInputs = (
       // Clear error for this field when user starts typing
       if (field !== "recalculateMachineHrs" && validationErrors.has(cutId)) {
         const cutErrors = validationErrors.get(cutId)!;
-        if (cutErrors[quantityIndex]?.[field]) {
+        if (cutErrors && cutErrors[String(quantityIndex)]?.[field]) {
           setValidationErrors((prev) => {
             const newErrors = new Map(prev);
-            const qtyErrors = { ...cutErrors[quantityIndex] };
+            const qtyErrors = { ...cutErrors[String(quantityIndex)] };
             delete qtyErrors[field];
-            const updatedCutErrors = {
+            const updatedCutErrors: Record<string, Record<string, string>> = {
               ...cutErrors,
-              [quantityIndex]: qtyErrors,
+              [String(quantityIndex)]: qtyErrors,
             };
             if (Object.keys(qtyErrors).length === 0) {
-              const { [quantityIndex]: _, ...rest } = updatedCutErrors;
+              const { [String(quantityIndex)]: _, ...rest } = updatedCutErrors;
               if (Object.keys(rest).length === 0) {
                 newErrors.delete(cutId);
               } else {

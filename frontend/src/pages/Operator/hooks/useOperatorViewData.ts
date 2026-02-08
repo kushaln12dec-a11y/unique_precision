@@ -3,7 +3,7 @@ import { getOperatorJobsByGroupId } from "../../../services/operatorApi";
 import { getIdleTimeConfigs } from "../../../services/idleTimeConfigApi";
 import type { JobEntry } from "../../../types/job";
 import type { CutInputData, QuantityInputData } from "../types/cutInput";
-import { createEmptyCutInputData, createEmptyQuantityInputData } from "../types/cutInput";
+import { createEmptyQuantityInputData } from "../types/cutInput";
 import { calculateMachineHrs } from "../utils/machineHrsCalculation";
 
 /**

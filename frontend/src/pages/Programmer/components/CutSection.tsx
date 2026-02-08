@@ -44,7 +44,7 @@ export const CutSection: React.FC<CutSectionProps> = ({
   cutTotals,
   isCollapsed,
   isSaved,
-  fieldErrors,
+  fieldErrors: _fieldErrors,
   isFirstCut,
   openPriorityDropdown,
   onToggle,

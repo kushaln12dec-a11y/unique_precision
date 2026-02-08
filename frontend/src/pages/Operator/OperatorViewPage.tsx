@@ -10,7 +10,7 @@ import { OperatorJobInfo } from "./components/OperatorJobInfo";
 import { OperatorCutCard } from "./components/OperatorCutCard";
 import { OperatorTotalsSection } from "./components/OperatorTotalsSection";
 import { calculateTotals, type CutForm } from "../Programmer/programmerUtils";
-import type { CutInputData, QuantityInputData } from "./types/cutInput";
+import type { CutInputData } from "./types/cutInput";
 import { createEmptyCutInputData } from "./types/cutInput";
 import { getUsers } from "../../services/userApi";
 import { captureOperatorInput } from "../../services/operatorApi";
