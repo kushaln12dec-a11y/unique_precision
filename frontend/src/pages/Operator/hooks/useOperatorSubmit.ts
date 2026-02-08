@@ -13,7 +13,7 @@ export const useOperatorSubmit = (
   jobs: JobEntry[],
   cutInputs: Map<number | string, CutInputData>,
   setExpandedCuts: React.Dispatch<React.SetStateAction<Set<number | string>>>,
-  setValidationErrors: React.Dispatch<React.SetStateAction<Map<number | string, Record<string, string>>>>
+  setValidationErrors: React.Dispatch<React.SetStateAction<Map<number | string, Record<string, Record<string, string>>>>>
 ) => {
   const navigate = useNavigate();
   const [toast, setToast] = useState<{ message: string; variant: "success" | "error" | "info"; visible: boolean }>({
@@ -26,7 +26,7 @@ export const useOperatorSubmit = (
     if (!groupId || jobs.length === 0) return;
 
     // Validate all cuts and collect errors
-    const newErrors = new Map<number | string, Record<string, string>>();
+    const newErrors = new Map<number | string, Record<string, Record<string, string>>>();
     let hasErrors = false;
 
     for (const job of jobs) {
@@ -67,9 +67,21 @@ export const useOperatorSubmit = (
 
       for (const job of jobs) {
         const cutData = cutInputs.get(job.id as number);
-        if (cutData) {
-          let imageBase64 = cutData.lastImage;
-          if (cutData.lastImageFile) {
+        if (cutData && cutData.quantities && cutData.quantities.length > 0) {
+          // Find the first valid quantity (one that has all required fields filled)
+          const validQty = cutData.quantities.find((qty) => {
+            return qty.startTime && qty.endTime && qty.machineNumber && 
+                   qty.opsName && qty.opsName.length > 0;
+          });
+          
+          // If no fully valid quantity, skip this job (validation should have caught this)
+          if (!validQty) continue;
+          
+          // Submit the first valid quantity's data
+          const firstQty = validQty;
+          
+          let imageBase64 = firstQty.lastImage;
+          if (firstQty.lastImageFile) {
             const reader = new FileReader();
             await new Promise<void>((resolve, reject) => {
               reader.onloadend = () => {
@@ -77,20 +89,26 @@ export const useOperatorSubmit = (
                 resolve();
               };
               reader.onerror = reject;
-              reader.readAsDataURL(cutData.lastImageFile!);
+              reader.readAsDataURL(firstQty.lastImageFile!);
             });
           }
 
+          // Join operator names with comma for backward compatibility
+          const opsName = Array.isArray(firstQty.opsName) 
+            ? firstQty.opsName.join(", ") 
+            : (firstQty.opsName || "");
+
           updatePromises.push(
             captureOperatorInput(String(job.id), {
-              startTime: cutData.startTime,
-              endTime: cutData.endTime,
-              machineHrs: cutData.machineHrs,
-              machineNumber: cutData.machineNumber,
-              opsName: cutData.opsName,
-              idleTime: cutData.idleTime || "",
-              idleTimeDuration: cutData.idleTimeDuration || "",
+              startTime: firstQty.startTime,
+              endTime: firstQty.endTime,
+              machineHrs: firstQty.machineHrs,
+              machineNumber: firstQty.machineNumber,
+              opsName: opsName,
+              idleTime: firstQty.idleTime || "",
+              idleTimeDuration: firstQty.idleTimeDuration || "",
               lastImage: imageBase64,
+              quantityIndex: cutData.quantities.indexOf(firstQty), // Track which quantity was submitted
             })
           );
         }

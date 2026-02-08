@@ -270,6 +270,114 @@
 }
 
 /* Input Fields Section for Each Cut */
+.quantity-input-group {
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.quantity-input-group:last-child {
+  margin-bottom: 0;
+}
+
+.quantity-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid #cbd5e1;
+}
+
+.quantity-label {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0;
+}
+
+.quantity-timer {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: #f0f7ff;
+  border-radius: 6px;
+  border: 1px solid #bfdbfe;
+}
+
+.timer-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #64748b;
+}
+
+.timer-value {
+  font-size: 1rem;
+  font-weight: 700;
+  font-family: 'Courier New', monospace;
+  color: #1e293b;
+  min-width: 80px;
+  text-align: center;
+}
+
+.timer-value.running {
+  color: #10b981;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.quantity-save-section {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.btn-save-quantity {
+  padding: 0.5rem 1.5rem;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-save-quantity:hover {
+  background: #2563eb;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
+}
+
+.btn-save-quantity:active {
+  transform: translateY(0);
+}
+
+.btn-save-quantity.saved {
+  background: #10b981;
+  cursor: default;
+}
+
+.btn-save-quantity.saved:hover {
+  background: #10b981;
+  transform: none;
+  box-shadow: none;
+}
+
 .operator-cut-inputs-section {
   padding: 1.5rem;
   background: #f8fafc;
@@ -355,6 +463,10 @@
   font-weight: 500;
 }
 
+.machine-hrs-input {
+  width: 100%;
+}
+
 .idle-time-duration-wrapper {
   position: relative;
   display: flex;
@@ -362,7 +474,29 @@
 }
 
 .idle-time-duration-wrapper input {
-  padding-right: 36px;
+  padding-right: 72px; /* Space for two icons */
+}
+
+.idle-time-add-icon {
+  position: absolute;
+  right: 40px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  color: #10b981;
+  transition: all 0.2s;
+  z-index: 1;
+}
+
+.idle-time-add-icon:hover {
+  color: #059669;
+  background: rgba(16, 185, 129, 0.1);
+  border-radius: 4px;
+  transform: scale(1.1);
 }
 
 .idle-time-reset-icon {
@@ -386,36 +520,6 @@
   border-radius: 4px;
 }
 
-.machine-hrs-wrapper {
-  position: relative;
-  display: flex;
-  align-items: center;
-}
-
-.machine-hrs-wrapper input {
-  padding-right: 36px;
-}
-
-.machine-hrs-recalc-icon {
-  position: absolute;
-  right: 8px;
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 4px;
-  color: #64748b;
-  transition: all 0.2s;
-  z-index: 1;
-}
-
-.machine-hrs-recalc-icon:hover {
-  color: #2563eb;
-  background-color: rgba(37, 99, 235, 0.1);
-  border-radius: 4px;
-}
 
 .operator-input-card select {
   appearance: none;

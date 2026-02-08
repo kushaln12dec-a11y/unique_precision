@@ -3,6 +3,7 @@ import ImageZoomModal from "../../../components/ImageZoomModal";
 import ImageUpload from "./ImageUpload";
 import type { JobEntry } from "../../../types/job";
 import { calculateTotals, type CutForm } from "../programmerUtils";
+import { formatDecimalHoursToHHMMhrs } from "../../../utils/date";
 import "./JobDetailsModal.css";
 import { useLocation } from "react-router-dom";
 
@@ -184,8 +185,8 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
           <div className="job-details-section">
             <h3>
               {isSingleCut
-                ? "Cut Information"
-                : `Cuts (${displayEntries.length})`}
+                ? "Setting Information"
+                : `Settings (${displayEntries.length})`}
             </h3>
             <div className="cuts-container">
               {displayEntries.map((cutItem, index) => (
@@ -279,8 +280,8 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
                         <label>Total Hrs/Piece:</label>
                         <span>
                           {cutItem.totalHrs
-                            ? cutItem.totalHrs.toFixed(3)
-                            : "0.000"}
+                            ? formatDecimalHoursToHHMMhrs(cutItem.totalHrs)
+                            : "00:00hrs"}
                         </span>
                       </div>
                       {!isProgrammer && (
@@ -382,8 +383,8 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
               <label>Total Hrs/Piece:</label>
               <span>
                 {displayGroupTotalHrs
-                  ? displayGroupTotalHrs.toFixed(3)
-                  : "0.000"}
+                  ? formatDecimalHoursToHHMMhrs(displayGroupTotalHrs)
+                  : "00:00hrs"}
               </span>
             </div>
             {!isProgrammer && (

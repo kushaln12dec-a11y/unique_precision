@@ -185,11 +185,15 @@
 
 .job-form-image {
   border-radius: 12px;
-  background: linear-gradient(180deg, rgba(79, 172, 254, 0.6), rgba(37, 99, 235, 0.8));
+  background: linear-gradient(
+    180deg,
+    rgba(79, 172, 254, 0.6),
+    rgba(37, 99, 235, 0.8)
+  );
   border: 1px solid rgba(255, 255, 255, 0.2);
   width: 260px;
-  height: 260px;
-  min-height: 260px;
+  height: 100px;
+  min-height: 100px;
   position: relative;
   cursor: pointer;
   display: flex;
@@ -398,8 +402,13 @@
 
 .cut-section-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(120px, 1fr)) minmax(220px, 1.5fr);
+  grid-template-columns: repeat(5, minmax(140px, 1fr));
   gap: 1rem;
+
+  grid-template-areas:
+    "customer rate description description material"
+    "cut thickness pass setting qty"
+    "sedm totalhrs totalamount . .";
 }
 
 .cut-section.collapsed .cut-section-body {
@@ -606,9 +615,46 @@
   }
 }
 
-.description-box {
-  grid-column: 5;
-  grid-row: 2;
+/* Row 1 */
+.grid-customer {
+  grid-area: customer;
+}
+.grid-rate {
+  grid-area: rate;
+}
+.grid-description {
+  grid-area: description;
+}
+.grid-material {
+  grid-area: material;
+}
+
+/* Row 2 */
+.grid-cut {
+  grid-area: cut;
+}
+.grid-thickness {
+  grid-area: thickness;
+}
+.grid-pass {
+  grid-area: pass;
+}
+.grid-setting {
+  grid-area: setting;
+}
+.grid-qty {
+  grid-area: qty;
+}
+
+/* Row 3 */
+.grid-sedm {
+  grid-area: sedm;
+}
+.grid-total-hrs {
+  grid-area: totalhrs;
+}
+.grid-total-amount {
+  grid-area: totalamount;
 }
 
 .description-box textarea {
@@ -1138,7 +1184,6 @@
   text-align: center;
 }
 
-
 .jobs-table th.action-header,
 .jobs-table td.action-cell {
   min-width: 120px;
@@ -1262,7 +1307,6 @@
 .group-row.priority-row.priority-low:hover td {
   color: #0f172a !important;
 }
-
 
 .empty-state-row {
   padding: 3rem 0;
@@ -1400,8 +1444,6 @@
 .group-row.critical-row .action-icon-button.danger {
   color: #dc2626 !important;
 }
-
-
 
 .group-row-expanded {
   background: #f9fafb;
@@ -1600,7 +1642,6 @@
 .child-row.child-priority-row.child-priority-low:hover td {
   color: #0f172a !important;
 }
-
 
 .btn-danger.small {
   padding: 0.35rem 0.8rem;

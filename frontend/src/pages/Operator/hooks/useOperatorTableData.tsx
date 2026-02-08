@@ -132,8 +132,8 @@ export const useOperatorTableData = (
             />
           ),
           ariaLabel: expandedGroups.has(row.groupId)
-            ? "Collapse cuts"
-            : "Expand cuts",
+            ? "Collapse settings"
+            : "Expand settings",
         });
       }
     });

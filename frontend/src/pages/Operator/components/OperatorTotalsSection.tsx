@@ -1,4 +1,5 @@
 import React from "react";
+import { formatDecimalHoursToHHMMhrs } from "../../../utils/date";
 import "../OperatorViewPage.css";
 
 type OperatorTotalsSectionProps = {
@@ -18,7 +19,7 @@ export const OperatorTotalsSection: React.FC<OperatorTotalsSectionProps> = ({
     <div className="operator-totals-section">
       <div className="operator-total-card">
         <label>Total Hrs/Piece</label>
-        <span>{groupTotalHrs ? groupTotalHrs.toFixed(3) : "0.000"}</span>
+        <span>{groupTotalHrs ? formatDecimalHoursToHHMMhrs(groupTotalHrs) : "00:00hrs"}</span>
       </div>
       <div className="operator-total-card">
         <label>WEDM Amount (₹)</label>

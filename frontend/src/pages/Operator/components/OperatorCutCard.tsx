@@ -3,19 +3,29 @@ import ImageUpload from "../../Programmer/components/ImageUpload";
 import type { JobEntry } from "../../../types/job";
 import type { CutInputData } from "../types/cutInput";
 import { OperatorInputSection } from "./OperatorInputSection";
+import { formatDecimalHoursToHHMMhrs } from "../../../utils/date";
 import "../OperatorViewPage.css";
 
-type InputField = keyof CutInputData | "recalculateMachineHrs";
+import type { QuantityInputData } from "../types/cutInput";
 
 type OperatorCutCardProps = {
   cutItem: JobEntry;
   index: number;
   cutData: CutInputData;
   isExpanded: boolean;
+  operatorUsers: Array<{ id: string | number; name: string }>;
   onToggleExpansion: () => void;
   onImageChange: (files: File[]) => void;
-  onInputChange: (cutId: number | string, field: InputField, value: string) => void;
-  validationErrors?: Record<string, string>;
+  onInputChange: (
+    cutId: number | string,
+    quantityIndex: number,
+    field: keyof QuantityInputData | "recalculateMachineHrs" | "addIdleTimeToMachineHrs",
+    value: string | string[]
+  ) => void;
+  onSaveQuantity?: (cutId: number | string, quantityIndex: number) => void;
+  savedQuantities?: Set<number>;
+  validationErrors?: Record<string, Record<string, string>>;
+  onShowToast?: (message: string, variant?: "success" | "error" | "info") => void;
 };
 
 export const OperatorCutCard: React.FC<OperatorCutCardProps> = ({
@@ -23,18 +33,23 @@ export const OperatorCutCard: React.FC<OperatorCutCardProps> = ({
   index,
   cutData,
   isExpanded,
+  operatorUsers,
   onToggleExpansion,
   onImageChange,
   onInputChange,
+  onSaveQuantity,
+  savedQuantities = new Set(),
   validationErrors = {},
+  onShowToast,
 }) => {
+  const quantity = Number(cutItem.qty || 1);
   return (
     <div className="operator-cut-card">
       <div 
         className="operator-cut-header"
         onClick={onToggleExpansion}
       >
-        <h4>Cut {index + 1}</h4>
+        <h4>Setting {index + 1}</h4>
         <div className="cut-expand-indicator">
           {isExpanded ? "▼" : "▶"}
         </div>
@@ -105,7 +120,7 @@ export const OperatorCutCard: React.FC<OperatorCutCardProps> = ({
               </div>
               <div className="cut-detail-item">
                 <label>Total Hrs/Piece</label>
-                <span>{cutItem.totalHrs ? cutItem.totalHrs.toFixed(3) : "0.000"}</span>
+                <span>{cutItem.totalHrs ? formatDecimalHoursToHHMMhrs(cutItem.totalHrs) : "00:00hrs"}</span>
               </div>
               <div className="cut-detail-item">
                 <label>Total Amount (₹)</label>
@@ -117,8 +132,12 @@ export const OperatorCutCard: React.FC<OperatorCutCardProps> = ({
             <div className="operator-cut-image-section">
               <label>Last Image (Cut {index + 1})</label>
               <ImageUpload
-                images={cutData.lastImage ? [cutData.lastImage] : (Array.isArray(cutItem.cutImage) ? cutItem.cutImage : (cutItem.cutImage ? [cutItem.cutImage] : []))}
-                label={`Cut ${index + 1} Last Image`}
+                images={
+                  cutData.quantities && cutData.quantities.length > 0 && cutData.quantities[0].lastImage
+                    ? [cutData.quantities[0].lastImage]
+                    : (Array.isArray(cutItem.cutImage) ? cutItem.cutImage : (cutItem.cutImage ? [cutItem.cutImage] : []))
+                }
+                label={`Setting ${index + 1} Last Image`}
                 onImageChange={onImageChange}
                 onRemove={(imageIndex) => {
                   // For operator, we only allow one image, so removing means clearing
@@ -135,8 +154,13 @@ export const OperatorCutCard: React.FC<OperatorCutCardProps> = ({
           <OperatorInputSection
             cutData={cutData}
             cutId={cutItem.id}
+            quantity={quantity}
+            operatorUsers={operatorUsers}
             onInputChange={onInputChange}
+            onSaveQuantity={onSaveQuantity}
+            savedQuantities={savedQuantities}
             validationErrors={validationErrors}
+            onShowToast={onShowToast}
           />
         </>
       )}

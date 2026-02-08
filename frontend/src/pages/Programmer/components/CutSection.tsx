@@ -7,6 +7,7 @@ import CustomerAutocomplete from "./CustomerAutocomplete";
 import MaterialAutocomplete from "./MaterialAutocomplete";
 import FlagIcon from "@mui/icons-material/Flag";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import { formatDecimalHoursToHHMMhrs } from "../../../utils/date";
 
 type CutTotals = {
   totalHrs: number;
@@ -23,7 +24,9 @@ type CutSectionProps = {
   isFirstCut: boolean;
   openPriorityDropdown: number | null;
   onToggle: () => void;
-  onCutChange: <K extends keyof CutForm>(field: K) => (value: CutForm[K]) => void;
+  onCutChange: <K extends keyof CutForm>(
+    field: K
+  ) => (value: CutForm[K]) => void;
   onImageChange: (files: File[]) => void;
   onRemoveImage: (imageIndex: number) => void;
   onSedmChange: (value: CutForm["sedm"]) => void;
@@ -59,7 +62,7 @@ export const CutSection: React.FC<CutSectionProps> = ({
   return (
     <div className={`cut-section ${isCollapsed ? "collapsed" : ""}`}>
       <div className="cut-section-header">
-        <span>Cut {index + 1}</span>
+        <span>Setting {index + 1}</span>
         <div className="cut-section-header-right">
           <label className="header-checkbox">
             <input
@@ -85,14 +88,16 @@ export const CutSection: React.FC<CutSectionProps> = ({
               aria-label="Priority"
             >
               <div className="priority-flag-wrapper">
-                <FlagIcon 
+                <FlagIcon
                   className={`priority-flag priority-flag-${cut.priority.toLowerCase()}`}
                   sx={{ fontSize: "1rem" }}
                 />
                 <span className="priority-text">{cut.priority}</span>
               </div>
-              <ExpandMoreIcon 
-                className={`priority-caret ${openPriorityDropdown === index ? "open" : ""}`}
+              <ExpandMoreIcon
+                className={`priority-caret ${
+                  openPriorityDropdown === index ? "open" : ""
+                }`}
                 sx={{ fontSize: "0.9rem" }}
               />
             </button>
@@ -100,41 +105,60 @@ export const CutSection: React.FC<CutSectionProps> = ({
               <div className="priority-menu">
                 <button
                   type="button"
-                  className={`priority-option ${cut.priority === "High" ? "selected" : ""}`}
+                  className={`priority-option ${
+                    cut.priority === "High" ? "selected" : ""
+                  }`}
                   onClick={() => {
                     onCutChange("priority")("High");
                     onPriorityDropdownToggle();
                   }}
                 >
-                  <FlagIcon className="priority-flag priority-flag-high" sx={{ fontSize: "1rem" }} />
+                  <FlagIcon
+                    className="priority-flag priority-flag-high"
+                    sx={{ fontSize: "1rem" }}
+                  />
                   <span>High</span>
                 </button>
                 <button
                   type="button"
-                  className={`priority-option ${cut.priority === "Medium" ? "selected" : ""}`}
+                  className={`priority-option ${
+                    cut.priority === "Medium" ? "selected" : ""
+                  }`}
                   onClick={() => {
                     onCutChange("priority")("Medium");
                     onPriorityDropdownToggle();
                   }}
                 >
-                  <FlagIcon className="priority-flag priority-flag-medium" sx={{ fontSize: "1rem" }} />
+                  <FlagIcon
+                    className="priority-flag priority-flag-medium"
+                    sx={{ fontSize: "1rem" }}
+                  />
                   <span>Medium</span>
                 </button>
                 <button
                   type="button"
-                  className={`priority-option ${cut.priority === "Low" ? "selected" : ""}`}
+                  className={`priority-option ${
+                    cut.priority === "Low" ? "selected" : ""
+                  }`}
                   onClick={() => {
                     onCutChange("priority")("Low");
                     onPriorityDropdownToggle();
                   }}
                 >
-                  <FlagIcon className="priority-flag priority-flag-low" sx={{ fontSize: "1rem" }} />
+                  <FlagIcon
+                    className="priority-flag priority-flag-low"
+                    sx={{ fontSize: "1rem" }}
+                  />
                   <span>Low</span>
                 </button>
               </div>
             )}
           </div>
-          <span className={`cut-save-status ${isSaved ? "cut-save-status-saved" : "cut-save-status-pending"}`}>
+          <span
+            className={`cut-save-status ${
+              isSaved ? "cut-save-status-saved" : "cut-save-status-pending"
+            }`}
+          >
             {isSaved ? "Saved" : "Not saved"}
           </span>
           {!isFirstCut && (
@@ -160,14 +184,20 @@ export const CutSection: React.FC<CutSectionProps> = ({
       </div>
       <div className="cut-section-body">
         <ImageUpload
-          images={Array.isArray(cut.cutImage) ? cut.cutImage : (cut.cutImage ? [cut.cutImage] : [])}
+          images={
+            Array.isArray(cut.cutImage)
+              ? cut.cutImage
+              : cut.cutImage
+              ? [cut.cutImage]
+              : []
+          }
           label={`Cut ${index + 1}`}
           onImageChange={onImageChange}
           onRemove={onRemoveImage}
           readOnly={false}
         />
         <div className="cut-section-grid">
-          <FormInput label="Customer" error={fieldErrors.customer} required>
+          <FormInput label="Customer" className="grid-customer" required>
             <CustomerAutocomplete
               value={cut.customer}
               onChange={onCutChange("customer")}
@@ -175,90 +205,84 @@ export const CutSection: React.FC<CutSectionProps> = ({
               required
             />
           </FormInput>
-          <FormInput label="Rate (₹/hr)" error={fieldErrors.rate} required>
+
+          <FormInput label="Rate (₹/hr)" className="grid-rate" required>
             <input
               type="number"
-              min="0"
-              step="0.01"
               value={cut.rate}
               onChange={(e) => onCutChange("rate")(e.target.value)}
-              required
             />
           </FormInput>
-          <FormInput label="Cut Length (mm)" error={fieldErrors.cut} required>
-            <input
-              type="number"
-              min="0"
-              step="0.1"
-              value={cut.cut}
-              onChange={(e) => onCutChange("cut")(e.target.value)}
-              required
+
+          <FormInput label="Description" className="grid-description" required>
+            <textarea
+              rows={1}
+              value={cut.description}
+              onChange={(e) =>
+                onCutChange("description")(e.target.value.toUpperCase())
+              }
             />
           </FormInput>
-          <FormInput label="Thickness (mm)" error={fieldErrors.thickness} required>
-            <input
-              type="number"
-              min="0"
-              step="0.1"
-              value={cut.thickness}
-              onChange={(e) => onCutChange("thickness")(e.target.value)}
-              required
-            />
-          </FormInput>
-          <FormInput label="Material" error={fieldErrors.material}>
+
+          <FormInput label="Material" className="grid-material">
             <MaterialAutocomplete
               value={cut.material || ""}
               onChange={onCutChange("material")}
             />
           </FormInput>
-          <FormInput label="Pass" error={fieldErrors.passLevel} required>
+
+          <FormInput label="Cut Length (mm)" className="grid-cut" required>
+            <input
+              type="number"
+              value={cut.cut}
+              onChange={(e) => onCutChange("cut")(e.target.value)}
+            />
+          </FormInput>
+
+          <FormInput label="Thickness (mm)" className="grid-thickness" required>
+            <input
+              type="number"
+              value={cut.thickness}
+              onChange={(e) => onCutChange("thickness")(e.target.value)}
+            />
+          </FormInput>
+
+          <FormInput label="Pass" className="grid-pass" required>
             <select
               value={cut.passLevel}
               onChange={(e) => onCutChange("passLevel")(e.target.value)}
-              required
             >
               <option value="1">1</option>
               <option value="2">2</option>
               <option value="3">3</option>
-              <option value="4">4</option>
-              <option value="5">5</option>
-              <option value="6">6</option>
             </select>
           </FormInput>
-          <FormInput label="Setting Hrs" error={fieldErrors.setting} required>
+
+          <FormInput label="Setting Hrs" className="grid-setting" required>
             <input
               type="number"
-              min="0"
-              step="1"
               value={cut.setting}
               onChange={(e) => onCutChange("setting")(e.target.value)}
-              required
-              title="1 = 0.5hrs, 2 = 1hrs, 3 = 1.5hrs, and so on"
             />
           </FormInput>
-          <FormInput label="Quantity" error={fieldErrors.qty} required>
+
+          <FormInput label="Quantity" className="grid-qty" required>
             <input
               type="number"
-              min="1"
-              step="1"
               value={cut.qty}
               onChange={(e) => onCutChange("qty")(e.target.value)}
-              required
             />
           </FormInput>
-          <FormInput
-            label="SEDM"
-            error={fieldErrors.sedmLengthValue && cut.sedm === "Yes" ? fieldErrors.sedmLengthValue : undefined}
-            required
-          >
+
+          <FormInput label="SEDM" className="grid-sedm" required>
             <select
               value={cut.sedm}
               onChange={(e) => onSedmChange(e.target.value as CutForm["sedm"])}
-              required
             >
               <option value="No">No</option>
               <option value="Yes">Yes</option>
             </select>
+
             {cut.sedm === "Yes" && (
               <button
                 type="button"
@@ -269,29 +293,35 @@ export const CutSection: React.FC<CutSectionProps> = ({
               </button>
             )}
           </FormInput>
-          <FormInput label="Description" error={fieldErrors.description} required className="description-box">
-            <textarea
-              rows={1}
-              value={cut.description}
-              placeholder="Enter description"
-              onChange={(e) => onCutChange("description")(e.target.value.toUpperCase())}
-              required
-            />
+
+          <FormInput label="Total Hrs/Piece" className="grid-total-hrs">
+            <input type="text" value={formatDecimalHoursToHHMMhrs(cutTotals.totalHrs)} readOnly />
           </FormInput>
-          <FormInput label="Total Hrs/Piece">
-            <input type="text" value={cutTotals.totalHrs.toFixed(3)} readOnly />
-          </FormInput>
+
           {isAdmin && (
-            <FormInput label="Total Amount (₹)">
-              <input type="text" value={cutTotals.totalAmount.toFixed(2)} readOnly />
+            <FormInput label="Total Amount (₹)" className="grid-total-amount">
+              <input
+                type="text"
+                value={cutTotals.totalAmount.toFixed(2)}
+                readOnly
+              />
             </FormInput>
           )}
         </div>
+
         <div className="cut-section-actions">
-          <button type="button" className="btn-success small" onClick={onSaveCut}>
+          <button
+            type="button"
+            className="btn-success small"
+            onClick={onSaveCut}
+          >
             Save Cut
           </button>
-          <button type="button" className="btn-clear small" onClick={onClearCut}>
+          <button
+            type="button"
+            className="btn-clear small"
+            onClick={onClearCut}
+          >
             Clear
           </button>
         </div>

@@ -42,7 +42,7 @@ export const useJobData = ({
           isExpanded: expandedGroups.has(row.groupId),
           onToggle: () => toggleGroup(row.groupId),
           expandedContent: <ChildCutsTable entries={row.entries} onEdit={onEdit} onDelete={onDelete} />,
-          ariaLabel: expandedGroups.has(row.groupId) ? "Collapse cuts" : "Expand cuts",
+          ariaLabel: expandedGroups.has(row.groupId) ? "Collapse settings" : "Expand settings",
         });
       }
     });

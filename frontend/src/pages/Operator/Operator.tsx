@@ -78,6 +78,7 @@ const Operator = () => {
 
   const handleAssignChange = async (jobId: number | string, value: string) => {
     try {
+      // Store as comma-separated string (backend can handle this)
       await updateOperatorJob(String(jobId), { assignedTo: value });
       setJobs((prev) =>
         prev.map((job) => (job.id === jobId ? { ...job, assignedTo: value } : job))

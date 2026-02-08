@@ -80,9 +80,43 @@ export const formatTimeOnly = (value: string) => {
   return `${hours}:${minutes}`;
 };
 
+/**
+ * Format decimal hours to HH:MMhrs format with proper minute rollover
+ * Example: 18.786 -> "18:47hrs", 18.61 -> "19:01hrs" (if minutes exceed 60, roll over to hours)
+ * This function handles minute rollover: if minutes >= 60, they roll over to hours
+ * 
+ * @param decimalHours - Hours as a decimal number (e.g., 18.786)
+ * @returns Formatted string in HH:MMhrs format
+ */
 export const formatHoursToHHMM = (decimalHours: number): string => {
-  if (isNaN(decimalHours) || decimalHours < 0) return "00.00";
-  const hours = Math.floor(decimalHours);
-  const minutes = Math.round((decimalHours - hours) * 60);
-  return `${pad(hours)}.${pad(minutes)}`;
+  if (isNaN(decimalHours) || decimalHours < 0) return "00:00hrs";
+  
+  // Convert to total minutes
+  const totalMinutes = Math.round(decimalHours * 60);
+  
+  // Calculate hours and minutes with rollover
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  
+  return `${pad(hours)}:${pad(minutes)}hrs`;
+};
+
+/**
+ * Format decimal hours to HH:MMhrs format with proper minute rollover
+ * Example: 18.786 -> "18:47hrs", 18.61 -> "19:01hrs" (if minutes exceed 60, roll over to hours)
+ * 
+ * @param decimalHours - Hours as a decimal number (e.g., 18.786)
+ * @returns Formatted string in HH:MMhrs format
+ */
+export const formatDecimalHoursToHHMMhrs = (decimalHours: number): string => {
+  if (isNaN(decimalHours) || decimalHours < 0) return "00:00hrs";
+  
+  // Convert to total minutes
+  const totalMinutes = Math.round(decimalHours * 60);
+  
+  // Calculate hours and minutes with rollover
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  
+  return `${pad(hours)}:${pad(minutes)}hrs`;
 };

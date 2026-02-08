@@ -5,6 +5,7 @@ import ActionButtons from "./ActionButtons";
 import JobDetailsModal from "./JobDetailsModal";
 import { getRowClassName } from "../utils/priorityUtils";
 import { getUserRoleFromToken } from "../../../utils/auth";
+import { MultiSelectOperators } from "../../Operator/components/MultiSelectOperators";
 
 type ChildCutsTableProps = {
   entries: JobEntry[];
@@ -52,7 +53,7 @@ const ChildCutsTable: React.FC<ChildCutsTableProps> = ({
       <table className="child-jobs-table">
         <thead>
           <tr className="child-table-header">
-            <th>Cut #</th>
+            <th>Setting #</th>
             <th>Customer</th>
             <th>Rate (₹/hr)</th>
             <th>Description</th>
@@ -87,24 +88,49 @@ const ChildCutsTable: React.FC<ChildCutsTableProps> = ({
               <td>{entry.pipFinish ? "Yes" : "No"}</td>
               <td>
                 {isOperator && canAssign && onAssignChange && operatorUsers.length > 0 ? (
-                  <select
-                    value={entry.assignedTo || "Unassigned"}
-                    onChange={(e) => {
-                      e.stopPropagation();
-                      onAssignChange(entry.id, e.target.value);
-                    }}
-                    onClick={(e) => e.stopPropagation()}
-                    className="child-assigned-to-select"
-                  >
-                    <option value="Unassigned">Unassigned</option>
-                    {operatorUsers.map((user) => (
-                      <option key={user.id} value={user.name}>
-                        {user.name}
-                      </option>
-                    ))}
-                  </select>
+                  <div onClick={(e) => e.stopPropagation()}>
+                    <MultiSelectOperators
+                      selectedOperators={
+                        entry.assignedTo && entry.assignedTo !== "Unassigned"
+                          ? (() => {
+                              // Parse and remove duplicates
+                              const operators = Array.isArray(entry.assignedTo)
+                                ? entry.assignedTo
+                                : entry.assignedTo.split(",").map(name => name.trim()).filter(Boolean);
+                              return [...new Set(operators)];
+                            })()
+                          : []
+                      }
+                      availableOperators={operatorUsers}
+                      onChange={(operators) => {
+                        // Remove duplicates before storing
+                        const uniqueOperators = [...new Set(operators)];
+                        const value = uniqueOperators.length > 0 ? uniqueOperators.join(", ") : "Unassigned";
+                        onAssignChange(entry.id, value);
+                      }}
+                      placeholder="Unassigned"
+                      compact={true}
+                    />
+                  </div>
                 ) : (
-                  entry.assignedTo || "—"
+                  <div className="assigned-operators-readonly">
+                    {entry.assignedTo && entry.assignedTo !== "Unassigned" ? (
+                      (() => {
+                        const assignedOps = Array.isArray(entry.assignedTo)
+                          ? entry.assignedTo
+                          : entry.assignedTo.split(", ").filter(Boolean);
+                        return assignedOps.length > 1 ? (
+                          <span className="compact-display-readonly" title={assignedOps.join(", ")}>
+                            {assignedOps[0]}+{assignedOps.length - 1}
+                          </span>
+                        ) : (
+                          <span className="operator-badge-readonly">{assignedOps[0]}</span>
+                        );
+                      })()
+                    ) : (
+                      <span className="unassigned-text">—</span>
+                    )}
+                  </div>
                 )}
               </td>
               <td>

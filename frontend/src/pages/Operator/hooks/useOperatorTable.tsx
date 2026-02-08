@@ -3,6 +3,7 @@ import type { JobEntry } from "../../../types/job";
 import { formatHoursToHHMM, parseDateValue } from "../../../utils/date";
 import ActionButtons from "../../Programmer/components/ActionButtons";
 import ArrowForwardIosSharpIcon from "@mui/icons-material/ArrowForwardIosSharp";
+import { MultiSelectOperators } from "../components/MultiSelectOperators";
 import type { Column } from "../../../components/DataTable";
 
 type TableRow = {
@@ -141,27 +142,51 @@ export const useOperatorTable = ({
           </>
         ),
         sortable: false,
-        render: (row) =>
-          canAssign ? (
-            <select
-              value={row.parent.assignedTo || "Unassigned"}
-              onChange={(event) =>
-                handleAssignChange(row.parent.id, event.target.value)
-              }
-            >
-              <option value="Unassigned">Unassigned</option>
-              {operatorUsers.map((user) => (
-                <option
-                  key={user.id}
-                  value={user.name}
-                >
-                  {user.name}
-                </option>
-              ))}
-            </select>
+        render: (row) => {
+          // Handle backward compatibility: convert string to array and remove duplicates
+          const assignedToValue = row.parent.assignedTo || "";
+          let assignedOperators: string[] = [];
+          
+          if (Array.isArray(assignedToValue)) {
+            // If already an array, remove duplicates
+            assignedOperators = [...new Set(assignedToValue.map(name => name.trim()).filter(Boolean))];
+          } else if (assignedToValue && assignedToValue !== "Unassigned") {
+            // If string, split by comma, trim, and remove duplicates
+            assignedOperators = [...new Set(
+              assignedToValue.split(",").map(name => name.trim()).filter(Boolean)
+            )];
+          }
+          
+          return canAssign ? (
+            <MultiSelectOperators
+              selectedOperators={assignedOperators}
+              availableOperators={operatorUsers}
+              onChange={(operators) => {
+                // Remove duplicates before storing
+                const uniqueOperators = [...new Set(operators)];
+                // Store as comma-separated string for backward compatibility
+                const value = uniqueOperators.length > 0 ? uniqueOperators.join(", ") : "Unassigned";
+                handleAssignChange(row.parent.id, value);
+              }}
+              placeholder="Select operators..."
+              compact={true}
+            />
           ) : (
-            <span>{row.parent.assignedTo || "Unassigned"}</span>
-          ),
+            <div className="assigned-operators-readonly">
+              {assignedOperators.length > 0 ? (
+                assignedOperators.length > 1 ? (
+                  <span className="compact-display-readonly" title={assignedOperators.join(", ")}>
+                    {assignedOperators[0]}+{assignedOperators.length - 1}
+                  </span>
+                ) : (
+                  <span className="operator-badge-readonly">{assignedOperators[0]}</span>
+                )
+              ) : (
+                <span className="unassigned-text">Unassigned</span>
+              )}
+            </div>
+          );
+        },
       },
       {
         key: "totalHrs",

@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import { getOperatorJobsByGroupId } from "../../../services/operatorApi";
 import { getIdleTimeConfigs } from "../../../services/idleTimeConfigApi";
 import type { JobEntry } from "../../../types/job";
-import type { CutInputData } from "../types/cutInput";
+import type { CutInputData, QuantityInputData } from "../types/cutInput";
+import { createEmptyCutInputData, createEmptyQuantityInputData } from "../types/cutInput";
 import { calculateMachineHrs } from "../utils/machineHrsCalculation";
 
 /**
@@ -52,42 +53,62 @@ export const useOperatorViewData = (groupId: string | null, cutIdParam: string |
         const initialInputs = new Map<number, CutInputData>();
         filteredJobs.forEach((job) => {
           const existing = job as any;
-          const startTime = existing.startTime || "";
-          const endTime = existing.endTime || "";
-          let idleTime = existing.idleTime || "";
-          let idleTimeDuration = existing.idleTimeDuration || "";
+          const quantity = Math.max(1, Number(job.qty || 1));
           
-          // If Vertical Dial is selected, ensure idleTimeDuration is in "00:20" format
-          if (idleTime === "Vertical Dial") {
-            if (idleTimeConfigs.has("Vertical Dial")) {
-              const durationMinutes = idleTimeConfigs.get("Vertical Dial") || 20;
-              const hours = Math.floor(durationMinutes / 60);
-              const minutes = durationMinutes % 60;
-              idleTimeDuration = `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}`;
+          // Handle backward compatibility: if opsName is a string, convert to array
+          const opsName = existing.opsName || "";
+          const opsNameArray = Array.isArray(opsName) 
+            ? opsName 
+            : (opsName && opsName !== "Unassigned" ? opsName.split(", ").filter(Boolean) : []);
+          
+          // Create quantity inputs - for backward compatibility, use existing data for first quantity
+          const quantities: QuantityInputData[] = Array.from({ length: quantity }, (_, index) => {
+            if (index === 0) {
+              // First quantity uses existing data
+              const startTime = existing.startTime || "";
+              const endTime = existing.endTime || "";
+              let idleTime = existing.idleTime || "";
+              let idleTimeDuration = existing.idleTimeDuration || "";
+              
+              // If Vertical Dial is selected, ensure idleTimeDuration is in "00:20" format
+              if (idleTime === "Vertical Dial") {
+                if (idleTimeConfigs.has("Vertical Dial")) {
+                  const durationMinutes = idleTimeConfigs.get("Vertical Dial") || 20;
+                  const hours = Math.floor(durationMinutes / 60);
+                  const minutes = durationMinutes % 60;
+                  idleTimeDuration = `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}`;
+                } else {
+                  idleTimeDuration = "00:20";
+                }
+              }
+              
+              // Recalculate machineHrs if startTime and endTime exist
+              let machineHrs = existing.machineHrs || "";
+              if (startTime && endTime) {
+                machineHrs = calculateMachineHrs(startTime, endTime, idleTimeDuration);
+              } else {
+                machineHrs = "0.000";
+              }
+              
+              return {
+                startTime,
+                endTime,
+                machineHrs,
+                machineNumber: existing.machineNumber || "",
+                opsName: opsNameArray,
+                idleTime,
+                idleTimeDuration,
+                lastImage: existing.lastImage || null,
+                lastImageFile: null,
+              };
             } else {
-              // Fallback if config not loaded yet
-              idleTimeDuration = "00:20";
+              // Other quantities start empty
+              return createEmptyQuantityInputData();
             }
-          }
-          
-          // Recalculate machineHrs if startTime and endTime exist
-          let machineHrs = existing.machineHrs || "";
-          if (startTime && endTime) {
-            machineHrs = calculateMachineHrs(startTime, endTime, idleTimeDuration);
-          } else {
-            machineHrs = "0.000";
-          }
+          });
           
           initialInputs.set(job.id as number, {
-            startTime,
-            endTime,
-            machineHrs,
-            machineNumber: existing.machineNumber || "",
-            opsName: existing.opsName || "",
-            idleTime,
-            idleTimeDuration,
-            lastImage: existing.lastImage || null,
-            lastImageFile: null,
+            quantities,
           });
         });
         

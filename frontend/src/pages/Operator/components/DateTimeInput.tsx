@@ -5,6 +5,7 @@ import "./DateTimeInput.css";
 type DateTimeInputProps = {
   value: string;
   onChange: (value: string) => void;
+  onTimeCapture?: () => void; // Callback when time is captured via icon click
   placeholder?: string;
   error?: string;
   className?: string;
@@ -47,6 +48,7 @@ type DateTimeInputProps = {
 const DateTimeInput: React.FC<DateTimeInputProps> = ({
   value,
   onChange,
+  onTimeCapture,
   placeholder = "DD/MM/YYYY HH:MM",
   error,
   className = "",
@@ -58,6 +60,10 @@ const DateTimeInput: React.FC<DateTimeInputProps> = ({
   const handleIconClick = () => {
     const currentISTTime = getCurrentISTDateTime();
     onChange(currentISTTime);
+    // Notify parent that time was captured (for timer start)
+    if (onTimeCapture) {
+      onTimeCapture();
+    }
   };
 
   return (
