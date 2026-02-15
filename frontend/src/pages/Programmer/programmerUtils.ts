@@ -18,6 +18,7 @@ export type CutForm = {
   material: string;
   priority: "Low" | "Medium" | "High";
   description: string;
+  programRefFile?: string;
   cutImage: string[];
   critical: boolean;
   pipFinish: boolean;

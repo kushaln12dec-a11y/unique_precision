@@ -47,12 +47,7 @@ export const OperatorJobInfo: React.FC<OperatorJobInfoProps> = ({ parentJob, gro
             {parentJob.priority || "—"}
           </span>
         </div>
-        <div className="operator-info-card">
-          <label>Complex</label>
-          <span className={parentJob.critical ? "complex-badge yes" : "complex-badge no"}>
-            {parentJob.critical ? "Yes" : "No"}
-          </span>
-        </div>
+
       </div>
     </div>
   );

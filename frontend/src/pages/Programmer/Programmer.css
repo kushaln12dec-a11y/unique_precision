@@ -180,7 +180,7 @@
   color: white;
   margin-bottom: 1.5rem;
   position: relative;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .job-form-image {
@@ -307,6 +307,10 @@
   flex-direction: column;
   gap: 1rem;
   position: relative;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow: visible;
 }
 
 .cut-section-body {
@@ -314,6 +318,9 @@
   grid-template-columns: 260px 1fr;
   gap: 1.25rem;
   align-items: start;
+  width: 100%;
+  box-sizing: border-box;
+  overflow: visible;
 }
 
 .cut-section-header {
@@ -404,11 +411,91 @@
   display: grid;
   grid-template-columns: repeat(5, minmax(140px, 1fr));
   gap: 1rem;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow: visible;
+  padding-right: 0;
+  margin-right: 0;
 
   grid-template-areas:
-    "customer rate description description material"
-    "cut thickness pass setting qty"
-    "sedm totalhrs totalamount . .";
+  "customer rate material programref description"
+  "cut thickness pass setting qty"
+  "sedm totalhrs totalamount . .";
+
+
+}
+
+.qty-with-add {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  padding-right: 0;
+  margin-right: 0;
+  min-width: 0;
+  flex-wrap: nowrap;
+}
+
+.add-row-btn,
+.remove-row-btn {
+  width: 18px;
+  height: 18px;
+  min-width: 18px;
+  min-height: 18px;
+  max-width: 18px;
+  max-height: 18px;
+  border-radius: 4px;
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  background: rgba(148, 163, 184, 0.1);
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  padding: 0;
+  flex-shrink: 0;
+  flex-grow: 0;
+  margin: 0;
+  box-sizing: border-box;
+}
+
+.add-row-btn:hover {
+  background: rgba(37, 99, 235, 0.15);
+  border-color: rgba(37, 99, 235, 0.4);
+  color: #2563eb;
+  transform: scale(1.05);
+}
+
+.remove-row-btn:hover {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: rgba(239, 68, 68, 0.4);
+  color: #ef4444;
+  transform: scale(1.05);
+}
+
+.add-row-btn:active,
+.remove-row-btn:active {
+  transform: scale(0.95);
+}
+
+.add-row-btn svg,
+.remove-row-btn svg {
+  width: 10px;
+  height: 10px;
+  display: block;
+}
+
+/* Ensure the input field doesn't overflow */
+.qty-with-add input {
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: calc(100% - 18px - 0.35rem);
+  box-sizing: border-box;
+  width: 0;
 }
 
 .cut-section.collapsed .cut-section-body {
@@ -419,6 +506,8 @@
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
+  min-width: 0;
+  overflow: visible;
 }
 
 .input-pair label {
@@ -437,6 +526,9 @@
   background: #ffffff;
   color: #0f172a;
   text-align: center;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .input-pair select {
@@ -622,6 +714,9 @@
 .grid-rate {
   grid-area: rate;
 }
+.grid-program-ref {
+  grid-area: programref;
+}
 .grid-description {
   grid-area: description;
 }
@@ -644,6 +739,55 @@
 }
 .grid-qty {
   grid-area: qty;
+  overflow: visible;
+}
+
+/* Additional operation rows (after the first row) */
+.operation-row-item {
+  /* Auto-place in grid, will flow after the first row */
+  grid-column: auto;
+  grid-row: auto;
+  overflow: visible;
+}
+
+/* Ensure input-pair containers don't overflow */
+.grid-qty .input-pair,
+.operation-row-item .input-pair {
+  min-width: 0;
+  max-width: 100%;
+  overflow: visible;
+  width: 100%;
+  box-sizing: border-box;
+  padding-right: 0;
+  margin-right: 0;
+}
+
+.grid-qty .qty-with-add,
+.operation-row-item .qty-with-add {
+  max-width: 100%;
+  width: 100%;
+  overflow: visible;
+  box-sizing: border-box;
+  padding-right: 0;
+  margin-right: 0;
+}
+
+.grid-qty,
+.operation-row-item {
+  min-width: 0;
+  max-width: 100%;
+  overflow: visible;
+  box-sizing: border-box;
+  padding-right: 0;
+  margin-right: 0;
+  width: 100%;
+}
+
+/* Ensure grid items don't exceed their column width */
+.cut-section-grid > * {
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 /* Row 3 */

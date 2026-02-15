@@ -303,3 +303,27 @@
 .job-details-close-btn:hover {
   background: #475569;
 }
+
+.job-details-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.job-title {
+  font-weight: 700;
+  color: #1e293b;
+  flex-shrink: 0;
+}
+
+.job-meta {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: #475569;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

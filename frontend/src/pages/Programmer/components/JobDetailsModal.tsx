@@ -24,7 +24,6 @@ interface JobDetailsModalProps {
 const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
   job,
   cut,
-  cutIndex,
   userRole,
   onClose,
 }) => {
@@ -47,6 +46,13 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
     : job
     ? job.groupTotalAmount
     : 0;
+
+  /*const totalQuantity = useMemo(() => {
+    return displayEntries.reduce(
+      (sum, entry) => sum + Number(entry.qty || 0),
+      0
+    );
+  }, [displayEntries]);*/
 
   const amounts = useMemo(() => {
     const totals = displayEntries.map((entry) =>
@@ -103,13 +109,14 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
         }`}
       >
         <div className="job-details-header">
-          <h2>
-            {isSingleCut
-              ? `Cut ${cutIndex || 1} Details - ${
-                  displayCut?.customer || "N/A"
-                }`
-              : `Job Details - ${displayCut?.customer || "N/A"}`}
-          </h2>
+        <h2 className="job-details-title">
+  <span className="job-title">Job Details - UPC001</span>
+  <span className="job-meta">
+    | VKSDVNKD | Total Qty: 3
+  </span>
+</h2>
+
+
           <button
             className="job-details-close"
             onClick={onClose}

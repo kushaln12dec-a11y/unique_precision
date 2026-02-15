@@ -38,6 +38,15 @@ type CutSectionProps = {
   isAdmin: boolean;
 };
 
+type OperationRow = {
+  cut: string;
+  thickness: string;
+  passLevel: string;
+  setting: string;
+  qty: string;
+};
+
+
 export const CutSection: React.FC<CutSectionProps> = ({
   cut,
   index,
@@ -59,6 +68,16 @@ export const CutSection: React.FC<CutSectionProps> = ({
   onSedmModalOpen,
   isAdmin,
 }) => {
+  const [operationRows, setOperationRows] = React.useState<OperationRow[]>([
+    {
+      cut: cut.cut,
+      thickness: cut.thickness,
+      passLevel: cut.passLevel,
+      setting: cut.setting,
+      qty: cut.qty,
+    },
+  ]);
+  
   return (
     <div className={`cut-section ${isCollapsed ? "collapsed" : ""}`}>
       <div className="cut-section-header">
@@ -214,16 +233,6 @@ export const CutSection: React.FC<CutSectionProps> = ({
             />
           </FormInput>
 
-          <FormInput label="Description" className="grid-description" required>
-            <textarea
-              rows={1}
-              value={cut.description}
-              onChange={(e) =>
-                onCutChange("description")(e.target.value.toUpperCase())
-              }
-            />
-          </FormInput>
-
           <FormInput label="Material" className="grid-material">
             <MaterialAutocomplete
               value={cut.material || ""}
@@ -231,50 +240,175 @@ export const CutSection: React.FC<CutSectionProps> = ({
             />
           </FormInput>
 
-          <FormInput label="Cut Length (mm)" className="grid-cut" required>
+          <FormInput label="Description" className="grid-description" required>
             <input
-              type="number"
-              value={cut.cut}
-              onChange={(e) => onCutChange("cut")(e.target.value)}
+              value={cut.description}
+              onChange={(e) =>
+                onCutChange("description")(e.target.value.toUpperCase())
+              }
             />
           </FormInput>
 
-          <FormInput label="Thickness (mm)" className="grid-thickness" required>
+          <FormInput label="Program Ref File Name" className="grid-program-ref">
             <input
-              type="number"
-              value={cut.thickness}
-              onChange={(e) => onCutChange("thickness")(e.target.value)}
+              type="text"
+              value={(cut as any).programRefFile || ""}
+              onChange={(e) =>
+                onCutChange("programRefFile" as keyof CutForm)(e.target.value)
+              }
+              placeholder="e.g. UPC001_V1"
             />
           </FormInput>
 
-          <FormInput label="Pass" className="grid-pass" required>
-            <select
-              value={cut.passLevel}
-              onChange={(e) => onCutChange("passLevel")(e.target.value)}
-            >
-              <option value="1">1</option>
-              <option value="2">2</option>
-              <option value="3">3</option>
-            </select>
-          </FormInput>
+          {operationRows.map((row, rowIndex) => {
+            // First row uses grid areas, additional rows use explicit grid positioning
+            const isFirstRow = rowIndex === 0;
+            const gridRow = isFirstRow ? undefined : 2 + rowIndex; // Row 2 is the first operation row, so additional rows start at row 3
+            return (
+              <React.Fragment key={rowIndex}>
+                <FormInput 
+                  label={isFirstRow ? "Cut Length (mm)" : ""} 
+                  className={isFirstRow ? "grid-cut" : "operation-row-item"}
+                  style={!isFirstRow ? { gridRow: gridRow, gridColumn: 1 } : undefined}
+                >
+                  <input
+                    type="number"
+                    value={row.cut}
+                    placeholder= "Cut Length (mm)"
+                    onChange={(e) => {
+                      const updated = [...operationRows];
+                      updated[rowIndex].cut = e.target.value;
+                      setOperationRows(updated);
+                    }}
+                  />
+                </FormInput>
 
-          <FormInput label="Setting Hrs" className="grid-setting" required>
-            <input
-              type="number"
-              value={cut.setting}
-              onChange={(e) => onCutChange("setting")(e.target.value)}
-            />
-          </FormInput>
+                <FormInput 
+                  label={isFirstRow ? "Thickness (mm)" : ""} 
+                  className={isFirstRow ? "grid-thickness" : "operation-row-item"}
+                  style={!isFirstRow ? { gridRow: gridRow, gridColumn: 2 } : undefined}
+                >
+                  <input
+                    type="number"
+                    value={row.thickness}
+                    placeholder= "Thickness (mm)"
+                    onChange={(e) => {
+                      const updated = [...operationRows];
+                      updated[rowIndex].thickness = e.target.value;
+                      setOperationRows(updated);
+                    }}
+                  />
+                </FormInput>
 
-          <FormInput label="Quantity" className="grid-qty" required>
-            <input
-              type="number"
-              value={cut.qty}
-              onChange={(e) => onCutChange("qty")(e.target.value)}
-            />
-          </FormInput>
+                <FormInput 
+                  label={isFirstRow ? "Pass" : ""} 
+                  className={isFirstRow ? "grid-pass" : "operation-row-item"}
+                  style={!isFirstRow ? { gridRow: gridRow, gridColumn: 3 } : undefined}
+                >
+                  <select
+                    value={row.passLevel}
+                    onChange={(e) => {
+                      const updated = [...operationRows];
+                      updated[rowIndex].passLevel = e.target.value;
+                      setOperationRows(updated);
+                    }}
+                  >
+                    <option value="1">1</option>
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                  </select>
+                </FormInput>
 
-          <FormInput label="SEDM" className="grid-sedm" required>
+                <FormInput 
+                  label={isFirstRow ? "Setting Hrs" : ""} 
+                  className={isFirstRow ? "grid-setting" : "operation-row-item"}
+                  style={!isFirstRow ? { gridRow: gridRow, gridColumn: 4 } : undefined}
+                >
+                  <input
+                    type="number"
+                    value={row.setting}
+                    placeholder="Setting Hrs"
+                    onChange={(e) => {
+                      const updated = [...operationRows];
+                      updated[rowIndex].setting = e.target.value;
+                      setOperationRows(updated);
+                    }}
+                  />
+                </FormInput>
+
+                <FormInput 
+                  label={isFirstRow ? "Quantity" : ""} 
+                  className={isFirstRow ? "grid-qty" : "operation-row-item"}
+                  style={!isFirstRow ? { gridRow: gridRow, gridColumn: 5 } : undefined}
+                >
+                  <div className="qty-with-add">
+                    <input
+                      type="number"
+                      value={row.qty}
+                      placeholder="Quantity"
+                      onChange={(e) => {
+                        const updated = [...operationRows];
+                        updated[rowIndex].qty = e.target.value;
+                        setOperationRows(updated);
+                      }}
+                    />
+
+                    {isFirstRow && (
+                      <button
+                        type="button"
+                        className="add-row-btn"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          const updated = [...operationRows];
+                          updated.splice(rowIndex + 1, 0, {
+                            cut: "",
+                            thickness: "",
+                            passLevel: "1",
+                            setting: "1",
+                            qty: "1",
+                          });
+                          setOperationRows(updated);
+                        }}
+                        aria-label="Add new row"
+                        title="Add new row"
+                      >
+                        <svg width="12" height="12" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M7 1V13M1 7H13" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                        </svg>
+                      </button>
+                    )}
+
+                    {!isFirstRow && (
+                      <button
+                        type="button"
+                        className="remove-row-btn"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          const updated = operationRows.filter((_, idx) => idx !== rowIndex);
+                          setOperationRows(updated);
+                        }}
+                        aria-label="Remove row"
+                        title="Remove row"
+                      >
+                        <svg width="12" height="12" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M1 7H13" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                        </svg>
+                      </button>
+                    )}
+                  </div>
+                </FormInput>
+              </React.Fragment>
+            );
+          })}
+
+          <FormInput 
+            label="SEDM" 
+            className="grid-sedm" 
+            required
+            style={{ gridRow: 2 + operationRows.length }}
+          >
             <select
               value={cut.sedm}
               onChange={(e) => onSedmChange(e.target.value as CutForm["sedm"])}
@@ -294,12 +428,24 @@ export const CutSection: React.FC<CutSectionProps> = ({
             )}
           </FormInput>
 
-          <FormInput label="Total Hrs/Piece" className="grid-total-hrs">
-            <input type="text" value={formatDecimalHoursToHHMMhrs(cutTotals.totalHrs)} readOnly />
+          <FormInput 
+            label="Total Hrs/Piece" 
+            className="grid-total-hrs"
+            style={{ gridRow: 2 + operationRows.length }}
+          >
+            <input
+              type="text"
+              value={formatDecimalHoursToHHMMhrs(cutTotals.totalHrs)}
+              readOnly
+            />
           </FormInput>
 
           {isAdmin && (
-            <FormInput label="Total Amount (₹)" className="grid-total-amount">
+            <FormInput 
+              label="Total Amount (₹)" 
+              className="grid-total-amount"
+              style={{ gridRow: 2 + operationRows.length }}
+            >
               <input
                 type="text"
                 value={cutTotals.totalAmount.toFixed(2)}
