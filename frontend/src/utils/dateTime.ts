@@ -27,8 +27,8 @@
  * 
  * Returns: DD/MM/YYYY HH:MM (e.g., "29/01/2026 15:30")
  */
-export const getCurrentISTDateTime = (): string => {
-  const now = new Date();
+export const getCurrentISTDateTime = (timestampMs?: number): string => {
+  const now = timestampMs ? new Date(timestampMs) : new Date();
   
   // Format directly in IST timezone using Intl API
   // This avoids any UTC conversion and shows IST time directly

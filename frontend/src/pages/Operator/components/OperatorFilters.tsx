@@ -10,6 +10,7 @@ type OperatorFiltersProps = {
   filterFields: FilterField[];
   filterCategories: FilterCategory[];
   customerFilter: string;
+  descriptionFilter: string;
   createdByFilter: string;
   assignedToFilter: string;
   showFilterModal: boolean;
@@ -21,6 +22,7 @@ type OperatorFiltersProps = {
   onClearFilters: () => void;
   onRemoveFilter: (key: string, type: "inline" | "modal") => void;
   onCustomerFilterChange: (value: string) => void;
+  onDescriptionFilterChange: (value: string) => void;
   onCreatedByFilterChange: (value: string) => void;
   onAssignedToFilterChange: (value: string) => void;
   onDownloadCSV: () => void;
@@ -31,6 +33,7 @@ export const OperatorFilters: React.FC<OperatorFiltersProps> = ({
   filterFields,
   filterCategories,
   customerFilter,
+  descriptionFilter,
   createdByFilter,
   assignedToFilter,
   showFilterModal,
@@ -42,6 +45,7 @@ export const OperatorFilters: React.FC<OperatorFiltersProps> = ({
   onClearFilters,
   onRemoveFilter,
   onCustomerFilterChange,
+  onDescriptionFilterChange,
   onCreatedByFilterChange,
   onAssignedToFilterChange,
   onDownloadCSV,
@@ -58,6 +62,17 @@ export const OperatorFilters: React.FC<OperatorFiltersProps> = ({
               placeholder="Search customer..."
               value={customerFilter}
               onChange={(e) => onCustomerFilterChange(e.target.value)}
+              className="filter-input"
+            />
+          </div>
+          <div className="filter-group">
+            <label htmlFor="description-search">Description</label>
+            <input
+              id="description-search"
+              type="text"
+              placeholder="Search by description..."
+              value={descriptionFilter}
+              onChange={(e) => onDescriptionFilterChange(e.target.value)}
               className="filter-input"
             />
           </div>
@@ -140,6 +155,7 @@ export const OperatorFilters: React.FC<OperatorFiltersProps> = ({
         filters={filters}
         filterFields={filterFields}
         customerFilter={customerFilter}
+        descriptionFilter={descriptionFilter}
         createdByFilter={createdByFilter}
         assignedToFilter={assignedToFilter}
         onRemoveFilter={onRemoveFilter}

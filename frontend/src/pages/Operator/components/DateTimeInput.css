@@ -11,12 +11,34 @@
 
 .datetime-input {
   width: 100%;
-  padding: 8px 40px 8px 12px;
+  padding: 10px 40px 10px 12px;
   border: 1px solid #ddd;
   border-radius: 4px;
-  font-size: 14px;
+  font-size: 0.875rem;
+  line-height: 1.25;
   transition: border-color 0.2s;
   cursor: text;
+  box-sizing: border-box;
+}
+
+.datetime-input.disabled {
+  background-color: #f5f5f5;
+  cursor: not-allowed;
+  color: #666;
+}
+
+.datetime-input-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.datetime-input-container .datetime-input {
+  padding-right: 40px;
+}
+
+.datetime-input-container.has-pause-button .datetime-input {
+  padding-right: 76px;
 }
 
 .datetime-input:focus {
@@ -27,6 +49,27 @@
 .datetime-input.input-error {
   border-color: #ef4444;
   border-width: 2px;
+}
+
+.datetime-pause-button {
+  position: absolute;
+  right: 40px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  color: #f59e0b;
+  transition: all 0.2s;
+  z-index: 1;
+}
+
+.datetime-pause-button:hover {
+  color: #d97706;
+  background-color: rgba(245, 158, 11, 0.1);
+  border-radius: 4px;
 }
 
 .datetime-icon-button {
@@ -41,11 +84,17 @@
   padding: 4px;
   color: #64748b;
   transition: color 0.2s;
+  z-index: 1;
 }
 
-.datetime-icon-button:hover {
+.datetime-icon-button:hover:not(:disabled) {
   color: #2563eb;
   background-color: rgba(37, 99, 235, 0.1);
+}
+
+.datetime-icon-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .datetime-input-wrapper .field-error {

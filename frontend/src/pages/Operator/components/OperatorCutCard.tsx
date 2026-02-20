@@ -7,6 +7,7 @@ import { formatDecimalHoursToHHMMhrs } from "../../../utils/date";
 import "../OperatorViewPage.css";
 
 import type { QuantityInputData } from "../types/cutInput";
+import type { QuantityProgressStatus } from "../utils/qaProgress";
 
 type OperatorCutCardProps = {
   cutItem: JobEntry;
@@ -19,11 +20,32 @@ type OperatorCutCardProps = {
   onInputChange: (
     cutId: number | string,
     quantityIndex: number,
-    field: keyof QuantityInputData | "recalculateMachineHrs" | "addIdleTimeToMachineHrs",
+    field: keyof QuantityInputData | "recalculateMachineHrs" | "addIdleTimeToMachineHrs" | "togglePause" | "resetTimer" | "pauseReason",
     value: string | string[]
   ) => void;
+  onApplyToAllQuantities: (
+    cutId: number | string,
+    sourceQuantityIndex: number,
+    totalQuantity: number
+  ) => void;
+  onApplyToCountQuantities: (
+    cutId: number | string,
+    sourceQuantityIndex: number,
+    totalQuantity: number,
+    quantityCount: number
+  ) => void;
   onSaveQuantity?: (cutId: number | string, quantityIndex: number) => void;
+  onSaveRange?: (
+    cutId: number | string,
+    sourceQuantityIndex: number,
+    fromQty: number,
+    toQty: number
+  ) => void;
+  qaStatuses?: Record<number, QuantityProgressStatus>;
+  onMarkReadyForQa?: (cutId: number | string, quantityNumbers: number[]) => void;
+  onSendToQa?: (cutId: number | string, quantityNumbers: number[]) => void;
   savedQuantities?: Set<number>;
+  savedRanges?: Set<string>;
   validationErrors?: Record<string, Record<string, string>>;
   onShowToast?: (message: string, variant?: "success" | "error" | "info") => void;
 };
@@ -37,8 +59,15 @@ export const OperatorCutCard: React.FC<OperatorCutCardProps> = ({
   onToggleExpansion,
   onImageChange,
   onInputChange,
+  onApplyToAllQuantities,
+  onApplyToCountQuantities,
   onSaveQuantity,
+  onSaveRange,
+  qaStatuses = {},
+  onMarkReadyForQa,
+  onSendToQa,
   savedQuantities = new Set(),
+  savedRanges = new Set(),
   validationErrors = {},
   onShowToast,
 }) => {
@@ -157,8 +186,15 @@ export const OperatorCutCard: React.FC<OperatorCutCardProps> = ({
             quantity={quantity}
             operatorUsers={operatorUsers}
             onInputChange={onInputChange}
+            onApplyToAllQuantities={onApplyToAllQuantities}
+            onApplyToCountQuantities={onApplyToCountQuantities}
             onSaveQuantity={onSaveQuantity}
+            onSaveRange={onSaveRange}
+            qaStatuses={qaStatuses}
+            onMarkReadyForQa={onMarkReadyForQa}
+            onSendToQa={onSendToQa}
             savedQuantities={savedQuantities}
+            savedRanges={savedRanges}
             validationErrors={validationErrors}
             onShowToast={onShowToast}
           />

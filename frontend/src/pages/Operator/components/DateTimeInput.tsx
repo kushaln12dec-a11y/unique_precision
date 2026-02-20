@@ -1,14 +1,20 @@
 import AccessTimeIcon from "@mui/icons-material/AccessTime";
+import PauseIcon from "@mui/icons-material/Pause";
+import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import { getCurrentISTDateTime } from "../../../utils/dateTime";
 import "./DateTimeInput.css";
 
 type DateTimeInputProps = {
   value: string;
   onChange: (value: string) => void;
-  onTimeCapture?: () => void; // Callback when time is captured via icon click
+  onTimeCapture?: (timestampMs: number) => void; // Callback when time is captured via icon click
   placeholder?: string;
   error?: string;
   className?: string;
+  showPauseButton?: boolean; // Show pause button for Start Time
+  isPaused?: boolean; // Current pause state
+  onPauseToggle?: () => void; // Callback for pause/resume
+  disabled?: boolean; // Disable input (for End Time after first click)
 };
 
 /**
@@ -52,34 +58,61 @@ const DateTimeInput: React.FC<DateTimeInputProps> = ({
   placeholder = "DD/MM/YYYY HH:MM",
   error,
   className = "",
+  showPauseButton = false,
+  isPaused = false,
+  onPauseToggle,
+  disabled = false,
 }) => {
   /**
    * Handles the clock icon click event
    * Captures the current IST time at the moment of click and fills the input field
    */
   const handleIconClick = () => {
-    const currentISTTime = getCurrentISTDateTime();
+    if (disabled) return; // Don't allow changes if disabled
+    const captureTimestamp = Date.now();
+    const currentISTTime = getCurrentISTDateTime(captureTimestamp);
     onChange(currentISTTime);
     // Notify parent that time was captured (for timer start)
     if (onTimeCapture) {
-      onTimeCapture();
+      onTimeCapture(captureTimestamp);
+    }
+  };
+
+  const handlePauseClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onPauseToggle) {
+      onPauseToggle();
     }
   };
 
   return (
     <div className={`datetime-input-wrapper ${className}`}>
-      <div className="datetime-input-container">
+      <div className={`datetime-input-container ${showPauseButton && value ? "has-pause-button" : ""}`}>
         <input
           type="text"
           value={value}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={(e) => !disabled && onChange(e.target.value)}
           placeholder={placeholder}
-          className={`datetime-input ${error ? "input-error" : ""}`}
+          className={`datetime-input ${error ? "input-error" : ""} ${disabled ? "disabled" : ""}`}
+          disabled={disabled}
+          readOnly={disabled}
         />
+        {showPauseButton && value && (
+          <button
+            type="button"
+            className="datetime-pause-button"
+            onClick={handlePauseClick}
+            aria-label={isPaused ? "Resume timer" : "Pause timer"}
+            title={isPaused ? "Resume timer" : "Pause timer"}
+          >
+            {isPaused ? <PlayArrowIcon fontSize="small" /> : <PauseIcon fontSize="small" />}
+          </button>
+        )}
         <button
           type="button"
           className="datetime-icon-button"
           onClick={handleIconClick}
+          disabled={disabled}
           aria-label="Fill current IST time"
           title="Fill current IST time"
         >
@@ -92,4 +125,3 @@ const DateTimeInput: React.FC<DateTimeInputProps> = ({
 };
 
 export default DateTimeInput;
-

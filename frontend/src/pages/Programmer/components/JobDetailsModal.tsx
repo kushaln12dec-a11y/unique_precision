@@ -6,6 +6,7 @@ import { calculateTotals, type CutForm } from "../programmerUtils";
 import { formatDecimalHoursToHHMMhrs } from "../../../utils/date";
 import "./JobDetailsModal.css";
 import { useLocation } from "react-router-dom";
+import { getQaProgressCounts } from "../../Operator/utils/qaProgress";
 
 interface JobDetailsModalProps {
   job: {
@@ -236,6 +237,14 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
                       <div className="cut-detail">
                         <label>Quantity:</label>
                         <span>{Number(cutItem.qty || 0)}</span>
+                      </div>
+                      <div className="cut-detail">
+                        <label>QA Progress:</label>
+                        {(() => {
+                          const qty = Math.max(1, Number(cutItem.qty || 1));
+                          const c = getQaProgressCounts(cutItem, qty);
+                          return <span>Logged {c.saved} | Inspection Ready {c.ready} | QA Dispatched {c.sent} | Pending {c.empty}</span>;
+                        })()}
                       </div>
                       <div className="cut-detail">
                         <label>SEDM:</label>

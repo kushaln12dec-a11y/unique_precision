@@ -15,6 +15,7 @@ const STORAGE_KEY = "programmerJobs";
 export const useOperatorData = (
   filters: FilterValues,
   customerFilter: string,
+  descriptionFilter: string,
   createdByFilter: string,
   assignedToFilter: string
 ) => {
@@ -36,7 +37,7 @@ export const useOperatorData = (
   useEffect(() => {
     const fetchJobs = async () => {
       try {
-        const fetchedJobs = await getJobs(filters, customerFilter, createdByFilter, assignedToFilter);
+        const fetchedJobs = await getJobs(filters, customerFilter, createdByFilter, assignedToFilter, false, descriptionFilter);
         setJobs(fetchedJobs);
       } catch (error) {
         console.error("Failed to fetch jobs", error);
@@ -60,7 +61,7 @@ export const useOperatorData = (
       }
     };
     fetchJobs();
-  }, [filters, customerFilter, createdByFilter, assignedToFilter]);
+  }, [filters, customerFilter, descriptionFilter, createdByFilter, assignedToFilter]);
 
   useEffect(() => {
     const fetchOperators = async () => {

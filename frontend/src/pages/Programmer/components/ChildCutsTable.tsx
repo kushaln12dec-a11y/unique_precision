@@ -6,6 +6,7 @@ import JobDetailsModal from "./JobDetailsModal";
 import { getRowClassName } from "../utils/priorityUtils";
 import { getUserRoleFromToken } from "../../../utils/auth";
 import { MultiSelectOperators } from "../../Operator/components/MultiSelectOperators";
+import { getQaProgressCounts } from "../../Operator/utils/qaProgress";
 
 type ChildCutsTableProps = {
   entries: JobEntry[];
@@ -17,14 +18,14 @@ type ChildCutsTableProps = {
   isOperator?: boolean;
 };
 
-const ChildCutsTable: React.FC<ChildCutsTableProps> = ({ 
-  entries, 
-  onEdit, 
-  onDelete, 
-  onImage, 
+const ChildCutsTable: React.FC<ChildCutsTableProps> = ({
+  entries,
+  onEdit,
+  onDelete,
+  onImage,
   onAssignChange,
   operatorUsers = [],
-  isOperator = false 
+  isOperator = false,
 }) => {
   const [selectedCut, setSelectedCut] = useState<JobEntry | null>(null);
   const [showCutModal, setShowCutModal] = useState(false);
@@ -36,26 +37,31 @@ const ChildCutsTable: React.FC<ChildCutsTableProps> = ({
   };
 
   const handleEdit = (entry: JobEntry) => {
-    if (onEdit) {
-      onEdit(entry.groupId);
-    }
+    if (onEdit) onEdit(entry.groupId);
   };
 
   const handleDelete = (entry: JobEntry) => {
-    if (onDelete) {
-      onDelete(entry.groupId, entry.customer || "entry");
-    }
+    if (onDelete) onDelete(entry.groupId, entry.customer || "entry");
   };
-
 
   return (
     <>
+      {isOperator && (
+        <div className="child-stage-legend">
+          <span className="child-stage-title">Stage Legend:</span>
+          <span className="qa-mini saved">Operation Logged</span>
+          <span className="qa-mini ready">Inspection Ready</span>
+          <span className="qa-mini sent">QA Dispatched</span>
+          <span className="qa-mini empty">Pending Input</span>
+        </div>
+      )}
+
       <table className="child-jobs-table">
         <thead>
           <tr className="child-table-header">
             <th>Setting #</th>
             <th>Customer</th>
-            <th>Rate (₹/hr)</th>
+            <th>Rate (Rs/hr)</th>
             <th>Description</th>
             <th>Cut (mm)</th>
             <th>TH (MM)</th>
@@ -67,7 +73,8 @@ const ChildCutsTable: React.FC<ChildCutsTableProps> = ({
             <th>PIP Finish</th>
             <th>Assigned To</th>
             <th>Total Hrs/Piece</th>
-            <th>Total Amount (₹)</th>
+            <th>Total Amount (Rs)</th>
+            {isOperator && <th>Production Stage</th>}
             <th>Action</th>
           </tr>
         </thead>
@@ -75,9 +82,9 @@ const ChildCutsTable: React.FC<ChildCutsTableProps> = ({
           {entries.map((entry, index) => (
             <tr key={entry.id} className={getRowClassName([entry], false, true)}>
               <td>{index + 1}</td>
-              <td>{entry.customer || "—"}</td>
-              <td>₹{Number(entry.rate || 0).toFixed(2)}</td>
-              <td>{entry.description || "—"}</td>
+              <td>{entry.customer || "-"}</td>
+              <td>Rs{Number(entry.rate || 0).toFixed(2)}</td>
+              <td>{entry.description || "-"}</td>
               <td>{Number(entry.cut || 0).toFixed(2)}</td>
               <td>{Number(entry.thickness || 0).toFixed(2)}</td>
               <td>{entry.passLevel}</td>
@@ -93,17 +100,15 @@ const ChildCutsTable: React.FC<ChildCutsTableProps> = ({
                       selectedOperators={
                         entry.assignedTo && entry.assignedTo !== "Unassigned"
                           ? (() => {
-                              // Parse and remove duplicates
                               const operators = Array.isArray(entry.assignedTo)
                                 ? entry.assignedTo
-                                : entry.assignedTo.split(",").map(name => name.trim()).filter(Boolean);
+                                : entry.assignedTo.split(",").map((name) => name.trim()).filter(Boolean);
                               return [...new Set(operators)];
                             })()
                           : []
                       }
                       availableOperators={operatorUsers}
                       onChange={(operators) => {
-                        // Remove duplicates before storing
                         const uniqueOperators = [...new Set(operators)];
                         const value = uniqueOperators.length > 0 ? uniqueOperators.join(", ") : "Unassigned";
                         onAssignChange(entry.id, value);
@@ -128,17 +133,29 @@ const ChildCutsTable: React.FC<ChildCutsTableProps> = ({
                         );
                       })()
                     ) : (
-                      <span className="unassigned-text">—</span>
+                      <span className="unassigned-text">-</span>
                     )}
                   </div>
                 )}
               </td>
-              <td>
-                {entry.totalHrs ? formatHoursToHHMM(entry.totalHrs) : "—"}
-              </td>
-              <td>
-                {entry.totalAmount ? `₹${entry.totalAmount.toFixed(2)}` : "—"}
-              </td>
+              <td>{entry.totalHrs ? formatHoursToHHMM(entry.totalHrs) : "-"}</td>
+              <td>{entry.totalAmount ? `Rs${entry.totalAmount.toFixed(2)}` : "-"}</td>
+              {isOperator && (
+                <td>
+                  {(() => {
+                    const qty = Math.max(1, Number(entry.qty || 1));
+                    const c = getQaProgressCounts(entry, qty);
+                    return (
+                      <div className="child-stage-summary">
+                        <span className="qa-mini saved">Logged {c.saved}</span>
+                        <span className="qa-mini ready">Ready {c.ready}</span>
+                        <span className="qa-mini sent">QA {c.sent}</span>
+                        <span className="qa-mini empty">Pending {c.empty}</span>
+                      </div>
+                    );
+                  })()}
+                </td>
+              )}
               <td>
                 <ActionButtons
                   onView={() => handleViewCut(entry)}

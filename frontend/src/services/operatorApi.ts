@@ -1,5 +1,26 @@
 import type { JobEntry } from "../types/job";
 
+export type CaptureOperatorInputPayload = {
+  startTime: string;
+  endTime: string;
+  machineHrs: string;
+  machineNumber: string;
+  opsName: string;
+  idleTime: string;
+  idleTimeDuration: string;
+  lastImage: string | null;
+  quantityIndex?: number;
+  captureMode?: "SINGLE" | "RANGE";
+  fromQty?: number;
+  toQty?: number;
+  overwriteExisting?: boolean;
+};
+
+export type UpdateQaStatusPayload = {
+  quantityNumbers: number[];
+  status: "READY_FOR_QA" | "SENT_TO_QA";
+};
+
 const getAuthHeaders = () => {
   const token = localStorage.getItem("token");
   return {
@@ -102,7 +123,7 @@ export const updateOperatorJob = async (id: string, jobData: Partial<JobEntry>):
 };
 
 // Capture operator input (POST)
-export const captureOperatorInput = async (id: string, inputData: any): Promise<JobEntry> => {
+export const captureOperatorInput = async (id: string, inputData: CaptureOperatorInputPayload): Promise<JobEntry> => {
   const res = await fetch(`/api/operator/jobs/${id}/capture-input`, {
     method: "POST",
     headers: getAuthHeaders(),
@@ -112,6 +133,30 @@ export const captureOperatorInput = async (id: string, inputData: any): Promise<
   if (!res.ok) {
     const error = await res.json();
     throw new Error(error.message || "Failed to capture operator input");
+  }
+
+  const job = await res.json();
+  return {
+    ...job,
+    id: job._id || job.id,
+    groupId: job.groupId ?? job.id,
+    assignedTo: job.assignedTo || "Unassigned",
+  };
+};
+
+export const updateOperatorQaStatus = async (
+  id: string,
+  payload: UpdateQaStatusPayload
+): Promise<JobEntry> => {
+  const res = await fetch(`/api/operator/jobs/${id}/qa-status`, {
+    method: "POST",
+    headers: getAuthHeaders(),
+    body: JSON.stringify(payload),
+  });
+
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.message || "Failed to update QA status");
   }
 
   const job = await res.json();

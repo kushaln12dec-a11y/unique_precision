@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import Sidebar from "../../components/Sidebar";
 import Header from "../../components/Header";
 import DataTable from "../../components/DataTable";
+import Toast from "../../components/Toast";
 import JobDetailsModal from "../Programmer/components/JobDetailsModal";
 import { OperatorFilters } from "./components/OperatorFilters";
 import { useOperatorData } from "./hooks/useOperatorData";
@@ -37,6 +38,11 @@ const Operator = () => {
   const [viewingJob, setViewingJob] = useState<TableRow | null>(null);
   const [showJobViewModal, setShowJobViewModal] = useState(false);
   const [selectedJobIds, setSelectedJobIds] = useState<Set<number>>(new Set());
+  const [toast, setToast] = useState<{ message: string; variant: "success" | "error" | "info"; visible: boolean }>({
+    message: "",
+    variant: "info",
+    visible: false,
+  });
 
   const {
     filters,
@@ -44,6 +50,8 @@ const Operator = () => {
     setShowFilterModal,
     customerFilter,
     setCustomerFilter,
+    descriptionFilter,
+    setDescriptionFilter,
     createdByFilter,
     setCreatedByFilter,
     assignedToFilter,
@@ -62,7 +70,7 @@ const Operator = () => {
     operatorUsers,
     users,
     canAssign,
-  } = useOperatorData(filters, customerFilter, createdByFilter, assignedToFilter);
+  } = useOperatorData(filters, customerFilter, descriptionFilter, createdByFilter, assignedToFilter);
 
   const toggleGroup = (groupId: number) => {
     setExpandedGroups((prev) => {
@@ -85,7 +93,8 @@ const Operator = () => {
       );
     } catch (error) {
       console.error("Failed to update job assignment", error);
-      alert("Failed to update assignment. Please try again.");
+      setToast({ message: "Failed to update assignment. Please try again.", variant: "error", visible: true });
+      setTimeout(() => setToast((prev) => ({ ...prev, visible: false })), 2500);
     }
   };
 
@@ -177,6 +186,7 @@ const Operator = () => {
             filterFields={filterFields}
             filterCategories={filterCategories}
             customerFilter={customerFilter}
+            descriptionFilter={descriptionFilter}
             createdByFilter={createdByFilter}
             assignedToFilter={assignedToFilter}
             showFilterModal={showFilterModal}
@@ -188,6 +198,7 @@ const Operator = () => {
             onClearFilters={handleClearFiltersWithPageReset}
             onRemoveFilter={handleRemoveFilterWithPageReset}
             onCustomerFilterChange={setCustomerFilter}
+            onDescriptionFilterChange={setDescriptionFilter}
             onCreatedByFilterChange={setCreatedByFilter}
             onAssignedToFilterChange={setAssignedToFilter}
             onDownloadCSV={handleDownloadCSV}
@@ -249,6 +260,12 @@ const Operator = () => {
             }}
           />
         )}
+        <Toast
+          message={toast.message}
+          visible={toast.visible}
+          variant={toast.variant}
+          onClose={() => setToast((prev) => ({ ...prev, visible: false }))}
+        />
       </div>
     </div>
   );

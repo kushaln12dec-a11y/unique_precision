@@ -46,6 +46,7 @@ export const useOperatorTable = ({
         render: (row) => {
           const expandable = expandableRows?.get(row.groupId);
           const isExpanded = expandable?.isExpanded || false;
+
           return (
             <div style={{ display: "flex", alignItems: "center", gap: "0.2rem" }}>
               {expandable && (
@@ -72,9 +73,7 @@ export const useOperatorTable = ({
                     transform: isExpanded ? "rotate(90deg)" : "rotate(0deg)",
                   }}
                 >
-                  <ArrowForwardIosSharpIcon 
-                    sx={{ fontSize: "0.7rem" }}
-                  />
+                  <ArrowForwardIosSharpIcon sx={{ fontSize: "0.7rem" }} />
                 </button>
               )}
               {!expandable && <span style={{ width: "1rem" }} />}
@@ -104,7 +103,6 @@ export const useOperatorTable = ({
         sortKey: "cut",
         render: (row) => Number(row.parent.cut || 0).toFixed(2),
       },
-
       {
         key: "thickness",
         label: "TH (MM)",
@@ -133,7 +131,6 @@ export const useOperatorTable = ({
         sortKey: "qty",
         render: (row) => Number(row.parent.qty || 0).toString(),
       },
-
       {
         key: "assignedTo",
         label: (
@@ -143,28 +140,21 @@ export const useOperatorTable = ({
         ),
         sortable: false,
         render: (row) => {
-          // Handle backward compatibility: convert string to array and remove duplicates
           const assignedToValue = row.parent.assignedTo || "";
           let assignedOperators: string[] = [];
-          
+
           if (Array.isArray(assignedToValue)) {
-            // If already an array, remove duplicates
-            assignedOperators = [...new Set(assignedToValue.map(name => name.trim()).filter(Boolean))];
+            assignedOperators = [...new Set(assignedToValue.map((name) => name.trim()).filter(Boolean))];
           } else if (assignedToValue && assignedToValue !== "Unassigned") {
-            // If string, split by comma, trim, and remove duplicates
-            assignedOperators = [...new Set(
-              assignedToValue.split(",").map(name => name.trim()).filter(Boolean)
-            )];
+            assignedOperators = [...new Set(assignedToValue.split(",").map((name) => name.trim()).filter(Boolean))];
           }
-          
+
           return canAssign ? (
             <MultiSelectOperators
               selectedOperators={assignedOperators}
               availableOperators={operatorUsers}
               onChange={(operators) => {
-                // Remove duplicates before storing
                 const uniqueOperators = [...new Set(operators)];
-                // Store as comma-separated string for backward compatibility
                 const value = uniqueOperators.length > 0 ? uniqueOperators.join(", ") : "Unassigned";
                 handleAssignChange(row.parent.id, value);
               }}
@@ -193,18 +183,14 @@ export const useOperatorTable = ({
         label: "Total Hrs/Piece",
         sortable: true,
         sortKey: "totalHrs",
-        render: (row) =>
-          row.groupTotalHrs ? formatHoursToHHMM(row.groupTotalHrs) : "—",
+        render: (row) => (row.groupTotalHrs ? formatHoursToHHMM(row.groupTotalHrs) : "—"),
       },
       {
         key: "totalAmount",
         label: "Total Amount (₹)",
         sortable: true,
         sortKey: "totalAmount",
-        render: (row) =>
-          row.groupTotalAmount
-            ? `₹${row.groupTotalAmount.toFixed(2)}`
-            : "—",
+        render: (row) => (row.groupTotalAmount ? `₹${row.groupTotalAmount.toFixed(2)}` : "—"),
       },
       {
         key: "createdBy",
@@ -219,7 +205,6 @@ export const useOperatorTable = ({
         sortable: true,
         sortKey: "createdAt",
         render: (row) => {
-          // Format: "DD MMM YYYY HH:MM"
           const parsed = parseDateValue(row.parent.createdAt);
           if (!parsed) return "—";
           const date = new Date(parsed);

@@ -9,6 +9,7 @@ export const useOperatorFilters = () => {
   const [filters, setFilters] = useState<FilterValues>({});
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [customerFilter, setCustomerFilter] = useState("");
+  const [descriptionFilter, setDescriptionFilter] = useState("");
   const [createdByFilter, setCreatedByFilter] = useState("");
   const [assignedToFilter, setAssignedToFilter] = useState("");
 
@@ -113,6 +114,7 @@ export const useOperatorFilters = () => {
   const handleApplyFilters = (newFilters: FilterValues) => {
     setFilters(newFilters);
     setCustomerFilter("");
+    setDescriptionFilter("");
     setCreatedByFilter("");
     setAssignedToFilter("");
   };
@@ -125,6 +127,8 @@ export const useOperatorFilters = () => {
     if (type === "inline") {
       if (key === "customer") {
         setCustomerFilter("");
+      } else if (key === "description") {
+        setDescriptionFilter("");
       } else if (key === "createdBy") {
         setCreatedByFilter("");
       } else if (key === "assignedTo") {
@@ -147,6 +151,8 @@ export const useOperatorFilters = () => {
     setShowFilterModal,
     customerFilter,
     setCustomerFilter,
+    descriptionFilter,
+    setDescriptionFilter,
     createdByFilter,
     setCreatedByFilter,
     assignedToFilter,
