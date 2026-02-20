@@ -155,6 +155,73 @@ const jobSchema = new mongoose.Schema({
     type: String,
     default: null,
   },
+  operatorCaptures: [{
+    captureMode: {
+      type: String,
+      enum: ["SINGLE", "RANGE"],
+      default: "SINGLE",
+    },
+    fromQty: {
+      type: Number,
+      required: true,
+      min: 1,
+    },
+    toQty: {
+      type: Number,
+      required: true,
+      min: 1,
+    },
+    quantityCount: {
+      type: Number,
+      required: true,
+      min: 1,
+    },
+    startTime: {
+      type: String,
+      default: "",
+    },
+    endTime: {
+      type: String,
+      default: "",
+    },
+    machineHrs: {
+      type: String,
+      default: "",
+    },
+    machineNumber: {
+      type: String,
+      default: "",
+    },
+    opsName: {
+      type: String,
+      default: "",
+    },
+    idleTime: {
+      type: String,
+      default: "",
+    },
+    idleTimeDuration: {
+      type: String,
+      default: "",
+    },
+    lastImage: {
+      type: String,
+      default: null,
+    },
+    createdAt: {
+      type: String,
+      default: "",
+    },
+    createdBy: {
+      type: String,
+      default: "",
+    },
+  }],
+  quantityQaStates: {
+    type: Map,
+    of: String,
+    default: {},
+  },
   updatedBy: {
     type: String,
     default: "",

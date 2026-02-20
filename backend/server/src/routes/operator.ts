@@ -99,7 +99,12 @@ router.post("/jobs/:id/capture-input", async (req, res) => {
       opsName,
       idleTime,
       idleTimeDuration,
-      lastImage
+      lastImage,
+      quantityIndex,
+      captureMode,
+      fromQty,
+      toQty,
+      overwriteExisting,
     } = req.body;
 
     // Add updatedBy and updatedAt
@@ -128,16 +133,135 @@ router.post("/jobs/:id/capture-input", async (req, res) => {
       updateData.updatedBy = (req.user as any).fullName;
     }
 
-    const job = await Job.findByIdAndUpdate(req.params.id, { $set: updateData }, { new: true });
-
+    const job = await Job.findById(req.params.id);
     if (!job) {
       return res.status(404).json({ message: "Job not found" });
     }
+
+    const totalQty = Math.max(1, Number((job as any).qty || 1));
+    const mode = captureMode === "RANGE" ? "RANGE" : "SINGLE";
+    const fallbackFromQty = typeof quantityIndex === "number" ? quantityIndex + 1 : 1;
+    const resolvedFromQty = Math.max(1, Number(fromQty || fallbackFromQty));
+    const resolvedToQty =
+      mode === "RANGE"
+        ? Math.min(totalQty, Math.max(resolvedFromQty, Number(toQty || resolvedFromQty)))
+        : Math.min(totalQty, resolvedFromQty);
+
+    if (resolvedFromQty > totalQty || resolvedToQty < 1 || resolvedFromQty > resolvedToQty) {
+      return res.status(400).json({ message: `Invalid quantity range. Allowed range is 1 to ${totalQty}.` });
+    }
+
+    const quantityCount = resolvedToQty - resolvedFromQty + 1;
+    const existingCaptures = Array.isArray((job as any).operatorCaptures) ? [...(job as any).operatorCaptures] : [];
+    const hasOverlap = existingCaptures.some((entry: any) => {
+      const entryFrom = Number(entry.fromQty || 1);
+      const entryTo = Number(entry.toQty || entryFrom);
+      return resolvedFromQty <= entryTo && resolvedToQty >= entryFrom;
+    });
+
+    if (hasOverlap && !overwriteExisting) {
+      return res.status(409).json({
+        message: "Selected quantity range overlaps with an existing capture. Confirm overwrite to replace it.",
+        code: "CAPTURE_RANGE_OVERLAP",
+      });
+    }
+
+    const capturesWithoutOverlap = existingCaptures.filter((entry: any) => {
+      const entryFrom = Number(entry.fromQty || 1);
+      const entryTo = Number(entry.toQty || entryFrom);
+      return !(resolvedFromQty <= entryTo && resolvedToQty >= entryFrom);
+    });
+
+    const captureEntry = {
+      captureMode: mode,
+      fromQty: resolvedFromQty,
+      toQty: resolvedToQty,
+      quantityCount,
+      startTime: startTime || "",
+      endTime: endTime || "",
+      machineHrs: machineHrs || "",
+      machineNumber: machineNumber || "",
+      opsName: opsName || "",
+      idleTime: idleTime || "",
+      idleTimeDuration: idleTimeDuration || "",
+      lastImage: lastImage || null,
+      createdAt: updatedAt,
+      createdBy: updateData.updatedBy || "",
+    };
+
+    const nextQaStates = new Map((job as any).quantityQaStates || []);
+    for (let qty = resolvedFromQty; qty <= resolvedToQty; qty += 1) {
+      nextQaStates.set(String(qty), "SAVED");
+    }
+
+    (job as any).operatorCaptures = [...capturesWithoutOverlap, captureEntry];
+    (job as any).quantityQaStates = nextQaStates;
+    Object.entries(updateData).forEach(([key, value]) => {
+      (job as any)[key] = value;
+    });
+    await job.save();
 
     res.json(job);
   } catch (error: any) {
     console.error("Error capturing operator input:", error);
     res.status(500).json({ message: "Error capturing operator input" });
+  }
+});
+
+// Update QA status for selected quantities in a job
+router.post("/jobs/:id/qa-status", async (req, res) => {
+  try {
+    const { quantityNumbers, status } = req.body as {
+      quantityNumbers?: number[];
+      status?: "READY_FOR_QA" | "SENT_TO_QA";
+    };
+
+    if (!Array.isArray(quantityNumbers) || quantityNumbers.length === 0) {
+      return res.status(400).json({ message: "quantityNumbers array is required" });
+    }
+    if (status !== "READY_FOR_QA" && status !== "SENT_TO_QA") {
+      return res.status(400).json({ message: "status must be READY_FOR_QA or SENT_TO_QA" });
+    }
+
+    const job = await Job.findById(req.params.id);
+    if (!job) {
+      return res.status(404).json({ message: "Job not found" });
+    }
+
+    const totalQty = Math.max(1, Number((job as any).qty || 1));
+    const validQuantityNumbers = Array.from(new Set(
+      quantityNumbers
+        .map((n) => Number(n))
+        .filter((n) => Number.isInteger(n) && n >= 1 && n <= totalQty)
+    ));
+
+    if (validQuantityNumbers.length === 0) {
+      return res.status(400).json({ message: `No valid quantity numbers. Allowed range is 1 to ${totalQty}.` });
+    }
+
+    const qaStates = new Map((job as any).quantityQaStates || []);
+    validQuantityNumbers.forEach((qty) => {
+      qaStates.set(String(qty), status);
+    });
+    (job as any).quantityQaStates = qaStates;
+
+    const now = new Date();
+    const day = now.getDate().toString().padStart(2, "0");
+    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const month = months[now.getMonth()];
+    const year = now.getFullYear();
+    const hours = now.getHours().toString().padStart(2, "0");
+    const minutes = now.getMinutes().toString().padStart(2, "0");
+    (job as any).updatedAt = `${day} ${month} ${year} ${hours}:${minutes}`;
+    if (req.user && (req.user as any).fullName) {
+      (job as any).updatedBy = (req.user as any).fullName;
+    }
+
+    await job.save();
+    res.json(job);
+  } catch (error: any) {
+    console.error("Error updating QA status:", error);
+    res.status(500).json({ message: "Error updating QA status" });
   }
 });
 
