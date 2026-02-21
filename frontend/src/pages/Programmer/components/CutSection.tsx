@@ -53,7 +53,7 @@ export const CutSection: React.FC<CutSectionProps> = ({
   cutTotals,
   isCollapsed,
   isSaved,
-  fieldErrors: _fieldErrors,
+  fieldErrors,
   isFirstCut,
   openPriorityDropdown,
   onToggle,
@@ -77,6 +77,17 @@ export const CutSection: React.FC<CutSectionProps> = ({
       qty: cut.qty,
     },
   ]);
+
+  React.useEffect(() => {
+    const first = operationRows[0];
+    if (!first) return;
+    if (first.cut !== cut.cut) onCutChange("cut")(first.cut);
+    if (first.thickness !== cut.thickness) onCutChange("thickness")(first.thickness);
+    if (first.passLevel !== cut.passLevel) onCutChange("passLevel")(first.passLevel);
+    if (first.setting !== cut.setting) onCutChange("setting")(first.setting);
+    if (first.qty !== cut.qty) onCutChange("qty")(first.qty);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [operationRows]);
   
   return (
     <div className={`cut-section ${isCollapsed ? "collapsed" : ""}`}>
@@ -216,7 +227,7 @@ export const CutSection: React.FC<CutSectionProps> = ({
           readOnly={false}
         />
         <div className="cut-section-grid">
-          <FormInput label="Customer" className="grid-customer" required>
+          <FormInput label="Customer" className="grid-customer" required error={fieldErrors.customer}>
             <CustomerAutocomplete
               value={cut.customer}
               onChange={onCutChange("customer")}
@@ -225,7 +236,7 @@ export const CutSection: React.FC<CutSectionProps> = ({
             />
           </FormInput>
 
-          <FormInput label="Rate (₹/hr)" className="grid-rate" required>
+          <FormInput label="Rate (₹/hr)" className="grid-rate" required error={fieldErrors.rate}>
             <input
               type="number"
               value={cut.rate}
@@ -240,7 +251,7 @@ export const CutSection: React.FC<CutSectionProps> = ({
             />
           </FormInput>
 
-          <FormInput label="Description" className="grid-description" required>
+          <FormInput label="Description" className="grid-description" required error={fieldErrors.description}>
             <input
               value={cut.description}
               onChange={(e) =>
@@ -254,7 +265,7 @@ export const CutSection: React.FC<CutSectionProps> = ({
               type="text"
               value={(cut as any).programRefFile || ""}
               onChange={(e) =>
-                onCutChange("programRefFile" as keyof CutForm)(e.target.value)
+                onCutChange("programRefFile" as keyof CutForm)(e.target.value.toUpperCase())
               }
               placeholder="e.g. UPC001_V1"
             />
@@ -269,6 +280,7 @@ export const CutSection: React.FC<CutSectionProps> = ({
                 <FormInput 
                   label={isFirstRow ? "Cut Length (mm)" : ""} 
                   className={isFirstRow ? "grid-cut" : "operation-row-item"}
+                  error={isFirstRow ? fieldErrors.cut : undefined}
                   style={!isFirstRow ? { gridRow: gridRow, gridColumn: 1 } : undefined}
                 >
                   <input
@@ -286,6 +298,7 @@ export const CutSection: React.FC<CutSectionProps> = ({
                 <FormInput 
                   label={isFirstRow ? "Thickness (mm)" : ""} 
                   className={isFirstRow ? "grid-thickness" : "operation-row-item"}
+                  error={isFirstRow ? fieldErrors.thickness : undefined}
                   style={!isFirstRow ? { gridRow: gridRow, gridColumn: 2 } : undefined}
                 >
                   <input
@@ -303,6 +316,7 @@ export const CutSection: React.FC<CutSectionProps> = ({
                 <FormInput 
                   label={isFirstRow ? "Pass" : ""} 
                   className={isFirstRow ? "grid-pass" : "operation-row-item"}
+                  error={isFirstRow ? fieldErrors.passLevel : undefined}
                   style={!isFirstRow ? { gridRow: gridRow, gridColumn: 3 } : undefined}
                 >
                   <select
@@ -322,6 +336,7 @@ export const CutSection: React.FC<CutSectionProps> = ({
                 <FormInput 
                   label={isFirstRow ? "Setting Hrs" : ""} 
                   className={isFirstRow ? "grid-setting" : "operation-row-item"}
+                  error={isFirstRow ? fieldErrors.setting : undefined}
                   style={!isFirstRow ? { gridRow: gridRow, gridColumn: 4 } : undefined}
                 >
                   <input
@@ -339,6 +354,7 @@ export const CutSection: React.FC<CutSectionProps> = ({
                 <FormInput 
                   label={isFirstRow ? "Quantity" : ""} 
                   className={isFirstRow ? "grid-qty" : "operation-row-item"}
+                  error={isFirstRow ? fieldErrors.qty : undefined}
                   style={!isFirstRow ? { gridRow: gridRow, gridColumn: 5 } : undefined}
                 >
                   <div className="qty-with-add">

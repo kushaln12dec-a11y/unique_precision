@@ -44,8 +44,12 @@ export const useJobHandlers = ({
 
       const entries: JobEntry[] = cuts.map((cut, index) => {
         const cutTotals = totals[index] ?? calculateTotals(cut);
+        const normalizedCutImage = Array.isArray(cut.cutImage)
+          ? (cut.cutImage[0] || "")
+          : ((cut as any).cutImage || "");
         return {
           ...cut,
+          cutImage: normalizedCutImage as any,
           refNumber: refNumber || String(groupId) || cut.refNumber || "",
           id: groupId + index,
           groupId,
@@ -83,7 +87,11 @@ export const useJobHandlers = ({
       }
     } catch (error) {
       console.error("Failed to save job", error);
-      setToast({ message: "Failed to save job. Please try again.", variant: "error", visible: true });
+      const message =
+        error instanceof Error && error.message
+          ? `Failed to save job: ${error.message}`
+          : "Failed to save job. Please try again.";
+      setToast({ message, variant: "error", visible: true });
       setTimeout(() => setToast({ message: "", variant: "error", visible: false }), 3000);
     }
   }, [

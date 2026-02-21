@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+﻿import React, { useState } from "react";
 import type { JobEntry } from "../../../types/job";
 import { formatHoursToHHMM } from "../../../utils/date";
 import ActionButtons from "./ActionButtons";
@@ -16,6 +16,7 @@ type ChildCutsTableProps = {
   onAssignChange?: (jobId: number | string, value: string) => void;
   operatorUsers?: Array<{ id: number | string; name: string }>;
   isOperator?: boolean;
+  isAdmin?: boolean;
 };
 
 const ChildCutsTable: React.FC<ChildCutsTableProps> = ({
@@ -26,7 +27,22 @@ const ChildCutsTable: React.FC<ChildCutsTableProps> = ({
   onAssignChange,
   operatorUsers = [],
   isOperator = false,
+  isAdmin = false,
 }) => {
+  const truncateDescription = (value: string | undefined | null): string => {
+    const text = (value || "-").trim();
+    if (text === "-") return text;
+    return text.length > 7 ? `${text.slice(0, 7)}...` : text;
+  };
+
+  const toYN = (value: unknown): string => {
+    if (typeof value === "boolean") return value ? "Y" : "N";
+    const text = String(value || "").trim().toLowerCase();
+    if (text === "yes" || text === "y" || text === "true") return "Y";
+    if (text === "no" || text === "n" || text === "false") return "N";
+    return String(value || "-");
+  };
+
   const [selectedCut, setSelectedCut] = useState<JobEntry | null>(null);
   const [showCutModal, setShowCutModal] = useState(false);
   const canAssign = getUserRoleFromToken() === "ADMIN" || getUserRoleFromToken() === "OPERATOR";
@@ -46,22 +62,12 @@ const ChildCutsTable: React.FC<ChildCutsTableProps> = ({
 
   return (
     <>
-      {isOperator && (
-        <div className="child-stage-legend">
-          <span className="child-stage-title">Stage Legend:</span>
-          <span className="qa-mini saved">Operation Logged</span>
-          <span className="qa-mini ready">Inspection Ready</span>
-          <span className="qa-mini sent">QA Dispatched</span>
-          <span className="qa-mini empty">Pending Input</span>
-        </div>
-      )}
-
       <table className="child-jobs-table">
         <thead>
           <tr className="child-table-header">
             <th>Setting #</th>
             <th>Customer</th>
-            <th>Rate (Rs/hr)</th>
+            <th>Rate (₹/hr)</th>
             <th>Description</th>
             <th>Cut (mm)</th>
             <th>TH (MM)</th>
@@ -71,11 +77,15 @@ const ChildCutsTable: React.FC<ChildCutsTableProps> = ({
             <th>SEDM</th>
             <th>Complex</th>
             <th>PIP Finish</th>
-            <th>Assigned To</th>
-            <th>Total Hrs/Piece</th>
-            <th>Total Amount (Rs)</th>
-            {isOperator && <th>Production Stage</th>}
-            <th>Action</th>
+            {isOperator && <th>Assigned To</th>}
+            <th>
+              Total
+              <br />
+              Hrs/Piece
+            </th>
+            {isAdmin && <th>Total Amount (₹)</th>}
+            {isOperator && <th>Status</th>}
+            <th>Act</th>
           </tr>
         </thead>
         <tbody>
@@ -83,63 +93,66 @@ const ChildCutsTable: React.FC<ChildCutsTableProps> = ({
             <tr key={entry.id} className={getRowClassName([entry], false, true)}>
               <td>{index + 1}</td>
               <td>{entry.customer || "-"}</td>
-              <td>Rs{Number(entry.rate || 0).toFixed(2)}</td>
-              <td>{entry.description || "-"}</td>
+              <td>₹{Number(entry.rate || 0).toFixed(2)}</td>
+              <td title={entry.description || "-"}>{truncateDescription(entry.description)}</td>
               <td>{Number(entry.cut || 0).toFixed(2)}</td>
               <td>{Number(entry.thickness || 0).toFixed(2)}</td>
               <td>{entry.passLevel}</td>
               <td>{entry.setting}</td>
               <td>{Number(entry.qty || 0).toString()}</td>
-              <td>{entry.sedm}</td>
-              <td>{entry.critical ? "Yes" : "No"}</td>
-              <td>{entry.pipFinish ? "Yes" : "No"}</td>
-              <td>
-                {isOperator && canAssign && onAssignChange && operatorUsers.length > 0 ? (
-                  <div onClick={(e) => e.stopPropagation()}>
-                    <MultiSelectOperators
-                      selectedOperators={
-                        entry.assignedTo && entry.assignedTo !== "Unassigned"
-                          ? (() => {
-                              const operators = Array.isArray(entry.assignedTo)
-                                ? entry.assignedTo
-                                : entry.assignedTo.split(",").map((name) => name.trim()).filter(Boolean);
-                              return [...new Set(operators)];
-                            })()
-                          : []
-                      }
-                      availableOperators={operatorUsers}
-                      onChange={(operators) => {
-                        const uniqueOperators = [...new Set(operators)];
-                        const value = uniqueOperators.length > 0 ? uniqueOperators.join(", ") : "Unassigned";
-                        onAssignChange(entry.id, value);
-                      }}
-                      placeholder="Unassigned"
-                      compact={true}
-                    />
-                  </div>
-                ) : (
-                  <div className="assigned-operators-readonly">
-                    {entry.assignedTo && entry.assignedTo !== "Unassigned" ? (
-                      (() => {
-                        const assignedOps = Array.isArray(entry.assignedTo)
-                          ? entry.assignedTo
-                          : entry.assignedTo.split(", ").filter(Boolean);
-                        return assignedOps.length > 1 ? (
-                          <span className="compact-display-readonly" title={assignedOps.join(", ")}>
-                            {assignedOps[0]}+{assignedOps.length - 1}
-                          </span>
-                        ) : (
-                          <span className="operator-badge-readonly">{assignedOps[0]}</span>
-                        );
-                      })()
-                    ) : (
-                      <span className="unassigned-text">-</span>
-                    )}
-                  </div>
-                )}
-              </td>
+              <td>{toYN(entry.sedm)}</td>
+              <td>{toYN(entry.critical)}</td>
+              <td>{toYN(entry.pipFinish)}</td>
+              {isOperator && (
+                <td>
+                  {canAssign && onAssignChange && operatorUsers.length > 0 ? (
+                    <div onClick={(e) => e.stopPropagation()}>
+                      <MultiSelectOperators
+                        selectedOperators={
+                          entry.assignedTo && entry.assignedTo !== "Unassigned"
+                            ? (() => {
+                                const operators = Array.isArray(entry.assignedTo)
+                                  ? entry.assignedTo
+                                  : entry.assignedTo.split(",").map((name) => name.trim()).filter(Boolean);
+                                return [...new Set(operators)];
+                              })()
+                            : []
+                        }
+                        availableOperators={operatorUsers}
+                        className="operator-assigned-dropdown"
+                        onChange={(operators) => {
+                          const uniqueOperators = [...new Set(operators)];
+                          const value = uniqueOperators.length > 0 ? uniqueOperators.join(", ") : "Unassigned";
+                          onAssignChange(entry.id, value);
+                        }}
+                        placeholder="Unassigned"
+                        compact={true}
+                      />
+                    </div>
+                  ) : (
+                    <div className="assigned-operators-readonly">
+                      {entry.assignedTo && entry.assignedTo !== "Unassigned" ? (
+                        (() => {
+                          const assignedOps = Array.isArray(entry.assignedTo)
+                            ? entry.assignedTo
+                            : entry.assignedTo.split(", ").filter(Boolean);
+                          return assignedOps.length > 1 ? (
+                            <span className="compact-display-readonly" title={assignedOps.join(", ")}>
+                              {assignedOps[0]}+{assignedOps.length - 1}
+                            </span>
+                          ) : (
+                            <span className="operator-badge-readonly">{assignedOps[0]}</span>
+                          );
+                        })()
+                      ) : (
+                        <span className="unassigned-text">-</span>
+                      )}
+                    </div>
+                  )}
+                </td>
+              )}
               <td>{entry.totalHrs ? formatHoursToHHMM(entry.totalHrs) : "-"}</td>
-              <td>{entry.totalAmount ? `Rs${entry.totalAmount.toFixed(2)}` : "-"}</td>
+              {isAdmin && <td>{entry.totalAmount ? `₹${entry.totalAmount.toFixed(2)}` : "-"}</td>}
               {isOperator && (
                 <td>
                   {(() => {
@@ -147,10 +160,9 @@ const ChildCutsTable: React.FC<ChildCutsTableProps> = ({
                     const c = getQaProgressCounts(entry, qty);
                     return (
                       <div className="child-stage-summary">
-                        <span className="qa-mini saved">Logged {c.saved}</span>
-                        <span className="qa-mini ready">Ready {c.ready}</span>
-                        <span className="qa-mini sent">QA {c.sent}</span>
                         <span className="qa-mini empty">Pending {c.empty}</span>
+                        <span className="qa-mini saved">Logged {c.saved + c.ready}</span>
+                        <span className="qa-mini sent">QA {c.sent}</span>
                       </div>
                     );
                   })()}

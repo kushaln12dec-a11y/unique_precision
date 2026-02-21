@@ -15,6 +15,7 @@ type DateTimeInputProps = {
   isPaused?: boolean; // Current pause state
   onPauseToggle?: () => void; // Callback for pause/resume
   disabled?: boolean; // Disable input (for End Time after first click)
+  disablePauseButton?: boolean;
 };
 
 /**
@@ -62,6 +63,7 @@ const DateTimeInput: React.FC<DateTimeInputProps> = ({
   isPaused = false,
   onPauseToggle,
   disabled = false,
+  disablePauseButton = false,
 }) => {
   /**
    * Handles the clock icon click event
@@ -80,6 +82,7 @@ const DateTimeInput: React.FC<DateTimeInputProps> = ({
 
   const handlePauseClick = (e: React.MouseEvent) => {
     e.stopPropagation();
+    if (disablePauseButton) return;
     if (onPauseToggle) {
       onPauseToggle();
     }
@@ -102,8 +105,9 @@ const DateTimeInput: React.FC<DateTimeInputProps> = ({
             type="button"
             className="datetime-pause-button"
             onClick={handlePauseClick}
+            disabled={disablePauseButton}
             aria-label={isPaused ? "Resume timer" : "Pause timer"}
-            title={isPaused ? "Resume timer" : "Pause timer"}
+            title={disablePauseButton ? "Pause disabled after end time is set" : (isPaused ? "Resume timer" : "Pause timer")}
           >
             {isPaused ? <PlayArrowIcon fontSize="small" /> : <PauseIcon fontSize="small" />}
           </button>

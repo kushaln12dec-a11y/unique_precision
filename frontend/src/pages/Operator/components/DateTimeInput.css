@@ -72,6 +72,13 @@
   border-radius: 4px;
 }
 
+.datetime-pause-button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  color: #94a3b8;
+  background: transparent;
+}
+
 .datetime-icon-button {
   position: absolute;
   right: 8px;

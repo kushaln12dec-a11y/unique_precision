@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import Sidebar from "../../components/Sidebar";
 import Header from "../../components/Header";
 import Toast from "../../components/Toast";
+import ConfirmDeleteModal from "../../components/ConfirmDeleteModal";
 import { useOperatorViewData } from "./hooks/useOperatorViewData";
 import { useOperatorInputs } from "./hooks/useOperatorInputs";
 import { useOperatorSubmit } from "./hooks/useOperatorSubmit";
@@ -11,13 +12,13 @@ import { OperatorCutCard } from "./components/OperatorCutCard";
 import { OperatorTotalsSection } from "./components/OperatorTotalsSection";
 import { calculateTotals, type CutForm } from "../Programmer/programmerUtils";
 import type { CutInputData } from "./types/cutInput";
-import type { JobEntry } from "../../types/job";
 import { createEmptyCutInputData } from "./types/cutInput";
 import { getUsers } from "../../services/userApi";
 import { captureOperatorInput, updateOperatorQaStatus } from "../../services/operatorApi";
 import { validateQuantityInputs, validateRangeSelection } from "./utils/validation";
-import { getQaProgressCounts, getQuantityProgressStatuses } from "./utils/qaProgress";
+import { getQuantityProgressStatuses } from "./utils/qaProgress";
 import type { QuantityQaStatus } from "../../types/job";
+import { getUserRoleFromToken } from "../../utils/auth";
 import "../RoleBoard.css";
 import "../Programmer/Programmer.css";
 import "../Programmer/components/JobDetailsModal.css";
@@ -29,6 +30,7 @@ const OperatorViewPage = () => {
   const [searchParams] = useSearchParams();
   const groupId = searchParams.get("groupId");
   const cutIdParam = searchParams.get("cutId");
+  const isAdmin = getUserRoleFromToken() === "ADMIN";
   
   const [validationErrors, setValidationErrors] = useState<Map<number | string, Record<string, Record<string, string>>>>(new Map());
   const [operatorUsers, setOperatorUsers] = useState<Array<{ id: string | number; name: string }>>([]);
@@ -92,6 +94,8 @@ const OperatorViewPage = () => {
     variant: "info",
     visible: false,
   });
+  const [pendingDispatch, setPendingDispatch] = useState<{ cutId: number | string; quantityNumbers: number[] } | null>(null);
+  const [pendingReset, setPendingReset] = useState<{ cutId: number | string; quantityIndex: number } | null>(null);
 
   useEffect(() => {
     if (!jobs.length) return;
@@ -112,15 +116,33 @@ const OperatorViewPage = () => {
     });
   }, [jobs]);
 
-  const getJobWithCurrentQaStates = (job: JobEntry): JobEntry => {
-    const currentQa = qaStatusesByCut.get(job.id);
-    if (!currentQa) return job;
-    const normalized: Record<string, QuantityQaStatus> = {};
-    Object.entries(currentQa).forEach(([qty, status]) => {
-      normalized[String(qty)] = status;
+  useEffect(() => {
+    if (!jobs.length) {
+      setSavedQuantities(new Map());
+      return;
+    }
+    const seeded = new Map<number | string, Set<number>>();
+    jobs.forEach((job) => {
+      const qty = Math.max(1, Number(job.qty || 1));
+      const statuses = getQuantityProgressStatuses(job, qty);
+      const saved = new Set<number>();
+      statuses.forEach((status, idx) => {
+        if (status !== "EMPTY") saved.add(idx);
+      });
+      if (saved.size > 0) {
+        seeded.set(job.id, saved);
+      }
     });
-    return { ...job, quantityQaStates: normalized };
-  };
+    setSavedQuantities((prev) => {
+      const merged = new Map(prev);
+      seeded.forEach((set, cutId) => {
+        const existing = merged.get(cutId) || new Set<number>();
+        set.forEach((idx) => existing.add(idx));
+        merged.set(cutId, existing);
+      });
+      return merged;
+    });
+  }, [jobs]);
 
   const handleSaveQuantity = async (cutId: number | string, quantityIndex: number) => {
     const cutData = cutInputs.get(cutId);
@@ -191,15 +213,23 @@ const OperatorViewPage = () => {
         await captureOperatorInput(String(cutId), payload);
       } catch (error: any) {
         if (error?.message?.includes("overlaps")) {
-          const shouldOverwrite = window.confirm("This quantity already has captured data. Replace it?");
-          if (!shouldOverwrite) return;
-          await captureOperatorInput(String(cutId), {
-            ...payload,
-            overwriteExisting: true,
+          setSavedQuantities((prev) => {
+            const newMap = new Map(prev);
+            const saved = newMap.get(cutId) || new Set<number>();
+            saved.add(quantityIndex);
+            newMap.set(cutId, saved);
+            return newMap;
           });
-        } else {
-          throw error;
+          setQaStatusesByCut((prev) => {
+            const next = new Map(prev);
+            const existing = { ...(next.get(cutId) || {}) };
+            existing[quantityIndex + 1] = existing[quantityIndex + 1] || "SAVED";
+            next.set(cutId, existing);
+            return next;
+          });
+          return;
         }
+        throw error;
       }
 
       // Mark this quantity as saved
@@ -318,15 +348,15 @@ const OperatorViewPage = () => {
         await captureOperatorInput(String(cutId), payload);
       } catch (error: any) {
         if (error?.message?.includes("overlaps")) {
-          const shouldOverwrite = window.confirm("Selected range overlaps existing capture. Replace overlapping entries?");
-          if (!shouldOverwrite) return;
-          await captureOperatorInput(String(cutId), {
-            ...payload,
-            overwriteExisting: true,
+          setSaveToast({
+            message: "Selected quantity/range already has captured data. Once captured, it cannot be replaced.",
+            variant: "error",
+            visible: true,
           });
-        } else {
-          throw error;
+          setTimeout(() => setSaveToast((prev) => ({ ...prev, visible: false })), 3000);
+          return;
         }
+        throw error;
       }
 
       setSavedRanges((prev) => {
@@ -409,20 +439,9 @@ const OperatorViewPage = () => {
     return cutInputs.get(cutId) || createEmptyCutInputData(quantity);
   };
 
-  const overallQaCounts = useMemo(() => {
-    return jobs.reduce(
-      (acc, job) => {
-        const qty = Math.max(1, Number(job.qty || 1));
-        const counts = getQaProgressCounts(getJobWithCurrentQaStates(job), qty);
-        acc.saved += counts.saved;
-        acc.ready += counts.ready;
-        acc.sent += counts.sent;
-        acc.empty += counts.empty;
-        return acc;
-      },
-      { saved: 0, ready: 0, sent: 0, empty: 0 }
-    );
-  }, [jobs, qaStatusesByCut]);
+  const pendingDispatchJob = pendingDispatch
+    ? jobs.find((job) => String(job.id) === String(pendingDispatch.cutId))
+    : null;
 
   return (
     <div className="roleboard-container">
@@ -444,19 +463,6 @@ const OperatorViewPage = () => {
 
               {/* Job Information Section */}
               <OperatorJobInfo parentJob={parentJob} groupId={groupId} />
-              <div className="qa-overall-summary">
-                <span className="qa-summary-chip saved">Operation Logged: {overallQaCounts.saved}</span>
-                <span className="qa-summary-chip ready">Inspection Ready: {overallQaCounts.ready}</span>
-                <span className="qa-summary-chip sent">QA Dispatched: {overallQaCounts.sent}</span>
-                <span className="qa-summary-chip empty">Pending Input: {overallQaCounts.empty}</span>
-              </div>
-              <div className="qa-stage-legend">
-                <span className="qa-legend-title">Stage Legend:</span>
-                <span className="qa-legend-item saved">Operation Logged = input captured</span>
-                <span className="qa-legend-item ready">Inspection Ready = selected for QA review</span>
-                <span className="qa-legend-item sent">QA Dispatched = moved to QA queue</span>
-                <span className="qa-legend-item empty">Pending Input = values not entered yet</span>
-              </div>
 
               {/* Cuts Information Section */}
               <div className="operator-cuts-section">
@@ -487,12 +493,10 @@ const OperatorViewPage = () => {
                         onSaveQuantity={handleSaveQuantity}
                         onSaveRange={handleSaveRange}
                         qaStatuses={qaStatuses}
-                        onMarkReadyForQa={(cutId, quantityNumbers) =>
-                          handleUpdateQaStatus(cutId, quantityNumbers, "READY_FOR_QA")
-                        }
-                        onSendToQa={(cutId, quantityNumbers) =>
-                          handleUpdateQaStatus(cutId, quantityNumbers, "SENT_TO_QA")
-                        }
+                        onSendToQa={(cutId, quantityNumbers) => {
+                          if (!quantityNumbers.length) return;
+                          setPendingDispatch({ cutId, quantityNumbers });
+                        }}
                         savedQuantities={saved}
                         savedRanges={savedRangeSet}
                         validationErrors={errors}
@@ -502,6 +506,10 @@ const OperatorViewPage = () => {
                             setActionToast((prev) => ({ ...prev, visible: false }));
                           }, 2000);
                         }}
+                        onRequestResetTimer={(cutId, quantityIndex) => {
+                          setPendingReset({ cutId, quantityIndex });
+                        }}
+                        isAdmin={isAdmin}
                       />
                     );
                   })}
@@ -514,6 +522,7 @@ const OperatorViewPage = () => {
                 totalWedmAmount={amounts.totalWedmAmount}
                 totalSedmAmount={amounts.totalSedmAmount}
                 groupTotalAmount={groupTotalAmount}
+                isAdmin={isAdmin}
               />
 
               {/* Action Buttons */}
@@ -547,6 +556,38 @@ const OperatorViewPage = () => {
         variant={actionToast.variant}
         onClose={() => setActionToast({ ...actionToast, visible: false })}
       />
+      {pendingDispatch && (
+        <ConfirmDeleteModal
+          title="Confirm Dispatch"
+          message="Are you sure you want to dispatch selected quantity to QA?"
+          details={[
+            { label: "Setting", value: pendingDispatchJob ? String(jobs.findIndex((j) => String(j.id) === String(pendingDispatch.cutId)) + 1) : "N/A" },
+            { label: "Quantities", value: pendingDispatch.quantityNumbers.join(", ") },
+          ]}
+          confirmButtonText="Dispatch To QA"
+          onConfirm={async () => {
+            await handleUpdateQaStatus(pendingDispatch.cutId, pendingDispatch.quantityNumbers, "SENT_TO_QA");
+            setPendingDispatch(null);
+          }}
+          onCancel={() => setPendingDispatch(null)}
+        />
+      )}
+      {pendingReset && (
+        <ConfirmDeleteModal
+          title="Confirm Reset"
+          message="Are you sure you want to reset this quantity timer?"
+          details={[
+            { label: "Setting", value: String(jobs.findIndex((j) => String(j.id) === String(pendingReset.cutId)) + 1) },
+            { label: "Quantity", value: String(pendingReset.quantityIndex + 1) },
+          ]}
+          confirmButtonText="Reset Timer"
+          onConfirm={() => {
+            handleInputChange(pendingReset.cutId, pendingReset.quantityIndex, "resetTimer", "");
+            setPendingReset(null);
+          }}
+          onCancel={() => setPendingReset(null)}
+        />
+      )}
     </div>
   );
 };

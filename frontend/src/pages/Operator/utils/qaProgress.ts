@@ -11,7 +11,7 @@ export type QaProgressCounts = {
 
 export const QA_STAGE_LABELS = {
   SAVED: "Operation Logged",
-  READY_FOR_QA: "Inspection Ready",
+  READY_FOR_QA: "Operation Logged",
   SENT_TO_QA: "QA Dispatched",
   EMPTY: "Pending Input",
 } as const;

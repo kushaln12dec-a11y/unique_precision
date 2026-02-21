@@ -12,6 +12,7 @@ export const useOperatorFilters = () => {
   const [descriptionFilter, setDescriptionFilter] = useState("");
   const [createdByFilter, setCreatedByFilter] = useState("");
   const [assignedToFilter, setAssignedToFilter] = useState("");
+  const [productionStageFilter, setProductionStageFilter] = useState("");
 
   const filterCategories: FilterCategory[] = [
     { id: "dimensions", label: "Dimensions", icon: "📏" },
@@ -117,6 +118,7 @@ export const useOperatorFilters = () => {
     setDescriptionFilter("");
     setCreatedByFilter("");
     setAssignedToFilter("");
+    setProductionStageFilter("");
   };
 
   const handleClearFilters = () => {
@@ -133,6 +135,8 @@ export const useOperatorFilters = () => {
         setCreatedByFilter("");
       } else if (key === "assignedTo") {
         setAssignedToFilter("");
+      } else if (key === "productionStage") {
+        setProductionStageFilter("");
       }
     } else {
       // Modal filter
@@ -157,6 +161,8 @@ export const useOperatorFilters = () => {
     setCreatedByFilter,
     assignedToFilter,
     setAssignedToFilter,
+    productionStageFilter,
+    setProductionStageFilter,
     filterCategories,
     filterFields,
     activeFilterCount,

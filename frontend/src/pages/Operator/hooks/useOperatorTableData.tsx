@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import type { JobEntry } from "../../../types/job";
 import { parseDateValue } from "../../../utils/date";
 import ChildCutsTable from "../../Programmer/components/ChildCutsTable";
+import { getQaProgressCounts } from "../utils/qaProgress";
 
 type TableRow = {
   groupId: number;
@@ -23,11 +24,13 @@ export const useOperatorTableData = (
   jobs: JobEntry[],
   sortField: keyof JobEntry | null,
   sortDirection: "asc" | "desc",
+  productionStageFilter: string,
   expandedGroups: Set<number>,
   toggleGroup: (groupId: number) => void,
   handleImageInput: (groupId: number, cutId?: number) => void,
   handleAssignChange: (jobId: number | string, value: string) => void,
-  operatorUsers: Array<{ id: string | number; name: string }>
+  operatorUsers: Array<{ id: string | number; name: string }>,
+  isAdmin: boolean
 ): UseOperatorTableDataReturn => {
   // Group jobs by groupId
   const groupedJobs = useMemo(() => {
@@ -51,16 +54,30 @@ export const useOperatorTableData = (
 
   // Sort groups
   const sortedGroups = useMemo(() => {
+    const filteredGroups = productionStageFilter
+      ? groupedJobs.filter((group) => {
+          const firstSetting = group.entries[0];
+          if (!firstSetting) return false;
+          const qty = Math.max(1, Number(firstSetting.qty || 1));
+          const c = getQaProgressCounts(firstSetting, qty);
+          const counts = { logged: c.saved + c.ready, sent: c.sent, empty: c.empty };
+          if (productionStageFilter === "OP_LOGGED") return counts.logged > 0;
+          if (productionStageFilter === "QA_DISPATCHED") return counts.sent > 0;
+          if (productionStageFilter === "PENDING_INPUT") return counts.empty > 0;
+          return true;
+        })
+      : groupedJobs;
+
     if (!sortField) {
       // Default sort: newest first (by createdAt descending)
-      return [...groupedJobs].sort((a, b) => {
+      return [...filteredGroups].sort((a, b) => {
         const dateA = parseDateValue(a.entries[0]?.createdAt || "");
         const dateB = parseDateValue(b.entries[0]?.createdAt || "");
         return dateB - dateA; // Descending (newest first)
       });
     }
     const direction = sortDirection === "asc" ? 1 : -1;
-    return [...groupedJobs].sort((a, b) => {
+    return [...filteredGroups].sort((a, b) => {
       const getValue = (group: { entries: JobEntry[] }) => {
         const first = group.entries[0];
         if (!first) return "";
@@ -87,7 +104,7 @@ export const useOperatorTableData = (
       if (valueA > valueB) return 1 * direction;
       return 0;
     });
-  }, [groupedJobs, sortField, sortDirection]);
+  }, [groupedJobs, sortField, sortDirection, productionStageFilter]);
 
   // Create table data
   const tableData = useMemo<TableRow[]>(() => {
@@ -129,6 +146,7 @@ export const useOperatorTableData = (
               onAssignChange={handleAssignChange}
               operatorUsers={operatorUsers}
               isOperator={true}
+              isAdmin={isAdmin}
             />
           ),
           ariaLabel: expandedGroups.has(row.groupId)
@@ -138,7 +156,7 @@ export const useOperatorTableData = (
       }
     });
     return map;
-  }, [tableData, expandedGroups, toggleGroup, handleImageInput, handleAssignChange, operatorUsers]);
+  }, [tableData, expandedGroups, toggleGroup, handleImageInput, handleAssignChange, operatorUsers, isAdmin]);
 
   return {
     tableData,

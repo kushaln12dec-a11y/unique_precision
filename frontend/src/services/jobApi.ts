@@ -154,8 +154,19 @@ export const createJobs = async (jobs: JobEntry[]): Promise<JobEntry[]> => {
   });
 
   if (!res.ok) {
-    const error = await res.json();
-    throw new Error(error.message || "Failed to create jobs");
+    let message = "Failed to create jobs";
+    try {
+      const error = await res.json();
+      message = error.message || error.error || message;
+    } catch {
+      try {
+        const text = await res.text();
+        if (text) message = text;
+      } catch {
+        // keep default message
+      }
+    }
+    throw new Error(message);
   }
 
   const createdJobs = await res.json();

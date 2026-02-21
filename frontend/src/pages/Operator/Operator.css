@@ -181,6 +181,60 @@
   gap: 0.25rem !important;
 }
 
+.operator-stage-legend-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+  margin-bottom: 0.1rem;
+}
+
+.operator-stage-legend-title {
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: #334155;
+}
+
+.operator-stage-chip {
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 0.14rem 0.4rem;
+  border-radius: 999px;
+  border: 1px solid transparent;
+}
+
+.operator-stage-chip.saved {
+  color: #075985;
+  background: #e0f2fe;
+  border-color: #7dd3fc;
+}
+
+.operator-stage-chip.sent {
+  color: #4338ca;
+  background: #eef2ff;
+  border-color: #c7d2fe;
+}
+
+.operator-stage-chip.empty {
+  color: #92400e;
+  background: #fffbeb;
+  border-color: #fcd34d;
+}
+
+.assigned-to-filter-select {
+  border-color: #93c5fd !important;
+  background: linear-gradient(180deg, #f8fbff 0%, #eef4ff 100%) !important;
+  color: #1e3a8a !important;
+  font-weight: 700 !important;
+  box-shadow: inset 0 0 0 1px rgba(147, 197, 253, 0.35);
+}
+
+.assigned-to-filter-select:focus {
+  border-color: #3b82f6 !important;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.18) !important;
+}
+
 /* Prioritize Action column visibility */
 .operator-table-no-scroll .data-table th.action-header,
 .operator-table-no-scroll .data-table td.action-cell {
@@ -487,7 +541,190 @@
 }
 
 .child-stage-summary {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.18rem;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: 0.14rem;
+  min-width: 80px;
+}
+
+/* Final operator fit/alignment overrides */
+.operator-table-no-scroll .data-table-wrapper {
+  overflow-x: auto !important;
+}
+
+.operator-table-no-scroll .data-table {
+  table-layout: auto !important;
+  width: 100% !important;
+}
+
+.operator-table-no-scroll .data-table th:not(.action-header):not(.checkbox-header-cell),
+.operator-table-no-scroll .data-table td:not(.action-cell):not(.checkbox-cell) {
+  width: auto !important;
+  min-width: 0 !important;
+  max-width: none !important;
+}
+
+.operator-table-no-scroll .data-table th,
+.operator-table-no-scroll .data-table td {
+  font-size: 0.78rem !important;
+  padding: 0.38rem 0.32rem !important;
+  line-height: 1.15 !important;
+}
+
+.operator-table-no-scroll .data-table .checkbox-header-cell,
+.operator-table-no-scroll .data-table .checkbox-cell {
+  width: 30px !important;
+  min-width: 30px !important;
+  max-width: 30px !important;
+  padding-left: 0.2rem !important;
+  padding-right: 0.2rem !important;
+}
+
+.operator-table-no-scroll .data-table th.action-header,
+.operator-table-no-scroll .data-table td.action-cell {
+  width: 74px !important;
+  min-width: 74px !important;
+  max-width: 74px !important;
+  text-align: center !important;
+  white-space: nowrap !important;
+  visibility: visible !important;
+  display: table-cell !important;
+}
+
+.operator-table-no-scroll .data-table th.status-header,
+.operator-table-no-scroll .data-table td.status-cell {
+  text-align: center !important;
+  vertical-align: middle !important;
+}
+
+.operator-table-no-scroll .data-table td.status-cell .child-stage-summary {
+  margin: 0 auto;
+  align-items: center;
+}
+
+.child-jobs-table td .child-stage-summary {
+  margin: 0 auto;
+  align-items: center;
+}
+
+.created-at-split {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1.05;
+  gap: 0.08rem;
+}
+
+/* Larger row text/icons for readability */
+.operator-table-no-scroll .data-table th {
+  font-size: 0.95rem !important;
+  font-weight: 700 !important;
+  padding: 0.52rem 0.38rem !important;
+}
+
+.operator-table-no-scroll .data-table td {
+  font-size: 0.95rem !important;
+  padding: 0.56rem 0.38rem !important;
+  vertical-align: middle !important;
+  text-align: center !important;
+}
+
+.operator-table-no-scroll .data-table td .operator-accordion-toggle svg {
+  font-size: 0.9rem !important;
+  width: 0.9rem !important;
+  height: 0.9rem !important;
+}
+
+.operator-table-no-scroll .data-table .sort-icon {
+  font-size: 0.72rem !important;
+}
+
+.operator-table-no-scroll .data-table td.action-cell .action-icon-button,
+.operator-table-no-scroll .data-table td.action-cell .operator-action-button {
+  width: 1.45rem !important;
+  height: 1.45rem !important;
+  min-width: 1.45rem !important;
+  min-height: 1.45rem !important;
+  padding: 0.16rem !important;
+}
+
+.operator-table-no-scroll .data-table td.action-cell .action-icon-button svg,
+.operator-table-no-scroll .data-table td.action-cell .operator-action-button svg {
+  font-size: 1rem !important;
+  width: 1rem !important;
+  height: 1rem !important;
+}
+
+.operator-table-no-scroll .child-jobs-table th {
+  font-size: 0.9rem !important;
+  padding: 0.5rem 0.42rem !important;
+}
+
+.operator-table-no-scroll .child-jobs-table td {
+  font-size: 0.93rem !important;
+  padding: 0.52rem 0.42rem !important;
+}
+
+/* Parent table alignment stability */
+.operator-table-no-scroll .data-table tbody tr {
+  height: 74px;
+}
+
+.operator-table-no-scroll .data-table td:first-child {
+  text-align: left !important;
+}
+
+.operator-table-no-scroll .data-table td:nth-child(2) > div {
+  justify-content: flex-start !important;
+}
+
+.operator-table-no-scroll .data-table th.action-header .th-content {
+  display: inline-flex !important;
+  justify-content: center !important;
+  width: 100% !important;
+  overflow: visible !important;
+}
+
+.operator-table-no-scroll .data-table th.action-header {
+  overflow: visible !important;
+  text-overflow: clip !important;
+}
+
+.operator-table-no-scroll .data-table td.action-cell {
+  padding-left: 0.25rem !important;
+  padding-right: 0.25rem !important;
+}
+
+.operator-table-no-scroll .data-table td .created-at-split {
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+}
+
+.roleboard-content .programmer-panel .inline-filters {
+  display: flex !important;
+  align-items: flex-end !important;
+  gap: 0.55rem !important;
+  flex-wrap: wrap !important;
+}
+
+.roleboard-content .programmer-panel .filter-group {
+  min-width: 130px !important;
+}
+
+.roleboard-content .programmer-panel .filter-input,
+.roleboard-content .programmer-panel .filter-select {
+  height: 36px !important;
+}
+
+.roleboard-content .programmer-panel .filter-input {
+  background-image: none !important;
+  padding-left: 0.6rem !important;
+}
+
+.operator-stage-legend-inline {
+  align-self: flex-end;
+  margin-bottom: 0.1rem !important;
 }

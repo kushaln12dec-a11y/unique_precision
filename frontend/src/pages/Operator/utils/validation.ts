@@ -73,6 +73,9 @@ export const validateRangeSelection = (
   if (!Number.isFinite(fromQty) || !Number.isFinite(toQty)) {
     return "Enter valid quantity range.";
   }
+  if (toQty <= 1) {
+    return "To Qty must be greater than 1.";
+  }
   if (fromQty < 1 || toQty < 1 || fromQty > totalQuantity || toQty > totalQuantity) {
     return `Range must be between 1 and ${totalQuantity}.`;
   }

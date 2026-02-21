@@ -30,6 +30,7 @@ type TableRow = {
 
 const Operator = () => {
   const navigate = useNavigate();
+  const isAdmin = getUserRoleFromToken() === "ADMIN";
   const [currentPage, setCurrentPage] = useState(1);
   const [jobsPerPage, setJobsPerPage] = useState(5);
   const [sortField, setSortField] = useState<keyof JobEntry | null>(null);
@@ -56,6 +57,8 @@ const Operator = () => {
     setCreatedByFilter,
     assignedToFilter,
     setAssignedToFilter,
+    productionStageFilter,
+    setProductionStageFilter,
     filterCategories,
     filterFields,
     activeFilterCount,
@@ -129,13 +132,14 @@ const Operator = () => {
   };
 
   const handleDownloadCSV = () => {
-    exportOperatorJobsToCSV(tableData);
+    exportOperatorJobsToCSV(tableData, isAdmin);
   };
 
   const { tableData, expandableRows } = useOperatorTableData(
     jobs,
     sortField,
     sortDirection,
+    productionStageFilter,
     expandedGroups,
     toggleGroup,
     handleImageInput,
@@ -143,7 +147,8 @@ const Operator = () => {
     operatorUsers.map((user) => ({
       id: user._id,
       name: `${user.firstName} ${user.lastName}`.trim(),
-    }))
+    })),
+    isAdmin
   );
 
   const columns = useOperatorTable({
@@ -158,6 +163,7 @@ const Operator = () => {
     handleViewJob,
     handleSubmit,
     handleImageInput,
+    isAdmin,
   });
 
   const handleApplyFiltersWithPageReset = (newFilters: FilterValues) => {
@@ -189,6 +195,7 @@ const Operator = () => {
             descriptionFilter={descriptionFilter}
             createdByFilter={createdByFilter}
             assignedToFilter={assignedToFilter}
+            productionStageFilter={productionStageFilter}
             showFilterModal={showFilterModal}
             activeFilterCount={activeFilterCount}
             users={users}
@@ -201,6 +208,7 @@ const Operator = () => {
             onDescriptionFilterChange={setDescriptionFilter}
             onCreatedByFilterChange={setCreatedByFilter}
             onAssignedToFilterChange={setAssignedToFilter}
+            onProductionStageFilterChange={setProductionStageFilter}
             onDownloadCSV={handleDownloadCSV}
           />
           <DataTable
@@ -220,7 +228,7 @@ const Operator = () => {
                 expandedGroups.has(row.groupId)
               )
             }
-            className="jobs-table-wrapper"
+            className="jobs-table-wrapper operator-table-no-scroll"
             showCheckboxes={true}
             selectedRows={selectedJobIds}
             onRowSelect={(rowKey, selected) => {

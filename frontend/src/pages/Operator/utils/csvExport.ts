@@ -1,4 +1,4 @@
-import type { JobEntry } from "../../../types/job";
+﻿import type { JobEntry } from "../../../types/job";
 import { formatHoursToHHMM, parseDateValue } from "../../../utils/date";
 
 type TableRow = {
@@ -9,11 +9,25 @@ type TableRow = {
   entries: JobEntry[];
 };
 
-/**
- * Export operator jobs to CSV
- */
-export const exportOperatorJobsToCSV = (tableData: TableRow[]): void => {
-  const headers = ["Customer", "Rate", "Cut (mm)", "Description", "TH (MM)", "Pass", "Setting", "Qty", "Created At", "Created By", "Assigned To", "Total Hrs/Piece", "Total Amount (₹)", "Priority", "Complex"];
+export const exportOperatorJobsToCSV = (tableData: TableRow[], isAdmin: boolean): void => {
+  const headers = [
+    "Customer",
+    "Rate",
+    "Cut (mm)",
+    "Description",
+    "TH (MM)",
+    "Pass",
+    "Setting",
+    "Qty",
+    "Created At",
+    "Created By",
+    "Assigned To",
+    "Total Hrs/Piece",
+    ...(isAdmin ? ["Total Amount (₹)"] : []),
+    "Priority",
+    "Complex",
+  ];
+
   const rows = tableData.map((row) => [
     row.parent.customer || "",
     `₹${Number(row.parent.rate || 0).toFixed(2)}`,
@@ -25,7 +39,7 @@ export const exportOperatorJobsToCSV = (tableData: TableRow[]): void => {
     Number(row.parent.qty || 0).toString(),
     (() => {
       const parsed = parseDateValue(row.parent.createdAt);
-      if (!parsed) return "—";
+      if (!parsed) return "-";
       const date = new Date(parsed);
       const day = date.getDate().toString().padStart(2, "0");
       const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -38,7 +52,7 @@ export const exportOperatorJobsToCSV = (tableData: TableRow[]): void => {
     row.parent.createdBy || "",
     row.parent.assignedTo || "",
     row.groupTotalHrs ? formatHoursToHHMM(row.groupTotalHrs) : "",
-    row.groupTotalAmount ? `₹${row.groupTotalAmount.toFixed(2)}` : "",
+    ...(isAdmin ? [row.groupTotalAmount ? `₹${row.groupTotalAmount.toFixed(2)}` : ""] : []),
     row.parent.priority || "",
     row.parent.critical ? "Yes" : "No",
   ]);

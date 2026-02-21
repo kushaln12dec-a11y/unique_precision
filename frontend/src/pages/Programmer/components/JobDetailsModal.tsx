@@ -243,7 +243,7 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
                         {(() => {
                           const qty = Math.max(1, Number(cutItem.qty || 1));
                           const c = getQaProgressCounts(cutItem, qty);
-                          return <span>Logged {c.saved} | Inspection Ready {c.ready} | QA Dispatched {c.sent} | Pending {c.empty}</span>;
+                          return <span>Logged {c.saved + c.ready} | QA Dispatched {c.sent} | Pending {c.empty}</span>;
                         })()}
                       </div>
                       <div className="cut-detail">

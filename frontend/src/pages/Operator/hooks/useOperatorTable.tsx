@@ -1,9 +1,10 @@
-import { useMemo } from "react";
+﻿import { useMemo } from "react";
 import type { JobEntry } from "../../../types/job";
 import { formatHoursToHHMM, parseDateValue } from "../../../utils/date";
 import ActionButtons from "../../Programmer/components/ActionButtons";
 import ArrowForwardIosSharpIcon from "@mui/icons-material/ArrowForwardIosSharp";
 import { MultiSelectOperators } from "../components/MultiSelectOperators";
+import { getQaProgressCounts } from "../utils/qaProgress";
 import type { Column } from "../../../components/DataTable";
 
 type TableRow = {
@@ -23,11 +24,9 @@ type UseOperatorTableProps = {
   handleViewJob: (row: TableRow) => void;
   handleSubmit: (groupId: number) => void;
   handleImageInput: (groupId: number, cutId?: number) => void;
+  isAdmin: boolean;
 };
 
-/**
- * Hook for generating operator table columns
- */
 export const useOperatorTable = ({
   expandableRows,
   canAssign,
@@ -35,7 +34,14 @@ export const useOperatorTable = ({
   handleAssignChange,
   handleViewJob,
   handleSubmit,
+  isAdmin,
 }: UseOperatorTableProps): Column<TableRow>[] => {
+  const truncateDescription = (value: string | undefined | null): string => {
+    const text = (value || "-").trim();
+    if (text === "-") return text;
+    return text.length > 7 ? `${text.slice(0, 7)}...` : text;
+  };
+
   return useMemo(
     () => [
       {
@@ -77,7 +83,7 @@ export const useOperatorTable = ({
                 </button>
               )}
               {!expandable && <span style={{ width: "1rem" }} />}
-              <span>{row.parent.customer || "—"}</span>
+              <span>{row.parent.customer || "-"}</span>
             </div>
           );
         },
@@ -94,7 +100,10 @@ export const useOperatorTable = ({
         label: "Description",
         sortable: true,
         sortKey: "description",
-        render: (row) => row.parent.description || "—",
+        render: (row) => {
+          const full = row.parent.description || "-";
+          return <span title={full}>{truncateDescription(full)}</span>;
+        },
       },
       {
         key: "cut",
@@ -153,6 +162,7 @@ export const useOperatorTable = ({
             <MultiSelectOperators
               selectedOperators={assignedOperators}
               availableOperators={operatorUsers}
+              className="operator-assigned-dropdown"
               onChange={(operators) => {
                 const uniqueOperators = [...new Set(operators)];
                 const value = uniqueOperators.length > 0 ? uniqueOperators.join(", ") : "Unassigned";
@@ -180,17 +190,47 @@ export const useOperatorTable = ({
       },
       {
         key: "totalHrs",
-        label: "Total Hrs/Piece",
+        label: (
+          <>
+            Total
+            <br />
+            Hrs/Piece
+          </>
+        ),
         sortable: true,
         sortKey: "totalHrs",
-        render: (row) => (row.groupTotalHrs ? formatHoursToHHMM(row.groupTotalHrs) : "—"),
+        render: (row) => (row.groupTotalHrs ? formatHoursToHHMM(row.groupTotalHrs) : "-"),
       },
+      ...(isAdmin
+        ? [
+            {
+              key: "totalAmount",
+              label: "Total Amount (₹)",
+              sortable: true,
+              sortKey: "totalAmount",
+              render: (row: TableRow) => (row.groupTotalAmount ? `₹${row.groupTotalAmount.toFixed(2)}` : "-"),
+            } as Column<TableRow>,
+          ]
+        : []),
       {
-        key: "totalAmount",
-        label: "Total Amount (₹)",
-        sortable: true,
-        sortKey: "totalAmount",
-        render: (row) => (row.groupTotalAmount ? `₹${row.groupTotalAmount.toFixed(2)}` : "—"),
+        key: "productionStage",
+        label: "Status",
+        sortable: false,
+        className: "status-cell",
+        headerClassName: "status-header",
+        render: (row) => {
+          const firstSetting = row.entries[0] || row.parent;
+          const qty = Math.max(1, Number(firstSetting.qty || 1));
+          const c = getQaProgressCounts(firstSetting, qty);
+          const counts = { logged: c.saved + c.ready, sent: c.sent, empty: c.empty };
+          return (
+            <div className="child-stage-summary">
+              <span className="qa-mini empty">Pending {counts.empty}</span>
+              <span className="qa-mini saved">Logged {counts.logged}</span>
+              <span className="qa-mini sent">QA {counts.sent}</span>
+            </div>
+          );
+        },
       },
       {
         key: "createdBy",
@@ -206,7 +246,7 @@ export const useOperatorTable = ({
         sortKey: "createdAt",
         render: (row) => {
           const parsed = parseDateValue(row.parent.createdAt);
-          if (!parsed) return "—";
+          if (!parsed) return "-";
           const date = new Date(parsed);
           const day = date.getDate().toString().padStart(2, "0");
           const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -214,26 +254,34 @@ export const useOperatorTable = ({
           const year = date.getFullYear();
           const hours = date.getHours().toString().padStart(2, "0");
           const minutes = date.getMinutes().toString().padStart(2, "0");
-          return `${day} ${month} ${year} ${hours}:${minutes}`;
+          return (
+            <div className="created-at-split">
+              <span>{`${day} ${month} ${year}`}</span>
+              <span>{`${hours}:${minutes}`}</span>
+            </div>
+          );
         },
       },
       {
         key: "action",
-        label: "Action",
+        label: "Act",
         sortable: false,
         className: "action-cell",
         headerClassName: "action-header",
-        render: (row) => (
-          <ActionButtons
-            onView={() => handleViewJob(row)}
-            onSubmit={() => handleSubmit(row.groupId)}
-            viewLabel={`View ${row.parent.customer || "entry"}`}
-            submitLabel={`Submit ${row.parent.customer || "entry"}`}
-            isOperator={true}
-          />
-        ),
+        render: (row) => {
+          const hasChildren = !!expandableRows?.get(row.groupId);
+          return (
+            <ActionButtons
+              onView={() => handleViewJob(row)}
+              onImage={!hasChildren ? () => handleSubmit(row.groupId) : undefined}
+              viewLabel={`View ${row.parent.customer || "entry"}`}
+              imageLabel={`Open ${row.parent.customer || "entry"}`}
+              isOperator={true}
+            />
+          );
+        },
       },
     ],
-    [canAssign, operatorUsers, handleAssignChange, expandableRows, handleViewJob, handleSubmit]
+    [canAssign, operatorUsers, handleAssignChange, expandableRows, handleViewJob, handleSubmit, isAdmin]
   );
 };

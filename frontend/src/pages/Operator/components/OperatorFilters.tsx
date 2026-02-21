@@ -13,6 +13,7 @@ type OperatorFiltersProps = {
   descriptionFilter: string;
   createdByFilter: string;
   assignedToFilter: string;
+  productionStageFilter: string;
   showFilterModal: boolean;
   activeFilterCount: number;
   users: Array<{ _id: string; firstName: string; lastName: string; email: string }>;
@@ -25,6 +26,7 @@ type OperatorFiltersProps = {
   onDescriptionFilterChange: (value: string) => void;
   onCreatedByFilterChange: (value: string) => void;
   onAssignedToFilterChange: (value: string) => void;
+  onProductionStageFilterChange: (value: string) => void;
   onDownloadCSV: () => void;
 };
 
@@ -36,6 +38,7 @@ export const OperatorFilters: React.FC<OperatorFiltersProps> = ({
   descriptionFilter,
   createdByFilter,
   assignedToFilter,
+  productionStageFilter,
   showFilterModal,
   activeFilterCount,
   users,
@@ -48,6 +51,7 @@ export const OperatorFilters: React.FC<OperatorFiltersProps> = ({
   onDescriptionFilterChange,
   onCreatedByFilterChange,
   onAssignedToFilterChange,
+  onProductionStageFilterChange,
   onDownloadCSV,
 }) => {
   return (
@@ -101,7 +105,7 @@ export const OperatorFilters: React.FC<OperatorFiltersProps> = ({
               id="assigned-to-select"
               value={assignedToFilter}
               onChange={(e) => onAssignedToFilterChange(e.target.value)}
-              className="filter-select"
+              className="filter-select assigned-to-filter-select"
             >
               <option value="">All</option>
               <option value="Unassigned">Unassigned</option>
@@ -125,6 +129,26 @@ export const OperatorFilters: React.FC<OperatorFiltersProps> = ({
                 })
               )}
             </select>
+          </div>
+          <div className="filter-group">
+            <label htmlFor="production-stage-select">Status</label>
+            <select
+              id="production-stage-select"
+              value={productionStageFilter}
+              onChange={(e) => onProductionStageFilterChange(e.target.value)}
+              className="filter-select"
+            >
+              <option value="">All</option>
+              <option value="OP_LOGGED">Operation Logged</option>
+              <option value="QA_DISPATCHED">QA Dispatched</option>
+              <option value="PENDING_INPUT">Pending Input</option>
+            </select>
+          </div>
+          <div className="operator-stage-legend-inline">
+            <span className="operator-stage-legend-title">Stage Legend:</span>
+            <span className="operator-stage-chip saved">Operation Logged</span>
+            <span className="operator-stage-chip sent">QA Dispatched</span>
+            <span className="operator-stage-chip empty">Pending Input</span>
           </div>
         </div>
         <div className="panel-header-actions">

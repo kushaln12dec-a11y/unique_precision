@@ -296,6 +296,15 @@
 .btn-add-cut {
   padding: 0.45rem 0.9rem;
   font-size: 0.85rem;
+  background: linear-gradient(135deg, #f97316, #ea580c);
+  border: 1px solid #fb923c;
+  color: #ffffff;
+  box-shadow: 0 8px 18px rgba(234, 88, 12, 0.32);
+}
+
+.btn-add-cut:hover {
+  background: linear-gradient(135deg, #ea580c, #c2410c);
+  box-shadow: 0 10px 20px rgba(194, 65, 12, 0.36);
 }
 
 .cut-section {

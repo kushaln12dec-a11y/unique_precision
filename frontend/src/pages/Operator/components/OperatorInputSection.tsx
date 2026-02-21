@@ -42,12 +42,13 @@ type OperatorInputSectionProps = {
     toQty: number
   ) => void;
   qaStatuses?: Record<number, QuantityProgressStatus>;
-  onMarkReadyForQa?: (cutId: number | string, quantityNumbers: number[]) => void;
   onSendToQa?: (cutId: number | string, quantityNumbers: number[]) => void;
   savedQuantities?: Set<number>; // Track which quantities are saved
   savedRanges?: Set<string>;
   validationErrors?: Record<string, Record<string, string>>; // quantityIndex -> field -> error
   onShowToast?: (message: string, variant?: "success" | "error" | "info") => void;
+  onRequestResetTimer?: (cutId: number | string, quantityIndex: number) => void;
+  isAdmin: boolean;
 };
 
 // Helper function to format pause duration
@@ -75,16 +76,17 @@ export const OperatorInputSection: React.FC<OperatorInputSectionProps> = ({
   onSaveQuantity,
   onSaveRange,
   qaStatuses = {},
-  onMarkReadyForQa,
   onSendToQa,
   savedQuantities = new Set(),
   savedRanges = new Set(),
   validationErrors = {},
   onShowToast,
+  onRequestResetTimer,
+  isAdmin,
 }) => {
   const [captureMode, setCaptureMode] = useState<"PER_QUANTITY" | "RANGE">("PER_QUANTITY");
   const [rangeFrom, setRangeFrom] = useState<string>("1");
-  const [rangeTo, setRangeTo] = useState<string>("1");
+  const [rangeTo, setRangeTo] = useState<string>("2");
   const [isRangeApproved, setIsRangeApproved] = useState<boolean>(false);
   const [selectedQaQuantities, setSelectedQaQuantities] = useState<Set<number>>(new Set());
 
@@ -115,17 +117,19 @@ export const OperatorInputSection: React.FC<OperatorInputSectionProps> = ({
   const parsedFrom = Number.parseInt(rangeFrom || "", 10);
   const parsedTo = Number.parseInt(rangeTo || "", 10);
   const isRangeFromValid = Number.isInteger(parsedFrom) && parsedFrom >= 1 && parsedFrom <= totalQuantity;
-  const isRangeToValid = Number.isInteger(parsedTo) && parsedTo >= 1 && parsedTo <= totalQuantity;
+  const isRangeToValid = Number.isInteger(parsedTo) && parsedTo >= 2 && parsedTo <= totalQuantity;
   const isRangeValid = isRangeFromValid && isRangeToValid && parsedFrom <= parsedTo;
   const rangeStartQty = isRangeValid ? parsedFrom : 1;
   const rangeEndQty = isRangeValid ? parsedTo : rangeStartQty;
   const activeRangeSourceIndex = rangeStartQty - 1;
   const isRangeMode = captureMode === "RANGE";
   const rangeBadgeKey = `${rangeStartQty}-${rangeEndQty}`;
+  const allQuantityNumbers = Array.from({ length: totalQuantity }, (_, i) => i + 1);
+  const getStatus = (qty: number): QuantityProgressStatus => qaStatuses[qty] || "EMPTY";
 
   useEffect(() => {
     setRangeFrom("1");
-    setRangeTo(String(Math.min(1, totalQuantity)));
+    setRangeTo(String(Math.min(2, totalQuantity)));
     setIsRangeApproved(false);
     setSelectedQaQuantities(new Set());
   }, [totalQuantity]);
@@ -134,15 +138,49 @@ export const OperatorInputSection: React.FC<OperatorInputSectionProps> = ({
     setIsRangeApproved(false);
   }, [rangeFrom, rangeTo, captureMode]);
 
-  const allQuantityNumbers = Array.from({ length: totalQuantity }, (_, i) => i + 1);
-  const getStatus = (qty: number): QuantityProgressStatus => qaStatuses[qty] || "EMPTY";
+  useEffect(() => {
+    setSelectedQaQuantities((prev) => {
+      const next = new Set<number>();
+      prev.forEach((qty) => {
+        if (getStatus(qty) !== "SENT_TO_QA") next.add(qty);
+      });
+      return next;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [qaStatuses]);
+
+  const selectableQuantityNumbers = allQuantityNumbers.filter((qty) => getStatus(qty) !== "SENT_TO_QA");
+  const qaCounts = allQuantityNumbers.reduce(
+    (acc, qty) => {
+      const status = getStatus(qty);
+      if (status === "SENT_TO_QA") {
+        acc.sent += 1;
+      } else if (status === "SAVED" || status === "READY_FOR_QA") {
+        acc.logged += 1;
+      } else {
+        acc.empty += 1;
+      }
+      return acc;
+    },
+    { logged: 0, sent: 0, empty: 0 }
+  );
   const selectedNumbers = Array.from(selectedQaQuantities);
-  const readyEligible = selectedNumbers.filter((qty) => getStatus(qty) === "SAVED");
-  const sendEligible = selectedNumbers.filter((qty) => getStatus(qty) === "READY_FOR_QA");
+  const sendEligible = selectedNumbers.filter((qty) => {
+    const status = getStatus(qty);
+    return status === "SAVED" || status === "READY_FOR_QA";
+  });
 
   return (
     <div className="operator-cut-inputs-section" data-cut-id={cutId}>
-      <h5 className="operator-inputs-title">Input Values</h5>
+      <div className="operator-inputs-title-row">
+        <h5 className="operator-inputs-title">Input Values</h5>
+        <div className="qa-stage-legend qa-title-legend">
+          <span className="qa-legend-title">Stage Legend:</span>
+          <span className="qa-legend-item saved">Operation Logged = input captured</span>
+          <span className="qa-legend-item sent">QA Dispatched = moved to QA queue</span>
+          <span className="qa-legend-item empty">Pending Input = values not entered yet</span>
+        </div>
+      </div>
       {quantity > 1 && (
         <div className="capture-mode-toggle">
           <button
@@ -185,14 +223,14 @@ export const OperatorInputSection: React.FC<OperatorInputSectionProps> = ({
               <span className="capture-range-separator">to</span>
               <input
                 type="number"
-                min={1}
+                min={2}
                 max={totalQuantity}
                 value={rangeTo}
                 onChange={(e) => setRangeTo(e.target.value)}
                 onBlur={(e) => {
                   const v = Number.parseInt(e.target.value || "", 10);
                   if (!Number.isInteger(v)) return;
-                  const bounded = Math.max(1, Math.min(totalQuantity, v));
+                  const bounded = Math.max(2, Math.min(totalQuantity, v));
                   setRangeTo(String(bounded));
                 }}
                 placeholder="To"
@@ -220,6 +258,13 @@ export const OperatorInputSection: React.FC<OperatorInputSectionProps> = ({
               </button>
             </div>
           )}
+          <div className="qa-inline-status-block">
+            <div className="qa-overall-summary qa-inline-summary">
+              <span className="qa-summary-chip saved">Operation Logged: {qaCounts.logged}</span>
+              <span className="qa-summary-chip sent">QA Dispatched: {qaCounts.sent}</span>
+              <span className="qa-summary-chip empty">Pending Input: {qaCounts.empty}</span>
+            </div>
+          </div>
         </div>
       )}
       <div className="qa-selection-strip">
@@ -227,10 +272,13 @@ export const OperatorInputSection: React.FC<OperatorInputSectionProps> = ({
           <label className="qa-select-all">
             <input
               type="checkbox"
-              checked={selectedQaQuantities.size === totalQuantity && totalQuantity > 0}
+              checked={
+                selectableQuantityNumbers.length > 0 &&
+                selectableQuantityNumbers.every((qty) => selectedQaQuantities.has(qty))
+              }
               onChange={(e) => {
                 if (e.target.checked) {
-                  setSelectedQaQuantities(new Set(allQuantityNumbers));
+                  setSelectedQaQuantities(new Set(selectableQuantityNumbers));
                 } else {
                   setSelectedQaQuantities(new Set());
                 }
@@ -239,16 +287,6 @@ export const OperatorInputSection: React.FC<OperatorInputSectionProps> = ({
             <span>Select All</span>
           </label>
           <div className="qa-strip-actions">
-            <button
-              type="button"
-              className="qa-action-button ready"
-              disabled={readyEligible.length === 0}
-              onClick={() => {
-                if (onMarkReadyForQa) onMarkReadyForQa(cutId, readyEligible);
-              }}
-            >
-              Mark Inspection Ready
-            </button>
             <button
               type="button"
               className="qa-action-button sent"
@@ -266,8 +304,10 @@ export const OperatorInputSection: React.FC<OperatorInputSectionProps> = ({
             <label key={qtyNo} className={`qa-qty-pill status-${getStatus(qtyNo).toLowerCase()}`}>
               <input
                 type="checkbox"
+                disabled={getStatus(qtyNo) === "SENT_TO_QA"}
                 checked={selectedQaQuantities.has(qtyNo)}
                 onChange={(e) => {
+                  if (getStatus(qtyNo) === "SENT_TO_QA") return;
                   setSelectedQaQuantities((prev) => {
                     const next = new Set(prev);
                     if (e.target.checked) next.add(qtyNo);
@@ -328,7 +368,7 @@ export const OperatorInputSection: React.FC<OperatorInputSectionProps> = ({
                   </div>
                   {/* Show pause time if paused (will count up) OR if there's accumulated pause time greater than 0 */}
                   {/* Don't show if pauseTime is "00:00:00" */}
-                  {((qtyData.isPaused || (qtyData.totalPauseTime && qtyData.totalPauseTime > 0)) && pauseTime && pauseTime !== "00:00:00") && (
+                  {((qtyData.isPaused || Number(qtyData.totalPauseTime || 0) > 0) && pauseTime && pauseTime !== "00:00:00") && (
                     <div className="quantity-timer pause-timer">
                       <span className="timer-label">Pause Time:</span>
                       <span className="timer-value pause">
@@ -337,11 +377,17 @@ export const OperatorInputSection: React.FC<OperatorInputSectionProps> = ({
                     </div>
                   )}
                   {/* Show reset button after start time is set (before or after end time) */}
-                  {qtyData.startTime && (
+                  {qtyData.startTime && isAdmin && (
                     <button
                       type="button"
                       className="reset-timer-button"
-                      onClick={() => onInputChange(cutId, qtyIndex, "resetTimer", "")}
+                      onClick={() => {
+                        if (onRequestResetTimer) {
+                          onRequestResetTimer(cutId, qtyIndex);
+                        } else {
+                          onInputChange(cutId, qtyIndex, "resetTimer", "");
+                        }
+                      }}
                       aria-label="Reset timer"
                       title="Reset timer"
                     >
@@ -387,6 +433,7 @@ export const OperatorInputSection: React.FC<OperatorInputSectionProps> = ({
                     onInputChange(cutId, qtyIndex, "togglePause", "");
                   }
                 }}
+                disablePauseButton={!!qtyData.endTime}
                 disabled={!!qtyData.startTime || !!qtyData.endTime}
               />
             </div>
@@ -618,6 +665,7 @@ export const OperatorInputSection: React.FC<OperatorInputSectionProps> = ({
                   <button
                     type="button"
                     className={`btn-save-quantity ${savedQuantities.has(qtyIndex) ? "saved" : ""}`}
+                    disabled={savedQuantities.has(qtyIndex)}
                     onClick={() => {
                       if (onSaveQuantity) {
                         onSaveQuantity(cutId, qtyIndex);
