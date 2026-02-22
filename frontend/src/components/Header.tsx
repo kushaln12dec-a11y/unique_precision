@@ -82,6 +82,10 @@ const Header = ({ title }: HeaderProps) => {
       { label: "Dashboard", path: "/dashboard", icon: DashboardIcon },
       { label: "User Management", path: "/users", icon: PeopleIcon },
     ],
+    "/employee-logs": [
+      { label: "Dashboard", path: "/dashboard", icon: DashboardIcon },
+      { label: "Employee Logs", path: "/employee-logs", icon: PeopleIcon },
+    ],
   };
 
   // Handle dynamic routes for programmer

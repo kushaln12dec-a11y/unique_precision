@@ -14,6 +14,7 @@ export type CaptureOperatorInputPayload = {
   fromQty?: number;
   toQty?: number;
   overwriteExisting?: boolean;
+  operatorLogId?: string;
 };
 
 export type UpdateQaStatusPayload = {

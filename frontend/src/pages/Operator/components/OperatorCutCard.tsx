@@ -48,6 +48,7 @@ type OperatorCutCardProps = {
   validationErrors?: Record<string, Record<string, string>>;
   onShowToast?: (message: string, variant?: "success" | "error" | "info") => void;
   onRequestResetTimer?: (cutId: number | string, quantityIndex: number) => void;
+  onStartTimeCaptured?: (cutId: number | string, quantityIndex: number) => void;
   isAdmin: boolean;
 };
 
@@ -71,6 +72,7 @@ export const OperatorCutCard: React.FC<OperatorCutCardProps> = ({
   validationErrors = {},
   onShowToast,
   onRequestResetTimer,
+  onStartTimeCaptured,
   isAdmin,
 }) => {
   const quantity = Number(cutItem.qty || 1);
@@ -144,6 +146,7 @@ export const OperatorCutCard: React.FC<OperatorCutCardProps> = ({
             validationErrors={validationErrors}
             onShowToast={onShowToast}
             onRequestResetTimer={onRequestResetTimer}
+            onStartTimeCaptured={onStartTimeCaptured}
             isAdmin={isAdmin}
           />
         </>

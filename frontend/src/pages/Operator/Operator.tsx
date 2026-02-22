@@ -146,7 +146,7 @@ const Operator = () => {
     handleAssignChange,
     operatorUsers.map((user) => ({
       id: user._id,
-      name: `${user.firstName} ${user.lastName}`.trim(),
+      name: `${user.firstName} ${user.lastName}`.trim() || user.email || String(user._id),
     })),
     isAdmin
   );
@@ -157,7 +157,7 @@ const Operator = () => {
     canAssign,
     operatorUsers: operatorUsers.map((user) => ({
       id: user._id,
-      name: `${user.firstName} ${user.lastName}`.trim(),
+      name: `${user.firstName} ${user.lastName}`.trim() || user.email || String(user._id),
     })),
     handleAssignChange,
     handleViewJob,

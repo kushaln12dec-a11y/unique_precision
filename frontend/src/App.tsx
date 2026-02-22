@@ -7,6 +7,7 @@ import OperatorViewPage from "./pages/Operator/OperatorViewPage.tsx";
 import QC from "./pages/QC/QC";
 import Inventory from "./pages/Inventory/Inventory";
 import UserManagement from "./pages/User Management/UserManagement";
+import EmployeeLogs from "./pages/EmployeeLogs/EmployeeLogs";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 function App() {
@@ -83,6 +84,14 @@ function App() {
           element={
             <ProtectedRoute>
               <UserManagement />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/employee-logs"
+          element={
+            <ProtectedRoute>
+              <EmployeeLogs />
             </ProtectedRoute>
           }
         />

@@ -168,7 +168,7 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
                     </tr>
                   )}
                   <tr>
-                    <td className="job-details-label">Ref Number:</td>
+                    <td className="job-details-label">Job Number:</td>
                     <td className="job-details-value">
                       #{(displayCut as any)?.refNumber || displayGroupId || "—"}
                     </td>
@@ -448,3 +448,4 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
 };
 
 export default JobDetailsModal;
+

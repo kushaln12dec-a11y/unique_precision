@@ -4,6 +4,7 @@ import BuildIcon from "@mui/icons-material/Build";
 import VerifiedUserIcon from "@mui/icons-material/VerifiedUser";
 import InventoryIcon from "@mui/icons-material/Inventory";
 import PeopleIcon from "@mui/icons-material/People";
+import GroupsIcon from "@mui/icons-material/Groups";
 import LogoutIcon from "@mui/icons-material/Logout";
 import type { SidebarProps } from "../types/sidebar";
 import { getUserRoleFromToken } from "../utils/auth";
@@ -18,6 +19,7 @@ const Sidebar = ({ currentPath = "/dashboard", onNavigate }: SidebarProps) => {
     { icon: VerifiedUserIcon, label: "QC", path: "/qc" },
     { icon: InventoryIcon, label: "Inventory", path: "/inventory" },
     { icon: PeopleIcon, label: "User Management", path: "/users" },
+    { icon: GroupsIcon, label: "Employee Logs", path: "/employee-logs" },
   ];
   const filteredMenuItems =
     role && role !== "ADMIN"

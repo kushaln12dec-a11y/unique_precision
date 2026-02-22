@@ -11,6 +11,7 @@
   transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+
 .sidebar.collapsed ~ .user-management-content {
   margin-left: 70px;
 }
@@ -195,6 +196,7 @@
   border: 1px solid #e2e8f0;
   overflow: hidden;
 }
+
 
 .users-table {
   width: 100%;

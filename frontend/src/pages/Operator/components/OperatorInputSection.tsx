@@ -48,6 +48,7 @@ type OperatorInputSectionProps = {
   validationErrors?: Record<string, Record<string, string>>; // quantityIndex -> field -> error
   onShowToast?: (message: string, variant?: "success" | "error" | "info") => void;
   onRequestResetTimer?: (cutId: number | string, quantityIndex: number) => void;
+  onStartTimeCaptured?: (cutId: number | string, quantityIndex: number) => void;
   isAdmin: boolean;
 };
 
@@ -82,6 +83,7 @@ export const OperatorInputSection: React.FC<OperatorInputSectionProps> = ({
   validationErrors = {},
   onShowToast,
   onRequestResetTimer,
+  onStartTimeCaptured,
   isAdmin,
 }) => {
   const [captureMode, setCaptureMode] = useState<"PER_QUANTITY" | "RANGE">("PER_QUANTITY");
@@ -413,6 +415,7 @@ export const OperatorInputSection: React.FC<OperatorInputSectionProps> = ({
                   // Only allow capture if start time is not set yet and end time is not set
                   if (!qtyData.startTime && !qtyData.endTime) {
                     onInputChange(cutId, qtyIndex, "startTimeEpochMs", String(timestampMs));
+                    onStartTimeCaptured?.(cutId, qtyIndex);
                     // Timer will automatically start when startTime is set
                     if (onShowToast) {
                       onShowToast("Start time captured successfully!", "success");

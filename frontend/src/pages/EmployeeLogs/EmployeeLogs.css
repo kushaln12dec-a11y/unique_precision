@@ -1,0 +1,191 @@
+.employee-logs-page-container {
+  display: flex;
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 15% 20%, rgba(56, 189, 248, 0.18) 0%, transparent 35%),
+    radial-gradient(circle at 85% 12%, rgba(99, 102, 241, 0.14) 0%, transparent 35%),
+    linear-gradient(180deg, #eef2ff 0%, #f8fafc 50%, #f1f5f9 100%);
+}
+
+.employee-logs-page-content {
+  flex: 1;
+  margin-left: 70px;
+}
+
+.employee-logs-page-shell {
+  margin: 0.75rem 0.5rem 1.25rem 0.5rem;
+}
+
+.employee-logs-container {
+  border-radius: 24px;
+  padding: 1.2rem;
+  margin: 0;
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.92) 0%, rgba(248, 250, 252, 0.92) 100%);
+  box-shadow:
+    0 20px 40px rgba(30, 41, 59, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(10px);
+}
+
+.employee-logs-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.employee-logs-header h2 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 1.5rem;
+  letter-spacing: 0.2px;
+}
+
+.employee-logs-header p {
+  margin: 0.35rem 0 0;
+  color: #334155;
+  font-size: 0.95rem;
+}
+
+.employee-role-tabs {
+  display: inline-flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  padding: 0.4rem;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #e2e8f0 0%, #eef2ff 100%);
+  border: 1px solid #cbd5e1;
+}
+
+.employee-role-tab {
+  border: 1px solid transparent;
+  background: transparent;
+  color: #334155;
+  padding: 0.42rem 0.95rem;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.employee-role-tab.active {
+  background: linear-gradient(135deg, #1a1a2e 0%, #1e3a8a 100%);
+  color: #ffffff;
+  box-shadow: 0 8px 16px rgba(30, 58, 138, 0.28);
+}
+
+.employee-log-filters {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.employee-search-input,
+.employee-status-select {
+  height: 40px;
+  border-radius: 12px;
+  border: 1px solid #cbd5e1;
+  font-size: 0.92rem;
+  color: #0f172a;
+  background: #ffffff;
+}
+
+.employee-search-input {
+  width: min(520px, 100%);
+  padding: 0.625rem 0.75rem 0.625rem 2.5rem;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: 0.75rem center;
+}
+
+.employee-status-select {
+  min-width: 165px;
+  padding: 0.625rem 2rem 0.625rem 0.8rem;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 12 12'%3E%3Cpath fill='%2364748b' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.65rem center;
+}
+
+.employee-search-input:focus,
+.employee-status-select:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+.employee-log-user {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.employee-log-user strong {
+  color: #0f172a;
+}
+
+.employee-log-user span {
+  color: #64748b;
+  font-size: 0.8rem;
+}
+
+.employee-work-item {
+  display: inline-flex;
+  align-items: center;
+}
+
+.ref-badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 0.2rem 0.6rem;
+  font-size: 0.76rem;
+  font-weight: 800;
+  color: #1e3a8a;
+  border: 1px solid #93c5fd;
+  background: linear-gradient(135deg, #dbeafe 0%, #eff6ff 100%);
+}
+
+.employee-log-status {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 0.2rem 0.6rem;
+  font-size: 0.75rem;
+  font-weight: 800;
+  border: 1px solid transparent;
+}
+
+.employee-log-status.status-completed {
+  background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
+  color: #166534;
+  border-color: #86efac;
+}
+
+.employee-log-status.status-in_progress {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  color: #92400e;
+  border-color: #fcd34d;
+}
+
+.qa-placeholder-card {
+  border-radius: 16px;
+  border: 1px dashed #93c5fd;
+  background: linear-gradient(135deg, #eff6ff 0%, #eef2ff 100%);
+  padding: 1.1rem 1.2rem;
+}
+
+.qa-placeholder-card h3 {
+  margin: 0 0 0.45rem;
+  color: #1e3a8a;
+}
+
+.qa-placeholder-card p {
+  margin: 0;
+  color: #334155;
+}
+

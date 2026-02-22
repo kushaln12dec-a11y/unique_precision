@@ -14,6 +14,7 @@ import { calculateTotals, type CutForm } from "../Programmer/programmerUtils";
 import type { CutInputData } from "./types/cutInput";
 import { createEmptyCutInputData } from "./types/cutInput";
 import { getUsers } from "../../services/userApi";
+import { startOperatorProductionLog } from "../../services/employeeLogsApi";
 import { captureOperatorInput, updateOperatorQaStatus } from "../../services/operatorApi";
 import { validateQuantityInputs, validateRangeSelection } from "./utils/validation";
 import { getQuantityProgressStatuses } from "./utils/qaProgress";
@@ -37,6 +38,7 @@ const OperatorViewPage = () => {
   const [savedQuantities, setSavedQuantities] = useState<Map<number | string, Set<number>>>(new Map());
   const [savedRanges, setSavedRanges] = useState<Map<number | string, Set<string>>>(new Map());
   const [qaStatusesByCut, setQaStatusesByCut] = useState<Map<number | string, Record<number, QuantityQaStatus>>>(new Map());
+  const [activeOperatorLogIds, setActiveOperatorLogIds] = useState<Map<string, string>>(new Map());
 
   const {
     jobs,
@@ -207,6 +209,7 @@ const OperatorViewPage = () => {
         captureMode: "SINGLE" as const,
         fromQty: quantityIndex + 1,
         toQty: quantityIndex + 1,
+        operatorLogId: activeOperatorLogIds.get(`${String(cutId)}:${quantityIndex}`) || undefined,
       };
 
       try {
@@ -265,6 +268,11 @@ const OperatorViewPage = () => {
 
       setSaveToast({ message: `Quantity ${quantityIndex + 1} saved successfully!`, variant: "success", visible: true });
       setTimeout(() => setSaveToast({ ...saveToast, visible: false }), 2000);
+      setActiveOperatorLogIds((prev) => {
+        const next = new Map(prev);
+        next.delete(`${String(cutId)}:${quantityIndex}`);
+        return next;
+      });
     } catch (error) {
       console.error("Failed to save quantity", error);
       setSaveToast({ message: "Failed to save quantity. Please try again.", variant: "error", visible: true });
@@ -342,6 +350,7 @@ const OperatorViewPage = () => {
         captureMode: "RANGE" as const,
         fromQty,
         toQty,
+        operatorLogId: activeOperatorLogIds.get(`${String(cutId)}:${sourceQuantityIndex}`) || undefined,
       };
 
       try {
@@ -369,6 +378,11 @@ const OperatorViewPage = () => {
 
       setSaveToast({ message: `Range ${fromQty}-${toQty} saved successfully!`, variant: "success", visible: true });
       setTimeout(() => setSaveToast({ ...saveToast, visible: false }), 2000);
+      setActiveOperatorLogIds((prev) => {
+        const next = new Map(prev);
+        next.delete(`${String(cutId)}:${sourceQuantityIndex}`);
+        return next;
+      });
       setQaStatusesByCut((prev) => {
         const next = new Map(prev);
         const existing = { ...(next.get(cutId) || {}) };
@@ -443,6 +457,40 @@ const OperatorViewPage = () => {
     ? jobs.find((job) => String(job.id) === String(pendingDispatch.cutId))
     : null;
 
+  const handleStartTimeCaptured = async (cutId: number | string, quantityIndex: number) => {
+    const key = `${String(cutId)}:${quantityIndex}`;
+    if (activeOperatorLogIds.has(key)) return;
+
+    const job = jobs.find((item) => String(item.id) === String(cutId));
+    if (!job) return;
+
+    try {
+      const fromQty = quantityIndex + 1;
+      const startedLog = await startOperatorProductionLog({
+        jobId: String(job.id),
+        jobGroupId: Number(job.groupId || 0),
+        refNumber: String((job as any).refNumber || ""),
+        customer: job.customer || "",
+        description: job.description || "",
+        settingLabel: String(job.setting || ""),
+        fromQty,
+        toQty: fromQty,
+        quantityCount: 1,
+        startedAt: new Date().toISOString(),
+      });
+
+      if (startedLog?._id) {
+        setActiveOperatorLogIds((prev) => {
+          const next = new Map(prev);
+          next.set(key, startedLog._id);
+          return next;
+        });
+      }
+    } catch (error) {
+      console.error("Failed to start operator production log", error);
+    }
+  };
+
   return (
     <div className="roleboard-container">
       <Sidebar currentPath="/operator" onNavigate={(path) => navigate(path)} />
@@ -509,6 +557,7 @@ const OperatorViewPage = () => {
                         onRequestResetTimer={(cutId, quantityIndex) => {
                           setPendingReset({ cutId, quantityIndex });
                         }}
+                        onStartTimeCaptured={handleStartTimeCaptured}
                         isAdmin={isAdmin}
                       />
                     );

@@ -38,7 +38,7 @@ export const OperatorJobInfo: React.FC<OperatorJobInfoProps> = ({ parentJob, gro
           </div>
         )}
         <div className="operator-info-card">
-          <label>Ref Number</label>
+          <label>Job Number</label>
           <span>#{(parentJob as any)?.refNumber || groupId || "—"}</span>
         </div>
         <div className="operator-info-card">
@@ -52,3 +52,4 @@ export const OperatorJobInfo: React.FC<OperatorJobInfoProps> = ({ parentJob, gro
     </div>
   );
 };
+

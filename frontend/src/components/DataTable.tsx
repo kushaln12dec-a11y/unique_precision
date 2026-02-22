@@ -67,6 +67,10 @@ function DataTable<T extends Record<string, any>>({
   onRowSelect,
   onRowClick,
 }: DataTableProps<T>) {
+  // Kept for API compatibility with callers that track sort state externally.
+  void sortField;
+  void sortDirection;
+
   const handleSort = (column: Column<T>) => {
     if (column.sortable && onSort) {
       onSort(column.sortKey || column.key);

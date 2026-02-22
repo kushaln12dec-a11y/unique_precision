@@ -8,6 +8,7 @@ import ConfirmDeleteModal from "../../components/ConfirmDeleteModal";
 import { getUserRoleFromToken } from "../../utils/auth";
 import "../../utils/tokenDebug";
 import { getUsers } from "../../services/userApi";
+import { startProgrammerJobLog } from "../../services/employeeLogsApi";
 import type { User } from "../../types/user";
 import ProgrammerJobForm from "./ProgrammerJobForm.tsx";
 import JobDetailsModal from "./components/JobDetailsModal";
@@ -27,6 +28,7 @@ import type { TableRow } from "./utils/jobDataTransform";
 import { getParentRowClassName } from "./utils/priorityUtils";
 
 const Programmer = () => {
+  const PROGRAMMER_ACTIVE_LOG_KEY = "programmer_active_job_log_id";
   const navigate = useNavigate();
   const [sortField, setSortField] = useState<keyof JobEntry | null>(null);
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
@@ -166,13 +168,39 @@ const Programmer = () => {
     fetchUsers();
   }, []);
 
-  const handleNewJob = () => {
+  useEffect(() => {
+    const ensureProgrammerStartLog = async () => {
+      if (!isNewJobRoute || isEditRoute) return;
+      const activeLogId = localStorage.getItem(PROGRAMMER_ACTIVE_LOG_KEY);
+      if (activeLogId) return;
+      try {
+        const startedLog = await startProgrammerJobLog({});
+        if (startedLog?._id) {
+          localStorage.setItem(PROGRAMMER_ACTIVE_LOG_KEY, startedLog._id);
+        }
+      } catch (error) {
+        console.error("Failed to ensure programmer start log", error);
+      }
+    };
+    ensureProgrammerStartLog();
+  }, [isNewJobRoute, isEditRoute]);
+
+  const handleNewJob = async () => {
     handleNewJobState();
+    try {
+      const startedLog = await startProgrammerJobLog({});
+      if (startedLog?._id) {
+        localStorage.setItem(PROGRAMMER_ACTIVE_LOG_KEY, startedLog._id);
+      }
+    } catch (error) {
+      console.error("Failed to start programmer log", error);
+    }
     navigate("/programmer/newjob");
   };
 
   const handleCancel = () => {
     handleCancelState();
+    localStorage.removeItem(PROGRAMMER_ACTIVE_LOG_KEY);
     if (isNewJobRoute || isEditRoute) {
       navigate("/programmer");
     }
