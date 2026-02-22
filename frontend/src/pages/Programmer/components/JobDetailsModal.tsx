@@ -28,7 +28,7 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
   userRole,
   onClose,
 }) => {
-  const isProgrammer = userRole === "PROGRAMMER";
+  const canSeeAmounts = userRole === "ADMIN";
   const isSingleCut = !!cut;
   const [zoomedImage, setZoomedImage] = useState<string | null>(null);
 
@@ -300,8 +300,10 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
                             : "00:00hrs"}
                         </span>
                       </div>
-                      {!isProgrammer && (
+                      {(canSeeAmounts || canSeeOperatorFields) && (
                         <>
+                          {canSeeAmounts && (
+                            <>
                           <div className="cut-detail">
                             <label>WEDM Amount (₹):</label>
                             <span>
@@ -318,6 +320,8 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
                                 "0.00"}
                             </span>
                           </div>
+                            </>
+                          )}
                           {/* Operator Input Details */}
                           {canSeeOperatorFields && (
                             <>
@@ -403,7 +407,7 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
                   : "00:00hrs"}
               </span>
             </div>
-            {!isProgrammer && (
+            {canSeeAmounts && (
               <>
                 <div className="total-row">
                   <label>WEDM Amount (₹):</label>

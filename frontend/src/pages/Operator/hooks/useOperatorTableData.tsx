@@ -147,6 +147,7 @@ export const useOperatorTableData = (
               operatorUsers={operatorUsers}
               isOperator={true}
               isAdmin={isAdmin}
+              showCheckboxes={true}
             />
           ),
           ariaLabel: expandedGroups.has(row.groupId)

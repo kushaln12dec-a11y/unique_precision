@@ -1628,7 +1628,7 @@
   background: #f9fafb;
   width: 100%;
   max-width: 100%;
-  padding: 1rem;
+  padding: 0;
   box-sizing: border-box;
 }
 
@@ -1641,7 +1641,10 @@
 .child-jobs-table {
   width: 100% !important;
   max-width: 100% !important;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
+  border-radius: 12px;
+  overflow: hidden;
   font-size: 0.8rem;
   table-layout: fixed;
   box-sizing: border-box;

@@ -22,6 +22,12 @@ export const useTableColumns = ({
   handleEditJob,
   handleDeleteClick,
 }: UseTableColumnsProps): Column<TableRow>[] => {
+  const truncateDescription = (value: string | undefined | null): string => {
+    const text = (value || "-").trim();
+    if (text === "-") return text;
+    return text.length > 12 ? `${text.slice(0, 12)}...` : text;
+  };
+
   return useMemo(
     () => [
       {
@@ -79,7 +85,10 @@ export const useTableColumns = ({
         label: "Description",
         sortable: false,
         sortKey: "description",
-        render: (row) => row.parent.description || "—",
+        render: (row) => {
+          const full = row.parent.description || "-";
+          return <span title={full}>{truncateDescription(full)}</span>;
+        },
       },
       {
         key: "cut",
@@ -198,3 +207,4 @@ export const useTableColumns = ({
     [expandableRows, isAdmin, setViewingJob, setShowJobViewModal, handleEditJob, handleDeleteClick]
   );
 };
+

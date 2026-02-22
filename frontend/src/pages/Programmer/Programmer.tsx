@@ -127,6 +127,7 @@ const Programmer = () => {
     sortDirection,
     expandedGroups,
     toggleGroup,
+    isAdmin,
     onEdit: handleEditJob,
     onDelete: handleDeleteClick,
     showChildCheckboxes: true,

@@ -9,6 +9,7 @@ type UseJobDataProps = {
   sortDirection: "asc" | "desc";
   expandedGroups: Set<number>;
   toggleGroup: (groupId: number) => void;
+  isAdmin?: boolean;
   onEdit?: (groupId: number) => void;
   onDelete?: (groupId: number, customer: string) => void;
   showChildCheckboxes?: boolean;
@@ -22,6 +23,7 @@ export const useJobData = ({
   sortDirection,
   expandedGroups,
   toggleGroup,
+  isAdmin = false,
   onEdit,
   onDelete,
   childSortField,
@@ -55,6 +57,7 @@ export const useJobData = ({
               entries={row.entries} 
               onEdit={onEdit} 
               onDelete={onDelete}
+              isAdmin={isAdmin}
               showCheckboxes={showChildCheckboxes}
               selectedRows={selectedChildRows}
               onRowSelect={onChildRowSelect}
@@ -72,6 +75,7 @@ export const useJobData = ({
     toggleGroup, 
     onEdit, 
     onDelete,
+    isAdmin,
     showChildCheckboxes,
     selectedChildRows,
     onChildRowSelect,

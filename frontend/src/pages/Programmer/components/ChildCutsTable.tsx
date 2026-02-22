@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import type { JobEntry } from "../../../types/job";
 import { formatHoursToHHMM } from "../../../utils/date";
 import ActionButtons from "./ActionButtons";
@@ -40,7 +40,7 @@ const ChildCutsTable: React.FC<ChildCutsTableProps> = ({
   const truncateDescription = (value: string | undefined | null): string => {
     const text = (value || "-").trim();
     if (text === "-") return text;
-    return text.length > 7 ? `${text.slice(0, 7)}...` : text;
+    return text.length > 12 ? `${text.slice(0, 12)}...` : text;
   };
 
   const toYN = (value: unknown): string => {
@@ -53,7 +53,30 @@ const ChildCutsTable: React.FC<ChildCutsTableProps> = ({
 
   const [selectedCut, setSelectedCut] = useState<JobEntry | null>(null);
   const [showCutModal, setShowCutModal] = useState(false);
+  const [localSelectedRows, setLocalSelectedRows] = useState<Set<string | number>>(new Set());
   const canAssign = getUserRoleFromToken() === "ADMIN" || getUserRoleFromToken() === "OPERATOR";
+  const isExternallyControlledSelection = typeof onRowSelect === "function";
+
+  const effectiveSelectedRows = isExternallyControlledSelection ? selectedRows : localSelectedRows;
+  const entryRowKeys = useMemo(() => entries.map((entry, idx) => getRowKey(entry, idx)), [entries, getRowKey]);
+  const selectedInThisTableCount = useMemo(
+    () => entryRowKeys.filter((rowKey) => effectiveSelectedRows.has(rowKey)).length,
+    [entryRowKeys, effectiveSelectedRows]
+  );
+
+  const handleRowSelect = (rowKey: string | number, selected: boolean) => {
+    if (isExternallyControlledSelection) {
+      onRowSelect?.(rowKey, selected);
+      return;
+    }
+
+    setLocalSelectedRows((prev) => {
+      const next = new Set(prev);
+      if (selected) next.add(rowKey);
+      else next.delete(rowKey);
+      return next;
+    });
+  };
 
   const handleViewCut = (entry: JobEntry) => {
     setSelectedCut(entry);
@@ -77,11 +100,11 @@ const ChildCutsTable: React.FC<ChildCutsTableProps> = ({
               <th className="checkbox-header-cell" style={{ width: "40px" }}>
                 <input
                   type="checkbox"
-                  checked={selectedRows.size > 0 && selectedRows.size === entries.length && entries.length > 0}
+                  checked={selectedInThisTableCount > 0 && selectedInThisTableCount === entries.length && entries.length > 0}
                   onChange={(e) => {
                     entries.forEach((entry, idx) => {
                       const rowKey = getRowKey(entry, idx);
-                      onRowSelect?.(rowKey, e.target.checked);
+                      handleRowSelect(rowKey, e.target.checked);
                     });
                   }}
                   onClick={(e) => e.stopPropagation()}
@@ -139,7 +162,7 @@ const ChildCutsTable: React.FC<ChildCutsTableProps> = ({
         <tbody>
           {entries.map((entry, index) => {
             const rowKey = getRowKey(entry, index);
-            const isSelected = selectedRows.has(rowKey);
+            const isSelected = effectiveSelectedRows.has(rowKey);
             return (
               <tr key={entry.id} className={getRowClassName([entry], false, true)}>
                 {showCheckboxes ? (
@@ -149,7 +172,7 @@ const ChildCutsTable: React.FC<ChildCutsTableProps> = ({
                       checked={isSelected}
                       onChange={(e) => {
                         e.stopPropagation();
-                        onRowSelect?.(rowKey, e.target.checked);
+                        handleRowSelect(rowKey, e.target.checked);
                       }}
                     />
                   </td>

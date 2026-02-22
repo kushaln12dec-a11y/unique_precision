@@ -39,7 +39,7 @@ export const useOperatorTable = ({
   const truncateDescription = (value: string | undefined | null): string => {
     const text = (value || "-").trim();
     if (text === "-") return text;
-    return text.length > 7 ? `${text.slice(0, 7)}...` : text;
+    return text.length > 12 ? `${text.slice(0, 12)}...` : text;
   };
 
   return useMemo(
