@@ -5,9 +5,8 @@ import { authMiddleware, adminMiddleware } from "../middleware/auth";
 
 const router = Router();
 
-// All routes require authentication and admin access
+// All routes require authentication
 router.use(authMiddleware);
-router.use(adminMiddleware);
 
 // Get all users
 router.get("/", async (req, res) => {
@@ -31,7 +30,7 @@ router.get("/", async (req, res) => {
 });
 
 // Get single user
-router.get("/:id", async (req, res) => {
+router.get("/:id", adminMiddleware, async (req, res) => {
   try {
     const user = await User.findById(req.params.id).select("-password");
     if (!user) {
@@ -44,7 +43,7 @@ router.get("/:id", async (req, res) => {
 });
 
 // Create user
-router.post("/", async (req, res) => {
+router.post("/", adminMiddleware, async (req, res) => {
   try {
     const { email, password, firstName, lastName, phone, empId, image, role } = req.body;
 
@@ -84,7 +83,7 @@ router.post("/", async (req, res) => {
 });
 
 // Update user
-router.put("/:id", async (req, res) => {
+router.put("/:id", adminMiddleware, async (req, res) => {
   try {
     const { email, password, firstName, lastName, phone, empId, image, role } = req.body;
 
@@ -117,7 +116,7 @@ router.put("/:id", async (req, res) => {
 });
 
 // Delete user
-router.delete("/:id", async (req, res) => {
+router.delete("/:id", adminMiddleware, async (req, res) => {
   try {
     const user = await User.findByIdAndDelete(req.params.id);
     

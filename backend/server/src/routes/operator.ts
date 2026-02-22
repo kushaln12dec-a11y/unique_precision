@@ -1,11 +1,25 @@
 import { Router } from "express";
 import Job from "../models/Job";
 import { authMiddleware } from "../middleware/auth";
+import EmployeeLog from "../models/EmployeeLog";
 
 const router = Router();
 
 // All routes require authentication
 router.use(authMiddleware);
+
+const parseOperatorDateTime = (value?: string): Date | null => {
+  if (!value || typeof value !== "string") return null;
+  const match = value.match(/^(\d{2})\/(\d{2})\/(\d{4})\s+(\d{2}):(\d{2})$/);
+  if (!match) return null;
+  const day = Number(match[1]);
+  const month = Number(match[2]);
+  const year = Number(match[3]);
+  const hour = Number(match[4]);
+  const minute = Number(match[5]);
+  const date = new Date(year, month - 1, day, hour, minute, 0, 0);
+  return Number.isNaN(date.getTime()) ? null : date;
+};
 
 // Get operator jobs with filters
 router.get("/jobs", async (req, res) => {
@@ -105,6 +119,7 @@ router.post("/jobs/:id/capture-input", async (req, res) => {
       fromQty,
       toQty,
       overwriteExisting,
+      operatorLogId,
     } = req.body;
 
     // Add updatedBy and updatedAt
@@ -200,6 +215,84 @@ router.post("/jobs/:id/capture-input", async (req, res) => {
       (job as any)[key] = value;
     });
     await job.save();
+
+    // Create operator productivity log when both timestamps exist
+    const parsedStart = parseOperatorDateTime(startTime);
+    const parsedEnd = parseOperatorDateTime(endTime);
+    if (parsedStart && parsedEnd) {
+      const reqUser = req.user as any;
+      const durationSeconds = Math.max(0, Math.floor((parsedEnd.getTime() - parsedStart.getTime()) / 1000));
+      const settingNumber = (() => {
+        const foundIndex = Array.isArray((job as any).operatorCaptures)
+          ? (job as any).operatorCaptures.findIndex((entry: any) => entry === captureEntry)
+          : -1;
+        return foundIndex >= 0 ? foundIndex + 1 : Number((job as any).setting || 0) || null;
+      })();
+
+      const existingLog = operatorLogId
+        ? await EmployeeLog.findOne({
+            _id: String(operatorLogId),
+            role: "OPERATOR",
+            activityType: "OPERATOR_PRODUCTION",
+            status: "IN_PROGRESS",
+          })
+        : null;
+
+      const basePayload: any = {
+        role: "OPERATOR",
+        activityType: "OPERATOR_PRODUCTION",
+        status: "COMPLETED",
+        userId: String(reqUser?.userId || ""),
+        userEmail: String(reqUser?.email || ""),
+        userName: String(reqUser?.fullName || "").trim(),
+        jobId: String((job as any)._id || ""),
+        jobGroupId: Number((job as any).groupId || 0) || null,
+        refNumber: String((job as any).refNumber || ""),
+        settingLabel: settingNumber ? String(settingNumber) : String((job as any).setting || ""),
+        quantityFrom: resolvedFromQty,
+        quantityTo: resolvedToQty,
+        quantityCount: quantityCount,
+        jobCustomer: String((job as any).customer || ""),
+        jobDescription: String((job as any).description || ""),
+        workItemTitle: `Job #${String((job as any).refNumber || "-")}`,
+        workSummary: `Machine ${machineNumber || "-"} | Ops ${opsName || "-"} | Hrs ${machineHrs || "-"}`,
+        startedAt: parsedStart,
+        endedAt: parsedEnd,
+        durationSeconds,
+        metadata: {
+          machineNumber: String(machineNumber || ""),
+          opsName: String(opsName || ""),
+          machineHrs: String(machineHrs || ""),
+          idleTime: String(idleTime || ""),
+          idleTimeDuration: String(idleTimeDuration || ""),
+          captureMode: mode,
+        },
+      };
+
+      if (existingLog) {
+        existingLog.status = "COMPLETED";
+        existingLog.userId = basePayload.userId;
+        existingLog.userEmail = basePayload.userEmail;
+        existingLog.userName = basePayload.userName;
+        existingLog.jobId = basePayload.jobId;
+        existingLog.jobGroupId = basePayload.jobGroupId;
+        existingLog.refNumber = basePayload.refNumber;
+        existingLog.settingLabel = basePayload.settingLabel;
+        existingLog.quantityFrom = basePayload.quantityFrom;
+        existingLog.quantityTo = basePayload.quantityTo;
+        existingLog.quantityCount = basePayload.quantityCount;
+        existingLog.jobCustomer = basePayload.jobCustomer;
+        existingLog.jobDescription = basePayload.jobDescription;
+        existingLog.workItemTitle = basePayload.workItemTitle;
+        existingLog.workSummary = basePayload.workSummary;
+        existingLog.endedAt = basePayload.endedAt;
+        existingLog.durationSeconds = durationSeconds;
+        existingLog.metadata = basePayload.metadata;
+        await existingLog.save();
+      } else {
+        await EmployeeLog.create(basePayload);
+      }
+    }
 
     res.json(job);
   } catch (error: any) {
