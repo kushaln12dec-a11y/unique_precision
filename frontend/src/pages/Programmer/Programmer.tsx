@@ -50,8 +50,21 @@ const Programmer = () => {
   const [selectedJobIds, setSelectedJobIds] = useState<Set<number>>(new Set());
   const [showJobViewModal, setShowJobViewModal] = useState(false);
   const [viewingJob, setViewingJob] = useState<TableRow | null>(null);
+  const [selectedChildRows, setSelectedChildRows] = useState<Set<string | number>>(new Set());
 
   const isAdmin = getUserRoleFromToken() === "ADMIN";
+
+  const handleChildRowSelect = (rowKey: string | number, selected: boolean) => {
+    setSelectedChildRows((prev) => {
+      const next = new Set(prev);
+      if (selected) {
+        next.add(rowKey);
+      } else {
+        next.delete(rowKey);
+      }
+      return next;
+    });
+  };
 
   const {
     jobs,
@@ -116,6 +129,9 @@ const Programmer = () => {
     toggleGroup,
     onEdit: handleEditJob,
     onDelete: handleDeleteClick,
+    showChildCheckboxes: true,
+    selectedChildRows,
+    onChildRowSelect: handleChildRowSelect,
   });
 
   const handleDeleteConfirm = async () => {

@@ -27,7 +27,7 @@ export const useTableColumns = ({
       {
         key: "customer",
         label: "Customer",
-        sortable: true,
+        sortable: false,
         sortKey: "customer",
         render: (row) => {
           const expandable = expandableRows?.get(row.groupId);
@@ -70,57 +70,57 @@ export const useTableColumns = ({
       {
         key: "rate",
         label: "Rate",
-        sortable: true,
+        sortable: false,
         sortKey: "rate",
-        render: (row) => `₹${Number(row.parent.rate || 0).toFixed(2)}`,
+        render: (row) => `₹${Math.round(Number(row.parent.rate || 0))}`,
       },
       {
         key: "description",
         label: "Description",
-        sortable: true,
+        sortable: false,
         sortKey: "description",
         render: (row) => row.parent.description || "—",
       },
       {
         key: "cut",
         label: "Cut (mm)",
-        sortable: true,
+        sortable: false,
         sortKey: "cut",
-        render: (row) => Number(row.parent.cut || 0).toFixed(2),
+        render: (row) => Math.round(Number(row.parent.cut || 0)),
       },
 
       {
         key: "thickness",
         label: "TH (MM)",
-        sortable: true,
+        sortable: false,
         sortKey: "thickness",
-        render: (row) => Number(row.parent.thickness || 0).toFixed(2),
+        render: (row) => Math.round(Number(row.parent.thickness || 0)),
       },
       {
         key: "passLevel",
         label: "Pass",
-        sortable: true,
+        sortable: false,
         sortKey: "passLevel",
         render: (row) => row.parent.passLevel,
       },
       {
         key: "setting",
         label: "Setting",
-        sortable: true,
+        sortable: false,
         sortKey: "setting",
         render: (row) => row.parent.setting,
       },
       {
         key: "qty",
         label: "Qty",
-        sortable: true,
+        sortable: false,
         sortKey: "qty",
         render: (row) => Number(row.parent.qty || 0).toString(),
       },
       {
         key: "totalHrs",
         label: "Total Hrs/Piece",
-        sortable: true,
+        sortable: false,
         sortKey: "totalHrs",
         render: (row) => (row.groupTotalHrs ? formatHoursToHHMM(row.groupTotalHrs) : "—"),
       },
@@ -129,24 +129,24 @@ export const useTableColumns = ({
             {
               key: "totalAmount",
               label: "Total Amount (₹)",
-              sortable: true,
+              sortable: false,
               sortKey: "totalAmount",
               render: (row: TableRow) =>
-                row.groupTotalAmount ? `₹${row.groupTotalAmount.toFixed(2)}` : "—",
+                row.groupTotalAmount ? `₹${Math.round(row.groupTotalAmount)}` : "—",
             },
           ]
         : []),
       {
         key: "createdBy",
         label: "Created By",
-        sortable: true,
+        sortable: false,
         sortKey: "createdBy",
         render: (row) => row.parent.createdBy,
       },
       {
         key: "createdAt",
         label: "Created At",
-        sortable: true,
+        sortable: false,
         sortKey: "createdAt",
         render: (row) => {
           const parsed = parseDateValue(row.parent.createdAt);

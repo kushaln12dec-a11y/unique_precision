@@ -1,4 +1,4 @@
-﻿import React, { useState } from "react";
+import React, { useState } from "react";
 import type { JobEntry } from "../../../types/job";
 import { formatHoursToHHMM } from "../../../utils/date";
 import ActionButtons from "./ActionButtons";
@@ -17,6 +17,10 @@ type ChildCutsTableProps = {
   operatorUsers?: Array<{ id: number | string; name: string }>;
   isOperator?: boolean;
   isAdmin?: boolean;
+  showCheckboxes?: boolean;
+  selectedRows?: Set<string | number>;
+  onRowSelect?: (rowKey: string | number, selected: boolean) => void;
+  getRowKey?: (entry: JobEntry, index: number) => string | number;
 };
 
 const ChildCutsTable: React.FC<ChildCutsTableProps> = ({
@@ -28,6 +32,10 @@ const ChildCutsTable: React.FC<ChildCutsTableProps> = ({
   operatorUsers = [],
   isOperator = false,
   isAdmin = false,
+  showCheckboxes = false,
+  selectedRows = new Set(),
+  onRowSelect,
+  getRowKey = (entry, index) => entry.id || index,
 }) => {
   const truncateDescription = (value: string | undefined | null): string => {
     const text = (value || "-").trim();
@@ -65,46 +73,103 @@ const ChildCutsTable: React.FC<ChildCutsTableProps> = ({
       <table className="child-jobs-table">
         <thead>
           <tr className="child-table-header">
-            <th>Setting #</th>
-            <th>Customer</th>
-            <th>Rate (₹/hr)</th>
-            <th>Description</th>
-            <th>Cut (mm)</th>
-            <th>TH (MM)</th>
-            <th>Pass</th>
-            <th>Setting</th>
-            <th>Qty</th>
-            <th>SEDM</th>
-            <th>Complex</th>
-            <th>PIP Finish</th>
-            {isOperator && <th>Assigned To</th>}
-            <th>
-              Total
-              <br />
-              Hrs/Piece
+            {showCheckboxes && (
+              <th className="checkbox-header-cell" style={{ width: "40px" }}>
+                <input
+                  type="checkbox"
+                  checked={selectedRows.size > 0 && selectedRows.size === entries.length && entries.length > 0}
+                  onChange={(e) => {
+                    entries.forEach((entry, idx) => {
+                      const rowKey = getRowKey(entry, idx);
+                      onRowSelect?.(rowKey, e.target.checked);
+                    });
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                />
+              </th>
+            )}
+            {!showCheckboxes && <th className="child-table-spacer checkbox-spacer"></th>}
+            <th className="setting-number-col">
+              <span className="th-content">Set #</span>
             </th>
-            {isAdmin && <th>Total Amount (₹)</th>}
-            {isOperator && <th>Status</th>}
-            <th>Act</th>
+            <th className="customer-col">
+              <span className="th-content">Customer</span>
+            </th>
+            <th className="rate-col">
+              <span className="th-content">Rate</span>
+            </th>
+            <th className="description-col">
+              <span className="th-content">Desc</span>
+            </th>
+            <th className="cut-col">
+              <span className="th-content">Cut (MM)</span>
+            </th>
+            <th className="th-col">
+              <span className="th-content">TH (MM)</span>
+            </th>
+            <th className="pass-col">
+              <span className="th-content">Pass</span>
+            </th>
+            <th className="setting-col">
+              <span className="th-content">Set</span>
+            </th>
+            <th className="qty-col">
+              <span className="th-content">Qty</span>
+            </th>
+            <th className="sedm-col">SEDM</th>
+            <th className="complex-col">Cplx</th>
+            <th className="pip-col">PIP</th>
+            {isOperator && <th className="assigned-col">Assigned</th>}
+            <th className="total-hrs-col">
+              <span className="th-content">
+                Hrs
+                <br />
+                /Piece
+              </span>
+            </th>
+            {isAdmin && (
+              <th className="total-amount-col">
+                <span className="th-content">Amount</span>
+              </th>
+            )}
+            {isOperator && <th className="status-col">Status</th>}
+            <th className="act-col">Act</th>
           </tr>
         </thead>
         <tbody>
-          {entries.map((entry, index) => (
-            <tr key={entry.id} className={getRowClassName([entry], false, true)}>
-              <td>{index + 1}</td>
-              <td>{entry.customer || "-"}</td>
-              <td>₹{Number(entry.rate || 0).toFixed(2)}</td>
-              <td title={entry.description || "-"}>{truncateDescription(entry.description)}</td>
-              <td>{Number(entry.cut || 0).toFixed(2)}</td>
-              <td>{Number(entry.thickness || 0).toFixed(2)}</td>
-              <td>{entry.passLevel}</td>
-              <td>{entry.setting}</td>
-              <td>{Number(entry.qty || 0).toString()}</td>
-              <td>{toYN(entry.sedm)}</td>
-              <td>{toYN(entry.critical)}</td>
-              <td>{toYN(entry.pipFinish)}</td>
+          {entries.map((entry, index) => {
+            const rowKey = getRowKey(entry, index);
+            const isSelected = selectedRows.has(rowKey);
+            return (
+              <tr key={entry.id} className={getRowClassName([entry], false, true)}>
+                {showCheckboxes ? (
+                  <td className="checkbox-cell" onClick={(e) => e.stopPropagation()}>
+                    <input
+                      type="checkbox"
+                      checked={isSelected}
+                      onChange={(e) => {
+                        e.stopPropagation();
+                        onRowSelect?.(rowKey, e.target.checked);
+                      }}
+                    />
+                  </td>
+                ) : (
+                  <td className="child-table-spacer checkbox-spacer"></td>
+                )}
+                <td className="setting-number-col">{index + 1}</td>
+              <td className="customer-col">{entry.customer || "-"}</td>
+              <td className="rate-col">₹{Math.round(Number(entry.rate || 0))}</td>
+              <td className="description-col" title={entry.description || "-"}>{truncateDescription(entry.description)}</td>
+              <td className="cut-col">{Math.round(Number(entry.cut || 0))}</td>
+              <td className="th-col">{Math.round(Number(entry.thickness || 0))}</td>
+              <td className="pass-col">{entry.passLevel}</td>
+              <td className="setting-col">{entry.setting}</td>
+              <td className="qty-col">{Number(entry.qty || 0).toString()}</td>
+              <td className="sedm-col">{toYN(entry.sedm)}</td>
+              <td className="complex-col">{toYN(entry.critical)}</td>
+              <td className="pip-col">{toYN(entry.pipFinish)}</td>
               {isOperator && (
-                <td>
+                <td className="assigned-col">
                   {canAssign && onAssignChange && operatorUsers.length > 0 ? (
                     <div onClick={(e) => e.stopPropagation()}>
                       <MultiSelectOperators
@@ -151,10 +216,10 @@ const ChildCutsTable: React.FC<ChildCutsTableProps> = ({
                   )}
                 </td>
               )}
-              <td>{entry.totalHrs ? formatHoursToHHMM(entry.totalHrs) : "-"}</td>
-              {isAdmin && <td>{entry.totalAmount ? `₹${entry.totalAmount.toFixed(2)}` : "-"}</td>}
+              <td className="total-hrs-col">{entry.totalHrs ? formatHoursToHHMM(entry.totalHrs) : "-"}</td>
+              {isAdmin && <td className="total-amount-col">{entry.totalAmount ? `₹${Math.round(entry.totalAmount)}` : "-"}</td>}
               {isOperator && (
-                <td>
+                <td className="status-col">
                   {(() => {
                     const qty = Math.max(1, Number(entry.qty || 1));
                     const c = getQaProgressCounts(entry, qty);
@@ -168,7 +233,7 @@ const ChildCutsTable: React.FC<ChildCutsTableProps> = ({
                   })()}
                 </td>
               )}
-              <td>
+              <td className="act-col">
                 <ActionButtons
                   onView={() => handleViewCut(entry)}
                   onEdit={!isOperator && onEdit ? () => handleEdit(entry) : undefined}
@@ -183,7 +248,8 @@ const ChildCutsTable: React.FC<ChildCutsTableProps> = ({
                 />
               </td>
             </tr>
-          ))}
+            );
+          })}
         </tbody>
       </table>
       {showCutModal && selectedCut && (

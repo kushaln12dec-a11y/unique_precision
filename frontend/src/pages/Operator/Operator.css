@@ -1,185 +1,609 @@
-/* Operator-specific table styles - no horizontal scroll, fit to container */
+/* Operator Table Styles - Clean rewrite without !important */
+
+/* ============================================
+   MAIN TABLE STYLES
+   ============================================ */
+
 .operator-table-no-scroll {
-  overflow-x: hidden !important;
   width: 100%;
   max-width: 100%;
+  overflow-x: auto;
+  overflow-y: visible;
+  box-sizing: border-box;
 }
 
 .operator-table-no-scroll .data-table-wrapper {
-  overflow-x: hidden !important;
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
-  position: relative;
+  overflow-x: auto;
+  overflow-y: visible;
 }
 
 .operator-table-no-scroll .data-table {
   width: 100%;
   max-width: 100%;
   table-layout: fixed;
+  border-collapse: collapse;
+  background: #ffffff;
+  box-sizing: border-box;
 }
 
-/* Make columns more compact for Operator screen */
-.operator-table-no-scroll .data-table th,
+/* Table Headers */
+.operator-table-no-scroll .data-table thead {
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+}
+
+.operator-table-no-scroll .data-table th {
+  color: #ffffff;
+  font-weight: 600;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  padding: 0.5rem 0.35rem;
+  text-align: left;
+  vertical-align: middle;
+  border-bottom: 2px solid #16213e;
+  white-space: normal;
+  word-wrap: break-word;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.2;
+  max-height: 3.6em;
+  hyphens: auto;
+}
+
+/* Ensure header content wraps properly */
+.operator-table-no-scroll .data-table th .th-content {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.375rem;
+  width: 100%;
+  flex-wrap: wrap;
+  line-height: 1.2;
+  word-break: break-word;
+}
+
+/* Table Cells */
 .operator-table-no-scroll .data-table td {
-  padding: 0.15rem 0.08rem;
-  font-size: 0.5rem;
+  padding: 0.5rem 0.4rem;
+  font-size: 0.9rem;
+  text-align: left;
+  vertical-align: middle;
+  border-bottom: 1px solid #e5e7eb;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  line-height: 1.2;
+  box-sizing: border-box;
 }
 
-/* Specific column width adjustments for Operator - fixed layout with precise percentages */
-/* Total: 5.5% + 3.5% + 3% + 3% + 2% + 2% + 2% + 7% + 5% + 6% + 5% + 5% + 2% = 56% */
-/* Remaining 44% distributed proportionally, ensuring Action column is always visible */
-/* Note: Accordion toggle icon is now embedded within Customer column */
+/* ============================================
+   COLUMN WIDTHS - PARENT TABLE
+   Column order: Checkbox, Customer, Rate, Description, Cut, TH, Pass, Setting, Qty, Assigned To, Total Hrs, Total Amount, Status, Created By, Created At, Act
+   ============================================ */
 
-/* Customer (first column - includes accordion toggle icon) */
-.operator-table-no-scroll .data-table th:nth-child(1),
-.operator-table-no-scroll .data-table td:nth-child(1) {
-  width: 5.5%;
-  min-width: 0;
+/* Checkbox Column */
+.operator-table-no-scroll .data-table .checkbox-header-cell,
+.operator-table-no-scroll .data-table .checkbox-cell {
+  width: 40px;
+  min-width: 40px;
+  max-width: 40px;
+  padding: 0.5rem 0.25rem;
 }
 
-/* Rate (second column) */
+/* Customer Column (includes accordion toggle) */
 .operator-table-no-scroll .data-table th:nth-child(2),
 .operator-table-no-scroll .data-table td:nth-child(2) {
-  width: 3.5%;
-  min-width: 0;
+  width: 90px;
+  min-width: 90px;
+  text-align: left;
 }
 
-/* Cut (third column) */
+/* Rate Column */
 .operator-table-no-scroll .data-table th:nth-child(3),
 .operator-table-no-scroll .data-table td:nth-child(3) {
-  width: 3%;
-  min-width: 0;
+  width: 80px;
+  min-width: 80px;
+  text-align: left;
 }
 
-/* Thickness (fourth column) */
+/* Description Column */
 .operator-table-no-scroll .data-table th:nth-child(4),
 .operator-table-no-scroll .data-table td:nth-child(4) {
-  width: 3%;
-  min-width: 0;
+  width: 110px;
+  min-width: 110px;
+  text-align: left;
 }
 
-/* Pass (fifth column) */
+/* Cut Column */
 .operator-table-no-scroll .data-table th:nth-child(5),
 .operator-table-no-scroll .data-table td:nth-child(5) {
-  width: 2%;
-  min-width: 0;
+  width: 75px;
+  min-width: 75px;
+  text-align: left;
 }
 
-/* Setting (sixth column) */
+/* TH Column */
 .operator-table-no-scroll .data-table th:nth-child(6),
 .operator-table-no-scroll .data-table td:nth-child(6) {
-  width: 2%;
-  min-width: 0;
+  width: 75px;
+  min-width: 75px;
+  text-align: left;
 }
 
-/* Qty (seventh column) */
+/* Pass Column */
 .operator-table-no-scroll .data-table th:nth-child(7),
 .operator-table-no-scroll .data-table td:nth-child(7) {
-  width: 2%;
-  min-width: 0;
+  width: 50px;
+  min-width: 50px;
+  text-align: left;
 }
 
-/* Created At (eighth column) */
+/* Setting Column */
 .operator-table-no-scroll .data-table th:nth-child(8),
 .operator-table-no-scroll .data-table td:nth-child(8) {
-  width: 7%;
-  min-width: 0;
+  width: 60px;
+  min-width: 60px;
+  text-align: left;
 }
 
-/* Created By (ninth column) */
+/* Qty Column */
 .operator-table-no-scroll .data-table th:nth-child(9),
 .operator-table-no-scroll .data-table td:nth-child(9) {
-  width: 5%;
-  min-width: 0;
+  width: 45px;
+  min-width: 45px;
+  text-align: left;
 }
 
-/* Assigned To (tenth column) */
+/* Assigned To Column */
 .operator-table-no-scroll .data-table th:nth-child(10),
 .operator-table-no-scroll .data-table td:nth-child(10) {
-  width: 6%;
-  min-width: 0;
+  width: 95px;
+  min-width: 95px;
+  text-align: left;
 }
 
-/* Total Hrs (eleventh column) */
+/* Total Hrs/Piece Column */
 .operator-table-no-scroll .data-table th:nth-child(11),
 .operator-table-no-scroll .data-table td:nth-child(11) {
-  width: 5%;
-  min-width: 0;
+  width: 95px;
+  min-width: 95px;
+  text-align: left;
 }
 
-/* Total Amount (twelfth column) */
+/* Total Amount Column (if admin) */
 .operator-table-no-scroll .data-table th:nth-child(12),
 .operator-table-no-scroll .data-table td:nth-child(12) {
-  width: 5%;
-  min-width: 0;
+  width: 110px;
+  min-width: 110px;
+  text-align: left;
 }
 
-/* Action (last column) - ensure it's visible and always rendered - minimal width but enough for larger icon */
+/* Status Column */
+.operator-table-no-scroll .data-table th.status-header,
+.operator-table-no-scroll .data-table td.status-cell,
+.operator-table-no-scroll .data-table th:nth-child(13),
+.operator-table-no-scroll .data-table td:nth-child(13) {
+  width: 130px;
+  min-width: 130px;
+  white-space: normal;
+  text-align: left;
+}
+
+/* Created By Column */
+.operator-table-no-scroll .data-table th:nth-child(14),
+.operator-table-no-scroll .data-table td:nth-child(14) {
+  width: 100px;
+  min-width: 100px;
+  text-align: left;
+}
+
+/* Created At Column */
+.operator-table-no-scroll .data-table th:nth-child(15),
+.operator-table-no-scroll .data-table td:nth-child(15) {
+  width: 120px;
+  min-width: 120px;
+  text-align: left;
+}
+
+/* Action Column */
 .operator-table-no-scroll .data-table th.action-header,
-.operator-table-no-scroll .data-table td.action-cell {
-  width: 2% !important;
-  min-width: 0 !important;
-  max-width: 30px !important;
-  visibility: visible !important;
-  display: table-cell !important;
-  white-space: nowrap;
-  flex-shrink: 0;
-  padding: 0.1rem 0.05rem !important;
-}
-
-/* Fallback selector for Action column - ensure it's the last visible column */
+.operator-table-no-scroll .data-table td.action-cell,
 .operator-table-no-scroll .data-table th:last-child:not(.accordion-header-cell),
 .operator-table-no-scroll .data-table td:last-child:not(.accordion-toggle-cell) {
-  width: 2% !important;
-  min-width: 0 !important;
-  max-width: 30px !important;
-  padding: 0.1rem 0.05rem !important;
+  width: 80px;
+  min-width: 80px;
+  max-width: 80px;
+  white-space: nowrap;
+  padding: 0.5rem 0.25rem;
+  text-align: left;
 }
 
-/* Reduce Action button size in Operator screen */
+/* ============================================
+   CHILD TABLE STYLES
+   Column order: Spacer, Setting #, Customer, Rate, Description, Cut, TH, Pass, Setting, Qty, SEDM, Complex, PIP Finish, Assigned To, Total Hrs, Total Amount, Status, Act
+   ============================================ */
+
+.operator-table-no-scroll .child-row-content {
+  width: 100%;
+  max-width: 100%;
+  padding: 0.75rem;
+  box-sizing: border-box;
+  background: #f9fafb;
+}
+
+.operator-table-no-scroll .child-row-content .child-jobs-table {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+  background: #ffffff;
+  box-sizing: border-box;
+}
+
+.operator-table-no-scroll .child-row-content .child-jobs-table th,
+.operator-table-no-scroll .child-row-content .child-jobs-table td {
+  padding: 0.5rem 0.4rem;
+  font-size: 0.8rem;
+  text-align: left;
+  vertical-align: middle;
+  border-top: 1px solid #e5e7eb;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  box-sizing: border-box;
+}
+
+/* Ensure matching padding for headers and cells */
+.operator-table-no-scroll .child-row-content .child-jobs-table th {
+  padding: 0.5rem 0.4rem;
+  text-align: left;
+}
+
+.operator-table-no-scroll .child-row-content .child-jobs-table th {
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  color: #ffffff;
+  font-weight: 600;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  white-space: normal;
+  word-wrap: break-word;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.2;
+  max-height: 3.6em;
+  padding: 0.5rem 0.35rem;
+  hyphens: auto;
+  text-align: left;
+}
+
+/* Ensure child table header content wraps properly */
+.operator-table-no-scroll .child-row-content .child-jobs-table th .th-content {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.2rem;
+  width: 100%;
+  flex-wrap: wrap;
+  line-height: 1.2;
+  word-break: break-word;
+}
+
+/* Child Table Column Widths - Align with Parent Table */
+/* Spacer for checkbox alignment - matches checkbox width */
+.operator-table-no-scroll .child-row-content .child-jobs-table th.child-table-spacer,
+.operator-table-no-scroll .child-row-content .child-jobs-table td.child-table-spacer {
+  width: 40px;
+  min-width: 40px;
+  max-width: 40px;
+  padding: 0;
+  border: none;
+}
+
+/* Setting # - Extra column in child table - Ensure th and td match */
+.operator-table-no-scroll .child-row-content .child-jobs-table th.setting-number-col,
+.operator-table-no-scroll .child-row-content .child-jobs-table td.setting-number-col {
+  width: 55px;
+  min-width: 55px;
+  text-align: left;
+  padding-left: 0.4rem;
+  padding-right: 0.4rem;
+}
+
+/* Customer - Align with parent Customer - Ensure th and td match */
+.operator-table-no-scroll .child-row-content .child-jobs-table th.customer-col,
+.operator-table-no-scroll .child-row-content .child-jobs-table td.customer-col {
+  width: 100px;
+  min-width: 100px;
+  text-align: left;
+  padding-left: 0.75rem;
+  padding-right: 0.75rem;
+}
+
+/* Rate - Align with parent Rate - Ensure th and td match */
+.operator-table-no-scroll .child-row-content .child-jobs-table th.rate-col,
+.operator-table-no-scroll .child-row-content .child-jobs-table td.rate-col {
+  width: 90px;
+  min-width: 90px;
+  text-align: left;
+  padding-left: 0.75rem;
+  padding-right: 0.75rem;
+}
+
+/* Description - Align with parent Description - Ensure th and td match */
+.operator-table-no-scroll .child-row-content .child-jobs-table th.description-col,
+.operator-table-no-scroll .child-row-content .child-jobs-table td.description-col {
+  width: 120px;
+  min-width: 120px;
+  text-align: left;
+  padding-left: 0.75rem;
+  padding-right: 0.75rem;
+}
+
+/* Cut - Align with parent Cut - Ensure th and td match */
+.operator-table-no-scroll .child-row-content .child-jobs-table th.cut-col,
+.operator-table-no-scroll .child-row-content .child-jobs-table td.cut-col {
+  width: 80px;
+  min-width: 80px;
+  text-align: left;
+  padding-left: 0.75rem;
+  padding-right: 0.75rem;
+}
+
+/* TH - Align with parent TH - Ensure th and td match */
+.operator-table-no-scroll .child-row-content .child-jobs-table th.th-col,
+.operator-table-no-scroll .child-row-content .child-jobs-table td.th-col {
+  width: 80px;
+  min-width: 80px;
+  text-align: left;
+  padding-left: 0.75rem;
+  padding-right: 0.75rem;
+}
+
+/* Pass - Align with parent Pass - Ensure th and td match */
+.operator-table-no-scroll .child-row-content .child-jobs-table th.pass-col,
+.operator-table-no-scroll .child-row-content .child-jobs-table td.pass-col {
+  width: 60px;
+  min-width: 60px;
+  text-align: left;
+  padding-left: 0.75rem;
+  padding-right: 0.75rem;
+}
+
+/* Setting - Align with parent Setting - Ensure th and td match */
+.operator-table-no-scroll .child-row-content .child-jobs-table th.setting-col,
+.operator-table-no-scroll .child-row-content .child-jobs-table td.setting-col {
+  width: 70px;
+  min-width: 70px;
+  text-align: left;
+  padding-left: 0.75rem;
+  padding-right: 0.75rem;
+}
+
+/* Qty - Align with parent Qty - Ensure th and td match */
+.operator-table-no-scroll .child-row-content .child-jobs-table th.qty-col,
+.operator-table-no-scroll .child-row-content .child-jobs-table td.qty-col {
+  width: 50px;
+  min-width: 50px;
+  text-align: left;
+  padding-left: 0.75rem;
+  padding-right: 0.75rem;
+}
+
+/* SEDM - Extra column - Ensure th and td match */
+.operator-table-no-scroll .child-row-content .child-jobs-table th.sedm-col,
+.operator-table-no-scroll .child-row-content .child-jobs-table td.sedm-col {
+  width: 50px;
+  min-width: 50px;
+  text-align: left;
+  padding-left: 0.4rem;
+  padding-right: 0.4rem;
+}
+
+/* Complex - Extra column - Ensure th and td match */
+.operator-table-no-scroll .child-row-content .child-jobs-table th.complex-col,
+.operator-table-no-scroll .child-row-content .child-jobs-table td.complex-col {
+  width: 50px;
+  min-width: 50px;
+  text-align: left;
+  padding-left: 0.4rem;
+  padding-right: 0.4rem;
+}
+
+/* PIP Finish - Extra column - Ensure th and td match */
+.operator-table-no-scroll .child-row-content .child-jobs-table th.pip-col,
+.operator-table-no-scroll .child-row-content .child-jobs-table td.pip-col {
+  width: 50px;
+  min-width: 50px;
+  text-align: left;
+  padding-left: 0.4rem;
+  padding-right: 0.4rem;
+}
+
+/* Assigned To - Align with parent Assigned To - Ensure th and td match */
+.operator-table-no-scroll .child-row-content .child-jobs-table th.assigned-col,
+.operator-table-no-scroll .child-row-content .child-jobs-table td.assigned-col {
+  width: 95px;
+  min-width: 95px;
+  text-align: left;
+  padding-left: 0.4rem;
+  padding-right: 0.4rem;
+}
+
+/* Total Hrs/Piece - Align with parent Total Hrs - Ensure th and td match */
+.operator-table-no-scroll .child-row-content .child-jobs-table th.total-hrs-col,
+.operator-table-no-scroll .child-row-content .child-jobs-table td.total-hrs-col {
+  width: 90px;
+  min-width: 90px;
+  text-align: left;
+  padding-left: 0.4rem;
+  padding-right: 0.4rem;
+}
+
+/* Total Amount - Align with parent Total Amount - Ensure th and td match */
+.operator-table-no-scroll .child-row-content .child-jobs-table th.total-amount-col,
+.operator-table-no-scroll .child-row-content .child-jobs-table td.total-amount-col {
+  width: 100px;
+  min-width: 100px;
+  text-align: left;
+  padding-left: 0.4rem;
+  padding-right: 0.4rem;
+}
+
+/* Status - Align with parent Status - Ensure th and td match - Reduced size */
+.operator-table-no-scroll .child-row-content .child-jobs-table th.status-col,
+.operator-table-no-scroll .child-row-content .child-jobs-table td.status-col {
+  width: 100px;
+  min-width: 100px;
+  white-space: normal;
+  text-align: left;
+  padding-left: 0.4rem;
+  padding-right: 0.4rem;
+}
+
+/* Act - Action column - Ensure th and td match */
+.operator-table-no-scroll .child-row-content .child-jobs-table th.act-col,
+.operator-table-no-scroll .child-row-content .child-jobs-table td.act-col {
+  width: 80px;
+  min-width: 80px;
+  text-align: left;
+  padding-left: 0.4rem;
+  padding-right: 0.4rem;
+}
+
+/* ============================================
+   STATUS COLUMN STYLING
+   ============================================ */
+
+.operator-table-no-scroll .data-table td.status-cell .child-stage-summary,
+.child-jobs-table td .child-stage-summary {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  margin: 0 auto;
+  white-space: normal;
+}
+
+.child-stage-summary {
+  min-width: 120px;
+}
+
+/* ============================================
+   ACTION BUTTONS
+   ============================================ */
+
+.operator-table-no-scroll .data-table td.action-cell .action-icon-button,
 .operator-table-no-scroll .data-table td.action-cell .operator-action-button {
-  padding: 0.05rem !important;
-  min-width: 1rem !important;
-  min-height: 1rem !important;
-  width: 1rem !important;
-  height: 1rem !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
+  width: 1.5rem;
+  height: 1.5rem;
+  min-width: 1.5rem;
+  min-height: 1.5rem;
+  padding: 0.2rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 0.1rem;
+}
+
+.operator-table-no-scroll .data-table td.action-cell .action-icon-button svg,
+.operator-table-no-scroll .data-table td.action-cell .operator-action-button svg {
+  font-size: 1rem;
+  width: 1rem;
+  height: 1rem;
 }
 
 .operator-table-no-scroll .data-table td.action-cell .operator-action-button svg {
-  font-size: 0.65rem !important;
-  width: 0.65rem !important;
-  height: 0.65rem !important;
+  color: #dc2626;
 }
 
-/* Ensure table container doesn't overflow - reduce white card background width */
+/* ============================================
+   ACCORDION TOGGLE
+   ============================================ */
+
+.operator-table-no-scroll .data-table td .operator-accordion-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.operator-table-no-scroll .data-table td .operator-accordion-toggle svg {
+  font-size: 0.875rem;
+  width: 0.875rem;
+  height: 0.875rem;
+  color: #1e293b;
+}
+
+/* ============================================
+   SORT ICONS
+   ============================================ */
+
+.operator-table-no-scroll .data-table th .sort-icon {
+  font-size: 0.7rem;
+  margin-left: 0.2rem;
+  flex-shrink: 0;
+}
+
+
+/* ============================================
+   CREATED AT SPLIT DISPLAY
+   ============================================ */
+
+.created-at-split {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.125rem;
+  line-height: 1.2;
+}
+
+/* ============================================
+   PANEL AND FILTER STYLES
+   ============================================ */
+
 .roleboard-content .programmer-panel {
   overflow-x: hidden;
   max-width: 100%;
   box-sizing: border-box;
-  margin: 0.5rem 0.25rem !important;
-  padding: 0.75rem !important;
-  width: calc(100% - 0.5rem) !important;
+  margin: 0.5rem 0.25rem;
+  padding: 0.75rem;
+  width: calc(100% - 0.5rem);
 }
 
-/* Reduce panel header spacing */
 .roleboard-content .programmer-panel .panel-header {
-  margin-bottom: 0.5rem !important;
-  gap: 0.5rem !important;
+  margin-bottom: 0.5rem;
+  gap: 0.5rem;
 }
 
-/* Reduce filter group spacing */
 .roleboard-content .programmer-panel .filter-group {
-  min-width: 120px !important;
-  gap: 0.25rem !important;
+  min-width: 120px;
+  gap: 0.25rem;
 }
+
+.roleboard-content .programmer-panel .inline-filters {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.55rem;
+  flex-wrap: wrap;
+}
+
+.roleboard-content .programmer-panel .filter-input,
+.roleboard-content .programmer-panel .filter-select {
+  height: 36px;
+}
+
+.roleboard-content .programmer-panel .filter-input {
+  background-image: none;
+  padding-left: 0.6rem;
+}
+
+/* ============================================
+   STAGE LEGEND
+   ============================================ */
 
 .operator-stage-legend-inline {
   display: inline-flex;
@@ -188,6 +612,7 @@
   flex-wrap: nowrap;
   white-space: nowrap;
   margin-bottom: 0.1rem;
+  align-self: flex-end;
 }
 
 .operator-stage-legend-title {
@@ -222,207 +647,44 @@
   border-color: #fcd34d;
 }
 
+/* ============================================
+   FILTER SELECT STYLES
+   ============================================ */
+
 .assigned-to-filter-select {
-  border-color: #93c5fd !important;
-  background: linear-gradient(180deg, #f8fbff 0%, #eef4ff 100%) !important;
-  color: #1e3a8a !important;
-  font-weight: 700 !important;
+  border-color: #93c5fd;
+  background: linear-gradient(180deg, #f8fbff 0%, #eef4ff 100%);
+  color: #1e3a8a;
+  font-weight: 700;
   box-shadow: inset 0 0 0 1px rgba(147, 197, 253, 0.35);
 }
 
 .assigned-to-filter-select:focus {
-  border-color: #3b82f6 !important;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.18) !important;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.18);
 }
 
-/* Prioritize Action column visibility */
-.operator-table-no-scroll .data-table th.action-header,
-.operator-table-no-scroll .data-table td.action-cell {
-  position: relative;
-  z-index: 1;
-  background-color: #ffffff;
-}
+/* ============================================
+   PRIORITY-BASED ROW COLORS
+   ============================================ */
 
-/* Ensure table fits within container - no overflow */
-.operator-table-no-scroll .data-table {
-  border-collapse: collapse;
-  width: 100% !important;
-  table-layout: fixed !important;
-}
-
-/* Ensure all cells respect their width constraints */
-.operator-table-no-scroll .data-table th,
-.operator-table-no-scroll .data-table td {
-  box-sizing: border-box;
-}
-
-/* Force table to fit exactly within container */
-.operator-table-no-scroll .data-table-wrapper {
-  width: 100% !important;
-  max-width: 100% !important;
-  overflow-x: hidden !important;
-}
-
-/* Ensure Action column is always visible by reducing other columns if needed */
-.operator-table-no-scroll .data-table th:not(.action-header):not(.accordion-header-cell),
-.operator-table-no-scroll .data-table td:not(.action-cell):not(.accordion-toggle-cell) {
-  max-width: 100%;
-}
-
-/* Reduce font size for table headers specifically */
-.operator-table-no-scroll .data-table th {
-  font-size: 0.48rem !important;
-  font-weight: 600;
-  padding: 0.12rem 0.08rem !important;
-  line-height: 1.1 !important;
-}
-
-/* Reduce font size for action buttons - Operator screen specific */
-.operator-table-no-scroll .data-table td.action-cell button {
-  padding: 0.05rem !important;
-  font-size: 0.5rem !important;
-  min-width: 1rem !important;
-  min-height: 1rem !important;
-  width: 1rem !important;
-  height: 1rem !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-}
-
-.operator-table-no-scroll .data-table td.action-cell svg {
-  font-size: 0.65rem !important;
-  width: 0.65rem !important;
-  height: 0.65rem !important;
-}
-
-/* Specific styling for Operator action button with red arrow - increased icon size */
-.operator-table-no-scroll .data-table td.action-cell .operator-action-button {
-  padding: 0.1rem !important;
-  min-width: 1.2rem !important;
-  min-height: 1.2rem !important;
-  width: 1.2rem !important;
-  height: 1.2rem !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-}
-
-.operator-table-no-scroll .data-table td.action-cell .operator-action-button svg {
-  font-size: 0.9rem !important;
-  width: 0.9rem !important;
-  height: 0.9rem !important;
-  color: #dc2626 !important;
-}
-
-/* Reduce font size for select dropdowns */
-.operator-table-no-scroll .data-table td select {
-  font-size: 0.5rem !important;
-  padding: 0.08rem 0.15rem !important;
-  line-height: 1.2 !important;
-}
-
-/* Reduce spacing in customer column */
-.operator-table-no-scroll .data-table td:nth-child(1) > div {
-  gap: 0.2rem !important;
-}
-
-/* Style for Operator accordion toggle icon */
-.operator-table-no-scroll .data-table td .operator-accordion-toggle {
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-}
-
-.operator-table-no-scroll .data-table td .operator-accordion-toggle svg {
-  font-size: 0.7rem !important;
-  width: 0.7rem !important;
-  height: 0.7rem !important;
-  color: #1e293b !important;
-}
-
-/* Reduce sort icon sizes */
-.operator-table-no-scroll .data-table th .sort-icon {
-  font-size: 0.5rem !important;
-  margin-left: 0.15rem !important;
-}
-
-/* Ensure child row spans full width in Operator screen */
-.operator-table-no-scroll .child-row-content {
-  width: 100% !important;
-  max-width: 100% !important;
-  padding: 0.75rem !important;
-  box-sizing: border-box !important;
-}
-
-.operator-table-no-scroll .child-row-content .child-jobs-table {
-  width: 100% !important;
-  max-width: 100% !important;
-  table-layout: auto !important;
-  box-sizing: border-box !important;
-}
-
-.operator-table-no-scroll .child-row-content > * {
-  width: 100% !important;
-  max-width: 100% !important;
-}
-
-/* Reduce all icon sizes */
-.operator-table-no-scroll .data-table svg {
-  font-size: 0.7rem !important;
-  width: 0.7rem !important;
-  height: 0.7rem !important;
-}
-
-/* Ensure table borders are minimal */
-.operator-table-no-scroll .data-table th,
-.operator-table-no-scroll .data-table td {
-  border-width: 0.5px !important;
-}
-
-/* Responsive adjustments for Operator table */
-@media (max-width: 1400px) {
-  .operator-table-no-scroll .data-table th,
-  .operator-table-no-scroll .data-table td {
-    padding: 0.15rem 0.08rem;
-    font-size: 0.5rem;
-  }
-}
-
-@media (max-width: 1200px) {
-  .operator-table-no-scroll .data-table th,
-  .operator-table-no-scroll .data-table td {
-    padding: 0.12rem 0.06rem;
-    font-size: 0.48rem;
-  }
-}
-
-/* Add search icon to Customer search input */
-.filter-input {
-  padding-left: 2.5rem !important;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E") !important;
-  background-repeat: no-repeat !important;
-  background-position: 0.75rem center !important;
-}
-
-/* Priority-based row colors for Operator screen - reuse from Programmer */
 .group-row {
   background: #ffffff;
 }
 
 .group-row.critical-row {
-  background-color: #fee2e2 !important;
-  border-left: 4px solid #dc2626 !important;
+  background-color: #fee2e2;
+  border-left: 4px solid #dc2626;
   box-shadow: 0 2px 4px rgba(220, 38, 38, 0.15);
 }
 
 .group-row.critical-row:hover {
-  background-color: #fecaca !important;
+  background-color: #fecaca;
   box-shadow: 0 4px 8px rgba(220, 38, 38, 0.2);
 }
 
 .group-row.critical-row td {
-  color: #0f172a !important;
+  color: #0f172a;
   font-weight: 500;
 }
 
@@ -470,7 +732,7 @@
 }
 
 .group-row-expanded.critical-row {
-  background-color: #fee2e2 !important;
+  background-color: #fee2e2;
 }
 
 .group-row-expanded.priority-row.priority-high {
@@ -485,6 +747,10 @@
   background-color: #d1fae5;
 }
 
+/* ============================================
+   QA PROGRESS BADGES
+   ============================================ */
+
 .qa-progress-inline {
   display: inline-flex;
   gap: 0.2rem;
@@ -494,12 +760,12 @@
 .qa-mini {
   display: inline-flex;
   align-items: center;
-  padding: 0.08rem 0.38rem;
+  padding: 0.1rem 0.4rem;
   border-radius: 999px;
-  font-size: 0.58rem;
+  font-size: 0.6rem;
   font-weight: 700;
   border: 1px solid transparent;
-  line-height: 1.1;
+  line-height: 1.2;
 }
 
 .qa-mini.saved {
@@ -540,191 +806,48 @@
   color: #334155;
 }
 
-.child-stage-summary {
-  display: inline-flex;
-  flex-direction: column;
-  align-items: flex-start;
-  justify-content: flex-start;
-  gap: 0.14rem;
-  min-width: 80px;
+/* ============================================
+   RESPONSIVE ADJUSTMENTS
+   ============================================ */
+
+@media (max-width: 1600px) {
+  .operator-table-no-scroll .data-table th,
+  .operator-table-no-scroll .data-table td {
+    padding: 0.45rem 0.35rem;
+    font-size: 0.78rem;
+  }
+  
+  .operator-table-no-scroll .child-row-content .child-jobs-table th,
+  .operator-table-no-scroll .child-row-content .child-jobs-table td {
+    padding: 0.45rem 0.35rem;
+    font-size: 0.78rem;
+  }
 }
 
-/* Final operator fit/alignment overrides */
-.operator-table-no-scroll .data-table-wrapper {
-  overflow-x: auto !important;
+@media (max-width: 1400px) {
+  .operator-table-no-scroll .data-table th,
+  .operator-table-no-scroll .data-table td {
+    padding: 0.4rem 0.3rem;
+    font-size: 0.75rem;
+  }
+  
+  .operator-table-no-scroll .child-row-content .child-jobs-table th,
+  .operator-table-no-scroll .child-row-content .child-jobs-table td {
+    padding: 0.4rem 0.3rem;
+    font-size: 0.75rem;
+  }
 }
 
-.operator-table-no-scroll .data-table {
-  table-layout: auto !important;
-  width: 100% !important;
-}
-
-.operator-table-no-scroll .data-table th:not(.action-header):not(.checkbox-header-cell),
-.operator-table-no-scroll .data-table td:not(.action-cell):not(.checkbox-cell) {
-  width: auto !important;
-  min-width: 0 !important;
-  max-width: none !important;
-}
-
-.operator-table-no-scroll .data-table th,
-.operator-table-no-scroll .data-table td {
-  font-size: 0.78rem !important;
-  padding: 0.38rem 0.32rem !important;
-  line-height: 1.15 !important;
-}
-
-.operator-table-no-scroll .data-table .checkbox-header-cell,
-.operator-table-no-scroll .data-table .checkbox-cell {
-  width: 30px !important;
-  min-width: 30px !important;
-  max-width: 30px !important;
-  padding-left: 0.2rem !important;
-  padding-right: 0.2rem !important;
-}
-
-.operator-table-no-scroll .data-table th.action-header,
-.operator-table-no-scroll .data-table td.action-cell {
-  width: 74px !important;
-  min-width: 74px !important;
-  max-width: 74px !important;
-  text-align: center !important;
-  white-space: nowrap !important;
-  visibility: visible !important;
-  display: table-cell !important;
-}
-
-.operator-table-no-scroll .data-table th.status-header,
-.operator-table-no-scroll .data-table td.status-cell {
-  text-align: center !important;
-  vertical-align: middle !important;
-}
-
-.operator-table-no-scroll .data-table td.status-cell .child-stage-summary {
-  margin: 0 auto;
-  align-items: center;
-}
-
-.child-jobs-table td .child-stage-summary {
-  margin: 0 auto;
-  align-items: center;
-}
-
-.created-at-split {
-  display: inline-flex;
-  flex-direction: column;
-  align-items: center;
-  line-height: 1.05;
-  gap: 0.08rem;
-}
-
-/* Larger row text/icons for readability */
-.operator-table-no-scroll .data-table th {
-  font-size: 0.95rem !important;
-  font-weight: 700 !important;
-  padding: 0.52rem 0.38rem !important;
-}
-
-.operator-table-no-scroll .data-table td {
-  font-size: 0.95rem !important;
-  padding: 0.56rem 0.38rem !important;
-  vertical-align: middle !important;
-  text-align: center !important;
-}
-
-.operator-table-no-scroll .data-table td .operator-accordion-toggle svg {
-  font-size: 0.9rem !important;
-  width: 0.9rem !important;
-  height: 0.9rem !important;
-}
-
-.operator-table-no-scroll .data-table .sort-icon {
-  font-size: 0.72rem !important;
-}
-
-.operator-table-no-scroll .data-table td.action-cell .action-icon-button,
-.operator-table-no-scroll .data-table td.action-cell .operator-action-button {
-  width: 1.45rem !important;
-  height: 1.45rem !important;
-  min-width: 1.45rem !important;
-  min-height: 1.45rem !important;
-  padding: 0.16rem !important;
-}
-
-.operator-table-no-scroll .data-table td.action-cell .action-icon-button svg,
-.operator-table-no-scroll .data-table td.action-cell .operator-action-button svg {
-  font-size: 1rem !important;
-  width: 1rem !important;
-  height: 1rem !important;
-}
-
-.operator-table-no-scroll .child-jobs-table th {
-  font-size: 0.9rem !important;
-  padding: 0.5rem 0.42rem !important;
-}
-
-.operator-table-no-scroll .child-jobs-table td {
-  font-size: 0.93rem !important;
-  padding: 0.52rem 0.42rem !important;
-}
-
-/* Parent table alignment stability */
-.operator-table-no-scroll .data-table tbody tr {
-  height: 74px;
-}
-
-.operator-table-no-scroll .data-table td:first-child {
-  text-align: left !important;
-}
-
-.operator-table-no-scroll .data-table td:nth-child(2) > div {
-  justify-content: flex-start !important;
-}
-
-.operator-table-no-scroll .data-table th.action-header .th-content {
-  display: inline-flex !important;
-  justify-content: center !important;
-  width: 100% !important;
-  overflow: visible !important;
-}
-
-.operator-table-no-scroll .data-table th.action-header {
-  overflow: visible !important;
-  text-overflow: clip !important;
-}
-
-.operator-table-no-scroll .data-table td.action-cell {
-  padding-left: 0.25rem !important;
-  padding-right: 0.25rem !important;
-}
-
-.operator-table-no-scroll .data-table td .created-at-split {
-  width: 100%;
-  align-items: center;
-  justify-content: center;
-}
-
-.roleboard-content .programmer-panel .inline-filters {
-  display: flex !important;
-  align-items: flex-end !important;
-  gap: 0.55rem !important;
-  flex-wrap: wrap !important;
-}
-
-.roleboard-content .programmer-panel .filter-group {
-  min-width: 130px !important;
-}
-
-.roleboard-content .programmer-panel .filter-input,
-.roleboard-content .programmer-panel .filter-select {
-  height: 36px !important;
-}
-
-.roleboard-content .programmer-panel .filter-input {
-  background-image: none !important;
-  padding-left: 0.6rem !important;
-}
-
-.operator-stage-legend-inline {
-  align-self: flex-end;
-  margin-bottom: 0.1rem !important;
+@media (max-width: 1200px) {
+  .operator-table-no-scroll .data-table th,
+  .operator-table-no-scroll .data-table td {
+    padding: 0.35rem 0.25rem;
+    font-size: 0.7rem;
+  }
+  
+  .operator-table-no-scroll .child-row-content .child-jobs-table th,
+  .operator-table-no-scroll .child-row-content .child-jobs-table td {
+    padding: 0.35rem 0.25rem;
+    font-size: 0.7rem;
+  }
 }

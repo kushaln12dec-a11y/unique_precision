@@ -1,6 +1,5 @@
 import React from "react";
 import type { ReactNode } from "react";
-import SortIcon from "../pages/Programmer/components/SortIcon";
 import AccordionToggle from "../pages/Programmer/components/AccordionToggle";
 import Pagination from "./Pagination";
 import "./DataTable.css";
@@ -124,20 +123,14 @@ function DataTable<T extends Record<string, any>>({
               {columns.map((column) => (
                 <th
                   key={column.key}
-                  onClick={() => handleSort(column)}
+                  onClick={() => column.sortable && handleSort(column)}
                   className={`${column.sortable ? "sortable" : ""} ${
                     column.headerClassName || ""
                   }`}
+                  style={{ cursor: column.sortable ? "pointer" : "default" }}
                 >
                   <span className="th-content">
                     {column.label}
-                    {column.sortable && (
-                      <SortIcon
-                        field={column.sortKey || column.key}
-                        sortField={sortField}
-                        sortDirection={sortDirection}
-                      />
-                    )}
                   </span>
                 </th>
               ))}

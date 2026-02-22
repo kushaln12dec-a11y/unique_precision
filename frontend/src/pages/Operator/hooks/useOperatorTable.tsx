@@ -1,4 +1,4 @@
-﻿import { useMemo } from "react";
+import { useMemo } from "react";
 import type { JobEntry } from "../../../types/job";
 import { formatHoursToHHMM, parseDateValue } from "../../../utils/date";
 import ActionButtons from "../../Programmer/components/ActionButtons";
@@ -47,7 +47,7 @@ export const useOperatorTable = ({
       {
         key: "customer",
         label: "Customer",
-        sortable: true,
+        sortable: false,
         sortKey: "customer",
         render: (row) => {
           const expandable = expandableRows?.get(row.groupId);
@@ -91,14 +91,14 @@ export const useOperatorTable = ({
       {
         key: "rate",
         label: "Rate",
-        sortable: true,
+        sortable: false,
         sortKey: "rate",
-        render: (row) => `₹${Number(row.parent.rate || 0).toFixed(2)}`,
+        render: (row) => `₹${Math.round(Number(row.parent.rate || 0))}`,
       },
       {
         key: "description",
         label: "Description",
-        sortable: true,
+        sortable: false,
         sortKey: "description",
         render: (row) => {
           const full = row.parent.description || "-";
@@ -108,45 +108,41 @@ export const useOperatorTable = ({
       {
         key: "cut",
         label: "Cut (mm)",
-        sortable: true,
+        sortable: false,
         sortKey: "cut",
-        render: (row) => Number(row.parent.cut || 0).toFixed(2),
+        render: (row) => Math.round(Number(row.parent.cut || 0)),
       },
       {
         key: "thickness",
         label: "TH (MM)",
-        sortable: true,
+        sortable: false,
         sortKey: "thickness",
-        render: (row) => Number(row.parent.thickness || 0).toFixed(2),
+        render: (row) => Math.round(Number(row.parent.thickness || 0)),
       },
       {
         key: "passLevel",
         label: "Pass",
-        sortable: true,
+        sortable: false,
         sortKey: "passLevel",
         render: (row) => row.parent.passLevel,
       },
       {
         key: "setting",
         label: "Setting",
-        sortable: true,
+        sortable: false,
         sortKey: "setting",
         render: (row) => row.parent.setting,
       },
       {
         key: "qty",
         label: "Qty",
-        sortable: true,
+        sortable: false,
         sortKey: "qty",
         render: (row) => Number(row.parent.qty || 0).toString(),
       },
       {
         key: "assignedTo",
-        label: (
-          <>
-            Assigned <br /> To
-          </>
-        ),
+        label: "Assigned",
         sortable: false,
         render: (row) => {
           const assignedToValue = row.parent.assignedTo || "";
@@ -205,10 +201,10 @@ export const useOperatorTable = ({
         ? [
             {
               key: "totalAmount",
-              label: "Total Amount (₹)",
-              sortable: true,
+              label: "Amount (₹)",
+              sortable: false,
               sortKey: "totalAmount",
-              render: (row: TableRow) => (row.groupTotalAmount ? `₹${row.groupTotalAmount.toFixed(2)}` : "-"),
+              render: (row: TableRow) => (row.groupTotalAmount ? `₹${Math.round(row.groupTotalAmount)}` : "-"),
             } as Column<TableRow>,
           ]
         : []),
@@ -235,14 +231,14 @@ export const useOperatorTable = ({
       {
         key: "createdBy",
         label: "Created By",
-        sortable: true,
+        sortable: false,
         sortKey: "createdBy",
         render: (row) => row.parent.createdBy,
       },
       {
         key: "createdAt",
         label: "Created At",
-        sortable: true,
+        sortable: false,
         sortKey: "createdAt",
         render: (row) => {
           const parsed = parseDateValue(row.parent.createdAt);

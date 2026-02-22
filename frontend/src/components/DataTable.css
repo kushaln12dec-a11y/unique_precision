@@ -6,7 +6,7 @@
 
 /* Ensure Programmer screen has horizontal scroll */
 .jobs-table-wrapper {
-  overflow-x: auto !important;
+  overflow-x: auto;
 }
 
 .data-table {
@@ -17,13 +17,17 @@
   border-radius: 18px;
   background: #ffffff;
   overflow: hidden;
+  table-layout: fixed;
 }
 
 .data-table th,
 .data-table td {
   padding: 0.75rem 1rem;
   border-bottom: 1px solid #e5e7eb;
-  text-align: center;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* Support for left-aligned tables (e.g., UserManagement) */
@@ -53,7 +57,7 @@
 .data-table .th-content {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   gap: 0.375rem;
   width: 100%;
 }
@@ -70,6 +74,40 @@
 
 .data-table th.sortable:hover {
   background: rgba(255, 255, 255, 0.1);
+}
+
+/* Sort icon styles - icons beside text, not below */
+.data-table .sort-icon {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  margin-left: 0.35rem;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.data-table .sort-arrow {
+  font-size: 0.65rem;
+  color: rgba(255, 255, 255, 0.4);
+  display: inline-block;
+  line-height: 1;
+  transition: color 0.2s ease, transform 0.2s ease;
+  vertical-align: middle;
+}
+
+.data-table .sort-arrow.up {
+  margin-right: 0;
+}
+
+.data-table .sort-arrow.down {
+  margin-left: 0;
+}
+
+.data-table .sort-arrow.active {
+  color: #ffffff;
+  transform: scale(1.1);
 }
 
 .data-table tbody tr:hover {
@@ -97,13 +135,15 @@
 .child-row-content {
   padding: 0;
   background: #f9fafb;
-  width: 100% !important;
-  max-width: 100% !important;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .child-row-content > * {
-  width: 100% !important;
-  max-width: 100% !important;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .accordion-header-cell {
@@ -134,24 +174,25 @@
 .action-icon-button {
   border: none;
   background: transparent;
-  color: #2563eb !important;
+  color: #2563eb;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  transition: all 0.2s ease;
 }
 
 .action-icon-button.danger {
-  color: #dc2626 !important;
+  color: #dc2626;
 }
 
 .action-icon-button:hover {
-  color: #1d4ed8 !important;
+  color: #1d4ed8;
   background: rgba(37, 99, 235, 0.15);
   border-radius: 6px;
 }
 
 .action-icon-button.danger:hover {
-  color: #b91c1c !important;
+  color: #b91c1c;
   background: rgba(220, 38, 38, 0.15);
 }

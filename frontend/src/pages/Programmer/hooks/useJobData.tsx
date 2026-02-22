@@ -11,6 +11,9 @@ type UseJobDataProps = {
   toggleGroup: (groupId: number) => void;
   onEdit?: (groupId: number) => void;
   onDelete?: (groupId: number, customer: string) => void;
+  showChildCheckboxes?: boolean;
+  selectedChildRows?: Set<string | number>;
+  onChildRowSelect?: (rowKey: string | number, selected: boolean) => void;
 };
 
 export const useJobData = ({
@@ -21,6 +24,12 @@ export const useJobData = ({
   toggleGroup,
   onEdit,
   onDelete,
+  childSortField,
+  childSortDirection = "asc",
+  onChildSort,
+  showChildCheckboxes = false,
+  selectedChildRows = new Set(),
+  onChildRowSelect,
 }: UseJobDataProps) => {
   const filteredJobs = useMemo(() => jobs, [jobs]);
 
@@ -41,13 +50,32 @@ export const useJobData = ({
         map.set(row.groupId, {
           isExpanded: expandedGroups.has(row.groupId),
           onToggle: () => toggleGroup(row.groupId),
-          expandedContent: <ChildCutsTable entries={row.entries} onEdit={onEdit} onDelete={onDelete} />,
+          expandedContent: (
+            <ChildCutsTable 
+              entries={row.entries} 
+              onEdit={onEdit} 
+              onDelete={onDelete}
+              showCheckboxes={showChildCheckboxes}
+              selectedRows={selectedChildRows}
+              onRowSelect={onChildRowSelect}
+              getRowKey={(entry, index) => entry.id || index}
+            />
+          ),
           ariaLabel: expandedGroups.has(row.groupId) ? "Collapse settings" : "Expand settings",
         });
       }
     });
     return map;
-  }, [tableData, expandedGroups, toggleGroup, onEdit, onDelete]);
+  }, [
+    tableData, 
+    expandedGroups, 
+    toggleGroup, 
+    onEdit, 
+    onDelete,
+    showChildCheckboxes,
+    selectedChildRows,
+    onChildRowSelect,
+  ]);
 
   return {
     tableData,
