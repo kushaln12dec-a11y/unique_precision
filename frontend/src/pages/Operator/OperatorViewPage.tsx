@@ -446,6 +446,7 @@ const OperatorViewPage = () => {
   }, [jobs]);
 
   const parentJob = jobs.length > 0 ? jobs[0] : null;
+  const totalGroupQuantity = jobs.reduce((sum, job) => sum + Math.max(1, Number(job.qty || 1)), 0);
   const groupTotalHrs = jobs.reduce((sum, job) => sum + (job.totalHrs || 0), 0);
   const groupTotalAmount = jobs.reduce((sum, job) => sum + (job.totalAmount || 0), 0);
 
@@ -501,7 +502,17 @@ const OperatorViewPage = () => {
             <>
               {/* Page Heading */}
               <div className="operator-page-heading">
-                <h2>Job Details - {parentJob.customer || "N/A"}</h2>
+                <div className="operator-page-heading-left">
+                  <h2>Job Details - {parentJob.customer || "N/A"}</h2>
+                  <div className="operator-page-heading-meta">
+                    <span>
+                      <strong>Description:</strong> {parentJob.description || "-"}
+                    </span>
+                    <span>
+                      <strong>Total Qty:</strong> {totalGroupQuantity}
+                    </span>
+                  </div>
+                </div>
                 {cutIdParam && (
                   <span className="cut-indicator">
                     Viewing Setting {jobs.findIndex((j) => String(j.id) === String(cutIdParam)) + 1}

@@ -23,6 +23,22 @@
   color: #1e293b;
 }
 
+.operator-page-heading-left {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.25rem;
+}
+
+.operator-page-heading-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  font-size: 1.2rem;
+  color: #334155;
+}
+
 .cut-indicator {
   font-size: 0.9rem;
   font-weight: 600;

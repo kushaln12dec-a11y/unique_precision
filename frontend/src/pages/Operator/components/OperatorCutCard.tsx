@@ -90,13 +90,14 @@ export const OperatorCutCard: React.FC<OperatorCutCardProps> = ({
               <div className="cut-detail-item"><label>Customer</label><span>{cutItem.customer || "-"}</span></div>
               <div className="cut-detail-item"><label>Rate (₹/hr)</label><span>₹{Number(cutItem.rate || 0).toFixed(2)}</span></div>
               <div className="cut-detail-item"><label>Description</label><span>{cutItem.description || "-"}</span></div>
+              <div className="cut-detail-item"><label>Material</label><span>{cutItem.material || "-"}</span></div>
+              <div className="cut-detail-item"><label>Program Ref File Name</label><span>{(cutItem as any).programRefFile || "-"}</span></div>
               <div className="cut-detail-item"><label>Cut Length (mm)</label><span>{Number(cutItem.cut || 0).toFixed(2)}</span></div>
               <div className="cut-detail-item"><label>TH (MM)</label><span>{Number(cutItem.thickness || 0).toFixed(2)}</span></div>
               <div className="cut-detail-item"><label>Pass</label><span>{cutItem.passLevel || "-"}</span></div>
               <div className="cut-detail-item"><label>Setting</label><span>{cutItem.setting || "-"}</span></div>
               <div className="cut-detail-item"><label>Quantity</label><span>{Number(cutItem.qty || 0)}</span></div>
               <div className="cut-detail-item"><label>SEDM</label><span>{cutItem.sedm || "-"}</span></div>
-              <div className="cut-detail-item"><label>Material</label><span>{cutItem.material || "-"}</span></div>
               <div className="cut-detail-item"><label>PIP Finish</label><span className={cutItem.pipFinish ? "pip-badge yes" : "pip-badge no"}>{cutItem.pipFinish ? "Yes" : "No"}</span></div>
               <div className="cut-detail-item"><label>Complex</label><span className={cutItem.critical ? "complex-badge yes" : "complex-badge no"}>{cutItem.critical ? "Yes" : "No"}</span></div>
               <div className="cut-detail-item"><label>Priority</label><span className={`priority-badge priority-${(cutItem.priority || "").toLowerCase()}`}>{cutItem.priority || "-"}</span></div>

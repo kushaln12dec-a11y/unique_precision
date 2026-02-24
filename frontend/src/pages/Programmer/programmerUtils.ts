@@ -158,15 +158,6 @@ export const calculateSedmAmount = (form: CutForm) => {
   return baseValue * holes * qty;
 };
 
-const getThicknessDivisor = (thickness: number): number => {
-  if (thickness < 20) {
-    return 1017.44;
-  }
-  if (thickness <= 100) return 1465;
-  if (thickness <= 150) return 1183;
-  return 1000;
-};
-
 export const calculateTotals = (form: CutForm) => {
   const customerRate = Number(form.rate) || 0;
   const cut = Number(form.cut) || 0;
@@ -176,7 +167,7 @@ export const calculateTotals = (form: CutForm) => {
   const qty = Number(form.qty) || 0;
   
   const sedmAmount = calculateSedmAmount(form);
-  const thicknessDivisor = getThicknessDivisor(thickness);
+  const thicknessDivisor = 1500;
   const cutHoursPerPiece = (cut * thickness) / thicknessDivisor * passMultiplier;
   const settingHours = settingLevel * 0.5;
   const extraHours =

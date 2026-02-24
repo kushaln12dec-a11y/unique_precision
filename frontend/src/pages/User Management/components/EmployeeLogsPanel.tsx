@@ -76,6 +76,7 @@ export const EmployeeLogsPanel = () => {
         key: "workItemTitle",
         label: "Work Item",
         sortable: false,
+        className: "employee-work-item-cell",
         render: (row) => (
           <div className="employee-work-item">
             <span className="ref-badge">Job #{row.refNumber || "-"}</span>
@@ -215,7 +216,7 @@ export const EmployeeLogsPanel = () => {
           data={logs}
           emptyMessage="No logs found for the current filters."
           getRowKey={(row) => row._id}
-          className="left-align"
+          className="left-align employee-logs-table"
           pagination={{
             currentPage,
             entriesPerPage,
@@ -232,4 +233,3 @@ export const EmployeeLogsPanel = () => {
     </div>
   );
 };
-
