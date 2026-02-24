@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import Modal from "../../../components/Modal";
 import type { CutForm } from "../programmerUtils";
 import { SEDM_PRICING, getEffectiveThickness } from "../programmerUtils";
+import SelectDropdown from "./SelectDropdown";
 import "../../../components/Modal.css";
 import "../Programmer.css";
 
@@ -23,6 +24,25 @@ type SEDMModalProps = {
   onSedmEntriesJsonChange?: (value: string) => void;
   onApply?: () => void;
 };
+
+const ELECTRODE_OPTIONS = [
+  "0.3",
+  "0.4",
+  "0.5",
+  "0.6",
+  "0.7",
+  "0.8",
+  "1.0",
+  "1.5",
+  "2.0",
+  "2.5",
+  "3.0",
+].map((value) => ({ value, label: value }));
+
+const TH_OPTION_OPTIONS = [
+  { value: "min", label: "Min 20mm" },
+  { value: "per", label: "Greater than 20mm" },
+];
 
 const calculateSingleSedmAmount = (entry: SEDMEntry, qty: number): number => {
   const electrodeSize = entry.lengthValue ? Number(entry.lengthValue) : null;
@@ -226,31 +246,24 @@ const SEDMModal: React.FC<SEDMModalProps> = ({
             </div>
             <div className="input-pair">
               <label>Electrode</label>
-              <select
+              <SelectDropdown
                 value={entry.lengthValue}
-                onChange={(event) => handleEntryChange(index, "lengthValue", event.target.value)}
-              >
-                <option value="">Select electrode</option>
-                {Array.from({ length: 30 }, (_, idx) => (idx + 1) / 10).map(
-                  (value) => (
-                    <option key={value} value={value.toFixed(1)}>
-                      {value.toFixed(1)}
-                    </option>
-                  )
-                )}
-              </select>
+                options={ELECTRODE_OPTIONS}
+                onChange={(nextValue) => handleEntryChange(index, "lengthValue", nextValue)}
+                placeholder="Select electrode"
+                align="left"
+              />
             </div>
             <div className="input-pair">
               <label>TH Option</label>
-              <select
+              <SelectDropdown
                 value={entry.lengthType}
-                onChange={(event) =>
-                  handleEntryChange(index, "lengthType", event.target.value as "min" | "per")
+                options={TH_OPTION_OPTIONS}
+                onChange={(nextValue) =>
+                  handleEntryChange(index, "lengthType", nextValue as "min" | "per")
                 }
-              >
-                <option value="min">Min 20mm</option>
-                <option value="per">Greater than 20mm</option>
-              </select>
+                align="left"
+              />
             </div>
             <div className="input-pair">
               <label>Holes per Piece</label>

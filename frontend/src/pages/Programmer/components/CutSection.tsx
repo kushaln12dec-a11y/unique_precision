@@ -5,6 +5,7 @@ import ImageUpload from "./ImageUpload";
 import { FormInput } from "./FormInput";
 import CustomerAutocomplete from "./CustomerAutocomplete";
 import MaterialAutocomplete from "./MaterialAutocomplete";
+import SelectDropdown from "./SelectDropdown";
 import FlagIcon from "@mui/icons-material/Flag";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import { formatDecimalHoursToHHMMhrs } from "../../../utils/date";
@@ -45,6 +46,16 @@ type OperationRow = {
   setting: string;
   qty: string;
 };
+
+const PASS_OPTIONS = ["1", "2", "3", "4", "5", "6"].map((value) => ({
+  value,
+  label: value,
+}));
+
+const SEDM_OPTIONS: Array<{ value: CutForm["sedm"]; label: string }> = [
+  { value: "No", label: "No" },
+  { value: "Yes", label: "Yes" },
+];
 
 
 export const CutSection: React.FC<CutSectionProps> = ({
@@ -319,18 +330,15 @@ export const CutSection: React.FC<CutSectionProps> = ({
                   error={isFirstRow ? fieldErrors.passLevel : undefined}
                   style={!isFirstRow ? { gridRow: gridRow, gridColumn: 3 } : undefined}
                 >
-                  <select
+                  <SelectDropdown
                     value={row.passLevel}
-                    onChange={(e) => {
+                    options={PASS_OPTIONS}
+                    onChange={(nextValue) => {
                       const updated = [...operationRows];
-                      updated[rowIndex].passLevel = e.target.value;
+                      updated[rowIndex].passLevel = nextValue;
                       setOperationRows(updated);
                     }}
-                  >
-                    <option value="1">1</option>
-                    <option value="2">2</option>
-                    <option value="3">3</option>
-                  </select>
+                  />
                 </FormInput>
 
                 <FormInput 
@@ -425,13 +433,11 @@ export const CutSection: React.FC<CutSectionProps> = ({
             required
             style={{ gridRow: 2 + operationRows.length }}
           >
-            <select
+            <SelectDropdown
               value={cut.sedm}
-              onChange={(e) => onSedmChange(e.target.value as CutForm["sedm"])}
-            >
-              <option value="No">No</option>
-              <option value="Yes">Yes</option>
-            </select>
+              options={SEDM_OPTIONS}
+              onChange={(nextValue) => onSedmChange(nextValue as CutForm["sedm"])}
+            />
 
             {cut.sedm === "Yes" && (
               <button
