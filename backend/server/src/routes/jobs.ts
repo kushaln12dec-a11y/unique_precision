@@ -158,6 +158,29 @@ router.put("/:id", async (req, res) => {
   }
 });
 
+// Update QC decision for all jobs in a group
+router.put("/group/:groupId/qc-decision", async (req, res) => {
+  try {
+    const { decision } = req.body as { decision?: "APPROVED" | "REJECTED" | "PENDING" };
+    if (!decision || !["APPROVED", "REJECTED", "PENDING"].includes(decision)) {
+      return res.status(400).json({ message: "Invalid decision value" });
+    }
+
+    const groupId = Number(req.params.groupId);
+    const updateResult = await Job.updateMany({ groupId }, { $set: { qcDecision: decision } });
+
+    if (updateResult.matchedCount === 0) {
+      return res.status(404).json({ message: "No jobs found for group" });
+    }
+
+    const updatedJobs = await Job.find({ groupId }).sort({ createdAt: 1 });
+    return res.json(updatedJobs);
+  } catch (error: any) {
+    console.error("Error updating QC decision:", error);
+    return res.status(500).json({ message: "Error updating QC decision" });
+  }
+});
+
 // Delete job
 router.delete("/:id", async (req, res) => {
   try {

@@ -222,6 +222,11 @@ const jobSchema = new mongoose.Schema({
     of: String,
     default: {},
   },
+  qcDecision: {
+    type: String,
+    enum: ["PENDING", "APPROVED", "REJECTED"],
+    default: "PENDING",
+  },
   updatedBy: {
     type: String,
     default: "",

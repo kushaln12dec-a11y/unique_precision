@@ -228,6 +228,62 @@ router.post("/operator/start", async (req, res) => {
   }
 });
 
+router.post("/operator/task-switch", async (req, res) => {
+  try {
+    const reqUser = req.user as any;
+    const role = String(reqUser?.role || "").toUpperCase();
+    if (role !== "OPERATOR" && role !== "ADMIN") {
+      return res.status(403).json({ message: "Only operators and admins can create task switch logs." });
+    }
+
+    const { idleTime, remark, startedAt, endedAt, durationSeconds } = req.body || {};
+
+    const reason = String(idleTime || "").trim();
+    const note = String(remark || "").trim();
+    if (!reason) {
+      return res.status(400).json({ message: "Idle Time is required." });
+    }
+    if (!note) {
+      return res.status(400).json({ message: "Remark is required." });
+    }
+
+    const parsedStart = startedAt ? new Date(startedAt) : new Date();
+    const parsedEnd = endedAt ? new Date(endedAt) : new Date();
+    const safeStart = Number.isNaN(parsedStart.getTime()) ? new Date() : parsedStart;
+    const safeEnd = Number.isNaN(parsedEnd.getTime()) ? new Date() : parsedEnd;
+    const computedDuration = Math.max(
+      0,
+      Number.isFinite(Number(durationSeconds))
+        ? Math.floor(Number(durationSeconds))
+        : Math.floor((safeEnd.getTime() - safeStart.getTime()) / 1000)
+    );
+
+    const log = await EmployeeLog.create({
+      role: "OPERATOR",
+      activityType: "OPERATOR_PRODUCTION",
+      status: "COMPLETED",
+      userId: String(reqUser?.userId || ""),
+      userEmail: String(reqUser?.email || ""),
+      userName: String(reqUser?.fullName || "").trim(),
+      workItemTitle: "Operator Task Switch",
+      workSummary: `Task switch idle: ${reason}`,
+      startedAt: safeStart,
+      endedAt: safeEnd,
+      durationSeconds: computedDuration,
+      metadata: {
+        taskSwitch: true,
+        idleTime: reason,
+        remark: note,
+      },
+    });
+
+    res.status(201).json(log);
+  } catch (error: any) {
+    console.error("Error creating operator task switch log:", error);
+    res.status(500).json({ message: "Error creating operator task switch log" });
+  }
+});
+
 router.get("/", adminMiddleware, async (req, res) => {
   try {
     const query: any = {};
