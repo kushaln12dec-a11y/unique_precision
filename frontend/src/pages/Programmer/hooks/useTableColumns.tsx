@@ -27,6 +27,13 @@ export const useTableColumns = ({
     if (text === "-") return text;
     return text.length > 12 ? `${text.slice(0, 12)}...` : text;
   };
+  const toYN = (value: unknown): string => {
+    if (typeof value === "boolean") return value ? "Y" : "N";
+    const text = String(value || "").trim().toLowerCase();
+    if (text === "yes" || text === "y" || text === "true") return "Y";
+    if (text === "no" || text === "n" || text === "false") return "N";
+    return String(value || "—");
+  };
 
   return useMemo(
     () => [
@@ -74,11 +81,13 @@ export const useTableColumns = ({
         },
       },
       {
-        key: "rate",
-        label: "Rate",
+        key: "programRef",
+        label: "Prog Ref",
         sortable: false,
-        sortKey: "rate",
-        render: (row) => `₹${Math.round(Number(row.parent.rate || 0))}`,
+        render: (row) => {
+          const ref = row.parent.programRefFile || row.parent.refNumber || "";
+          return ref ? `#${ref}` : "—";
+        },
       },
       {
         key: "description",
@@ -125,6 +134,12 @@ export const useTableColumns = ({
         sortable: false,
         sortKey: "qty",
         render: (row) => Number(row.parent.qty || 0).toString(),
+      },
+      {
+        key: "sedm",
+        label: "SEDM",
+        sortable: false,
+        render: (row) => toYN(row.parent.sedm),
       },
       {
         key: "totalHrs",

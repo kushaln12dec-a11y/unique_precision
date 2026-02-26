@@ -13,7 +13,7 @@ export const QA_STAGE_LABELS = {
   SAVED: "Operation Logged",
   READY_FOR_QA: "Operation Logged",
   SENT_TO_QA: "QA Dispatched",
-  EMPTY: "Pending Input",
+  EMPTY: "Not Started",
 } as const;
 
 export const getQaStageLabel = (status: QuantityProgressStatus): string => {
@@ -70,4 +70,29 @@ export const getQaProgressCounts = (job: JobEntry, totalQty: number): QaProgress
     },
     { saved: 0, ready: 0, sent: 0, empty: 0 }
   );
+};
+
+export const isJobFullySentToQa = (job: JobEntry): boolean => {
+  const qty = Math.max(1, Number(job.qty || 1));
+  const counts = getQaProgressCounts(job, qty);
+  return counts.sent === qty && counts.saved === 0 && counts.ready === 0 && counts.empty === 0;
+};
+
+export const getGroupQaProgressCounts = (entries: JobEntry[]): QaProgressCounts => {
+  return entries.reduce<QaProgressCounts>(
+    (acc, entry) => {
+      const qty = Math.max(1, Number(entry.qty || 1));
+      const counts = getQaProgressCounts(entry, qty);
+      acc.saved += counts.saved;
+      acc.ready += counts.ready;
+      acc.sent += counts.sent;
+      acc.empty += counts.empty;
+      return acc;
+    },
+    { saved: 0, ready: 0, sent: 0, empty: 0 }
+  );
+};
+
+export const isGroupFullySentToQa = (entries: JobEntry[]): boolean => {
+  return entries.length > 0 && entries.every((entry) => isJobFullySentToQa(entry));
 };

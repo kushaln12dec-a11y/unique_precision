@@ -25,6 +25,12 @@ export type CutForm = {
   refNumber?: string;
 };
 
+export type CalculationConfig = {
+  settingHoursPerSetting?: number;
+  complexExtraHours?: number;
+  pipExtraHours?: number;
+};
+
 export const SEDM_PRICING = [
   { key: "0.3-0.4", label: "0.3 - 0.4", min: 0.3, max: 0.4, min20: 60, perMm: 6 },
   { key: "0.5-0.6", label: "0.5 - 0.6", min: 0.5, max: 0.6, min20: 50, perMm: 4 },
@@ -158,7 +164,7 @@ export const calculateSedmAmount = (form: CutForm) => {
   return baseValue * holes * qty;
 };
 
-export const calculateTotals = (form: CutForm) => {
+export const calculateTotals = (form: CutForm, config: CalculationConfig = {}) => {
   const customerRate = Number(form.rate) || 0;
   const cut = Number(form.cut) || 0;
   const thickness = Number(form.thickness) || 0;
@@ -169,9 +175,11 @@ export const calculateTotals = (form: CutForm) => {
   const sedmAmount = calculateSedmAmount(form);
   const thicknessDivisor = 1500;
   const cutHoursPerPiece = (cut * thickness) / thicknessDivisor * passMultiplier;
-  const settingHours = settingLevel * 0.5;
-  const extraHours =
-    (form.critical ? 1 : 0) + (form.pipFinish ? 1 : 0);
+  const settingFactor = Number(config.settingHoursPerSetting ?? 0.5) || 0.5;
+  const complexHours = Number(config.complexExtraHours ?? 1) || 1;
+  const pipHours = Number(config.pipExtraHours ?? 1) || 1;
+  const settingHours = settingLevel * settingFactor;
+  const extraHours = (form.critical ? complexHours : 0) + (form.pipFinish ? pipHours : 0);
   const totalHrs = cutHoursPerPiece + settingHours + extraHours;
   const wedmAmount = totalHrs * customerRate * qty;
   const totalAmount = wedmAmount + sedmAmount;

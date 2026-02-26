@@ -193,4 +193,42 @@
 .qa-placeholder-card p {
   margin: 0;
   color: #334155;
+
+
+}
+
+@media (max-width: 1200px) {
+  .employee-logs-container {
+    padding: 1rem;
+    border-radius: 16px;
+  }
+
+  .employee-logs-header {
+    flex-wrap: wrap;
+    gap: 0.6rem;
+  }
+
+  .employee-log-filters {
+    flex-wrap: wrap;
+  }
+
+  .employee-search-input {
+    width: 100%;
+  }
+}
+
+@media (max-width: 1024px) {
+  .employee-logs-page-content {
+    margin-left: 70px;
+  }
+}
+
+@media (max-width: 768px) {
+  .employee-logs-page-content {
+    margin-left: 0;
+  }
+
+  .employee-logs-page-shell {
+    margin: 0.5rem 0.35rem 0.8rem;
+  }
 }

@@ -8,6 +8,7 @@ import { JobFormActions } from "./components/JobFormActions";
 import { useJobFormState } from "./hooks/useJobFormState";
 import { useJobFormHandlers } from "./hooks/useJobFormHandlers";
 import { useJobFormValidation } from "./hooks/useJobFormValidation";
+import type { MasterConfig } from "../../types/masterConfig";
 import "./components/CustomerAutocomplete.css";
 
 type CutTotals = {
@@ -23,6 +24,7 @@ type ProgrammerJobFormProps = {
   totals: CutTotals[];
   isAdmin: boolean;
   refNumber?: string;
+  masterConfig: MasterConfig | null;
 };
 
 const ProgrammerJobForm = ({
@@ -33,6 +35,7 @@ const ProgrammerJobForm = ({
   totals,
   isAdmin,
   refNumber = "",
+  masterConfig,
 }: ProgrammerJobFormProps) => {
   const [sedmModalIndex, setSedmModalIndex] = useState<number | null>(null);
 
@@ -125,6 +128,9 @@ const ProgrammerJobForm = ({
               onPriorityDropdownToggle={() => setOpenPriorityDropdown(openPriorityDropdown === index ? null : index)}
               onSedmModalOpen={() => setSedmModalIndex(index)}
               isAdmin={isAdmin}
+              customerOptions={masterConfig?.customers || []}
+              materialOptions={masterConfig?.materials || []}
+              passOptions={masterConfig?.passOptions || []}
             />
           );
         })}
@@ -158,6 +164,8 @@ const ProgrammerJobForm = ({
         onSedmEntriesJsonChange={(value) =>
           handleCutChange(sedmModalIndex!)("sedmEntriesJson")(value)
         }
+        electrodeOptions={masterConfig?.sedmElectrodeOptions || []}
+        thOptions={masterConfig?.sedmThOptions || []}
       />
     </div>
   );

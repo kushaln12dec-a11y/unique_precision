@@ -684,7 +684,28 @@
   flex: 1;
 }
 
-@media (max-width: 1024px) {
+@media only screen and (min-width: 1024px) and (max-width: 1366px) and (orientation: landscape) {
+  .user-management-content {
+    margin-left: 70px;
+  }
+
+  .user-form-container,
+  .users-table-container,
+  .error-message {
+    margin-left: 0.9rem;
+    margin-right: 0.9rem;
+  }
+
+  .table-header-controls {
+    flex-wrap: wrap;
+  }
+
+  .table-controls {
+    flex-wrap: wrap;
+  }
+}
+
+@media only screen and (min-width: 768px) and (max-width: 1024px) and (orientation: portrait) {
   .user-management-content {
     margin-left: 70px;
   }

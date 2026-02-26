@@ -9,6 +9,7 @@ import SelectDropdown from "./SelectDropdown";
 import FlagIcon from "@mui/icons-material/Flag";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import { formatDecimalHoursToHHMMhrs } from "../../../utils/date";
+import type { CustomerRate } from "../../../types/masterConfig";
 
 type CutTotals = {
   totalHrs: number;
@@ -37,6 +38,9 @@ type CutSectionProps = {
   onPriorityDropdownToggle: () => void;
   onSedmModalOpen: () => void;
   isAdmin: boolean;
+  customerOptions: CustomerRate[];
+  materialOptions: string[];
+  passOptions: string[];
 };
 
 type OperationRow = {
@@ -46,11 +50,6 @@ type OperationRow = {
   setting: string;
   qty: string;
 };
-
-const PASS_OPTIONS = ["1", "2", "3", "4", "5", "6"].map((value) => ({
-  value,
-  label: value,
-}));
 
 const SEDM_OPTIONS: Array<{ value: CutForm["sedm"]; label: string }> = [
   { value: "No", label: "No" },
@@ -78,6 +77,9 @@ export const CutSection: React.FC<CutSectionProps> = ({
   onPriorityDropdownToggle,
   onSedmModalOpen,
   isAdmin,
+  customerOptions,
+  materialOptions,
+  passOptions,
 }) => {
   const [operationRows, setOperationRows] = React.useState<OperationRow[]>([
     {
@@ -99,6 +101,31 @@ export const CutSection: React.FC<CutSectionProps> = ({
     if (first.qty !== cut.qty) onCutChange("qty")(first.qty);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [operationRows]);
+
+  const passDropdownOptions = React.useMemo(() => {
+    const source = passOptions.length > 0 ? passOptions : ["1", "2", "3", "4", "5", "6"];
+    return source.map((value) => ({ value, label: value }));
+  }, [passOptions]);
+
+  const customerRateMap = React.useMemo(() => {
+    const map = new Map<string, string>();
+    customerOptions.forEach((item) => {
+      const key = String(item.customer || "").trim().toUpperCase();
+      if (!key) return;
+      map.set(key, String(item.rate || "").trim());
+    });
+    return map;
+  }, [customerOptions]);
+
+  React.useEffect(() => {
+    if (!isFirstCut) return;
+    const selected = String(cut.customer || "").trim().toUpperCase();
+    if (!selected) return;
+    const matchedRate = customerRateMap.get(selected);
+    if (matchedRate !== undefined && matchedRate !== String(cut.rate || "")) {
+      onCutChange("rate")(matchedRate);
+    }
+  }, [isFirstCut, cut.customer, cut.rate, customerRateMap, onCutChange]);
   
   return (
     <div className={`cut-section ${isCollapsed ? "collapsed" : ""}`}>
@@ -244,6 +271,7 @@ export const CutSection: React.FC<CutSectionProps> = ({
               onChange={onCutChange("customer")}
               disabled={!isFirstCut}
               required
+              options={customerOptions.map((item) => item.customer)}
             />
           </FormInput>
 
@@ -259,6 +287,7 @@ export const CutSection: React.FC<CutSectionProps> = ({
             <MaterialAutocomplete
               value={cut.material || ""}
               onChange={onCutChange("material")}
+              options={materialOptions}
             />
           </FormInput>
 
@@ -332,7 +361,7 @@ export const CutSection: React.FC<CutSectionProps> = ({
                 >
                   <SelectDropdown
                     value={row.passLevel}
-                    options={PASS_OPTIONS}
+                    options={passDropdownOptions}
                     onChange={(nextValue) => {
                       const updated = [...operationRows];
                       updated[rowIndex].passLevel = nextValue;

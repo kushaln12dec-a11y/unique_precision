@@ -14,6 +14,7 @@ import VerifiedUserIcon from "@mui/icons-material/VerifiedUser";
 import InventoryIcon from "@mui/icons-material/Inventory";
 import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
+import SettingsSuggestIcon from "@mui/icons-material/SettingsSuggest";
 import dayjs, { Dayjs } from "dayjs";
 import isBetween from "dayjs/plugin/isBetween";
 import { getUserDisplayNameFromToken } from "../utils/auth";
@@ -85,6 +86,10 @@ const Header = ({ title }: HeaderProps) => {
     "/employee-logs": [
       { label: "Dashboard", path: "/dashboard", icon: DashboardIcon },
       { label: "Employee Logs", path: "/employee-logs", icon: PeopleIcon },
+    ],
+    "/admin-console": [
+      { label: "Dashboard", path: "/dashboard", icon: DashboardIcon },
+      { label: "Admin Console", path: "/admin-console", icon: SettingsSuggestIcon },
     ],
   };
 

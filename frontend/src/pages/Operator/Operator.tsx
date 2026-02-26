@@ -11,9 +11,10 @@ import { useOperatorFilters } from "./hooks/useOperatorFilters";
 import { useOperatorTableData } from "./hooks/useOperatorTableData.tsx";
 import { useOperatorTable } from "./hooks/useOperatorTable.tsx";
 import { exportOperatorJobsToCSV } from "./utils/csvExport";
-import { updateOperatorJob } from "../../services/operatorApi";
-import { getUserRoleFromToken } from "../../utils/auth";
-import { getParentRowClassName } from "../Programmer/utils/priorityUtils";
+import { updateOperatorJob, updateOperatorQaStatus } from "../../services/operatorApi";
+import { createOperatorTaskSwitchLog } from "../../services/employeeLogsApi";
+import { getUserDisplayNameFromToken, getUserRoleFromToken } from "../../utils/auth";
+import { getGroupQaProgressCounts } from "./utils/qaProgress";
 import type { JobEntry } from "../../types/job";
 import type { FilterValues } from "../../components/FilterModal";
 import "../RoleBoard.css";
@@ -30,7 +31,10 @@ type TableRow = {
 
 const Operator = () => {
   const navigate = useNavigate();
-  const isAdmin = getUserRoleFromToken() === "ADMIN";
+  const userRole = (getUserRoleFromToken() || "").toUpperCase();
+  const currentUserName = (getUserDisplayNameFromToken() || "").trim();
+  const isAdmin = userRole === "ADMIN";
+  const canUseTaskSwitchTimer = userRole === "ADMIN" || userRole === "OPERATOR";
   const [currentPage, setCurrentPage] = useState(1);
   const [jobsPerPage, setJobsPerPage] = useState(5);
   const [sortField, setSortField] = useState<keyof JobEntry | null>(null);
@@ -135,6 +139,78 @@ const Operator = () => {
     exportOperatorJobsToCSV(tableData, isAdmin);
   };
 
+  const handleMachineNumberChange = async (groupId: number, machineNumber: string) => {
+    try {
+      const targetJobs = jobs.filter((job) => job.groupId === groupId);
+      if (targetJobs.length === 0) return;
+      await Promise.all(
+        targetJobs.map((job) =>
+          updateOperatorJob(String(job.id), { machineNumber })
+        )
+      );
+      setJobs((prev) =>
+        prev.map((job) => (job.groupId === groupId ? { ...job, machineNumber } : job))
+      );
+    } catch (error) {
+      setToast({ message: "Failed to update machine number.", variant: "error", visible: true });
+      setTimeout(() => setToast((prev) => ({ ...prev, visible: false })), 2500);
+    }
+  };
+
+  const handleSendSelectedRowsToQa = async () => {
+    if (selectedJobIds.size === 0) {
+      setToast({ message: "Select at least one row to dispatch.", variant: "error", visible: true });
+      setTimeout(() => setToast((prev) => ({ ...prev, visible: false })), 2500);
+      return;
+    }
+
+    const selectedRows = tableData.filter((row) => selectedJobIds.has(row.groupId));
+    if (selectedRows.length === 0) {
+      setToast({ message: "No valid rows selected.", variant: "error", visible: true });
+      setTimeout(() => setToast((prev) => ({ ...prev, visible: false })), 2500);
+      return;
+    }
+
+    try {
+      await Promise.all(
+        selectedRows.flatMap((row) =>
+          row.entries.map((entry) => {
+            const qty = Math.max(1, Number(entry.qty || 1));
+            const quantityNumbers = Array.from({ length: qty }, (_, idx) => idx + 1);
+            return updateOperatorQaStatus(String(entry.id), { quantityNumbers, status: "SENT_TO_QA" });
+          })
+        )
+      );
+
+      const selectedGroupIds = new Set(selectedRows.map((row) => row.groupId));
+      setJobs((prev) =>
+        prev.map((job) => {
+          if (!selectedGroupIds.has(job.groupId)) return job;
+          const qty = Math.max(1, Number(job.qty || 1));
+          const nextStates: Record<string, "SENT_TO_QA"> = {};
+          for (let i = 1; i <= qty; i += 1) nextStates[String(i)] = "SENT_TO_QA";
+          return { ...job, quantityQaStates: nextStates };
+        })
+      );
+      setSelectedJobIds(new Set());
+      setToast({ message: "Selected rows moved to QA.", variant: "success", visible: true });
+      setTimeout(() => setToast((prev) => ({ ...prev, visible: false })), 2500);
+    } catch (error) {
+      setToast({ message: "Failed to move selected rows to QA.", variant: "error", visible: true });
+      setTimeout(() => setToast((prev) => ({ ...prev, visible: false })), 2500);
+    }
+  };
+
+  const handleSaveTaskSwitch = async (payload: {
+    idleTime: string;
+    remark: string;
+    startedAt: string;
+    endedAt: string;
+    durationSeconds: number;
+  }) => {
+    await createOperatorTaskSwitchLog(payload);
+  };
+
   const { tableData, expandableRows } = useOperatorTableData(
     jobs,
     sortField,
@@ -155,11 +231,13 @@ const Operator = () => {
     tableData,
     expandableRows,
     canAssign,
+    currentUserName,
     operatorUsers: operatorUsers.map((user) => ({
       id: user._id,
       name: `${user.firstName} ${user.lastName}`.trim() || user.email || String(user._id),
     })),
     handleAssignChange,
+    handleMachineNumberChange,
     handleViewJob,
     handleSubmit,
     handleImageInput,
@@ -209,7 +287,15 @@ const Operator = () => {
             onCreatedByFilterChange={setCreatedByFilter}
             onAssignedToFilterChange={setAssignedToFilter}
             onProductionStageFilterChange={setProductionStageFilter}
+            canUseTaskSwitchTimer={canUseTaskSwitchTimer}
+            onSaveTaskSwitch={handleSaveTaskSwitch}
+            onShowToast={(message, variant = "info") => {
+              setToast({ message, variant, visible: true });
+              setTimeout(() => setToast((prev) => ({ ...prev, visible: false })), 2500);
+            }}
             onDownloadCSV={handleDownloadCSV}
+            onSendSelectedRowsToQa={handleSendSelectedRowsToQa}
+            selectedRowsCount={selectedJobIds.size}
           />
           <DataTable
             columns={columns}
@@ -222,11 +308,14 @@ const Operator = () => {
             showAccordion={false}
             getRowKey={(row) => row.groupId}
             getRowClassName={(row) =>
-              getParentRowClassName(
-                row.parent,
-                row.entries,
-                expandedGroups.has(row.groupId)
-              )
+              (() => {
+                const c = getGroupQaProgressCounts(row.entries);
+                const logged = c.saved + c.ready;
+                const maxCount = Math.max(logged, c.sent, c.empty);
+                if (c.sent === maxCount) return "operator-stage-row-dispatched";
+                if (logged === maxCount) return "operator-stage-row-logged";
+                return "operator-stage-row-not-started";
+              })()
             }
             className="jobs-table-wrapper operator-table-no-scroll"
             showCheckboxes={true}

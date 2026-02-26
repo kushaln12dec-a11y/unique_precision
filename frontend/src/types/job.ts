@@ -27,6 +27,8 @@ export type JobEntry = CutForm & {
   createdAt: string;
   createdBy: string;
   assignedTo: string;
+  machineNumber?: string;
+  qcDecision?: "PENDING" | "APPROVED" | "REJECTED";
   operatorCaptures?: OperatorCaptureEntry[];
   quantityQaStates?: Record<string, QuantityQaStatus>;
 };

@@ -262,3 +262,27 @@ export const deleteJobsByGroupId = async (groupId: number): Promise<void> => {
     throw new Error("Failed to delete jobs");
   }
 };
+
+export const updateQcDecisionByGroupId = async (
+  groupId: number,
+  decision: "PENDING" | "APPROVED" | "REJECTED"
+): Promise<JobEntry[]> => {
+  const res = await fetch(`/api/jobs/group/${groupId}/qc-decision`, {
+    method: "PUT",
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ decision }),
+  });
+
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({}));
+    throw new Error(error.message || "Failed to update QC decision");
+  }
+
+  const jobs = await res.json();
+  return jobs.map((job: any) => ({
+    ...job,
+    id: job._id || job.id,
+    groupId: job.groupId ?? job.id,
+    assignedTo: job.assignedTo || "Unassigned",
+  }));
+};

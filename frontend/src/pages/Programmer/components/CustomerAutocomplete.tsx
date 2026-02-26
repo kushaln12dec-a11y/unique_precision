@@ -3,6 +3,7 @@ import { useState, useRef, useEffect } from "react";
 interface CustomerAutocompleteProps {
   value: string;
   onChange: (value: string) => void;
+  options?: string[];
   disabled?: boolean;
   required?: boolean;
   error?: string;
@@ -19,19 +20,25 @@ const CUSTOMER_OPTIONS = [
 const CustomerAutocomplete: React.FC<CustomerAutocompleteProps> = ({
   value,
   onChange,
+  options,
   disabled = false,
   required = false,
   error,
 }) => {
+  const sourceOptions = options && options.length > 0 ? options : CUSTOMER_OPTIONS;
   const [inputValue, setInputValue] = useState(value);
   const [isOpen, setIsOpen] = useState(false);
-  const [filteredOptions, setFilteredOptions] = useState(CUSTOMER_OPTIONS);
+  const [filteredOptions, setFilteredOptions] = useState(sourceOptions);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setInputValue(value);
   }, [value]);
+
+  useEffect(() => {
+    setFilteredOptions(sourceOptions);
+  }, [sourceOptions]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -53,10 +60,10 @@ const CustomerAutocomplete: React.FC<CustomerAutocompleteProps> = ({
     setInputValue(newValue);
     
     if (newValue.trim() === "") {
-      setFilteredOptions(CUSTOMER_OPTIONS);
+      setFilteredOptions(sourceOptions);
     } else {
       setFilteredOptions(
-        CUSTOMER_OPTIONS.filter((option) =>
+        sourceOptions.filter((option) =>
           option.toLowerCase().includes(newValue.toLowerCase())
         )
       );
@@ -69,7 +76,7 @@ const CustomerAutocomplete: React.FC<CustomerAutocompleteProps> = ({
   const handleInputFocus = () => {
     setIsOpen(true);
     if (inputValue.trim() === "") {
-      setFilteredOptions(CUSTOMER_OPTIONS);
+      setFilteredOptions(sourceOptions);
     }
   };
 

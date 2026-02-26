@@ -1,0 +1,95 @@
+.qc-table-panel {
+  margin-top: 0.75rem;
+}
+
+.qc-filters {
+  display: flex;
+  gap: 0.65rem;
+  margin: 0.5rem 0 0.9rem;
+  flex-wrap: wrap;
+}
+
+.qc-filter-input,
+.qc-filter-select {
+  height: 36px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 0 0.75rem;
+  font-size: 0.9rem;
+}
+
+.qc-filter-input {
+  min-width: 220px;
+}
+
+.qc-filter-select {
+  min-width: 180px;
+}
+
+.qc-print-btn {
+  height: 30px;
+  padding: 0 0.85rem;
+  border-radius: 8px;
+  border: 1px solid #94a3b8;
+  background: #ffffff;
+  color: #0f172a;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.qc-print-btn:hover {
+  background: #f8fafc;
+}
+
+.qc-decision-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.qc-approve-btn,
+.qc-reject-btn {
+  height: 30px;
+  padding: 0 0.7rem;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.qc-approve-btn {
+  border: 1px solid #86efac;
+  color: #166534;
+  background: #ecfdf5;
+}
+
+.qc-approve-btn:hover {
+  background: #dcfce7;
+}
+
+.qc-reject-btn {
+  border: 1px solid #fca5a5;
+  color: #991b1b;
+  background: #fef2f2;
+}
+
+.qc-reject-btn:hover {
+  background: #fee2e2;
+}
+
+.qc-approved-row {
+  background: #ecfdf5 !important;
+}
+
+.qc-approved-row td:first-child {
+  box-shadow: inset 4px 0 0 #22c55e;
+}
+
+.qc-rejected-row {
+  background: #fef2f2 !important;
+}
+
+.qc-rejected-row td:first-child {
+  box-shadow: inset 4px 0 0 #ef4444;
+}

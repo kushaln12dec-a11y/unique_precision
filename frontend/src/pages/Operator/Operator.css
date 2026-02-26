@@ -8,22 +8,25 @@
   width: 100%;
   max-width: 100%;
   overflow-x: auto;
-  overflow-y: visible;
+  overflow-y: hidden;
   box-sizing: border-box;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-x pan-y;
 }
 
 .operator-table-no-scroll .data-table-wrapper {
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
-  overflow-x: auto;
+  overflow-x: visible;
   overflow-y: visible;
 }
 
 .operator-table-no-scroll .data-table {
   width: 100%;
+  min-width: 0;
   max-width: 100%;
-  table-layout: fixed;
+  table-layout: auto;
   border-collapse: collapse;
   background: #ffffff;
   box-sizing: border-box;
@@ -80,7 +83,7 @@
 
 /* ============================================
    COLUMN WIDTHS - PARENT TABLE
-   Column order: Checkbox, Customer, Rate, Description, Cut, TH, Pass, Setting, Qty, Assigned To, Total Hrs, Total Amount, Status, Created By, Created At, Act
+   Column order: Checkbox, Customer, Prog Ref, Description, Cut, TH, Pass, Setting, Qty, SEDM, Assigned To, Mach #, Total Hrs, Total Amount, Status, Created By, Created At, Act
    ============================================ */
 
 /* Checkbox Column */
@@ -100,12 +103,14 @@
   text-align: left;
 }
 
-/* Rate Column */
+/* Program Ref Column */
 .operator-table-no-scroll .data-table th:nth-child(3),
 .operator-table-no-scroll .data-table td:nth-child(3) {
-  width: 80px;
-  min-width: 80px;
+  width: 110px;
+  min-width: 110px;
   text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* Description Column */
@@ -156,25 +161,41 @@
   text-align: left;
 }
 
-/* Assigned To Column */
+/* SEDM Column */
 .operator-table-no-scroll .data-table th:nth-child(10),
 .operator-table-no-scroll .data-table td:nth-child(10) {
-  width: 95px;
-  min-width: 95px;
+  width: 70px;
+  min-width: 70px;
+  text-align: left;
+}
+
+/* Assigned To Column */
+.operator-table-no-scroll .data-table th:nth-child(11),
+.operator-table-no-scroll .data-table td:nth-child(11) {
+  width: 80px;
+  min-width: 80px;
+  text-align: left;
+}
+
+/* Mach # Column */
+.operator-table-no-scroll .data-table th:nth-child(12),
+.operator-table-no-scroll .data-table td:nth-child(12) {
+  width: 64px;
+  min-width: 64px;
   text-align: left;
 }
 
 /* Total Hrs/Piece Column */
-.operator-table-no-scroll .data-table th:nth-child(11),
-.operator-table-no-scroll .data-table td:nth-child(11) {
+.operator-table-no-scroll .data-table th:nth-child(13),
+.operator-table-no-scroll .data-table td:nth-child(13) {
   width: 95px;
   min-width: 95px;
   text-align: left;
 }
 
 /* Total Amount Column (if admin) */
-.operator-table-no-scroll .data-table th:nth-child(12),
-.operator-table-no-scroll .data-table td:nth-child(12) {
+.operator-table-no-scroll .data-table th:nth-child(14),
+.operator-table-no-scroll .data-table td:nth-child(14) {
   width: 110px;
   min-width: 110px;
   text-align: left;
@@ -183,8 +204,8 @@
 /* Status Column */
 .operator-table-no-scroll .data-table th.status-header,
 .operator-table-no-scroll .data-table td.status-cell,
-.operator-table-no-scroll .data-table th:nth-child(13),
-.operator-table-no-scroll .data-table td:nth-child(13) {
+.operator-table-no-scroll .data-table th:nth-child(15),
+.operator-table-no-scroll .data-table td:nth-child(15) {
   width: 130px;
   min-width: 130px;
   white-space: normal;
@@ -192,16 +213,16 @@
 }
 
 /* Created By Column */
-.operator-table-no-scroll .data-table th:nth-child(14),
-.operator-table-no-scroll .data-table td:nth-child(14) {
+.operator-table-no-scroll .data-table th:nth-child(16),
+.operator-table-no-scroll .data-table td:nth-child(16) {
   width: 100px;
   min-width: 100px;
   text-align: left;
 }
 
 /* Created At Column */
-.operator-table-no-scroll .data-table th:nth-child(15),
-.operator-table-no-scroll .data-table td:nth-child(15) {
+.operator-table-no-scroll .data-table th:nth-child(17),
+.operator-table-no-scroll .data-table td:nth-child(17) {
   width: 120px;
   min-width: 120px;
   text-align: left;
@@ -343,9 +364,9 @@
   padding-right: 0.75rem;
 }
 
-/* Rate - Align with parent Rate - Ensure th and td match */
-.operator-table-no-scroll .child-row-content .child-jobs-table th.rate-col,
-.operator-table-no-scroll .child-row-content .child-jobs-table td.rate-col {
+/* Program Reference - Align with parent Prog Ref */
+.operator-table-no-scroll .child-row-content .child-jobs-table th.prog-ref-col,
+.operator-table-no-scroll .child-row-content .child-jobs-table td.prog-ref-col {
   width: 90px;
   min-width: 90px;
   text-align: left;
@@ -416,26 +437,6 @@
 /* SEDM - Extra column - Ensure th and td match */
 .operator-table-no-scroll .child-row-content .child-jobs-table th.sedm-col,
 .operator-table-no-scroll .child-row-content .child-jobs-table td.sedm-col {
-  width: 50px;
-  min-width: 50px;
-  text-align: left;
-  padding-left: 0.4rem;
-  padding-right: 0.4rem;
-}
-
-/* Complex - Extra column - Ensure th and td match */
-.operator-table-no-scroll .child-row-content .child-jobs-table th.complex-col,
-.operator-table-no-scroll .child-row-content .child-jobs-table td.complex-col {
-  width: 50px;
-  min-width: 50px;
-  text-align: left;
-  padding-left: 0.4rem;
-  padding-right: 0.4rem;
-}
-
-/* PIP Finish - Extra column - Ensure th and td match */
-.operator-table-no-scroll .child-row-content .child-jobs-table th.pip-col,
-.operator-table-no-scroll .child-row-content .child-jobs-table td.pip-col {
   width: 50px;
   min-width: 50px;
   text-align: left;
@@ -610,9 +611,43 @@
 
 .roleboard-content .programmer-panel .inline-filters {
   display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.55rem;
+  flex-wrap: nowrap;
+}
+
+.operator-filters-top-row {
+  display: flex;
   align-items: flex-end;
   gap: 0.55rem;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  min-width: 0;
+}
+
+.roleboard-content .programmer-panel .operator-filters-top-row .filter-group {
+  min-width: 0;
+}
+
+.roleboard-content .programmer-panel .operator-filter-customer,
+.roleboard-content .programmer-panel .operator-filter-description {
+  flex: 0 1 205px;
+}
+
+.roleboard-content .programmer-panel .operator-filter-created-by,
+.roleboard-content .programmer-panel .operator-filter-assigned-to,
+.roleboard-content .programmer-panel .operator-filter-status {
+  flex: 0 1 150px;
+}
+
+.operator-status-legend-group {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.45rem;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .roleboard-content .programmer-panel .filter-input,
@@ -627,6 +662,127 @@
   background-position: 0.75rem center;
 }
 
+.operator-idle-transition-row {
+  width: 100%;
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-start;
+  margin-top: 0;
+}
+
+.roleboard-content .programmer-panel .operator-idle-transition-group {
+  min-width: 46px;
+  width: 46px;
+}
+
+.operator-idle-transition-inline {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.45rem;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+}
+
+.operator-idle-transition-btn {
+  width: 46px;
+  height: 36px;
+  border: 1px solid #93c5fd;
+  background: #eff6ff;
+  color: #1d4ed8;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  padding: 0;
+}
+
+.operator-idle-transition-btn:hover {
+  background: #dbeafe;
+}
+
+.operator-idle-transition-btn.running {
+  border-color: #fca5a5;
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.operator-idle-transition-time {
+  margin-top: 0.25rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #334155;
+  text-align: center;
+  font-family: "Courier New", monospace;
+}
+
+.operator-idle-transition-svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+.operator-idle-transition-details {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.4rem;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+      margin-left: 15px;
+}
+
+.roleboard-content .programmer-panel .operator-idle-transition-reason-group {
+  min-width: 115px;
+  max-width: 115px;
+}
+
+.roleboard-content .programmer-panel .operator-idle-transition-remark-group {
+  min-width: 135px;
+  max-width: 135px;
+}
+
+.roleboard-content .programmer-panel .operator-idle-transition-remark-input {
+  padding-left: 0.75rem;
+  background-image: none;
+}
+
+.roleboard-content .programmer-panel .operator-idle-transition-save-group {
+  min-width: 76px;
+  width: 76px;
+}
+
+.operator-idle-transition-save-btn {
+  width: 100%;
+  height: 36px;
+  border: 1px solid #86efac;
+  background: #ecfdf5;
+  color: #166534;
+  border-radius: 8px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.operator-idle-transition-save-btn:hover:not(:disabled) {
+  background: #dcfce7;
+}
+
+.operator-idle-transition-save-btn:disabled,
+.operator-idle-transition-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.operator-idle-transition-label-hidden {
+  visibility: hidden;
+  height: 0;
+  margin: 0;
+  padding: 0;
+  line-height: 0;
+}
+
 /* ============================================
    STAGE LEGEND
    ============================================ */
@@ -637,8 +793,74 @@
   gap: 0.35rem;
   flex-wrap: nowrap;
   white-space: nowrap;
-  margin-bottom: 0.1rem;
+  margin-bottom: 0.22rem;
   align-self: flex-end;
+  margin-left: 0;
+  margin-right: 0;
+  flex-shrink: 0;
+}
+
+@media (max-width: 1400px) {
+  .operator-filters-top-row {
+    flex-wrap: wrap;
+  }
+}
+
+@media only screen and (min-width: 1024px) and (max-width: 1366px) and (orientation: landscape) {
+  .roleboard-content .programmer-panel .panel-header {
+    flex-wrap: wrap;
+    align-items: flex-start;
+  }
+
+  .roleboard-content .programmer-panel .inline-filters {
+    flex: 1 1 100%;
+  }
+
+  .roleboard-content .programmer-panel .panel-header-actions {
+    width: 100%;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+  }
+
+  .operator-status-legend-group {
+    flex-wrap: wrap;
+    row-gap: 0.35rem;
+  }
+
+  .operator-stage-legend-inline {
+    margin-bottom: 0;
+  }
+}
+
+@media only screen and (min-width: 768px) and (max-width: 1024px) and (orientation: portrait) {
+  .roleboard-content .programmer-panel {
+    margin: 0.75rem 0.4rem;
+    padding: 0.85rem;
+    width: calc(100% - 0.8rem);
+  }
+
+  .operator-idle-transition-inline {
+    flex-wrap: wrap;
+    row-gap: 0.3rem;
+  }
+
+  .operator-idle-transition-details {
+    margin-left: 0;
+    flex-wrap: wrap;
+    width: 100%;
+  }
+
+  .operator-table-no-scroll .data-table {
+    width: max-content;
+    min-width: 1520px;
+    max-width: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .roleboard-content .programmer-panel .panel-header-actions {
+    justify-content: flex-start;
+  }
 }
 
 .operator-stage-legend-title {
@@ -690,6 +912,41 @@
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.18);
 }
 
+.operator-machine-input {
+  width: 100%;
+  max-width: 72px;
+  height: 30px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 0 0.55rem;
+  font-size: 0.82rem;
+  color: #0f172a;
+  background: #ffffff;
+}
+
+@media only screen and (min-width: 1367px) {
+  .operator-table-no-scroll .data-table {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    table-layout: auto;
+  }
+
+  .operator-table-no-scroll .data-table th:nth-child(n),
+  .operator-table-no-scroll .data-table td:nth-child(n) {
+    width: auto;
+    min-width: 0;
+    max-width: none;
+  }
+
+  .operator-table-no-scroll .data-table .checkbox-header-cell,
+  .operator-table-no-scroll .data-table .checkbox-cell {
+    width: 40px;
+    min-width: 40px;
+    max-width: 40px;
+  }
+}
+
 /* ============================================
    PRIORITY-BASED ROW COLORS
    ============================================ */
@@ -699,41 +956,32 @@
 }
 
 .group-row.critical-row {
-  background-color: #fee2e2;
   border-left: 4px solid #dc2626;
-  box-shadow: 0 2px 4px rgba(220, 38, 38, 0.15);
 }
-
-.group-row.critical-row:hover {
-  background-color: #fecaca;
-  box-shadow: 0 4px 8px rgba(220, 38, 38, 0.2);
+.group-row.critical-row td:first-child {
+  box-shadow: inset 4px 0 0 #dc2626;
 }
 
 .group-row.critical-row td {
   color: #0f172a;
-  font-weight: 500;
 }
 
 .group-row.priority-row.priority-high {
-  background-color: #fee2e2;
   border-left: 3px solid #ef4444;
 }
-
-.group-row.priority-row.priority-high:hover {
-  background-color: #fecaca;
+.group-row.priority-row.priority-high td:first-child {
+  box-shadow: inset 3px 0 0 #ef4444;
 }
 
 .group-row.priority-row.priority-high td {
-  color: #991b1b;
+  color: #0f172a;
 }
 
 .group-row.priority-row.priority-medium {
-  background-color: #fef3c7;
   border-left: 3px solid #f59e0b;
 }
-
-.group-row.priority-row.priority-medium:hover {
-  background-color: #fde68a;
+.group-row.priority-row.priority-medium td:first-child {
+  box-shadow: inset 3px 0 0 #f59e0b;
 }
 
 .group-row.priority-row.priority-medium td {
@@ -741,12 +989,10 @@
 }
 
 .group-row.priority-row.priority-low {
-  background-color: #d1fae5;
   border-left: 3px solid #10b981;
 }
-
-.group-row.priority-row.priority-low:hover {
-  background-color: #a7f3d0;
+.group-row.priority-row.priority-low td:first-child {
+  box-shadow: inset 3px 0 0 #10b981;
 }
 
 .group-row.priority-row.priority-low td {
@@ -757,20 +1003,47 @@
   background: #f9fafb;
 }
 
-.group-row-expanded.critical-row {
-  background-color: #fee2e2;
+.group-row-expanded.critical-row,
+.group-row-expanded.priority-row.priority-high,
+.group-row-expanded.priority-row.priority-medium,
+.group-row-expanded.priority-row.priority-low {
+  background: #f9fafb;
 }
 
-.group-row-expanded.priority-row.priority-high {
-  background-color: #fee2e2;
+.operator-stage-row-not-started {
+  background-color: #fffbeb;
+  border-left: 4px solid #f59e0b;
+}
+.operator-stage-row-not-started td:first-child {
+  box-shadow: inset 4px 0 0 #f59e0b;
 }
 
-.group-row-expanded.priority-row.priority-medium {
+.operator-stage-row-not-started:hover {
   background-color: #fef3c7;
 }
 
-.group-row-expanded.priority-row.priority-low {
-  background-color: #d1fae5;
+.operator-stage-row-logged {
+  background-color: #eff6ff;
+  border-left: 4px solid #3b82f6;
+}
+.operator-stage-row-logged td:first-child {
+  box-shadow: inset 4px 0 0 #3b82f6;
+}
+
+.operator-stage-row-logged:hover {
+  background-color: #dbeafe;
+}
+
+.operator-stage-row-dispatched {
+  background-color: #eef2ff;
+  border-left: 4px solid #6366f1;
+}
+.operator-stage-row-dispatched td:first-child {
+  box-shadow: inset 4px 0 0 #6366f1;
+}
+
+.operator-stage-row-dispatched:hover {
+  background-color: #e0e7ff;
 }
 
 /* ============================================
@@ -864,7 +1137,7 @@
   }
 }
 
-@media (max-width: 1200px) {
+@media only screen and (min-width: 1024px) and (max-width: 1366px) and (orientation: landscape) {
   .operator-table-no-scroll .data-table th,
   .operator-table-no-scroll .data-table td {
     padding: 0.35rem 0.25rem;
@@ -875,5 +1148,11 @@
   .operator-table-no-scroll .child-row-content .child-jobs-table td {
     padding: 0.35rem 0.25rem;
     font-size: 0.7rem;
+  }
+
+  .operator-table-no-scroll .data-table {
+    width: max-content;
+    min-width: 1520px;
+    max-width: none;
   }
 }

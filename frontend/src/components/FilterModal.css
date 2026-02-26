@@ -305,3 +305,33 @@
     grid-column: span 1;
   }
 }
+
+@media only screen and (min-width: 768px) and (max-width: 1024px) and (orientation: portrait),
+  only screen and (min-width: 1024px) and (max-width: 1366px) and (orientation: landscape) {
+  .filter-modal.modal-card,
+  .modal-card.filter-modal,
+  .filter-modal.modal-card.modal-large,
+  .modal-card.filter-modal.modal-large,
+  .modal-large.filter-modal.modal-card {
+    width: min(900px, 94vw) !important;
+    max-width: 94vw !important;
+    min-width: 0 !important;
+  }
+
+  .filter-layout {
+    flex-direction: column;
+  }
+
+  .filter-sidebar {
+    width: 100% !important;
+    border-right: none;
+    border-bottom: 1px solid #e2e8f0;
+    max-height: 180px;
+  }
+
+  .filter-categories {
+    flex-direction: row;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+  }
+}

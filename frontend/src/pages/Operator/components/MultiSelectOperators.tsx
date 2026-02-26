@@ -9,6 +9,7 @@ type MultiSelectOperatorsProps = {
   disabled?: boolean;
   className?: string;
   compact?: boolean; // Show compact format like "user+1..." in table cells
+  assignToSelfName?: string;
 };
 
 export const MultiSelectOperators: React.FC<MultiSelectOperatorsProps> = ({
@@ -19,6 +20,7 @@ export const MultiSelectOperators: React.FC<MultiSelectOperatorsProps> = ({
   disabled = false,
   className = "",
   compact = false,
+  assignToSelfName,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -95,6 +97,12 @@ export const MultiSelectOperators: React.FC<MultiSelectOperatorsProps> = ({
     onChange(newSelection);
   };
 
+  const assignToSelf = () => {
+    if (disabled || !assignToSelfName) return;
+    onChange([assignToSelfName]);
+    setIsOpen(false);
+  };
+
   // Compact display format: "user+1..." when multiple operators
   const getCompactDisplay = () => {
     if (normalizedSelectedOperators.length === 0) return placeholder;
@@ -140,24 +148,36 @@ export const MultiSelectOperators: React.FC<MultiSelectOperatorsProps> = ({
           {availableOperators.length === 0 ? (
             <div className="dropdown-empty">No operators available</div>
           ) : (
-            availableOperators.map((operator) => {
-              const isSelected = normalizedSelectedOperators.includes(operator.name);
-              return (
-                <div
-                  key={operator.id}
-                  className={`dropdown-option ${isSelected ? "selected" : ""}`}
-                  onClick={() => toggleOperator(operator.name)}
-                >
+            <>
+              {assignToSelfName && (
+                <div className="dropdown-option" onClick={assignToSelf}>
                   <input
                     type="checkbox"
-                    checked={isSelected}
-                    onChange={() => toggleOperator(operator.name)}
-                    onClick={(e) => e.stopPropagation()}
+                    checked={normalizedSelectedOperators.length === 1 && normalizedSelectedOperators[0] === assignToSelfName}
+                    readOnly
                   />
-                  <span>{operator.name}</span>
+                  <span>Assign To Me ({assignToSelfName})</span>
                 </div>
-              );
-            })
+              )}
+              {availableOperators.map((operator) => {
+                const isSelected = normalizedSelectedOperators.includes(operator.name);
+                return (
+                  <div
+                    key={operator.id}
+                    className={`dropdown-option ${isSelected ? "selected" : ""}`}
+                    onClick={() => toggleOperator(operator.name)}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={isSelected}
+                      onChange={() => toggleOperator(operator.name)}
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                    <span>{operator.name}</span>
+                  </div>
+                );
+              })}
+            </>
           )}
         </div>
       )}

@@ -1,7 +1,5 @@
 import React, { useEffect, useState } from "react";
 import DateTimeInput from "./DateTimeInput";
-import ClearIcon from "@mui/icons-material/Clear";
-import AddIcon from "@mui/icons-material/Add";
 import { MultiSelectOperators } from "./MultiSelectOperators";
 import type { CutInputData, QuantityInputData } from "../types/cutInput";
 import { decimalHoursToHHMM } from "../utils/machineHrsCalculation";
@@ -180,7 +178,7 @@ export const OperatorInputSection: React.FC<OperatorInputSectionProps> = ({
           <span className="qa-legend-title">Stage Legend:</span>
           <span className="qa-legend-item saved">Operation Logged = input captured</span>
           <span className="qa-legend-item sent">QA Dispatched = moved to QA queue</span>
-          <span className="qa-legend-item empty">Pending Input = values not entered yet</span>
+          <span className="qa-legend-item empty">Not Started = values not entered yet</span>
         </div>
       </div>
       {quantity > 1 && (
@@ -264,7 +262,7 @@ export const OperatorInputSection: React.FC<OperatorInputSectionProps> = ({
             <div className="qa-overall-summary qa-inline-summary">
               <span className="qa-summary-chip saved">Operation Logged: {qaCounts.logged}</span>
               <span className="qa-summary-chip sent">QA Dispatched: {qaCounts.sent}</span>
-              <span className="qa-summary-chip empty">Pending Input: {qaCounts.empty}</span>
+              <span className="qa-summary-chip empty">Not Started: {qaCounts.empty}</span>
             </div>
           </div>
         </div>
@@ -520,66 +518,6 @@ export const OperatorInputSection: React.FC<OperatorInputSectionProps> = ({
                 <p className="field-error">{validationErrors[qtyIndex].opsName}</p>
               )}
             </div>
-            <div className="operator-input-card">
-              <label>Idle Time</label>
-              <select
-                value={qtyData.idleTime}
-                onChange={(e) => onInputChange(cutId, qtyIndex, "idleTime", e.target.value)}
-              >
-                <option value="">Select</option>
-                <option value="Power Break">Power Break</option>
-                <option value="Machine Breakdown">Machine Breakdown</option>
-                <option value="Vertical Dial">Vertical Dial</option>
-                <option value="Cleaning">Cleaning</option>
-                <option value="Consumables Change">Consumables Change</option>
-              </select>
-            </div>
-            {qtyData.idleTime && (
-              <div className="operator-input-card">
-                <label>Idle Time Duration</label>
-                <div className="idle-time-duration-wrapper">
-                  <input
-                    type="text"
-                    value={qtyData.idleTimeDuration}
-                    onChange={(e) =>
-                      onInputChange(cutId, qtyIndex, "idleTimeDuration", e.target.value)
-                    }
-                    placeholder={qtyData.idleTime === "Vertical Dial" ? "00:20" : "HH:MM"}
-                    readOnly={qtyData.idleTime === "Vertical Dial" || !!qtyData.endTime}
-                    disabled={!!qtyData.endTime}
-                    className={qtyData.idleTime === "Vertical Dial" ? "readonly-input" : ""}
-                  />
-                  {qtyData.idleTimeDuration && !qtyData.endTime && (
-                    <>
-                      <button
-                        type="button"
-                        className="idle-time-add-icon"
-                        onClick={() => {
-                          onInputChange(cutId, qtyIndex, "addIdleTimeToMachineHrs", "");
-                          if (onShowToast) {
-                            onShowToast("Idle time added to machine hours!", "success");
-                          }
-                        }}
-                        aria-label="Add idle time to machine hours"
-                        title="Add idle time to machine hours"
-                      >
-                        <AddIcon fontSize="small" />
-                      </button>
-                      <button
-                        type="button"
-                        className="idle-time-reset-icon"
-                        onClick={() => onInputChange(cutId, qtyIndex, "idleTimeDuration", "")}
-                        aria-label="Clear idle time duration"
-                        title="Clear idle time duration"
-                      >
-                        <ClearIcon fontSize="small" />
-                      </button>
-                    </>
-                  )}
-                </div>
-              </div>
-            )}
-            
             {/* Pause Reason Input - Show when paused */}
             {qtyData.isPaused && !qtyData.endTime && (
               <div className="operator-input-card pause-reason-card">

@@ -4,7 +4,7 @@ import { formatHoursToHHMM, parseDateValue } from "../../../utils/date";
 import ActionButtons from "../../Programmer/components/ActionButtons";
 import ArrowForwardIosSharpIcon from "@mui/icons-material/ArrowForwardIosSharp";
 import { MultiSelectOperators } from "../components/MultiSelectOperators";
-import { getQaProgressCounts } from "../utils/qaProgress";
+import { getGroupQaProgressCounts } from "../utils/qaProgress";
 import type { Column } from "../../../components/DataTable";
 
 type TableRow = {
@@ -20,7 +20,9 @@ type UseOperatorTableProps = {
   expandableRows: Map<number, any>;
   canAssign: boolean;
   operatorUsers: Array<{ id: string | number; name: string }>;
+  currentUserName: string;
   handleAssignChange: (jobId: number | string, value: string) => void;
+  handleMachineNumberChange: (groupId: number, machineNumber: string) => void;
   handleViewJob: (row: TableRow) => void;
   handleSubmit: (groupId: number) => void;
   handleImageInput: (groupId: number, cutId?: number) => void;
@@ -31,7 +33,9 @@ export const useOperatorTable = ({
   expandableRows,
   canAssign,
   operatorUsers,
+  currentUserName,
   handleAssignChange,
+  handleMachineNumberChange,
   handleViewJob,
   handleSubmit,
   isAdmin,
@@ -40,6 +44,21 @@ export const useOperatorTable = ({
     const text = (value || "-").trim();
     if (text === "-") return text;
     return text.length > 12 ? `${text.slice(0, 12)}...` : text;
+  };
+  const toYN = (value: unknown): string => {
+    if (typeof value === "boolean") return value ? "Y" : "N";
+    const text = String(value || "").trim().toLowerCase();
+    if (text === "yes" || text === "y" || text === "true") return "Y";
+    if (text === "no" || text === "n" || text === "false") return "N";
+    return String(value || "-");
+  };
+  const getMachineNumber = (job: JobEntry): string => {
+    const direct = String((job as any).machineNumber || "").trim();
+    if (direct) return direct;
+    const captures = Array.isArray(job.operatorCaptures) ? job.operatorCaptures : [];
+    const latest = captures[captures.length - 1];
+    const captureMachine = String(latest?.machineNumber || "").trim();
+    return captureMachine || "-";
   };
 
   return useMemo(
@@ -89,11 +108,13 @@ export const useOperatorTable = ({
         },
       },
       {
-        key: "rate",
-        label: "Rate",
+        key: "programRef",
+        label: "Prog Ref",
         sortable: false,
-        sortKey: "rate",
-        render: (row) => `₹${Math.round(Number(row.parent.rate || 0))}`,
+        render: (row) => {
+          const ref = row.parent.programRefFile || row.parent.refNumber || "";
+          return ref ? `#${ref}` : "-";
+        },
       },
       {
         key: "description",
@@ -140,6 +161,12 @@ export const useOperatorTable = ({
         sortKey: "qty",
         render: (row) => Number(row.parent.qty || 0).toString(),
       },
+            {
+        key: "sedm",
+        label: "SEDM",
+        sortable: false,
+        render: (row) => toYN(row.parent.sedm),
+      },
       {
         key: "assignedTo",
         label: "Assigned",
@@ -159,6 +186,7 @@ export const useOperatorTable = ({
               selectedOperators={assignedOperators}
               availableOperators={operatorUsers}
               className="operator-assigned-dropdown"
+              assignToSelfName={currentUserName || undefined}
               onChange={(operators) => {
                 const uniqueOperators = [...new Set(operators)];
                 const value = uniqueOperators.length > 0 ? uniqueOperators.join(", ") : "Unassigned";
@@ -168,7 +196,7 @@ export const useOperatorTable = ({
               compact={true}
             />
           ) : (
-            <div className="assigned-operators-readonly">
+          <div className="assigned-operators-readonly">
               {assignedOperators.length > 0 ? (
                 assignedOperators.length > 1 ? (
                   <span className="compact-display-readonly" title={assignedOperators.join(", ")}>
@@ -185,6 +213,30 @@ export const useOperatorTable = ({
         },
       },
       {
+        key: "machineNumber",
+        label: "Mach #",
+        sortable: false,
+        render: (row) => (
+          <input
+            type="text"
+            className="operator-machine-input"
+            defaultValue={getMachineNumber(row.parent)}
+            onClick={(event) => event.stopPropagation()}
+            onBlur={(event) => {
+              const nextValue = event.target.value.trim();
+              handleMachineNumberChange(row.groupId, nextValue);
+            }}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") {
+                (event.target as HTMLInputElement).blur();
+              }
+            }}
+            placeholder="Mach #"
+          />
+        ),
+      },
+
+      {
         key: "totalHrs",
         label: (
           <>
@@ -199,14 +251,14 @@ export const useOperatorTable = ({
       },
       ...(isAdmin
         ? [
-            {
-              key: "totalAmount",
-              label: "Amount (₹)",
-              sortable: false,
-              sortKey: "totalAmount",
-              render: (row: TableRow) => (row.groupTotalAmount ? `₹${Math.round(row.groupTotalAmount)}` : "-"),
-            } as Column<TableRow>,
-          ]
+          {
+            key: "totalAmount",
+            label: "Amount (₹)",
+            sortable: false,
+            sortKey: "totalAmount",
+            render: (row: TableRow) => (row.groupTotalAmount ? `₹${Math.round(row.groupTotalAmount)}` : "-"),
+          } as Column<TableRow>,
+        ]
         : []),
       {
         key: "productionStage",
@@ -215,13 +267,11 @@ export const useOperatorTable = ({
         className: "status-cell",
         headerClassName: "status-header",
         render: (row) => {
-          const firstSetting = row.entries[0] || row.parent;
-          const qty = Math.max(1, Number(firstSetting.qty || 1));
-          const c = getQaProgressCounts(firstSetting, qty);
+          const c = getGroupQaProgressCounts(row.entries);
           const counts = { logged: c.saved + c.ready, sent: c.sent, empty: c.empty };
           return (
             <div className="child-stage-summary">
-              <span className="qa-mini empty">Pending {counts.empty}</span>
+              <span className="qa-mini empty">Not Started {counts.empty}</span>
               <span className="qa-mini saved">Logged {counts.logged}</span>
               <span className="qa-mini sent">QA {counts.sent}</span>
             </div>
@@ -278,6 +328,16 @@ export const useOperatorTable = ({
         },
       },
     ],
-    [canAssign, operatorUsers, handleAssignChange, expandableRows, handleViewJob, handleSubmit, isAdmin]
+    [
+      canAssign,
+      operatorUsers,
+      currentUserName,
+      handleAssignChange,
+      handleMachineNumberChange,
+      expandableRows,
+      handleViewJob,
+      handleSubmit,
+      isAdmin,
+    ]
   );
 };

@@ -118,8 +118,8 @@ const ChildCutsTable: React.FC<ChildCutsTableProps> = ({
             <th className="customer-col">
               <span className="th-content">Customer</span>
             </th>
-            <th className="rate-col">
-              <span className="th-content">Rate</span>
+            <th className="prog-ref-col">
+              <span className="th-content">Prog Ref</span>
             </th>
             <th className="description-col">
               <span className="th-content">Desc</span>
@@ -140,8 +140,6 @@ const ChildCutsTable: React.FC<ChildCutsTableProps> = ({
               <span className="th-content">Qty</span>
             </th>
             <th className="sedm-col">SEDM</th>
-            <th className="complex-col">Cplx</th>
-            <th className="pip-col">PIP</th>
             {isOperator && <th className="assigned-col">Assigned</th>}
             <th className="total-hrs-col">
               <span className="th-content">
@@ -181,7 +179,9 @@ const ChildCutsTable: React.FC<ChildCutsTableProps> = ({
                 )}
                 <td className="setting-number-col">{index + 1}</td>
               <td className="customer-col">{entry.customer || "-"}</td>
-              <td className="rate-col">₹{Math.round(Number(entry.rate || 0))}</td>
+              <td className="prog-ref-col" title={entry.programRefFile || entry.refNumber || "-"}>
+                {entry.programRefFile || entry.refNumber || "-"}
+              </td>
               <td className="description-col" title={entry.description || "-"}>{truncateDescription(entry.description)}</td>
               <td className="cut-col">{Math.round(Number(entry.cut || 0))}</td>
               <td className="th-col">{Math.round(Number(entry.thickness || 0))}</td>
@@ -189,8 +189,6 @@ const ChildCutsTable: React.FC<ChildCutsTableProps> = ({
               <td className="setting-col">{entry.setting}</td>
               <td className="qty-col">{Number(entry.qty || 0).toString()}</td>
               <td className="sedm-col">{toYN(entry.sedm)}</td>
-              <td className="complex-col">{toYN(entry.critical)}</td>
-              <td className="pip-col">{toYN(entry.pipFinish)}</td>
               {isOperator && (
                 <td className="assigned-col">
                   {canAssign && onAssignChange && operatorUsers.length > 0 ? (

@@ -9,7 +9,9 @@ import { getUserRoleFromToken } from "../../utils/auth";
 import "../../utils/tokenDebug";
 import { getUsers } from "../../services/userApi";
 import { startProgrammerJobLog } from "../../services/employeeLogsApi";
+import { getMasterConfig } from "../../services/masterConfigApi";
 import type { User } from "../../types/user";
+import type { MasterConfig } from "../../types/masterConfig";
 import ProgrammerJobForm from "./ProgrammerJobForm.tsx";
 import JobDetailsModal from "./components/JobDetailsModal";
 import { ProgrammerFilters } from "./components/ProgrammerFilters";
@@ -53,6 +55,7 @@ const Programmer = () => {
   const [showJobViewModal, setShowJobViewModal] = useState(false);
   const [viewingJob, setViewingJob] = useState<TableRow | null>(null);
   const [selectedChildRows, setSelectedChildRows] = useState<Set<string | number>>(new Set());
+  const [masterConfig, setMasterConfig] = useState<MasterConfig | null>(null);
 
   const isAdmin = getUserRoleFromToken() === "ADMIN";
 
@@ -84,7 +87,17 @@ const Programmer = () => {
     handleCancel: handleCancelState,
   } = useProgrammerState(filters, customerFilter, descriptionFilter, createdByFilter, criticalFilter);
 
-  const totals = useMemo(() => cuts.map((cut) => calculateTotals(cut)), [cuts]);
+  const totals = useMemo(
+    () =>
+      cuts.map((cut) =>
+        calculateTotals(cut, {
+          settingHoursPerSetting: masterConfig?.settingHoursPerSetting,
+          complexExtraHours: masterConfig?.complexExtraHours,
+          pipExtraHours: masterConfig?.pipExtraHours,
+        })
+      ),
+    [cuts, masterConfig]
+  );
 
   const { handleSaveJob, handleDeleteJob, handleMassDelete, handleEditJob } = useJobHandlers({
     cuts,
@@ -155,6 +168,18 @@ const Programmer = () => {
     handleEditJob,
     handleDeleteClick,
   });
+
+  useEffect(() => {
+    const fetchMasterConfig = async () => {
+      try {
+        const cfg = await getMasterConfig();
+        setMasterConfig(cfg);
+      } catch (error) {
+        console.error("Failed to fetch master config", error);
+      }
+    };
+    fetchMasterConfig();
+  }, []);
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -290,6 +315,7 @@ const Programmer = () => {
               totals={totals}
               isAdmin={isAdmin}
               refNumber={refNumber}
+              masterConfig={masterConfig}
             />
           )}
 

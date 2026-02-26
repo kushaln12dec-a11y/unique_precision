@@ -3,6 +3,7 @@ import { useState, useRef, useEffect } from "react";
 interface MaterialAutocompleteProps {
   value: string;
   onChange: (value: string) => void;
+  options?: string[];
   disabled?: boolean;
   required?: boolean;
   error?: string;
@@ -18,19 +19,25 @@ const MATERIAL_OPTIONS = [
 const MaterialAutocomplete: React.FC<MaterialAutocompleteProps> = ({
   value,
   onChange,
+  options,
   disabled = false,
   required = false,
   error,
 }) => {
+  const sourceOptions = options && options.length > 0 ? options : MATERIAL_OPTIONS;
   const [inputValue, setInputValue] = useState(value);
   const [isOpen, setIsOpen] = useState(false);
-  const [filteredOptions, setFilteredOptions] = useState(MATERIAL_OPTIONS);
+  const [filteredOptions, setFilteredOptions] = useState(sourceOptions);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setInputValue(value);
   }, [value]);
+
+  useEffect(() => {
+    setFilteredOptions(sourceOptions);
+  }, [sourceOptions]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -52,10 +59,10 @@ const MaterialAutocomplete: React.FC<MaterialAutocompleteProps> = ({
     setInputValue(newValue);
     
     if (newValue.trim() === "") {
-      setFilteredOptions(MATERIAL_OPTIONS);
+      setFilteredOptions(sourceOptions);
     } else {
       setFilteredOptions(
-        MATERIAL_OPTIONS.filter((option) =>
+        sourceOptions.filter((option) =>
           option.toLowerCase().includes(newValue.toLowerCase())
         )
       );
@@ -68,7 +75,7 @@ const MaterialAutocomplete: React.FC<MaterialAutocompleteProps> = ({
   const handleInputFocus = () => {
     setIsOpen(true);
     if (inputValue.trim() === "") {
-      setFilteredOptions(MATERIAL_OPTIONS);
+      setFilteredOptions(sourceOptions);
     }
   };
 

@@ -23,26 +23,9 @@ type SEDMModalProps = {
   onThicknessChange?: (value: string) => void;
   onSedmEntriesJsonChange?: (value: string) => void;
   onApply?: () => void;
+  electrodeOptions?: string[];
+  thOptions?: Array<{ value: string; label: string }>;
 };
-
-const ELECTRODE_OPTIONS = [
-  "0.3",
-  "0.4",
-  "0.5",
-  "0.6",
-  "0.7",
-  "0.8",
-  "1.0",
-  "1.5",
-  "2.0",
-  "2.5",
-  "3.0",
-].map((value) => ({ value, label: value }));
-
-const TH_OPTION_OPTIONS = [
-  { value: "min", label: "Min 20mm" },
-  { value: "per", label: "Greater than 20mm" },
-];
 
 const calculateSingleSedmAmount = (entry: SEDMEntry, qty: number): number => {
   const electrodeSize = entry.lengthValue ? Number(entry.lengthValue) : null;
@@ -76,7 +59,30 @@ const SEDMModal: React.FC<SEDMModalProps> = ({
   onThicknessChange,
   onSedmEntriesJsonChange,
   onApply,
+  electrodeOptions = [],
+  thOptions = [],
 }) => {
+  const resolvedElectrodeOptions = (electrodeOptions.length > 0 ? electrodeOptions : [
+    "0.3",
+    "0.4",
+    "0.5",
+    "0.6",
+    "0.7",
+    "0.8",
+    "1.0",
+    "1.5",
+    "2.0",
+    "2.5",
+    "3.0",
+  ]).map((value) => ({ value, label: value }));
+
+  const resolvedThOptions = thOptions.length > 0
+    ? thOptions
+    : [
+        { value: "min", label: "Min 20mm" },
+        { value: "per", label: "Greater than 20mm" },
+      ];
+
   const [sedmQuantity, setSedmQuantity] = useState<number>(1);
   const [sedmEntries, setSedmEntries] = useState<SEDMEntry[]>([
     {
@@ -248,7 +254,7 @@ const SEDMModal: React.FC<SEDMModalProps> = ({
               <label>Electrode</label>
               <SelectDropdown
                 value={entry.lengthValue}
-                options={ELECTRODE_OPTIONS}
+                    options={resolvedElectrodeOptions}
                 onChange={(nextValue) => handleEntryChange(index, "lengthValue", nextValue)}
                 placeholder="Select electrode"
                 align="left"
@@ -258,7 +264,7 @@ const SEDMModal: React.FC<SEDMModalProps> = ({
               <label>TH Option</label>
               <SelectDropdown
                 value={entry.lengthType}
-                options={TH_OPTION_OPTIONS}
+                    options={resolvedThOptions}
                 onChange={(nextValue) =>
                   handleEntryChange(index, "lengthType", nextValue as "min" | "per")
                 }

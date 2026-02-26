@@ -5,6 +5,7 @@ import VerifiedUserIcon from "@mui/icons-material/VerifiedUser";
 import InventoryIcon from "@mui/icons-material/Inventory";
 import PeopleIcon from "@mui/icons-material/People";
 import GroupsIcon from "@mui/icons-material/Groups";
+import SettingsSuggestIcon from "@mui/icons-material/SettingsSuggest";
 import LogoutIcon from "@mui/icons-material/Logout";
 import type { SidebarProps } from "../types/sidebar";
 import { getUserRoleFromToken } from "../utils/auth";
@@ -20,6 +21,7 @@ const Sidebar = ({ currentPath = "/dashboard", onNavigate }: SidebarProps) => {
     { icon: InventoryIcon, label: "Inventory", path: "/inventory" },
     { icon: PeopleIcon, label: "User Management", path: "/users" },
     { icon: GroupsIcon, label: "Employee Logs", path: "/employee-logs" },
+    { icon: SettingsSuggestIcon, label: "Admin Console", path: "/admin-console" },
   ];
   const filteredMenuItems =
     role && role !== "ADMIN"

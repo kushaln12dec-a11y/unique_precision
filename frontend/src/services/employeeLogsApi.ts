@@ -97,3 +97,24 @@ export const startOperatorProductionLog = async (payload: {
 
   return res.json();
 };
+
+export const createOperatorTaskSwitchLog = async (payload: {
+  idleTime: string;
+  remark: string;
+  startedAt: string;
+  endedAt: string;
+  durationSeconds: number;
+}): Promise<EmployeeLog> => {
+  const res = await fetch("/api/employee-logs/operator/task-switch", {
+    method: "POST",
+    headers: getAuthHeaders(),
+    body: JSON.stringify(payload),
+  });
+
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({ message: "Failed to save task switch log" }));
+    throw new Error(error.message || "Failed to save task switch log");
+  }
+
+  return res.json();
+};

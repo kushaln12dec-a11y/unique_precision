@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import type { JobEntry } from "../../../types/job";
 import { parseDateValue } from "../../../utils/date";
 import ChildCutsTable from "../../Programmer/components/ChildCutsTable";
-import { getQaProgressCounts } from "../utils/qaProgress";
+import { getGroupQaProgressCounts, isGroupFullySentToQa } from "../utils/qaProgress";
 
 type TableRow = {
   groupId: number;
@@ -54,19 +54,17 @@ export const useOperatorTableData = (
 
   // Sort groups
   const sortedGroups = useMemo(() => {
+    const activeGroups = groupedJobs.filter((group) => !isGroupFullySentToQa(group.entries));
     const filteredGroups = productionStageFilter
-      ? groupedJobs.filter((group) => {
-          const firstSetting = group.entries[0];
-          if (!firstSetting) return false;
-          const qty = Math.max(1, Number(firstSetting.qty || 1));
-          const c = getQaProgressCounts(firstSetting, qty);
+      ? activeGroups.filter((group) => {
+          const c = getGroupQaProgressCounts(group.entries);
           const counts = { logged: c.saved + c.ready, sent: c.sent, empty: c.empty };
           if (productionStageFilter === "OP_LOGGED") return counts.logged > 0;
           if (productionStageFilter === "QA_DISPATCHED") return counts.sent > 0;
           if (productionStageFilter === "PENDING_INPUT") return counts.empty > 0;
           return true;
         })
-      : groupedJobs;
+      : activeGroups;
 
     if (!sortField) {
       // Default sort: newest first (by createdAt descending)
@@ -147,7 +145,7 @@ export const useOperatorTableData = (
               operatorUsers={operatorUsers}
               isOperator={true}
               isAdmin={isAdmin}
-              showCheckboxes={true}
+              showCheckboxes={false}
             />
           ),
           ariaLabel: expandedGroups.has(row.groupId)

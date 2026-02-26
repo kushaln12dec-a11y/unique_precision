@@ -8,6 +8,7 @@ import QC from "./pages/QC/QC";
 import Inventory from "./pages/Inventory/Inventory";
 import UserManagement from "./pages/User Management/UserManagement";
 import EmployeeLogs from "./pages/EmployeeLogs/EmployeeLogs";
+import AdminConsole from "./pages/AdminConsole/AdminConsole";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 function App() {
@@ -92,6 +93,14 @@ function App() {
           element={
             <ProtectedRoute>
               <EmployeeLogs />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin-console"
+          element={
+            <ProtectedRoute>
+              <AdminConsole />
             </ProtectedRoute>
           }
         />

@@ -10,6 +10,8 @@ type SEDMModalWrapperProps = {
   onHolesChange: (value: string) => void;
   onThicknessChange: (value: string) => void;
   onSedmEntriesJsonChange: (value: string) => void;
+  electrodeOptions: string[];
+  thOptions: Array<{ value: string; label: string }>;
 };
 
 const SEDMModalWrapper = ({
@@ -21,6 +23,8 @@ const SEDMModalWrapper = ({
   onHolesChange,
   onThicknessChange,
   onSedmEntriesJsonChange,
+  electrodeOptions,
+  thOptions,
 }: SEDMModalWrapperProps) => {
   if (sedmModalIndex === null || !cuts[sedmModalIndex]) {
     return null;
@@ -36,6 +40,8 @@ const SEDMModalWrapper = ({
       onHolesChange={onHolesChange}
       onThicknessChange={onThicknessChange}
       onSedmEntriesJsonChange={onSedmEntriesJsonChange}
+      electrodeOptions={electrodeOptions}
+      thOptions={thOptions}
       onApply={() => {}}
     />
   );
