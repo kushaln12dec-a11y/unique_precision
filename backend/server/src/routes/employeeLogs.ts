@@ -1,6 +1,6 @@
 import { Router } from "express";
 import EmployeeLog from "../models/EmployeeLog";
-import { adminMiddleware, authMiddleware } from "../middleware/auth";
+import { authMiddleware } from "../middleware/auth";
 
 const router = Router();
 
@@ -284,8 +284,14 @@ router.post("/operator/task-switch", async (req, res) => {
   }
 });
 
-router.get("/", adminMiddleware, async (req, res) => {
+router.get("/", async (req, res) => {
   try {
+    const reqUser = req.user as any;
+    const reqRole = String(reqUser?.role || "").toUpperCase();
+    if (reqRole !== "ADMIN" && reqRole !== "OPERATOR") {
+      return res.status(403).json({ message: "Only operators and admins can view logs." });
+    }
+
     const query: any = {};
 
     const role = String(req.query.role || "").trim().toUpperCase();
@@ -294,6 +300,9 @@ router.get("/", adminMiddleware, async (req, res) => {
 
     if (role && ["PROGRAMMER", "OPERATOR", "QC"].includes(role)) {
       query.role = role;
+    }
+    if (!query.role && reqRole === "OPERATOR") {
+      query.role = "OPERATOR";
     }
     if (status && ["IN_PROGRESS", "COMPLETED"].includes(status)) {
       query.status = status;
