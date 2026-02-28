@@ -1454,11 +1454,11 @@
   background: #f8fafc;
 }
 
-/* Override hover for colored rows to maintain visibility */
-.group-row.critical-row:hover td,
-.group-row.priority-row.priority-high:hover td,
-.group-row.priority-row.priority-medium:hover td,
-.group-row.priority-row.priority-low:hover td {
+/* Override hover for colored rows to maintain visibility (Programmer only) */
+.programmer-container .jobs-table-wrapper .group-row.critical-row:hover td,
+.programmer-container .jobs-table-wrapper .group-row.priority-row.priority-high:hover td,
+.programmer-container .jobs-table-wrapper .group-row.priority-row.priority-medium:hover td,
+.programmer-container .jobs-table-wrapper .group-row.priority-row.priority-low:hover td {
   color: #0f172a !important;
 }
 
@@ -1518,48 +1518,64 @@
   background: #ffffff;
 }
 
-.group-row.critical-row {
+.programmer-container .jobs-table-wrapper .group-row.critical-row {
   border-left: 4px solid #dc2626 !important;
+  background-image:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.54) 0%, rgba(255, 255, 255, 0.08) 48%, rgba(255, 255, 255, 0) 100%),
+    linear-gradient(90deg, rgba(220, 38, 38, 0.2) 0%, rgba(220, 38, 38, 0.07) 38%, rgba(255, 255, 255, 0.95) 100%);
 }
-.group-row.critical-row td:first-child {
+.programmer-container .jobs-table-wrapper .group-row.critical-row td:first-child {
   box-shadow: inset 4px 0 0 #dc2626;
 }
 
-.group-row.critical-row td {
+.programmer-container .jobs-table-wrapper .group-row.critical-row td {
+  background: transparent !important;
   color: #0f172a !important;
 }
 
 /* Priority-based row colors (only when not complex) */
-.group-row.priority-row.priority-high {
+.programmer-container .jobs-table-wrapper .group-row.priority-row.priority-high {
   border-left: 3px solid #ef4444;
+  background-image:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0.08) 48%, rgba(255, 255, 255, 0) 100%),
+    linear-gradient(90deg, rgba(239, 68, 68, 0.18) 0%, rgba(239, 68, 68, 0.06) 38%, rgba(255, 255, 255, 0.96) 100%);
 }
-.group-row.priority-row.priority-high td:first-child {
+.programmer-container .jobs-table-wrapper .group-row.priority-row.priority-high td:first-child {
   box-shadow: inset 3px 0 0 #ef4444;
 }
 
-.group-row.priority-row.priority-high td {
+.programmer-container .jobs-table-wrapper .group-row.priority-row.priority-high td {
+  background: transparent !important;
   color: #0f172a;
 }
 
-.group-row.priority-row.priority-medium {
+.programmer-container .jobs-table-wrapper .group-row.priority-row.priority-medium {
   border-left: 3px solid #f59e0b;
+  background-image:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.52) 0%, rgba(255, 255, 255, 0.08) 48%, rgba(255, 255, 255, 0) 100%),
+    linear-gradient(90deg, rgba(245, 158, 11, 0.2) 0%, rgba(245, 158, 11, 0.07) 38%, rgba(255, 255, 255, 0.96) 100%);
 }
-.group-row.priority-row.priority-medium td:first-child {
+.programmer-container .jobs-table-wrapper .group-row.priority-row.priority-medium td:first-child {
   box-shadow: inset 3px 0 0 #f59e0b;
 }
 
-.group-row.priority-row.priority-medium td {
+.programmer-container .jobs-table-wrapper .group-row.priority-row.priority-medium td {
+  background: transparent !important;
   color: #0f172a;
 }
 
-.group-row.priority-row.priority-low {
+.programmer-container .jobs-table-wrapper .group-row.priority-row.priority-low {
   border-left: 3px solid #10b981;
+  background-image:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0.08) 48%, rgba(255, 255, 255, 0) 100%),
+    linear-gradient(90deg, rgba(16, 185, 129, 0.19) 0%, rgba(16, 185, 129, 0.065) 38%, rgba(255, 255, 255, 0.96) 100%);
 }
-.group-row.priority-row.priority-low td:first-child {
+.programmer-container .jobs-table-wrapper .group-row.priority-row.priority-low td:first-child {
   box-shadow: inset 3px 0 0 #10b981;
 }
 
-.group-row.priority-row.priority-low td {
+.programmer-container .jobs-table-wrapper .group-row.priority-row.priority-low td {
+  background: transparent !important;
   color: #0f172a;
 }
 
@@ -1568,23 +1584,23 @@
   color: #0f172a;
 }
 
-.group-row.critical-row td,
-.group-row.priority-row td {
+.programmer-container .jobs-table-wrapper .group-row.critical-row td,
+.programmer-container .jobs-table-wrapper .group-row.priority-row td {
   /* Text color already set above, but ensure contrast */
   text-shadow: none;
 }
 
 /* Ensure action buttons remain visible */
-.group-row.critical-row .action-icon-button,
-.group-row.priority-row .action-icon-button {
+.programmer-container .jobs-table-wrapper .group-row.critical-row .action-icon-button,
+.programmer-container .jobs-table-wrapper .group-row.priority-row .action-icon-button {
   color: inherit;
 }
 
-.group-row.critical-row .action-icon-button {
+.programmer-container .jobs-table-wrapper .group-row.critical-row .action-icon-button {
   color: #2563eb !important;
 }
 
-.group-row.critical-row .action-icon-button.danger {
+.programmer-container .jobs-table-wrapper .group-row.critical-row .action-icon-button.danger {
   color: #dc2626 !important;
 }
 
@@ -1593,20 +1609,11 @@
 }
 
 /* Ensure expanded rows maintain their color coding */
-.group-row-expanded.critical-row {
-  background: #f9fafb !important;
-}
-
-.group-row-expanded.priority-row.priority-high {
-  background: #f9fafb;
-}
-
-.group-row-expanded.priority-row.priority-medium {
-  background: #f9fafb;
-}
-
-.group-row-expanded.priority-row.priority-low {
-  background: #f9fafb;
+.programmer-container .jobs-table-wrapper .group-row-expanded.critical-row,
+.programmer-container .jobs-table-wrapper .group-row-expanded.priority-row.priority-high,
+.programmer-container .jobs-table-wrapper .group-row-expanded.priority-row.priority-medium,
+.programmer-container .jobs-table-wrapper .group-row-expanded.priority-row.priority-low {
+  background-color: transparent;
 }
 
 .child-row {
@@ -1917,61 +1924,80 @@
   box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
 }
 
-/* Child row color coding - Complex takes priority */
-.child-row.child-critical-row {
+/* Child row color coding - scoped to Programmer table */
+.programmer-container .jobs-table-wrapper .child-row.child-critical-row {
   border-left: 4px solid #dc2626 !important;
+  background-image:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.54) 0%, rgba(255, 255, 255, 0.08) 48%, rgba(255, 255, 255, 0) 100%),
+    linear-gradient(90deg, rgba(220, 38, 38, 0.2) 0%, rgba(220, 38, 38, 0.07) 38%, rgba(255, 255, 255, 0.95) 100%);
 }
-.child-row.child-critical-row td:first-child {
+.programmer-container .jobs-table-wrapper .child-row.child-critical-row td:first-child {
   box-shadow: inset 4px 0 0 #dc2626;
 }
 
-.child-row.child-critical-row td {
+.programmer-container .jobs-table-wrapper .child-row.child-critical-row td {
+  background: transparent !important;
   color: #0f172a !important;
 }
 
 /* Child row priority colors (only when not complex) */
-.child-row.child-priority-row.child-priority-high {
+.programmer-container .jobs-table-wrapper .child-row.child-priority-row.child-priority-high {
   border-left: 3px solid #ef4444;
+  background-image:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0.08) 48%, rgba(255, 255, 255, 0) 100%),
+    linear-gradient(90deg, rgba(239, 68, 68, 0.18) 0%, rgba(239, 68, 68, 0.06) 38%, rgba(255, 255, 255, 0.96) 100%);
 }
-.child-row.child-priority-row.child-priority-high td:first-child {
+.programmer-container .jobs-table-wrapper .child-row.child-priority-row.child-priority-high td:first-child {
   box-shadow: inset 3px 0 0 #ef4444;
 }
 
-.child-row.child-priority-row.child-priority-high td {
+.programmer-container .jobs-table-wrapper .child-row.child-priority-row.child-priority-high td {
+  background: transparent !important;
   color: #0f172a !important;
 }
 
-.child-row.child-priority-row.child-priority-high:hover td {
+.programmer-container .jobs-table-wrapper .child-row.child-priority-row.child-priority-high:hover td {
+  background: transparent !important;
   color: #0f172a !important;
 }
 
-.child-row.child-priority-row.child-priority-medium {
+.programmer-container .jobs-table-wrapper .child-row.child-priority-row.child-priority-medium {
   border-left: 3px solid #f59e0b;
+  background-image:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.52) 0%, rgba(255, 255, 255, 0.08) 48%, rgba(255, 255, 255, 0) 100%),
+    linear-gradient(90deg, rgba(245, 158, 11, 0.2) 0%, rgba(245, 158, 11, 0.07) 38%, rgba(255, 255, 255, 0.96) 100%);
 }
-.child-row.child-priority-row.child-priority-medium td:first-child {
+.programmer-container .jobs-table-wrapper .child-row.child-priority-row.child-priority-medium td:first-child {
   box-shadow: inset 3px 0 0 #f59e0b;
 }
 
-.child-row.child-priority-row.child-priority-medium td {
+.programmer-container .jobs-table-wrapper .child-row.child-priority-row.child-priority-medium td {
+  background: transparent !important;
   color: #0f172a !important;
 }
 
-.child-row.child-priority-row.child-priority-medium:hover td {
+.programmer-container .jobs-table-wrapper .child-row.child-priority-row.child-priority-medium:hover td {
+  background: transparent !important;
   color: #0f172a !important;
 }
 
-.child-row.child-priority-row.child-priority-low {
+.programmer-container .jobs-table-wrapper .child-row.child-priority-row.child-priority-low {
   border-left: 3px solid #10b981;
+  background-image:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0.08) 48%, rgba(255, 255, 255, 0) 100%),
+    linear-gradient(90deg, rgba(16, 185, 129, 0.19) 0%, rgba(16, 185, 129, 0.065) 38%, rgba(255, 255, 255, 0.96) 100%);
 }
-.child-row.child-priority-row.child-priority-low td:first-child {
+.programmer-container .jobs-table-wrapper .child-row.child-priority-row.child-priority-low td:first-child {
   box-shadow: inset 3px 0 0 #10b981;
 }
 
-.child-row.child-priority-row.child-priority-low td {
+.programmer-container .jobs-table-wrapper .child-row.child-priority-row.child-priority-low td {
+  background: transparent !important;
   color: #0f172a !important;
 }
 
-.child-row.child-priority-row.child-priority-low:hover td {
+.programmer-container .jobs-table-wrapper .child-row.child-priority-row.child-priority-low:hover td {
+  background: transparent !important;
   color: #0f172a !important;
 }
 

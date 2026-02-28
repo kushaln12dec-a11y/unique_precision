@@ -27,6 +27,7 @@ type UseOperatorTableProps = {
   handleSubmit: (groupId: number) => void;
   handleImageInput: (groupId: number, cutId?: number) => void;
   isAdmin: boolean;
+  isImageInputDisabled: boolean;
 };
 
 export const useOperatorTable = ({
@@ -39,6 +40,7 @@ export const useOperatorTable = ({
   handleViewJob,
   handleSubmit,
   isAdmin,
+  isImageInputDisabled,
 }: UseOperatorTableProps): Column<TableRow>[] => {
   const truncateDescription = (value: string | undefined | null): string => {
     const text = (value || "-").trim();
@@ -217,22 +219,23 @@ export const useOperatorTable = ({
         label: "Mach #",
         sortable: false,
         render: (row) => (
-          <input
-            type="text"
+          <select
             className="operator-machine-input"
-            defaultValue={getMachineNumber(row.parent)}
+            value={["1", "2", "3", "4", "5", "6"].includes(getMachineNumber(row.parent)) ? getMachineNumber(row.parent) : ""}
             onClick={(event) => event.stopPropagation()}
-            onBlur={(event) => {
-              const nextValue = event.target.value.trim();
+            onChange={(event) => {
+              const nextValue = event.target.value;
               handleMachineNumberChange(row.groupId, nextValue);
             }}
-            onKeyDown={(event) => {
-              if (event.key === "Enter") {
-                (event.target as HTMLInputElement).blur();
-              }
-            }}
-            placeholder="Mach #"
-          />
+          >
+            <option value="">Select</option>
+            <option value="1">1</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+            <option value="4">4</option>
+            <option value="5">5</option>
+            <option value="6">6</option>
+          </select>
         ),
       },
 
@@ -323,6 +326,7 @@ export const useOperatorTable = ({
               viewLabel={`View ${row.parent.customer || "entry"}`}
               imageLabel={`Open ${row.parent.customer || "entry"}`}
               isOperator={true}
+              disableImageButton={isImageInputDisabled}
             />
           );
         },
@@ -338,6 +342,7 @@ export const useOperatorTable = ({
       handleViewJob,
       handleSubmit,
       isAdmin,
+      isImageInputDisabled,
     ]
   );
 };

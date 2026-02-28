@@ -32,7 +32,7 @@ const OperatorViewPage = () => {
   const groupId = searchParams.get("groupId");
   const cutIdParam = searchParams.get("cutId");
   const isAdmin = getUserRoleFromToken() === "ADMIN";
-  
+
   const [validationErrors, setValidationErrors] = useState<Map<number | string, Record<string, Record<string, string>>>>(new Map());
   const [operatorUsers, setOperatorUsers] = useState<Array<{ id: string | number; name: string }>>([]);
   const [savedQuantities, setSavedQuantities] = useState<Map<number | string, Set<number>>>(new Map());
@@ -155,10 +155,10 @@ const OperatorViewPage = () => {
     }
 
     const qtyData = cutData.quantities[quantityIndex];
-    
+
     // Validate this quantity
     const errors = validateQuantityInputs(qtyData);
-    
+
     if (Object.keys(errors).length > 0) {
       // Set validation errors for this quantity
       setValidationErrors((prev) => {
@@ -191,8 +191,8 @@ const OperatorViewPage = () => {
       }
 
       // Join operator names with comma for backward compatibility
-      const opsName = Array.isArray(qtyData.opsName) 
-        ? qtyData.opsName.join(", ") 
+      const opsName = Array.isArray(qtyData.opsName)
+        ? qtyData.opsName.join(", ")
         : (qtyData.opsName || "");
 
       // Save this quantity's data
@@ -535,7 +535,7 @@ const OperatorViewPage = () => {
                     const saved = savedQuantities.get(cutItem.id) || new Set<number>();
                     const savedRangeSet = savedRanges.get(cutItem.id) || new Set<string>();
                     const qaStatuses = qaStatusesByCut.get(cutItem.id) || {};
-                    
+
                     return (
                       <OperatorCutCard
                         key={cutItem.id}

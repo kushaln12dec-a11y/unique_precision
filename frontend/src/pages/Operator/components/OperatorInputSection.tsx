@@ -92,7 +92,7 @@ export const OperatorInputSection: React.FC<OperatorInputSectionProps> = ({
 
   // Ensure we have the right number of quantity inputs
   const quantities = cutData.quantities || [];
-  const displayQuantities = Array.from({ length: Math.max(quantity, quantities.length) }, (_, i) => 
+  const displayQuantities = Array.from({ length: Math.max(quantity, quantities.length) }, (_, i) =>
     quantities[i] || {
       startTime: "",
       startTimeEpochMs: null,
@@ -321,7 +321,7 @@ export const OperatorInputSection: React.FC<OperatorInputSectionProps> = ({
           ))}
         </div>
       </div>
-      
+
       {displayQuantities.map((qtyData, qtyIndex) => {
         const { elapsedTime, pauseTime, isRunning } = useQuantityTimer(
           qtyData.startTime,
@@ -337,7 +337,7 @@ export const OperatorInputSection: React.FC<OperatorInputSectionProps> = ({
         if (isRangeMode && qtyIndex !== activeRangeSourceIndex) {
           return null;
         }
-        
+
         return (
           <div key={qtyIndex} className="quantity-input-group">
             <div className="quantity-header">
@@ -398,183 +398,183 @@ export const OperatorInputSection: React.FC<OperatorInputSectionProps> = ({
               )}
             </div>
             <div className="quantity-content-wrapper">
-            <div className="operator-inputs-grid">
-            <div className="operator-input-card">
-              <label>Start Time</label>
-              <DateTimeInput
-                value={qtyData.startTime}
-                onChange={(value) => {
-                  // Only allow changes if start time is not set yet and end time is not set
-                  if (!qtyData.startTime && !qtyData.endTime) {
-                    onInputChange(cutId, qtyIndex, "startTime", value);
-                  }
-                }}
-                onTimeCapture={(timestampMs) => {
-                  // Only allow capture if start time is not set yet and end time is not set
-                  if (!qtyData.startTime && !qtyData.endTime) {
-                    onInputChange(cutId, qtyIndex, "startTimeEpochMs", String(timestampMs));
-                    onStartTimeCaptured?.(cutId, qtyIndex);
-                    // Timer will automatically start when startTime is set
-                    if (onShowToast) {
-                      onShowToast("Start time captured successfully!", "success");
+              <div className="operator-inputs-grid">
+                <div className="operator-input-card">
+                  <label>Start Time</label>
+                  <DateTimeInput
+                    value={qtyData.startTime}
+                    onChange={(value) => {
+                      // Only allow changes if start time is not set yet and end time is not set
+                      if (!qtyData.startTime && !qtyData.endTime) {
+                        onInputChange(cutId, qtyIndex, "startTime", value);
+                      }
+                    }}
+                    onTimeCapture={(timestampMs) => {
+                      // Only allow capture if start time is not set yet and end time is not set
+                      if (!qtyData.startTime && !qtyData.endTime) {
+                        onInputChange(cutId, qtyIndex, "startTimeEpochMs", String(timestampMs));
+                        onStartTimeCaptured?.(cutId, qtyIndex);
+                        // Timer will automatically start when startTime is set
+                        if (onShowToast) {
+                          onShowToast("Start time captured successfully!", "success");
+                        }
+                      } else {
+                        if (onShowToast) {
+                          onShowToast("Start time can only be set once!", "error");
+                        }
+                      }
+                    }}
+                    placeholder="DD/MM/YYYY HH:MM"
+                    error={validationErrors[qtyIndex]?.startTime}
+                    showPauseButton={true}
+                    isPaused={qtyData.isPaused || false}
+                    onPauseToggle={() => {
+                      // Don't allow pause toggle if end time is set
+                      if (!qtyData.endTime) {
+                        onInputChange(cutId, qtyIndex, "togglePause", "");
+                      }
+                    }}
+                    disablePauseButton={!!qtyData.endTime}
+                    disabled={!!qtyData.startTime || !!qtyData.endTime}
+                  />
+                </div>
+                <div className="operator-input-card">
+                  <label>End Time</label>
+                  <DateTimeInput
+                    value={qtyData.endTime}
+                    onChange={(value) => {
+                      // End time can only be set once
+                      if (!qtyData.endTime) {
+                        onInputChange(cutId, qtyIndex, "endTime", value);
+                        // Auto-calculate machine hours when end time is set
+                        if (qtyData.startTime && value) {
+                          // Trigger recalculation
+                          setTimeout(() => {
+                            onInputChange(cutId, qtyIndex, "recalculateMachineHrs", "");
+                          }, 100);
+                        }
+                      }
+                    }}
+                    onTimeCapture={(timestampMs) => {
+                      // End time can only be set once
+                      if (!qtyData.endTime) {
+                        onInputChange(cutId, qtyIndex, "endTimeEpochMs", String(timestampMs));
+                        if (onShowToast) {
+                          onShowToast("End time captured successfully!", "success");
+                        }
+                      } else {
+                        if (onShowToast) {
+                          onShowToast("End time can only be set once!", "error");
+                        }
+                      }
+                    }}
+                    placeholder="DD/MM/YYYY HH:MM"
+                    error={validationErrors[qtyIndex]?.endTime}
+                    disabled={!!qtyData.endTime}
+                  />
+                </div>
+                <div className="operator-input-card">
+                  <label>Machine Hrs</label>
+                  <input
+                    type="text"
+                    value={
+                      qtyData.machineHrs
+                        ? decimalHoursToHHMM(parseFloat(qtyData.machineHrs))
+                        : "00:00"
                     }
-                  } else {
-                    if (onShowToast) {
-                      onShowToast("Start time can only be set once!", "error");
+                    readOnly
+                    placeholder="00:00"
+                    className="readonly-input machine-hrs-input"
+                  />
+                  {validationErrors[qtyIndex]?.machineHrs && (
+                    <p className="field-error">{validationErrors[qtyIndex].machineHrs}</p>
+                  )}
+                </div>
+                <div className="operator-input-card">
+                  <label>Mach #</label>
+                  <input
+                    type="text"
+                    value={qtyData.machineNumber}
+                    onChange={(e) =>
+                      onInputChange(cutId, qtyIndex, "machineNumber", e.target.value)
                     }
-                  }
-                }}
-                placeholder="DD/MM/YYYY HH:MM"
-                error={validationErrors[qtyIndex]?.startTime}
-                showPauseButton={true}
-                isPaused={qtyData.isPaused || false}
-                onPauseToggle={() => {
-                  // Don't allow pause toggle if end time is set
-                  if (!qtyData.endTime) {
-                    onInputChange(cutId, qtyIndex, "togglePause", "");
-                  }
-                }}
-                disablePauseButton={!!qtyData.endTime}
-                disabled={!!qtyData.startTime || !!qtyData.endTime}
-              />
-            </div>
-            <div className="operator-input-card">
-              <label>End Time</label>
-              <DateTimeInput
-                value={qtyData.endTime}
-                onChange={(value) => {
-                  // End time can only be set once
-                  if (!qtyData.endTime) {
-                    onInputChange(cutId, qtyIndex, "endTime", value);
-                    // Auto-calculate machine hours when end time is set
-                    if (qtyData.startTime && value) {
-                      // Trigger recalculation
-                      setTimeout(() => {
-                        onInputChange(cutId, qtyIndex, "recalculateMachineHrs", "");
-                      }, 100);
-                    }
-                  }
-                }}
-                onTimeCapture={(timestampMs) => {
-                  // End time can only be set once
-                  if (!qtyData.endTime) {
-                    onInputChange(cutId, qtyIndex, "endTimeEpochMs", String(timestampMs));
-                    if (onShowToast) {
-                      onShowToast("End time captured successfully!", "success");
-                    }
-                  } else {
-                    if (onShowToast) {
-                      onShowToast("End time can only be set once!", "error");
-                    }
-                  }
-                }}
-                placeholder="DD/MM/YYYY HH:MM"
-                error={validationErrors[qtyIndex]?.endTime}
-                disabled={!!qtyData.endTime}
-              />
-            </div>
-            <div className="operator-input-card">
-              <label>Machine Hrs</label>
-              <input
-                type="text"
-                value={
-                  qtyData.machineHrs
-                    ? decimalHoursToHHMM(parseFloat(qtyData.machineHrs))
-                    : "00:00"
-                }
-                readOnly
-                placeholder="00:00"
-                className="readonly-input machine-hrs-input"
-              />
-              {validationErrors[qtyIndex]?.machineHrs && (
-                <p className="field-error">{validationErrors[qtyIndex].machineHrs}</p>
-              )}
-            </div>
-            <div className="operator-input-card">
-              <label>Mach #</label>
-              <input
-                type="text"
-                value={qtyData.machineNumber}
-                onChange={(e) =>
-                  onInputChange(cutId, qtyIndex, "machineNumber", e.target.value)
-                }
-                placeholder="Machine Number"
-                className={validationErrors[qtyIndex]?.machineNumber ? "input-error" : ""}
-              />
-              {validationErrors[qtyIndex]?.machineNumber && (
-                <p className="field-error">{validationErrors[qtyIndex].machineNumber}</p>
-              )}
-            </div>
-            <div className="operator-input-card">
-              <label>Ops Name</label>
-              <MultiSelectOperators
-                selectedOperators={qtyData.opsName || []}
-                availableOperators={operatorUsers}
-                onChange={(operators) => onInputChange(cutId, qtyIndex, "opsName", operators)}
-                placeholder="Select operators..."
-                className={validationErrors[qtyIndex]?.opsName ? "input-error" : ""}
-              />
-              {validationErrors[qtyIndex]?.opsName && (
-                <p className="field-error">{validationErrors[qtyIndex].opsName}</p>
-              )}
-            </div>
-            {/* Pause Reason Input - Show when paused */}
-            {qtyData.isPaused && !qtyData.endTime && (
-              <div className="operator-input-card pause-reason-card">
-                <label>Pause Reason <span style={{ color: "#ef4444" }}>*</span></label>
-                <input
-                  type="text"
-                  value={qtyData.currentPauseReason || ""}
-                  onChange={(e) => onInputChange(cutId, qtyIndex, "pauseReason", e.target.value)}
-                  placeholder="Enter reason for pause..."
-                  className={`pause-reason-input ${validationErrors[qtyIndex]?.pauseReason ? "input-error" : ""}`}
-                />
-                {validationErrors[qtyIndex]?.pauseReason && (
-                  <p className="field-error">{validationErrors[qtyIndex].pauseReason}</p>
+                    placeholder="Machine Number"
+                    className={validationErrors[qtyIndex]?.machineNumber ? "input-error" : ""}
+                  />
+                  {validationErrors[qtyIndex]?.machineNumber && (
+                    <p className="field-error">{validationErrors[qtyIndex].machineNumber}</p>
+                  )}
+                </div>
+                <div className="operator-input-card">
+                  <label>Ops Name</label>
+                  <MultiSelectOperators
+                    selectedOperators={qtyData.opsName || []}
+                    availableOperators={operatorUsers}
+                    onChange={(operators) => onInputChange(cutId, qtyIndex, "opsName", operators)}
+                    placeholder="Select operators..."
+                    className={validationErrors[qtyIndex]?.opsName ? "input-error" : ""}
+                  />
+                  {validationErrors[qtyIndex]?.opsName && (
+                    <p className="field-error">{validationErrors[qtyIndex].opsName}</p>
+                  )}
+                </div>
+                {/* Pause Reason Input - Show when paused */}
+                {qtyData.isPaused && !qtyData.endTime && (
+                  <div className="operator-input-card pause-reason-card">
+                    <label>Pause Reason <span style={{ color: "#ef4444" }}>*</span></label>
+                    <input
+                      type="text"
+                      value={qtyData.currentPauseReason || ""}
+                      onChange={(e) => onInputChange(cutId, qtyIndex, "pauseReason", e.target.value)}
+                      placeholder="Enter reason for pause..."
+                      className={`pause-reason-input ${validationErrors[qtyIndex]?.pauseReason ? "input-error" : ""}`}
+                    />
+                    {validationErrors[qtyIndex]?.pauseReason && (
+                      <p className="field-error">{validationErrors[qtyIndex].pauseReason}</p>
+                    )}
+                  </div>
                 )}
+
               </div>
-            )}
-            
-            </div>
-            
-            {/* Display Pause Sessions History - Right Side */}
-            {qtyData.pauseSessions && qtyData.pauseSessions.length > 0 && (
-              <div className="pause-history-sidebar">
-                <div className="pause-history-header">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="pause-history-icon">
-                    <rect x="6" y="4" width="4" height="16" rx="1" fill="currentColor"/>
-                    <rect x="14" y="4" width="4" height="16" rx="1" fill="currentColor"/>
-                  </svg>
-                  <h6 className="pause-history-title">Pause History</h6>
-                  <span className="pause-history-count">{qtyData.pauseSessions.length}</span>
-                </div>
-                <div className="pause-sessions-list">
-                  {qtyData.pauseSessions.map((session, sessionIndex) => (
-                    <div key={sessionIndex} className="pause-session-item">
-                      <div className="pause-session-badge">
-                        <span className="pause-session-number">#{sessionIndex + 1}</span>
-                      </div>
-                      <div className="pause-session-content">
-                        <div className="pause-session-duration-badge">
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
-                            <path d="M12 6v6l4 2" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                          </svg>
-                          {formatPauseDuration(session.pauseDuration)}
+
+              {/* Display Pause Sessions History - Right Side */}
+              {qtyData.pauseSessions && qtyData.pauseSessions.length > 0 && (
+                <div className="pause-history-sidebar">
+                  <div className="pause-history-header">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="pause-history-icon">
+                      <rect x="6" y="4" width="4" height="16" rx="1" fill="currentColor" />
+                      <rect x="14" y="4" width="4" height="16" rx="1" fill="currentColor" />
+                    </svg>
+                    <h6 className="pause-history-title">Pause History</h6>
+                    <span className="pause-history-count">{qtyData.pauseSessions.length}</span>
+                  </div>
+                  <div className="pause-sessions-list">
+                    {qtyData.pauseSessions.map((session, sessionIndex) => (
+                      <div key={sessionIndex} className="pause-session-item">
+                        <div className="pause-session-badge">
+                          <span className="pause-session-number">#{sessionIndex + 1}</span>
                         </div>
-                        {session.reason && (
-                          <div className="pause-session-reason">
-                            {session.reason}
+                        <div className="pause-session-content">
+                          <div className="pause-session-duration-badge">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                              <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
+                              <path d="M12 6v6l4 2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                            </svg>
+                            {formatPauseDuration(session.pauseDuration)}
                           </div>
-                        )}
+                          {session.reason && (
+                            <div className="pause-session-reason">
+                              {session.reason}
+                            </div>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
             </div>
-          
+
             {(onSaveQuantity || onSaveRange) && (
               <div className="quantity-save-section">
                 {isRangeMode ? (

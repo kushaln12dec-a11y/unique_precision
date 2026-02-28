@@ -18,6 +18,7 @@ type ActionButtonsProps = {
   submitLabel?: string;
   isChildTable?: boolean;
   isOperator?: boolean;
+  disableImageButton?: boolean;
 };
 
 const ActionButtons: React.FC<ActionButtonsProps> = ({
@@ -33,6 +34,7 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({
   submitLabel,
   isChildTable = false,
   isOperator = false,
+  disableImageButton = false,
 }) => {
   const isAdmin = getUserRoleFromToken() === "ADMIN";
   const isProgrammer = getUserRoleFromToken() === "PROGRAMMER";
@@ -69,12 +71,14 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({
         <button
           type="button"
           className="action-icon-button"
+          disabled={disableImageButton}
           onClick={(e) => {
             e.stopPropagation();
+            if (disableImageButton) return;
             onImage();
           }}
           aria-label={imageLabel || "Image"}
-          title={imageLabel || "Image Input"}
+          title={disableImageButton ? "Disabled while timer is running" : (imageLabel || "Image Input")}
         >
           <ArrowOutwardIcon fontSize="small" />
         </button>

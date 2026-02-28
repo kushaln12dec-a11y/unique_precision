@@ -36,6 +36,7 @@ type OperatorFiltersProps = {
     durationSeconds: number;
   }) => Promise<void>;
   onShowToast: (message: string, variant?: "success" | "error" | "info") => void;
+  onTimerRunningChange: (running: boolean) => void;
   onDownloadCSV: () => void;
   onSendSelectedRowsToQa: () => void;
   selectedRowsCount: number;
@@ -66,10 +67,12 @@ export const OperatorFilters: React.FC<OperatorFiltersProps> = ({
   canUseTaskSwitchTimer,
   onSaveTaskSwitch,
   onShowToast,
+  onTimerRunningChange,
   onDownloadCSV,
   onSendSelectedRowsToQa,
   selectedRowsCount,
 }) => {
+  const TIMER_STORAGE_KEY = "operator_idle_timer_state_v1";
   const [idleTransitionRunning, setIdleTransitionRunning] = useState(false);
   const [idleTransitionStartedAt, setIdleTransitionStartedAt] = useState<number | null>(null);
   const [idleTransitionElapsedSeconds, setIdleTransitionElapsedSeconds] = useState(0);
@@ -77,6 +80,55 @@ export const OperatorFilters: React.FC<OperatorFiltersProps> = ({
   const [showIdleTransitionDetails, setShowIdleTransitionDetails] = useState(false);
   const [idleTransitionReason, setIdleTransitionReason] = useState("");
   const [idleTransitionRemark, setIdleTransitionRemark] = useState("");
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(TIMER_STORAGE_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as {
+        running?: boolean;
+        startedAt?: number | null;
+        reason?: string;
+        remark?: string;
+        showDetails?: boolean;
+      };
+      if (parsed.running && parsed.startedAt) {
+        setIdleTransitionRunning(true);
+        setIdleTransitionStartedAt(parsed.startedAt);
+        setIdleTransitionElapsedSeconds(Math.max(0, Math.floor((Date.now() - parsed.startedAt) / 1000)));
+      }
+      setIdleTransitionReason(String(parsed.reason || ""));
+      setIdleTransitionRemark(String(parsed.remark || ""));
+      setShowIdleTransitionDetails(Boolean(parsed.showDetails || parsed.running));
+    } catch {
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(
+        TIMER_STORAGE_KEY,
+        JSON.stringify({
+          running: idleTransitionRunning,
+          startedAt: idleTransitionStartedAt,
+          reason: idleTransitionReason,
+          remark: idleTransitionRemark,
+          showDetails: showIdleTransitionDetails,
+        })
+      );
+    } catch {
+    }
+  }, [
+    idleTransitionRunning,
+    idleTransitionStartedAt,
+    idleTransitionReason,
+    idleTransitionRemark,
+    showIdleTransitionDetails,
+  ]);
+
+  useEffect(() => {
+    onTimerRunningChange(idleTransitionRunning);
+  }, [idleTransitionRunning, onTimerRunningChange]);
 
   useEffect(() => {
     if (!idleTransitionRunning || !idleTransitionStartedAt) return;
@@ -146,6 +198,10 @@ export const OperatorFilters: React.FC<OperatorFiltersProps> = ({
       setIdleTransitionReason("");
       setIdleTransitionRemark("");
       onShowToast("Task switch details saved to employee logs.", "success");
+      try {
+        localStorage.removeItem(TIMER_STORAGE_KEY);
+      } catch {
+      }
     } catch (error: any) {
       onShowToast(error?.message || "Failed to save task switch log.", "error");
     } finally {
@@ -211,21 +267,21 @@ export const OperatorFilters: React.FC<OperatorFiltersProps> = ({
                 <option value="Unassigned">Unassigned</option>
                 {operatorUsers.length > 0
                   ? operatorUsers.map((user) => {
-                      const displayName = `${user.firstName} ${user.lastName}`.trim() || user.email;
-                      return (
-                        <option key={user._id} value={displayName}>
-                          {displayName}
-                        </option>
-                      );
-                    })
+                    const displayName = `${user.firstName} ${user.lastName}`.trim() || user.email;
+                    return (
+                      <option key={user._id} value={displayName}>
+                        {displayName}
+                      </option>
+                    );
+                  })
                   : users.map((user) => {
-                      const displayName = `${user.firstName} ${user.lastName}`.trim() || user.email;
-                      return (
-                        <option key={user._id} value={displayName}>
-                          {displayName}
-                        </option>
-                      );
-                    })}
+                    const displayName = `${user.firstName} ${user.lastName}`.trim() || user.email;
+                    return (
+                      <option key={user._id} value={displayName}>
+                        {displayName}
+                      </option>
+                    );
+                  })}
               </select>
             </div>
             <div className="operator-status-legend-group">
@@ -243,44 +299,47 @@ export const OperatorFilters: React.FC<OperatorFiltersProps> = ({
                   <option value="PENDING_INPUT">Not Started</option>
                 </select>
               </div>
+              {canUseTaskSwitchTimer && (
+                <div className="operator-timer-inline-top">
+                  <div className="filter-group operator-idle-transition-group">
+                    <label htmlFor="operator-idle-transition-btn" className="operator-idle-transition-label-hidden">
+                      Task Switch Timer
+                    </label>
+                    <button
+                      id="operator-idle-transition-btn"
+                      type="button"
+                      className={`operator-idle-transition-btn ${idleTransitionRunning ? "running" : ""}`}
+                      onClick={handleToggleIdleTransitionTimer}
+                      disabled={idleTransitionSaving}
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="24"
+                        height="24"
+                        viewBox="0 0 24 24"
+                        fill="currentColor"
+                        className="operator-idle-transition-svg"
+                        aria-hidden="true"
+                      >
+                        <path d="M12 3a9 9 0 1 0 9 9 9.01 9.01 0 0 0-9-9zm4 10h-5V7h2v4h3z" />
+                      </svg>
+                    </button>
+                    <div className="operator-idle-transition-time">{formatTimer(idleTransitionElapsedSeconds)}</div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {canUseTaskSwitchTimer && (
+            <div className="operator-idle-transition-row">
               <div className="operator-stage-legend-inline">
                 <span className="operator-stage-legend-title">Stage Legend:</span>
                 <span className="operator-stage-chip saved">Operation Logged</span>
                 <span className="operator-stage-chip sent">QA Dispatched</span>
                 <span className="operator-stage-chip empty">Not Started</span>
               </div>
-            </div>
-          </div>
-
-          {canUseTaskSwitchTimer && (
-            <div className="operator-idle-transition-row">
               <div className="operator-idle-transition-inline">
-                <div className="filter-group operator-idle-transition-group">
-                  <label htmlFor="operator-idle-transition-btn" className="operator-idle-transition-label-hidden">
-                    Task Switch Timer
-                  </label>
-                  <button
-                    id="operator-idle-transition-btn"
-                    type="button"
-                    className={`operator-idle-transition-btn ${idleTransitionRunning ? "running" : ""}`}
-                    onClick={handleToggleIdleTransitionTimer}
-                    disabled={idleTransitionSaving}
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="24"
-                      height="24"
-                      viewBox="0 0 24 24"
-                      fill="currentColor"
-                      className="operator-idle-transition-svg"
-                      aria-hidden="true"
-                    >
-                      <path d="M15 1H9v2h6V1zm-4 13h2V8h-2v6zm8.03-6.61l1.42-1.42c-.43-.51-.9-.99-1.41-1.41l-1.42 1.42C16.07 4.74 14.12 4 12 4c-4.97 0-9 4.03-9 9s4.03 9 9 9 9-4.03 9-9c0-2.12-.74-4.07-1.97-5.61zM12 20c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z" />
-                    </svg>
-                  </button>
-                  <div className="operator-idle-transition-time">{formatTimer(idleTransitionElapsedSeconds)}</div>
-                </div>
-
                 {showIdleTransitionDetails && (
                   <div className="operator-idle-transition-details">
                     <div className="filter-group operator-idle-transition-reason-group">

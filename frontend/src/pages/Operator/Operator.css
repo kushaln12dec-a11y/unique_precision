@@ -14,6 +14,11 @@
   touch-action: pan-x pan-y;
 }
 
+.data-table-wrapper.operator-table-no-scroll {
+  border: none;
+  box-shadow: none;
+}
+
 .operator-table-no-scroll .data-table-wrapper {
   width: 100%;
   max-width: 100%;
@@ -93,6 +98,17 @@
   min-width: 40px;
   max-width: 40px;
   padding: 0.5rem 0.25rem;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.operator-table-no-scroll .data-table .checkbox-header-cell input[type="checkbox"],
+.operator-table-no-scroll .data-table .checkbox-cell input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  margin: 0 auto;
+  display: block;
+  cursor: pointer;
 }
 
 /* Customer Column (includes accordion toggle) */
@@ -454,6 +470,15 @@
   padding-right: 0.4rem;
 }
 
+.operator-table-no-scroll .child-row-content .child-jobs-table th.mach-col,
+.operator-table-no-scroll .child-row-content .child-jobs-table td.mach-col {
+  width: 80px;
+  min-width: 80px;
+  text-align: left;
+  padding-left: 0.4rem;
+  padding-right: 0.4rem;
+}
+
 /* Total Hrs/Piece - Align with parent Total Hrs - Ensure th and td match */
 .operator-table-no-scroll .child-row-content .child-jobs-table th.total-hrs-col,
 .operator-table-no-scroll .child-row-content .child-jobs-table td.total-hrs-col {
@@ -531,6 +556,13 @@
   align-items: center;
   justify-content: center;
   margin: 0 0.1rem;
+}
+
+.operator-table-no-scroll .data-table td.action-cell .action-icon-button:disabled,
+.operator-table-no-scroll .child-row-content .child-jobs-table .action-icon-button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  background: transparent;
 }
 
 .operator-table-no-scroll .data-table td.action-cell .action-icon-button svg,
@@ -650,6 +682,12 @@
   min-width: 0;
 }
 
+.operator-timer-inline-top {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 0.35rem;
+}
+
 .roleboard-content .programmer-panel .filter-input,
 .roleboard-content .programmer-panel .filter-select {
   height: 36px;
@@ -666,8 +704,10 @@
   width: 100%;
   display: flex;
   align-items: flex-end;
-  justify-content: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
   margin-top: 0;
+  flex-wrap: wrap;
 }
 
 .roleboard-content .programmer-panel .operator-idle-transition-group {
@@ -729,7 +769,7 @@
   gap: 0.4rem;
   flex-wrap: nowrap;
   white-space: nowrap;
-      margin-left: 15px;
+  margin-left: 0;
 }
 
 .roleboard-content .programmer-panel .operator-idle-transition-reason-group {
@@ -951,99 +991,176 @@
    PRIORITY-BASED ROW COLORS
    ============================================ */
 
-.group-row {
-  background: #ffffff;
-}
-
-.group-row.critical-row {
-  border-left: 4px solid #dc2626;
-}
-.group-row.critical-row td:first-child {
-  box-shadow: inset 4px 0 0 #dc2626;
-}
-
-.group-row.critical-row td {
-  color: #0f172a;
-}
-
-.group-row.priority-row.priority-high {
-  border-left: 3px solid #ef4444;
-}
-.group-row.priority-row.priority-high td:first-child {
-  box-shadow: inset 3px 0 0 #ef4444;
-}
-
-.group-row.priority-row.priority-high td {
-  color: #0f172a;
-}
-
-.group-row.priority-row.priority-medium {
-  border-left: 3px solid #f59e0b;
-}
-.group-row.priority-row.priority-medium td:first-child {
-  box-shadow: inset 3px 0 0 #f59e0b;
-}
-
-.group-row.priority-row.priority-medium td {
-  color: #0f172a;
-}
-
-.group-row.priority-row.priority-low {
-  border-left: 3px solid #10b981;
-}
-.group-row.priority-row.priority-low td:first-child {
-  box-shadow: inset 3px 0 0 #10b981;
-}
-
-.group-row.priority-row.priority-low td {
-  color: #0f172a;
-}
-
-.group-row-expanded {
-  background: #f9fafb;
-}
-
-.group-row-expanded.critical-row,
-.group-row-expanded.priority-row.priority-high,
-.group-row-expanded.priority-row.priority-medium,
-.group-row-expanded.priority-row.priority-low {
-  background: #f9fafb;
-}
-
 .operator-stage-row-not-started {
-  background-color: #fffbeb;
-  border-left: 4px solid #f59e0b;
-}
-.operator-stage-row-not-started td:first-child {
-  box-shadow: inset 4px 0 0 #f59e0b;
+  background-color: #ffefbf;
 }
 
 .operator-stage-row-not-started:hover {
-  background-color: #fef3c7;
+  background-color: #ffe39a;
 }
 
 .operator-stage-row-logged {
-  background-color: #eff6ff;
-  border-left: 4px solid #3b82f6;
-}
-.operator-stage-row-logged td:first-child {
-  box-shadow: inset 4px 0 0 #3b82f6;
-}
-
-.operator-stage-row-logged:hover {
   background-color: #dbeafe;
 }
 
-.operator-stage-row-dispatched {
-  background-color: #eef2ff;
-  border-left: 4px solid #6366f1;
+.operator-stage-row-logged:hover {
+  background-color: #bfdbfe;
 }
-.operator-stage-row-dispatched td:first-child {
-  box-shadow: inset 4px 0 0 #6366f1;
+
+.operator-stage-row-dispatched {
+  background-color: #ddd6fe;
 }
 
 .operator-stage-row-dispatched:hover {
-  background-color: #e0e7ff;
+  background-color: #c4b5fd;
+}
+
+.operator-table-no-scroll .data-table tbody tr.operator-stage-row-not-started:hover {
+  background-color: #ffe39a;
+}
+
+.operator-table-no-scroll .data-table tbody tr.operator-stage-row-logged:hover {
+  background-color: #bfdbfe;
+}
+
+.operator-table-no-scroll .data-table tbody tr.operator-stage-row-dispatched:hover {
+  background-color: #c4b5fd;
+}
+
+/* Stage legend controls row background in Operator table */
+.operator-table-no-scroll .data-table tr.operator-stage-row-not-started td {
+  background: transparent;
+}
+
+.operator-table-no-scroll .data-table tr.operator-stage-row-logged td {
+  background: transparent;
+}
+
+.operator-table-no-scroll .data-table tr.operator-stage-row-dispatched td {
+  background: transparent;
+}
+
+/* Programmer flag controls left corner line color in Operator table */
+.operator-table-no-scroll .data-table tr.operator-stage-row-not-started.critical-row,
+.operator-table-no-scroll .data-table tr.operator-stage-row-logged.critical-row,
+.operator-table-no-scroll .data-table tr.operator-stage-row-dispatched.critical-row {
+  border-left: none;
+}
+
+.operator-table-no-scroll .data-table tr.operator-stage-row-not-started.critical-row td:first-child,
+.operator-table-no-scroll .data-table tr.operator-stage-row-logged.critical-row td:first-child,
+.operator-table-no-scroll .data-table tr.operator-stage-row-dispatched.critical-row td:first-child {
+  box-shadow: inset 4px 0 0 #dc2626;
+}
+
+.operator-table-no-scroll .data-table tr.operator-stage-row-not-started.priority-row.priority-high,
+.operator-table-no-scroll .data-table tr.operator-stage-row-logged.priority-row.priority-high,
+.operator-table-no-scroll .data-table tr.operator-stage-row-dispatched.priority-row.priority-high {
+  border-left: none;
+}
+
+.operator-table-no-scroll .data-table tr.operator-stage-row-not-started.priority-row.priority-high td:first-child,
+.operator-table-no-scroll .data-table tr.operator-stage-row-logged.priority-row.priority-high td:first-child,
+.operator-table-no-scroll .data-table tr.operator-stage-row-dispatched.priority-row.priority-high td:first-child {
+  box-shadow: inset 3px 0 0 #ef4444;
+}
+
+.operator-table-no-scroll .data-table tr.operator-stage-row-not-started.priority-row.priority-medium,
+.operator-table-no-scroll .data-table tr.operator-stage-row-logged.priority-row.priority-medium,
+.operator-table-no-scroll .data-table tr.operator-stage-row-dispatched.priority-row.priority-medium {
+  border-left: none;
+}
+
+.operator-table-no-scroll .data-table tr.operator-stage-row-not-started.priority-row.priority-medium td:first-child,
+.operator-table-no-scroll .data-table tr.operator-stage-row-logged.priority-row.priority-medium td:first-child,
+.operator-table-no-scroll .data-table tr.operator-stage-row-dispatched.priority-row.priority-medium td:first-child {
+  box-shadow: inset 3px 0 0 #f59e0b;
+}
+
+.operator-table-no-scroll .data-table tr.operator-stage-row-not-started.priority-row.priority-low,
+.operator-table-no-scroll .data-table tr.operator-stage-row-logged.priority-row.priority-low,
+.operator-table-no-scroll .data-table tr.operator-stage-row-dispatched.priority-row.priority-low {
+  border-left: none;
+}
+
+.operator-table-no-scroll .data-table tr.operator-stage-row-not-started.priority-row.priority-low td:first-child,
+.operator-table-no-scroll .data-table tr.operator-stage-row-logged.priority-row.priority-low td:first-child,
+.operator-table-no-scroll .data-table tr.operator-stage-row-dispatched.priority-row.priority-low td:first-child {
+  box-shadow: inset 3px 0 0 #10b981;
+}
+
+/* Child rows: Stage legend controls background, flag controls left strip */
+.operator-table-no-scroll .child-jobs-table tr.child-row.operator-stage-row-not-started {
+  background-color: #ffefbf;
+}
+
+.operator-table-no-scroll .child-jobs-table tr.child-row.operator-stage-row-not-started:hover {
+  background-color: #ffe39a;
+}
+
+.operator-table-no-scroll .child-jobs-table tr.child-row.operator-stage-row-logged {
+  background-color: #dbeafe;
+}
+
+.operator-table-no-scroll .child-jobs-table tr.child-row.operator-stage-row-logged:hover {
+  background-color: #bfdbfe;
+}
+
+.operator-table-no-scroll .child-jobs-table tr.child-row.operator-stage-row-dispatched {
+  background-color: #ddd6fe;
+}
+
+.operator-table-no-scroll .child-jobs-table tr.child-row.operator-stage-row-dispatched:hover {
+  background-color: #c4b5fd;
+}
+
+.operator-subtabs {
+  display: inline-flex;
+  gap: 0.4rem;
+  margin-bottom: 0.7rem;
+}
+
+.operator-subtab {
+  border: 1px solid #cbd5e1;
+  background: #f8fafc;
+  color: #334155;
+  border-radius: 8px;
+  padding: 0.35rem 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.operator-subtab.active {
+  background: #1a1a2e;
+  border-color: #1a1a2e;
+  color: #ffffff;
+}
+
+.operator-logs-table .data-table td,
+.operator-logs-table .data-table th {
+  white-space: normal;
+}
+
+.operator-table-no-scroll .child-jobs-table tr.child-row.operator-stage-row-not-started td,
+.operator-table-no-scroll .child-jobs-table tr.child-row.operator-stage-row-logged td,
+.operator-table-no-scroll .child-jobs-table tr.child-row.operator-stage-row-dispatched td {
+  background: transparent;
+}
+
+.operator-table-no-scroll .child-jobs-table tr.child-row.child-critical-row td:first-child {
+  box-shadow: inset 4px 0 0 #dc2626;
+}
+
+.operator-table-no-scroll .child-jobs-table tr.child-row.child-priority-row.child-priority-high td:first-child {
+  box-shadow: inset 3px 0 0 #ef4444;
+}
+
+.operator-table-no-scroll .child-jobs-table tr.child-row.child-priority-row.child-priority-medium td:first-child {
+  box-shadow: inset 3px 0 0 #f59e0b;
+}
+
+.operator-table-no-scroll .child-jobs-table tr.child-row.child-priority-row.child-priority-low td:first-child {
+  box-shadow: inset 3px 0 0 #10b981;
 }
 
 /* ============================================

@@ -24,11 +24,25 @@ export const MultiSelectOperators: React.FC<MultiSelectOperatorsProps> = ({
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const normalizedSelfName = (assignToSelfName || "").trim().toLowerCase();
   
   // Normalize selectedOperators to remove duplicates
   const normalizedSelectedOperators = useMemo(() => {
     return [...new Set(selectedOperators.filter(Boolean))];
   }, [selectedOperators]);
+
+  const normalizedAvailableOperators = useMemo(() => {
+    const seen = new Set<string>();
+    return availableOperators.filter((operator) => {
+      const normalizedName = String(operator.name || "").trim();
+      if (!normalizedName) return false;
+      const key = normalizedName.toLowerCase();
+      if (seen.has(key)) return false;
+      if (normalizedSelfName && key === normalizedSelfName) return false;
+      seen.add(key);
+      return true;
+    });
+  }, [availableOperators, normalizedSelfName]);
   
   // If normalized array differs from props, update parent
   useEffect(() => {
@@ -145,7 +159,7 @@ export const MultiSelectOperators: React.FC<MultiSelectOperatorsProps> = ({
 
       {isOpen && !disabled && (
         <div className="multi-select-dropdown">
-          {availableOperators.length === 0 ? (
+          {normalizedAvailableOperators.length === 0 && !assignToSelfName ? (
             <div className="dropdown-empty">No operators available</div>
           ) : (
             <>
@@ -159,7 +173,7 @@ export const MultiSelectOperators: React.FC<MultiSelectOperatorsProps> = ({
                   <span>Assign To Me ({assignToSelfName})</span>
                 </div>
               )}
-              {availableOperators.map((operator) => {
+              {normalizedAvailableOperators.map((operator) => {
                 const isSelected = normalizedSelectedOperators.includes(operator.name);
                 return (
                   <div

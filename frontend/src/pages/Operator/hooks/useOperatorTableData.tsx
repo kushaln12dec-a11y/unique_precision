@@ -29,8 +29,12 @@ export const useOperatorTableData = (
   toggleGroup: (groupId: number) => void,
   handleImageInput: (groupId: number, cutId?: number) => void,
   handleAssignChange: (jobId: number | string, value: string) => void,
+  handleChildMachineNumberChange: (jobId: number | string, machineNumber: string) => void,
   operatorUsers: Array<{ id: string | number; name: string }>,
-  isAdmin: boolean
+  isAdmin: boolean,
+  isImageInputDisabled: boolean,
+  selectedChildRows: Set<string | number> = new Set(),
+  onChildRowSelect?: (groupId: number, rowKey: string | number, selected: boolean) => void
 ): UseOperatorTableDataReturn => {
   // Group jobs by groupId
   const groupedJobs = useMemo(() => {
@@ -142,10 +146,19 @@ export const useOperatorTableData = (
               onEdit={undefined}
               onImage={(groupId: number, cutId?: number) => handleImageInput(groupId, cutId)}
               onAssignChange={handleAssignChange}
+              onMachineNumberChange={handleChildMachineNumberChange}
               operatorUsers={operatorUsers}
               isOperator={true}
               isAdmin={isAdmin}
-              showCheckboxes={false}
+              disableImageButton={isImageInputDisabled}
+              showCheckboxes={true}
+              selectedRows={selectedChildRows}
+              onRowSelect={(rowKey, selected) => onChildRowSelect?.(row.groupId, rowKey, selected)}
+              getRowKey={(entry, index) =>
+                entry.id !== undefined && entry.id !== null
+                  ? String(entry.id)
+                  : `${row.groupId}-${index}`
+              }
             />
           ),
           ariaLabel: expandedGroups.has(row.groupId)
@@ -155,7 +168,19 @@ export const useOperatorTableData = (
       }
     });
     return map;
-  }, [tableData, expandedGroups, toggleGroup, handleImageInput, handleAssignChange, operatorUsers, isAdmin]);
+  }, [
+    tableData,
+    expandedGroups,
+    toggleGroup,
+    handleImageInput,
+    handleAssignChange,
+    handleChildMachineNumberChange,
+    operatorUsers,
+    isAdmin,
+    isImageInputDisabled,
+    selectedChildRows,
+    onChildRowSelect,
+  ]);
 
   return {
     tableData,

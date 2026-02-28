@@ -14,9 +14,11 @@ type ChildCutsTableProps = {
   onDelete?: (groupId: number, customer: string) => void;
   onImage?: (groupId: number, cutId?: number) => void;
   onAssignChange?: (jobId: number | string, value: string) => void;
+  onMachineNumberChange?: (jobId: number | string, value: string) => void;
   operatorUsers?: Array<{ id: number | string; name: string }>;
   isOperator?: boolean;
   isAdmin?: boolean;
+  disableImageButton?: boolean;
   showCheckboxes?: boolean;
   selectedRows?: Set<string | number>;
   onRowSelect?: (rowKey: string | number, selected: boolean) => void;
@@ -29,9 +31,11 @@ const ChildCutsTable: React.FC<ChildCutsTableProps> = ({
   onDelete,
   onImage,
   onAssignChange,
+  onMachineNumberChange,
   operatorUsers = [],
   isOperator = false,
   isAdmin = false,
+  disableImageButton = false,
   showCheckboxes = false,
   selectedRows = new Set(),
   onRowSelect,
@@ -49,6 +53,14 @@ const ChildCutsTable: React.FC<ChildCutsTableProps> = ({
     if (text === "yes" || text === "y" || text === "true") return "Y";
     if (text === "no" || text === "n" || text === "false") return "N";
     return String(value || "-");
+  };
+  const getMachineNumber = (entry: JobEntry): string => {
+    const direct = String((entry as any).machineNumber || "").trim();
+    if (direct) return direct;
+    const captures = Array.isArray(entry.operatorCaptures) ? entry.operatorCaptures : [];
+    const latest = captures[captures.length - 1];
+    const captureMachine = String(latest?.machineNumber || "").trim();
+    return ["1", "2", "3", "4", "5", "6"].includes(captureMachine) ? captureMachine : "";
   };
 
   const [selectedCut, setSelectedCut] = useState<JobEntry | null>(null);
@@ -141,6 +153,7 @@ const ChildCutsTable: React.FC<ChildCutsTableProps> = ({
             </th>
             <th className="sedm-col">SEDM</th>
             {isOperator && <th className="assigned-col">Assigned</th>}
+            {isOperator && <th className="mach-col">Mach #</th>}
             <th className="total-hrs-col">
               <span className="th-content">
                 Hrs
@@ -161,8 +174,19 @@ const ChildCutsTable: React.FC<ChildCutsTableProps> = ({
           {entries.map((entry, index) => {
             const rowKey = getRowKey(entry, index);
             const isSelected = effectiveSelectedRows.has(rowKey);
+            const childFlagClass = getRowClassName([entry], false, true);
+            const childStageClass = (() => {
+              if (!isOperator) return "";
+              const qty = Math.max(1, Number(entry.qty || 1));
+              const c = getQaProgressCounts(entry, qty);
+              const logged = c.saved + c.ready;
+              const maxCount = Math.max(logged, c.sent, c.empty);
+              if (c.sent === maxCount) return "operator-stage-row-dispatched";
+              if (logged === maxCount) return "operator-stage-row-logged";
+              return "operator-stage-row-not-started";
+            })();
             return (
-              <tr key={entry.id} className={getRowClassName([entry], false, true)}>
+              <tr key={entry.id} className={`${childFlagClass} ${childStageClass}`.trim()}>
                 {showCheckboxes ? (
                   <td className="checkbox-cell" onClick={(e) => e.stopPropagation()}>
                     <input
@@ -237,6 +261,27 @@ const ChildCutsTable: React.FC<ChildCutsTableProps> = ({
                   )}
                 </td>
               )}
+              {isOperator && (
+                <td className="mach-col">
+                  <select
+                    className="operator-machine-input"
+                    value={getMachineNumber(entry)}
+                    onClick={(e) => e.stopPropagation()}
+                    onChange={(event) => {
+                      const nextValue = event.target.value;
+                      onMachineNumberChange?.(entry.id, nextValue);
+                    }}
+                  >
+                    <option value="">Select</option>
+                    <option value="1">1</option>
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                    <option value="4">4</option>
+                    <option value="5">5</option>
+                    <option value="6">6</option>
+                  </select>
+                </td>
+              )}
               <td className="total-hrs-col">{entry.totalHrs ? formatHoursToHHMM(entry.totalHrs) : "-"}</td>
               {isAdmin && <td className="total-amount-col">{entry.totalAmount ? `₹${Math.round(entry.totalAmount)}` : "-"}</td>}
               {isOperator && (
@@ -266,6 +311,7 @@ const ChildCutsTable: React.FC<ChildCutsTableProps> = ({
                   deleteLabel={`Delete cut ${index + 1}`}
                   isChildTable={true}
                   isOperator={isOperator}
+                  disableImageButton={disableImageButton}
                 />
               </td>
             </tr>
