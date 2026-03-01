@@ -777,17 +777,21 @@
 .operator-status-legend-group {
   display: flex;
   align-items: flex-end;
-  justify-content: flex-start;
+  justify-content: space-between;
   gap: 0.45rem;
   flex-wrap: nowrap;
   white-space: nowrap;
   margin-left: 0;
-  flex: 0 0 auto;
-  min-width: 160px;
+  flex: 1 1 auto;
+  min-width: 320px;
+}
+
+.operator-status-legend-group .operator-inline-timer-group {
+  margin-left: auto;
 }
 
 .operator-inline-timer-group {
-  min-width: 170px;
+  min-width: 190px;
   position: relative;
 }
 
@@ -804,7 +808,7 @@
 }
 
 .operator-inline-timer-btn {
-  min-width: 166px;
+  min-width: 190px;
   height: 36px;
   border-radius: 10px;
   border: 1px solid #93c5fd;
@@ -964,6 +968,52 @@
   margin-left: 0;
   margin-right: 0;
   flex-shrink: 0;
+}
+
+/* Single owner/operator dropdown */
+.operator-assigned-dropdown {
+  width: 100%;
+  min-width: 120px;
+  max-width: 150px;
+  height: 30px;
+  border: 1px solid #93c5fd;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #ffffff 0%, #eff6ff 100%);
+  color: #0f172a;
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 0 1.8rem 0 0.55rem;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 12 12'%3E%3Cpath fill='%233b82f6' d='M6 9L1 4h10z'/%3E%3C/svg%3E"), linear-gradient(135deg, #ffffff 0%, #eff6ff 100%);
+  background-repeat: no-repeat, no-repeat;
+  background-position: right 0.55rem center, center;
+}
+
+.operator-assigned-dropdown:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.18);
+}
+
+.log-user-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  line-height: 1.2;
+}
+
+.log-user-stack strong {
+  font-size: 0.98rem;
+  color: #0f172a;
+  font-weight: 700;
+}
+
+.log-user-stack span {
+  font-size: 0.78rem;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  font-weight: 700;
 }
 
 @media (max-width: 1400px) {
@@ -1322,6 +1372,11 @@
 .operator-logs-table .data-table td,
 .operator-logs-table .data-table th {
   white-space: normal;
+}
+
+.operator-logs-table .data-table th:nth-child(1),
+.operator-logs-table .data-table td:nth-child(1) {
+  min-width: 170px;
 }
 
 .operator-logs-filters {

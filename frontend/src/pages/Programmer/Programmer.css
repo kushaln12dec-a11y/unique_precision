@@ -126,6 +126,32 @@
   white-space: normal;
 }
 
+.programmer-logs-table .data-table th:nth-child(1),
+.programmer-logs-table .data-table td:nth-child(1) {
+  min-width: 170px;
+}
+
+.log-user-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  line-height: 1.2;
+}
+
+.log-user-stack strong {
+  font-size: 0.98rem;
+  color: #0f172a;
+  font-weight: 700;
+}
+
+.log-user-stack span {
+  font-size: 0.78rem;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  font-weight: 700;
+}
+
 .inline-filters {
   display: flex;
   gap: 1rem;

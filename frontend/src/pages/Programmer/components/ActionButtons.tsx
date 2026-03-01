@@ -19,6 +19,7 @@ type ActionButtonsProps = {
   isChildTable?: boolean;
   isOperator?: boolean;
   disableImageButton?: boolean;
+  disableSubmitButton?: boolean;
 };
 
 const ActionButtons: React.FC<ActionButtonsProps> = ({
@@ -35,6 +36,7 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({
   isChildTable = false,
   isOperator = false,
   disableImageButton = false,
+  disableSubmitButton = false,
 }) => {
   const isAdmin = getUserRoleFromToken() === "ADMIN";
   const isProgrammer = getUserRoleFromToken() === "PROGRAMMER";
@@ -87,12 +89,14 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({
         <button
           type="button"
           className="action-icon-button submit-icon"
+          disabled={disableSubmitButton}
           onClick={(e) => {
             e.stopPropagation();
+            if (disableSubmitButton) return;
             onSubmit();
           }}
           aria-label={submitLabel || "Submit"}
-          title={submitLabel || "Submit"}
+          title={disableSubmitButton ? "Complete all quantities as Ready for QA first" : (submitLabel || "Submit")}
         >
           <CheckCircleIcon fontSize="small" />
         </button>

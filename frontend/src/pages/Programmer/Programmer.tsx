@@ -4,6 +4,7 @@ import Sidebar from "../../components/Sidebar";
 import Header from "../../components/Header";
 import DataTable, { type Column } from "../../components/DataTable";
 import Toast from "../../components/Toast";
+import DownloadIcon from "@mui/icons-material/Download";
 import ConfirmDeleteModal from "../../components/ConfirmDeleteModal";
 import { getUserRoleFromToken } from "../../utils/auth";
 import "../../utils/tokenDebug";
@@ -357,7 +358,16 @@ const Programmer = () => {
         key: "user",
         label: "User",
         sortable: false,
-        render: (row) => designationByUserId.get(String(row.userId)) || "-",
+        render: (row) => {
+          const designation = designationByUserId.get(String(row.userId)) || "Programmer";
+          const name = String(row.userName || "").trim();
+          return (
+            <div className="log-user-stack">
+              <strong>{name || "-"}</strong>
+              <span>{designation}</span>
+            </div>
+          );
+        },
       },
       {
         key: "jobNumber",
@@ -385,6 +395,35 @@ const Programmer = () => {
     ],
     [designationByUserId]
   );
+
+  const handleExportProgrammerLogsCsv = () => {
+    const headers = ["User", "JOB #", "Started at", "Ended at", "Shift", "Duration", "Status"];
+    const rows = filteredProgrammerLogs.map((row) => {
+      const designation = designationByUserId.get(String(row.userId)) || "Programmer";
+      const name = String(row.userName || "").trim();
+      const userValue = name ? `${name} (${designation})` : designation;
+      const ref = String(row.refNumber || "").trim().replace(/^#/, "");
+      return [
+        userValue,
+        ref ? `#${ref}` : "-",
+        formatDisplayDateTime(row.startedAt),
+        formatDisplayDateTime(row.endedAt || null),
+        getShiftLabel(row.startedAt),
+        formatDuration(row.durationSeconds),
+        String(row.status || "-"),
+      ];
+    });
+
+    const csvContent = [headers.join(","), ...rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(","))].join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", `programmer_logs_${new Date().toISOString().split("T")[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   return (
     <div className="programmer-container">
@@ -518,6 +557,10 @@ const Programmer = () => {
                       );
                     })}
                 </select>
+                <button className="btn-download-csv" onClick={handleExportProgrammerLogsCsv} title="Download Logs CSV">
+                  <DownloadIcon sx={{ fontSize: "1rem" }} />
+                  CSV
+                </button>
               </div>
               <DataTable
                 columns={programmerLogColumns}

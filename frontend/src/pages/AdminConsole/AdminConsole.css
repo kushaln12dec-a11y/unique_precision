@@ -18,6 +18,11 @@
   gap: 0.45rem;
 }
 
+.admin-card.glossy-card {
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+}
+
 .admin-card h4 {
   margin: 0;
   font-size: 1rem;
@@ -86,6 +91,18 @@
   display: grid;
   grid-template-columns: repeat(3, minmax(120px, 1fr));
   gap: 0.55rem;
+}
+
+.admin-th-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.admin-th-row {
+  display: grid;
+  grid-template-columns: 120px 1fr auto;
+  gap: 0.45rem;
 }
 
 .admin-console-actions {

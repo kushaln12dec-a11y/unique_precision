@@ -1,39 +1,43 @@
-import DashboardIcon from "@mui/icons-material/Dashboard";
-import CodeIcon from "@mui/icons-material/Code";
-import BuildIcon from "@mui/icons-material/Build";
-import VerifiedUserIcon from "@mui/icons-material/VerifiedUser";
-import InventoryIcon from "@mui/icons-material/Inventory";
-import PeopleIcon from "@mui/icons-material/People";
-import GroupsIcon from "@mui/icons-material/Groups";
-import SettingsSuggestIcon from "@mui/icons-material/SettingsSuggest";
-import LogoutIcon from "@mui/icons-material/Logout";
-import type { SidebarProps } from "../types/sidebar";
-import { getUserRoleFromToken } from "../utils/auth";
-import "./Sidebar.css";
+import DashboardIcon from '@mui/icons-material/Dashboard';
+import CodeIcon from '@mui/icons-material/Code';
+import BuildIcon from '@mui/icons-material/Build';
+import VerifiedUserIcon from '@mui/icons-material/VerifiedUser';
+import InventoryIcon from '@mui/icons-material/Inventory';
+import PeopleIcon from '@mui/icons-material/People';
+import GroupsIcon from '@mui/icons-material/Groups';
+import SettingsSuggestIcon from '@mui/icons-material/SettingsSuggest';
+import LogoutIcon from '@mui/icons-material/Logout';
+import type { SidebarProps } from '../types/sidebar';
+import { getUserRoleFromToken } from '../utils/auth';
+import './Sidebar.css';
 
-const Sidebar = ({ currentPath = "/dashboard", onNavigate }: SidebarProps) => {
+const Sidebar = ({ currentPath = '/dashboard', onNavigate }: SidebarProps) => {
   const role = getUserRoleFromToken()?.toUpperCase();
   const menuItems = [
-    { icon: DashboardIcon, label: "Dashboard", path: "/dashboard" },
-    { icon: CodeIcon, label: "Programmer", path: "/programmer" },
-    { icon: BuildIcon, label: "Operator", path: "/operator" },
-    { icon: VerifiedUserIcon, label: "QC", path: "/qc" },
-    { icon: InventoryIcon, label: "Inventory", path: "/inventory" },
-    { icon: PeopleIcon, label: "User Management", path: "/users" },
-    { icon: GroupsIcon, label: "Employee Logs", path: "/employee-logs" },
-    { icon: SettingsSuggestIcon, label: "Admin Console", path: "/admin-console" },
+    { icon: DashboardIcon, label: 'Dashboard', path: '/dashboard' },
+    { icon: CodeIcon, label: 'Programmer', path: '/programmer' },
+    { icon: BuildIcon, label: 'Operator', path: '/operator' },
+    { icon: VerifiedUserIcon, label: 'QC', path: '/qc' },
+    {
+      icon: SettingsSuggestIcon,
+      label: 'Admin Console',
+      path: '/admin-console',
+    },
+    { icon: InventoryIcon, label: 'Inventory', path: '/inventory' },
+    { icon: PeopleIcon, label: 'User Management', path: '/users' },
+    { icon: GroupsIcon, label: 'Job Logs', path: '/employee-logs' },
   ];
   const filteredMenuItems =
-    role && role !== "ADMIN"
+    role && role !== 'ADMIN'
       ? menuItems.filter((item) => item.label.toUpperCase() === role)
       : menuItems;
 
   const handleLogout = () => {
-    localStorage.removeItem("token");
+    localStorage.removeItem('token');
     if (onNavigate) {
-      onNavigate("/login");
+      onNavigate('/login');
     } else {
-      window.location.href = "/login";
+      window.location.href = '/login';
     }
   };
 
@@ -41,8 +45,16 @@ const Sidebar = ({ currentPath = "/dashboard", onNavigate }: SidebarProps) => {
     <div className="sidebar collapsed">
       <div className="sidebar-header">
         <div className="sidebar-logo">
-          <img src="/logo-cropped.svg" alt="Unique Precision" className="logo-collapsed" />
-          <img src="/logo.svg" alt="Unique Precision" className="logo-expanded" />
+          <img
+            src="/logo-cropped.svg"
+            alt="Unique Precision"
+            className="logo-collapsed"
+          />
+          <img
+            src="/logo.svg"
+            alt="Unique Precision"
+            className="logo-expanded"
+          />
         </div>
       </div>
 
@@ -53,7 +65,7 @@ const Sidebar = ({ currentPath = "/dashboard", onNavigate }: SidebarProps) => {
           return (
             <button
               key={index}
-              className={`nav-item ${isActive ? "active" : ""}`}
+              className={`nav-item ${isActive ? 'active' : ''}`}
               onClick={() => onNavigate && onNavigate(item.path)}
               title={item.label}
             >

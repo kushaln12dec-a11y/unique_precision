@@ -29,11 +29,9 @@ const AdminConsole = () => {
   const [materialsText, setMaterialsText] = useState("");
   const [passText, setPassText] = useState("");
   const [electrodeText, setElectrodeText] = useState("");
-  const [thOptionText, setThOptionText] = useState("");
+  const [thOptionsRows, setThOptionsRows] = useState<Array<{ value: string; label: string }>>([]);
+  const [thPreset, setThPreset] = useState("");
   const [customers, setCustomers] = useState<Array<{ customer: string; rate: string }>>([]);
-  const [settingHoursPerSetting, setSettingHoursPerSetting] = useState("0.5");
-  const [complexExtraHours, setComplexExtraHours] = useState("1");
-  const [pipExtraHours, setPipExtraHours] = useState("1");
 
   const isAdmin = useMemo(() => getUserRoleFromToken() === "ADMIN", []);
 
@@ -51,10 +49,7 @@ const AdminConsole = () => {
         setMaterialsText(fetched.materials.join(", "));
         setPassText(fetched.passOptions.join(", "));
         setElectrodeText(fetched.sedmElectrodeOptions.join(", "));
-        setThOptionText(fetched.sedmThOptions.map((opt) => `${opt.value}|${opt.label}`).join("\n"));
-        setSettingHoursPerSetting(String(fetched.settingHoursPerSetting ?? 0.5));
-        setComplexExtraHours(String(fetched.complexExtraHours ?? 1));
-        setPipExtraHours(String(fetched.pipExtraHours ?? 1));
+        setThOptionsRows(fetched.sedmThOptions);
       } catch (error) {
         setToast({ message: "Failed to load Admin Console data", variant: "error", visible: true });
       } finally {
@@ -69,14 +64,8 @@ const AdminConsole = () => {
     if (!config) return;
     setSaving(true);
     try {
-      const sedmThOptions = thOptionText
-        .split("\n")
-        .map((line) => line.trim())
-        .filter(Boolean)
-        .map((line) => {
-          const [value, label] = line.split("|").map((v) => v.trim());
-          return { value: value || "", label: label || value || "" };
-        })
+      const sedmThOptions = thOptionsRows
+        .map((item) => ({ value: item.value.trim(), label: item.label.trim() }))
         .filter((item) => item.value && item.label);
 
       const payload: MasterConfig = {
@@ -87,9 +76,9 @@ const AdminConsole = () => {
         passOptions: parseCsv(passText),
         sedmElectrodeOptions: parseCsv(electrodeText),
         sedmThOptions,
-        settingHoursPerSetting: Number(settingHoursPerSetting) || 0.5,
-        complexExtraHours: Number(complexExtraHours) || 1,
-        pipExtraHours: Number(pipExtraHours) || 1,
+        settingHoursPerSetting: Number(config.settingHoursPerSetting) || 0.5,
+        complexExtraHours: Number(config.complexExtraHours) || 1,
+        pipExtraHours: Number(config.pipExtraHours) || 1,
       };
 
       const updated = await updateMasterConfig(payload);
@@ -112,6 +101,26 @@ const AdminConsole = () => {
 
   const removeCustomerRow = (index: number) => {
     setCustomers((prev) => prev.filter((_, idx) => idx !== index));
+  };
+
+  const updateThRow = (index: number, field: "value" | "label", value: string) => {
+    setThOptionsRows((prev) => prev.map((row, idx) => (idx === index ? { ...row, [field]: value } : row)));
+  };
+
+  const addThRow = () => {
+    setThOptionsRows((prev) => [...prev, { value: "", label: "" }]);
+  };
+
+  const removeThRow = (index: number) => {
+    setThOptionsRows((prev) => prev.filter((_, idx) => idx !== index));
+  };
+
+  const applyThPreset = (preset: string) => {
+    setThPreset(preset);
+    if (!preset) return;
+    const [value, label] = preset.split("|");
+    if (!value || !label) return;
+    setThOptionsRows((prev) => [...prev, { value: value.trim(), label: label.trim() }]);
   };
 
   return (
@@ -154,7 +163,7 @@ const AdminConsole = () => {
                 </button>
               </section>
 
-              <section className="admin-card">
+              <section className="admin-card glossy-card">
                 <h4>Master Dropdown Values</h4>
                 <label>Material (comma-separated)</label>
                 <textarea value={materialsText} onChange={(e) => setMaterialsText(e.target.value)} rows={3} />
@@ -164,42 +173,45 @@ const AdminConsole = () => {
 
                 <label>SEDM Electrode (comma-separated)</label>
                 <textarea value={electrodeText} onChange={(e) => setElectrodeText(e.target.value)} rows={3} />
-
-                <label>SEDM TH Option (one per line: value|label)</label>
-                <textarea value={thOptionText} onChange={(e) => setThOptionText(e.target.value)} rows={3} />
               </section>
 
-              <section className="admin-card">
-                <h4>Calculation Hours</h4>
-                <div className="admin-hours-grid">
-                  <label>
-                    Setting hour multiplier
-                    <input
-                      type="number"
-                      step="0.1"
-                      value={settingHoursPerSetting}
-                      onChange={(e) => setSettingHoursPerSetting(e.target.value)}
-                    />
-                  </label>
-                  <label>
-                    Complex extra hours
-                    <input
-                      type="number"
-                      step="0.1"
-                      value={complexExtraHours}
-                      onChange={(e) => setComplexExtraHours(e.target.value)}
-                    />
-                  </label>
-                  <label>
-                    PIP extra hours
-                    <input
-                      type="number"
-                      step="0.1"
-                      value={pipExtraHours}
-                      onChange={(e) => setPipExtraHours(e.target.value)}
-                    />
-                  </label>
+              <section className="admin-card glossy-card">
+                <h4>SEDM TH Options</h4>
+                <p className="admin-help">Card view with value + label. Use preset dropdown or add custom rows.</p>
+
+                <label>Quick Preset</label>
+                <select value={thPreset} onChange={(e) => applyThPreset(e.target.value)}>
+                  <option value="">Select preset</option>
+                  <option value="0.5|0.50 mm">0.50 mm</option>
+                  <option value="1.0|1.00 mm">1.00 mm</option>
+                  <option value="1.5|1.50 mm">1.50 mm</option>
+                  <option value="2.0|2.00 mm">2.00 mm</option>
+                </select>
+
+                <div className="admin-th-grid">
+                  {thOptionsRows.map((row, index) => (
+                    <div className="admin-th-row" key={`th-${index}`}>
+                      <input
+                        type="text"
+                        value={row.value}
+                        placeholder="Value"
+                        onChange={(e) => updateThRow(index, "value", e.target.value)}
+                      />
+                      <input
+                        type="text"
+                        value={row.label}
+                        placeholder="Label"
+                        onChange={(e) => updateThRow(index, "label", e.target.value)}
+                      />
+                      <button type="button" className="admin-remove-btn" onClick={() => removeThRow(index)}>
+                        Remove
+                      </button>
+                    </div>
+                  ))}
                 </div>
+                <button type="button" className="admin-add-btn" onClick={addThRow}>
+                  Add TH Option
+                </button>
               </section>
             </div>
           )}

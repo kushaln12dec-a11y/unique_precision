@@ -3,7 +3,6 @@ import type { JobEntry } from "../../../types/job";
 import { formatDisplayDateTime, formatHoursToHHMM } from "../../../utils/date";
 import ActionButtons from "../../Programmer/components/ActionButtons";
 import ArrowForwardIosSharpIcon from "@mui/icons-material/ArrowForwardIosSharp";
-import { MultiSelectOperators } from "../components/MultiSelectOperators";
 import { getGroupQaProgressCounts } from "../utils/qaProgress";
 import type { Column } from "../../../components/DataTable";
 
@@ -26,6 +25,8 @@ type UseOperatorTableProps = {
   handleViewJob: (row: TableRow) => void;
   handleSubmit: (groupId: number) => void;
   handleImageInput: (groupId: number, cutId?: number) => void;
+  handleMoveGroupToQa: (row: TableRow) => void;
+  canMoveGroupToQa: (entries: JobEntry[]) => boolean;
   isAdmin: boolean;
   isImageInputDisabled: boolean;
 };
@@ -39,6 +40,8 @@ export const useOperatorTable = ({
   handleMachineNumberChange,
   handleViewJob,
   handleSubmit,
+  handleMoveGroupToQa,
+  canMoveGroupToQa,
   isAdmin,
   isImageInputDisabled,
 }: UseOperatorTableProps): Column<TableRow>[] => {
@@ -171,7 +174,7 @@ export const useOperatorTable = ({
       },
       {
         key: "assignedTo",
-        label: "Assigned",
+        label: "Operator",
         sortable: false,
         render: (row) => {
           const assignedToValue = row.parent.assignedTo || "";
@@ -183,33 +186,35 @@ export const useOperatorTable = ({
             assignedOperators = [...new Set(assignedToValue.split(",").map((name) => name.trim()).filter(Boolean))];
           }
 
+          const selectedOwner = assignedOperators[0] || "";
+          const normalizedCurrentUser = currentUserName.trim().toLowerCase();
+          const currentUserAlreadyInList = operatorUsers.some(
+            (user) => user.name.trim().toLowerCase() === normalizedCurrentUser
+          );
+
           return canAssign ? (
-            <MultiSelectOperators
-              selectedOperators={assignedOperators}
-              availableOperators={operatorUsers}
+            <select
               className="operator-assigned-dropdown"
-              assignToSelfName={currentUserName || undefined}
-              onChange={(operators) => {
-                const uniqueOperators = [...new Set(operators)];
-                const value = uniqueOperators.length > 0 ? uniqueOperators.join(", ") : "Unassigned";
-                handleAssignChange(row.parent.id, value);
+              value={selectedOwner}
+              onClick={(event) => event.stopPropagation()}
+              onChange={(event) => {
+                const value = event.target.value.trim();
+                handleAssignChange(row.parent.id, value || "Unassigned");
               }}
-              placeholder="Select operators..."
-              compact={true}
-            />
+            >
+              <option value="">Select operator</option>
+              {currentUserName && !currentUserAlreadyInList ? (
+                <option value={currentUserName}>Assign to me</option>
+              ) : null}
+              {operatorUsers.map((user) => (
+                <option key={user.id} value={user.name}>
+                  {user.name}
+                </option>
+              ))}
+            </select>
           ) : (
-          <div className="assigned-operators-readonly">
-              {assignedOperators.length > 0 ? (
-                assignedOperators.length > 1 ? (
-                  <span className="compact-display-readonly" title={assignedOperators.join(", ")}>
-                    {assignedOperators[0]}+{assignedOperators.length - 1}
-                  </span>
-                ) : (
-                  <span className="operator-badge-readonly">{assignedOperators[0]}</span>
-                )
-              ) : (
-                <span className="unassigned-text">Unassigned</span>
-              )}
+            <div className="assigned-operators-readonly">
+              {selectedOwner ? <span className="operator-badge-readonly">{selectedOwner}</span> : <span className="unassigned-text">Unassigned</span>}
             </div>
           );
         },
@@ -307,10 +312,13 @@ export const useOperatorTable = ({
             <ActionButtons
               onView={() => handleViewJob(row)}
               onImage={!hasChildren ? () => handleSubmit(row.groupId) : undefined}
+              onSubmit={() => handleMoveGroupToQa(row)}
               viewLabel={`View ${row.parent.customer || "entry"}`}
               imageLabel={`Open ${row.parent.customer || "entry"}`}
+              submitLabel="Move to QC"
               isOperator={true}
               disableImageButton={isImageInputDisabled}
+              disableSubmitButton={!canMoveGroupToQa(row.entries)}
             />
           );
         },
@@ -325,6 +333,8 @@ export const useOperatorTable = ({
       expandableRows,
       handleViewJob,
       handleSubmit,
+      handleMoveGroupToQa,
+      canMoveGroupToQa,
       isAdmin,
       isImageInputDisabled,
     ]

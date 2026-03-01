@@ -110,6 +110,14 @@
   text-overflow: ellipsis;
 }
 
+.user-designation {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
 .calendar-container {
   position: relative;
 }

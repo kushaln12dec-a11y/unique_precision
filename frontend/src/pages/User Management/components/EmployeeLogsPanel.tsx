@@ -1,10 +1,20 @@
-import { useEffect, useMemo, useState } from "react";
-import DataTable, { type Column } from "../../../components/DataTable";
-import { getEmployeeLogs } from "../../../services/employeeLogsApi";
-import type { EmployeeLog } from "../../../types/employeeLog";
-import { formatDisplayDateTime } from "../../../utils/date";
+import { useEffect, useMemo, useState } from 'react';
+import DataTable, { type Column } from '../../../components/DataTable';
+import { getEmployeeLogs } from '../../../services/employeeLogsApi';
+import DownloadIcon from '@mui/icons-material/Download';
+import type { EmployeeLog } from '../../../types/employeeLog';
+import { formatDisplayDateTime } from '../../../utils/date';
 
-type RoleTab = "PROGRAMMER" | "OPERATOR" | "QC";
+type RoleTab = 'PROGRAMMER' | 'OPERATOR' | 'QC';
+
+const formatRoleLabel = (role?: string) => {
+  const value = String(role || '').toUpperCase();
+  if (value === 'PROGRAMMER') return 'Programmer';
+  if (value === 'OPERATOR') return 'Operator';
+  if (value === 'QC') return 'QC';
+  if (value === 'ADMIN') return 'Admin';
+  return value || '-';
+};
 
 const formatDateTime = (value?: string | null) => {
   return formatDisplayDateTime(value || null);
@@ -21,19 +31,21 @@ const formatDuration = (seconds?: number) => {
 };
 
 export const EmployeeLogsPanel = () => {
-  const [activeRole, setActiveRole] = useState<RoleTab>("PROGRAMMER");
-  const [statusFilter, setStatusFilter] = useState<"" | "COMPLETED" | "IN_PROGRESS">("");
-  const [searchQuery, setSearchQuery] = useState("");
+  const [activeRole, setActiveRole] = useState<RoleTab>('PROGRAMMER');
+  const [statusFilter, setStatusFilter] = useState<
+    '' | 'COMPLETED' | 'IN_PROGRESS'
+  >('');
+  const [searchQuery, setSearchQuery] = useState('');
   const [logs, setLogs] = useState<EmployeeLog[]>([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [entriesPerPage, setEntriesPerPage] = useState(10);
 
   useEffect(() => {
     const loadLogs = async () => {
       setLoading(true);
-      setError("");
+      setError('');
       try {
         const data = await getEmployeeLogs({
           role: activeRole,
@@ -42,7 +54,7 @@ export const EmployeeLogsPanel = () => {
         });
         setLogs(data);
       } catch (fetchError: any) {
-        setError(fetchError?.message || "Failed to load employee logs");
+        setError(fetchError?.message || 'Failed to load employee logs');
       } finally {
         setLoading(false);
       }
@@ -51,39 +63,127 @@ export const EmployeeLogsPanel = () => {
     loadLogs();
   }, [activeRole, statusFilter, searchQuery]);
 
-  const columns = useMemo<Column<EmployeeLog>[]>(
-    () => [
+  const columns = useMemo<Column<EmployeeLog>[]>(() => {
+    if (activeRole === 'OPERATOR') {
+      return [
+        {
+          key: 'employee',
+          label: 'Employee',
+          sortable: false,
+          render: (row) => (
+            <div className="employee-log-user">
+              <strong>{row.userName || 'Unknown User'}</strong>
+              <span>{formatRoleLabel((row.metadata as any)?.userRole || row.role)}</span>
+            </div>
+          ),
+        },
+        {
+          key: 'workItemTitle',
+          label: 'Work Item',
+          sortable: false,
+          render: (row) => row.workItemTitle || '-',
+        },
+        {
+          key: 'workSummary',
+          label: 'Summary',
+          sortable: false,
+          render: (row) => row.workSummary || '-',
+        },
+        {
+          key: 'idleTime',
+          label: 'Idle Time',
+          sortable: false,
+          render: (row) => String((row.metadata as any)?.idleTime || '-'),
+        },
+        {
+          key: 'remark',
+          label: 'Remark',
+          sortable: false,
+          render: (row) => String((row.metadata as any)?.remark || '-'),
+        },
+        {
+          key: 'revenue',
+          label: 'Revenue',
+          sortable: false,
+          render: (row) => {
+            const metadata = (row.metadata || {}) as Record<string, any>;
+            const explicit = metadata.revenue;
+            if (
+              explicit !== undefined &&
+              explicit !== null &&
+              String(explicit).trim() !== ''
+            )
+              return String(explicit);
+            const wedm = Number(metadata.wedmAmount || 0);
+            const users = Math.max(1, Number(metadata.workedUserCount || 1));
+            return wedm > 0 ? `₹${(wedm / users).toFixed(2)}` : '-';
+          },
+        },
+        {
+          key: 'startedAt',
+          label: 'Started At',
+          sortable: false,
+          render: (row) => formatDateTime(row.startedAt),
+        },
+        {
+          key: 'endedAt',
+          label: 'Ended At',
+          sortable: false,
+          render: (row) => formatDateTime(row.endedAt || null),
+        },
+        {
+          key: 'durationSeconds',
+          label: 'Time Taken',
+          sortable: false,
+          render: (row) => formatDuration(row.durationSeconds),
+        },
+        {
+          key: 'status',
+          label: 'Status',
+          sortable: false,
+          render: (row) => (
+            <span
+              className={`employee-log-status status-${row.status.toLowerCase()}`}
+            >
+              {row.status === 'IN_PROGRESS' ? 'In Progress' : 'Completed'}
+            </span>
+          ),
+        },
+      ] as Column<EmployeeLog>[];
+    }
+
+    return [
       {
-        key: "employee",
-        label: "Employee",
+        key: 'employee',
+        label: 'Employee',
         sortable: false,
         render: (row) => (
           <div className="employee-log-user">
-            <strong>{row.userName || "Unknown User"}</strong>
-            <span>{row.userEmail || "-"}</span>
+            <strong>{row.userName || 'Unknown User'}</strong>
+            <span>{formatRoleLabel((row.metadata as any)?.userRole || row.role)}</span>
           </div>
         ),
       },
       {
-        key: "workItemTitle",
-        label: "Work Item",
+        key: 'workItemTitle',
+        label: 'Work Item',
         sortable: false,
-        className: "employee-work-item-cell",
+        className: 'employee-work-item-cell',
         render: (row) => (
           <div className="employee-work-item">
-            <span className="ref-badge">Job #{row.refNumber || "-"}</span>
+            <span className="ref-badge">Job #{row.refNumber || '-'}</span>
           </div>
         ),
       },
       {
-        key: "jobDescription",
-        label: "Description",
+        key: 'jobDescription',
+        label: 'Description',
         sortable: false,
-        render: (row) => row.jobDescription || "-",
+        render: (row) => row.jobDescription || '-',
       },
       {
-        key: "quantityCount",
-        label: "Quantities",
+        key: 'quantityCount',
+        label: 'Quantities',
         sortable: false,
         render: (row) => {
           const computed =
@@ -92,55 +192,87 @@ export const EmployeeLogsPanel = () => {
             (Number(row.quantityTo || 0) && Number(row.quantityFrom || 0)
               ? Number(row.quantityTo) - Number(row.quantityFrom) + 1
               : 0);
-          return computed > 0 ? computed : "-";
+          return computed > 0 ? computed : '-';
         },
       },
       {
-        key: "startedAt",
-        label: "Started At",
+        key: 'startedAt',
+        label: 'Started At',
         sortable: false,
         render: (row) => formatDateTime(row.startedAt),
       },
       {
-        key: "endedAt",
-        label: "Ended At",
+        key: 'endedAt',
+        label: 'Ended At',
         sortable: false,
         render: (row) => formatDateTime(row.endedAt || null),
       },
       {
-        key: "durationSeconds",
-        label: "Time Taken",
+        key: 'durationSeconds',
+        label: 'Time Taken',
         sortable: false,
         render: (row) => formatDuration(row.durationSeconds),
       },
       {
-        key: "status",
-        label: "Status",
+        key: 'status',
+        label: 'Status',
         sortable: false,
         render: (row) => (
-          <span className={`employee-log-status status-${row.status.toLowerCase()}`}>
-            {row.status === "IN_PROGRESS" ? "In Progress" : "Completed"}
+          <span
+            className={`employee-log-status status-${row.status.toLowerCase()}`}
+          >
+            {row.status === 'IN_PROGRESS' ? 'In Progress' : 'Completed'}
           </span>
         ),
       },
-    ],
-    []
-  );
+    ] as Column<EmployeeLog>[];
+  }, [activeRole]);
+
+  const handleExportCsv = () => {
+    const headers = columns.map((col) => String(col.label));
+    const rows = logs.map((row, index) =>
+      columns.map((col) => {
+        try {
+          const rendered = col.render
+            ? col.render(row, index)
+            : (row as any)[col.key];
+          if (typeof rendered === 'string' || typeof rendered === 'number')
+            return String(rendered);
+          if (!rendered) return '';
+          return String((row as any)[col.key] ?? '');
+        } catch {
+          return String((row as any)[col.key] ?? '');
+        }
+      }),
+    );
+
+    const csvContent = [
+      headers.join(','),
+      ...rows.map((r) =>
+        r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(','),
+      ),
+    ].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute(
+      'download',
+      `job_logs_${activeRole.toLowerCase()}_${new Date().toISOString().split('T')[0]}.csv`,
+    );
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   return (
     <div className="employee-logs-container">
-      <div className="employee-logs-header">
-        <div>
-          <h2>Employee Logs</h2>
-        </div>
-      </div>
-
       <div className="employee-role-tabs">
         <button
           type="button"
-          className={`employee-role-tab ${activeRole === "PROGRAMMER" ? "active" : ""}`}
+          className={`employee-role-tab ${activeRole === 'PROGRAMMER' ? 'active' : ''}`}
           onClick={() => {
-            setActiveRole("PROGRAMMER");
+            setActiveRole('PROGRAMMER');
             setCurrentPage(1);
           }}
         >
@@ -148,9 +280,9 @@ export const EmployeeLogsPanel = () => {
         </button>
         <button
           type="button"
-          className={`employee-role-tab ${activeRole === "OPERATOR" ? "active" : ""}`}
+          className={`employee-role-tab ${activeRole === 'OPERATOR' ? 'active' : ''}`}
           onClick={() => {
-            setActiveRole("OPERATOR");
+            setActiveRole('OPERATOR');
             setCurrentPage(1);
           }}
         >
@@ -158,9 +290,9 @@ export const EmployeeLogsPanel = () => {
         </button>
         <button
           type="button"
-          className={`employee-role-tab ${activeRole === "QC" ? "active" : ""}`}
+          className={`employee-role-tab ${activeRole === 'QC' ? 'active' : ''}`}
           onClick={() => {
-            setActiveRole("QC");
+            setActiveRole('QC');
             setCurrentPage(1);
           }}
         >
@@ -183,7 +315,7 @@ export const EmployeeLogsPanel = () => {
           className="employee-status-select"
           value={statusFilter}
           onChange={(e) => {
-            setStatusFilter(e.target.value as "" | "COMPLETED" | "IN_PROGRESS");
+            setStatusFilter(e.target.value as '' | 'COMPLETED' | 'IN_PROGRESS');
             setCurrentPage(1);
           }}
         >
@@ -191,12 +323,24 @@ export const EmployeeLogsPanel = () => {
           <option value="COMPLETED">Completed</option>
           <option value="IN_PROGRESS">In Progress</option>
         </select>
+        <button
+          type="button"
+          className="employee-csv-btn"
+          onClick={handleExportCsv}
+          title="Download CSV"
+        >
+          <DownloadIcon sx={{ fontSize: '1rem' }} />
+          CSV
+        </button>
       </div>
 
-      {activeRole === "QC" ? (
+      {activeRole === 'QC' ? (
         <div className="qa-placeholder-card">
           <h3>QA Logs</h3>
-          <p>QA logging tab is ready. QA event capture wiring can be added in the next step.</p>
+          <p>
+            QA logging tab is ready. QA event capture wiring can be added in the
+            next step.
+          </p>
         </div>
       ) : loading ? (
         <div className="loading">Loading employee logs...</div>

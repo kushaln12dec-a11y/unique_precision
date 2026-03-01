@@ -10,10 +10,14 @@
 .employee-logs-page-content {
   flex: 1;
   margin-left: 70px;
+  min-height: 100vh;
+  max-height: 100vh;
+  overflow-y: auto;
 }
 
 .employee-logs-page-shell {
   margin: 0.75rem 0.5rem 1.25rem 0.5rem;
+  padding-bottom: 1.25rem;
 }
 
 .employee-logs-container {
@@ -84,6 +88,24 @@
   margin-bottom: 1rem;
 }
 
+.employee-csv-btn {
+  height: 40px;
+  border-radius: 12px;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #0f172a;
+  font-weight: 700;
+  padding: 0 0.9rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  cursor: pointer;
+}
+
+.employee-csv-btn:hover {
+  background: #f8fafc;
+}
+
 .employee-search-input,
 .employee-status-select {
   height: 40px;
@@ -131,6 +153,9 @@
 .employee-log-user span {
   color: #64748b;
   font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.45px;
+  font-weight: 700;
 }
 
 .employee-work-item {

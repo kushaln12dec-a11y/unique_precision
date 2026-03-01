@@ -10,8 +10,7 @@ type OperatorFiltersProps = {
   filters: FilterValues;
   filterFields: FilterField[];
   filterCategories: FilterCategory[];
-  customerFilter: string;
-  descriptionFilter: string;
+  jobSearchFilter: string;
   createdByFilter: string;
   assignedToFilter: string;
   productionStageFilter: string;
@@ -23,8 +22,7 @@ type OperatorFiltersProps = {
   onApplyFilters: (filters: FilterValues) => void;
   onClearFilters: () => void;
   onRemoveFilter: (key: string, type: "inline" | "modal") => void;
-  onCustomerFilterChange: (value: string) => void;
-  onDescriptionFilterChange: (value: string) => void;
+  onJobSearchFilterChange: (value: string) => void;
   onCreatedByFilterChange: (value: string) => void;
   onAssignedToFilterChange: (value: string) => void;
   onProductionStageFilterChange: (value: string) => void;
@@ -47,8 +45,7 @@ export const OperatorFilters: React.FC<OperatorFiltersProps> = ({
   filters,
   filterFields,
   filterCategories,
-  customerFilter,
-  descriptionFilter,
+  jobSearchFilter,
   createdByFilter,
   assignedToFilter,
   productionStageFilter,
@@ -60,8 +57,7 @@ export const OperatorFilters: React.FC<OperatorFiltersProps> = ({
   onApplyFilters,
   onClearFilters,
   onRemoveFilter,
-  onCustomerFilterChange,
-  onDescriptionFilterChange,
+  onJobSearchFilterChange,
   onCreatedByFilterChange,
   onAssignedToFilterChange,
   onProductionStageFilterChange,
@@ -79,24 +75,13 @@ export const OperatorFilters: React.FC<OperatorFiltersProps> = ({
         <div className="inline-filters">
           <div className="operator-filters-top-row">
             <div className="filter-group operator-filter-customer">
-              <label htmlFor="customer-search">Customer</label>
+              <label htmlFor="operator-search">Search</label>
               <input
-                id="customer-search"
+                id="operator-search"
                 type="text"
-                placeholder="Search customer..."
-                value={customerFilter}
-                onChange={(e) => onCustomerFilterChange(e.target.value)}
-                className="filter-input"
-              />
-            </div>
-            <div className="filter-group operator-filter-description">
-              <label htmlFor="description-search">Description</label>
-              <input
-                id="description-search"
-                type="text"
-                placeholder="Search by description..."
-                value={descriptionFilter}
-                onChange={(e) => onDescriptionFilterChange(e.target.value)}
+                placeholder="Search customer or description..."
+                value={jobSearchFilter}
+                onChange={(e) => onJobSearchFilterChange(e.target.value)}
                 className="filter-input"
               />
             </div>
@@ -208,8 +193,8 @@ export const OperatorFilters: React.FC<OperatorFiltersProps> = ({
       <FilterBadges
         filters={filters}
         filterFields={filterFields}
-        customerFilter={customerFilter}
-        descriptionFilter={descriptionFilter}
+        customerFilter={jobSearchFilter}
+        descriptionFilter=""
         createdByFilter={createdByFilter}
         assignedToFilter={assignedToFilter}
         onRemoveFilter={onRemoveFilter}

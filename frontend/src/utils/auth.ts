@@ -20,56 +20,52 @@ export const getUserRoleFromToken = (): string | null => {
   }
 };
 
-export const getUserDisplayNameFromToken = (): string | null => {
+const getDecodedTokenPayload = (): Record<string, any> | null => {
   const token = localStorage.getItem("token");
-  if (!token) {
-    return null;
-  }
+  if (!token) return null;
 
   const parts = token.split(".");
-  if (parts.length < 2) {
-    return null;
-  }
+  if (parts.length < 2) return null;
 
   try {
-    const payload = parts[1]
-      .replace(/-/g, "+")
-      .replace(/_/g, "/");
-    const decoded = JSON.parse(atob(payload));
-    
-    // Prioritize fullName from token, then construct from firstName/lastName, then fallback
-    const displayName = 
-      decoded.fullName ||
-      (decoded.firstName && decoded.lastName ? `${decoded.firstName} ${decoded.lastName}`.trim() : null) ||
-      (decoded.firstName || decoded.lastName ? `${decoded.firstName || ""} ${decoded.lastName || ""}`.trim() : null) ||
-      decoded.name ||
-      decoded.username ||
-      (decoded.email ? "User" : null);
-    
-    return displayName;
+    const payload = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+    return JSON.parse(atob(payload));
   } catch {
     return null;
   }
 };
 
+export const getUserDisplayNameFromToken = (): string | null => {
+  const decoded = getDecodedTokenPayload();
+  if (!decoded) return null;
+
+  const displayName =
+    decoded.fullName ||
+    (decoded.firstName && decoded.lastName ? `${decoded.firstName} ${decoded.lastName}`.trim() : null) ||
+    (decoded.firstName || decoded.lastName ? `${decoded.firstName || ""} ${decoded.lastName || ""}`.trim() : null) ||
+    decoded.name ||
+    decoded.username ||
+    (decoded.email ? "User" : null);
+
+  return displayName;
+};
+
 export const getUserIdFromToken = (): string | null => {
-  const token = localStorage.getItem("token");
-  if (!token) {
-    return null;
-  }
+  const decoded = getDecodedTokenPayload();
+  return decoded?.userId || null;
+};
 
-  const parts = token.split(".");
-  if (parts.length < 2) {
-    return null;
-  }
+export const getUserDesignationFromToken = (): string | null => {
+  const decoded = getDecodedTokenPayload();
+  if (!decoded) return null;
 
-  try {
-    const payload = parts[1]
-      .replace(/-/g, "+")
-      .replace(/_/g, "/");
-    const decoded = JSON.parse(atob(payload));
-    return decoded.userId || null;
-  } catch {
-    return null;
-  }
+  const explicitDesignation = String(decoded.designation || "").trim();
+  if (explicitDesignation) return explicitDesignation;
+
+  const role = String(decoded.role || "").toUpperCase();
+  if (role === "ADMIN") return "Admin";
+  if (role === "PROGRAMMER") return "Programmer";
+  if (role === "OPERATOR") return "Operator";
+  if (role === "QC") return "QC";
+  return null;
 };

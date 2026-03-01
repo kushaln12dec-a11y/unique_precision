@@ -48,12 +48,9 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
     ? job.groupTotalAmount
     : 0;
 
-  /*const totalQuantity = useMemo(() => {
-    return displayEntries.reduce(
-      (sum, entry) => sum + Number(entry.qty || 0),
-      0
-    );
-  }, [displayEntries]);*/
+  const totalQuantity = useMemo(() => {
+    return displayEntries.reduce((sum, entry) => sum + Number(entry.qty || 0), 0);
+  }, [displayEntries]);
 
   const amounts = useMemo(() => {
     const totals = displayEntries.map((entry) =>
@@ -87,12 +84,12 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
         }`}
       >
         <div className="job-details-header">
-        <h2 className="job-details-title">
-  <span className="job-title">Job Details - UPC001</span>
-  <span className="job-meta">
-    | VKSDVNKD | Total Qty: 3
-  </span>
-</h2>
+          <h2 className="job-details-title">
+            <span className="job-title">Job Details - {displayCut?.customer || "—"}</span>
+            <span className="job-meta">
+              | {displayCut?.description || "—"} | Total Qty: {Math.max(1, totalQuantity || Number(displayCut?.qty || 0) || 1)}
+            </span>
+          </h2>
 
 
           <button
@@ -408,11 +405,6 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
           </div>
         </div>
 
-        <div className="job-details-footer">
-          <button className="job-details-close-btn" onClick={onClose}>
-            Close
-          </button>
-        </div>
       </div>
       {zoomedImage && (
         <ImageZoomModal

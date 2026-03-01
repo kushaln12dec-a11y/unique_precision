@@ -17,7 +17,7 @@ import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import SettingsSuggestIcon from '@mui/icons-material/SettingsSuggest';
 import dayjs, { Dayjs } from 'dayjs';
 import isBetween from 'dayjs/plugin/isBetween';
-import { getUserDisplayNameFromToken } from '../utils/auth';
+import { getUserDesignationFromToken, getUserDisplayNameFromToken } from '../utils/auth';
 import './Header.css';
 
 dayjs.extend(isBetween);
@@ -47,6 +47,7 @@ const Header = ({ title }: HeaderProps) => {
   const [tempDate, setTempDate] = useState<Dayjs | null>(null);
   const [showCalendar, setShowCalendar] = useState(false);
   const displayName = getUserDisplayNameFromToken();
+  const designation = getUserDesignationFromToken();
 
   // Define breadcrumb paths
   const breadcrumbMap: Record<string, BreadcrumbItem[]> = {
@@ -267,6 +268,7 @@ const Header = ({ title }: HeaderProps) => {
           <div className="user-pill" title={displayName}>
             <span className="user-label">Logged in as</span>
             <span className="user-name">{displayName}</span>
+            {designation && <span className="user-designation">{designation}</span>}
           </div>
         )}
       </div>

@@ -4,6 +4,7 @@ import Sidebar from "../../components/Sidebar";
 import Header from "../../components/Header";
 import DataTable, { type Column } from "../../components/DataTable";
 import Toast from "../../components/Toast";
+import DownloadIcon from "@mui/icons-material/Download";
 import JobDetailsModal from "../Programmer/components/JobDetailsModal";
 import { OperatorFilters } from "./components/OperatorFilters";
 import { useOperatorData } from "./hooks/useOperatorData";
@@ -16,12 +17,13 @@ import { deleteJob } from "../../services/jobApi";
 import { createOperatorTaskSwitchLog, getEmployeeLogs } from "../../services/employeeLogsApi";
 import { MassDeleteButton } from "../Programmer/components/MassDeleteButton";
 import { getUserDisplayNameFromToken, getUserRoleFromToken } from "../../utils/auth";
-import { getGroupQaProgressCounts } from "./utils/qaProgress";
+import { getGroupQaProgressCounts, getQaProgressCounts } from "./utils/qaProgress";
 import { getParentRowClassName } from "../Programmer/utils/priorityUtils";
 import type { JobEntry } from "../../types/job";
 import type { EmployeeLog } from "../../types/employeeLog";
 import type { FilterValues } from "../../components/FilterModal";
 import { formatDisplayDateTime } from "../../utils/date";
+import { calculateTotals } from "../Programmer/programmerUtils";
 import "../RoleBoard.css";
 import "../Programmer/Programmer.css";
 import "./Operator.css";
@@ -53,6 +55,8 @@ const Operator = () => {
   const [activeTab, setActiveTab] = useState<"jobs" | "logs">("jobs");
   const [operatorLogs, setOperatorLogs] = useState<EmployeeLog[]>([]);
   const [logsLoading, setLogsLoading] = useState(false);
+  const [operatorLogSearch, setOperatorLogSearch] = useState("");
+  const [operatorLogStatus, setOperatorLogStatus] = useState<"" | "IN_PROGRESS" | "COMPLETED">("");
   const [toast, setToast] = useState<{ message: string; variant: "success" | "error" | "info"; visible: boolean }>({
     message: "",
     variant: "info",
@@ -125,6 +129,63 @@ const Operator = () => {
 
   const handleSubmit = (groupId: number): void => {
     navigate(`/operator/viewpage?groupId=${groupId}`);
+  };
+
+  const isEntryReadyForQa = (entry: JobEntry): boolean => {
+    const qty = Math.max(1, Number(entry.qty || 1));
+    const progress = getQaProgressCounts(entry, qty);
+    return progress.empty === 0 && progress.saved === 0 && progress.ready + progress.sent === qty;
+  };
+
+  const canMoveGroupToQa = (entries: JobEntry[]): boolean => {
+    if (!entries.length) return false;
+    const totalQty = entries.reduce((sum, entry) => sum + Math.max(1, Number(entry.qty || 1)), 0);
+    const totalReadyOrSent = entries.reduce((sum, entry) => {
+      const qty = Math.max(1, Number(entry.qty || 1));
+      const progress = getQaProgressCounts(entry, qty);
+      return sum + progress.ready + progress.sent;
+    }, 0);
+    return totalQty === totalReadyOrSent && entries.every(isEntryReadyForQa);
+  };
+
+  const handleMoveGroupToQa = async (row: TableRow) => {
+    if (!canMoveGroupToQa(row.entries)) {
+      setToast({
+        message: "All parent and child quantities must be ready for QA before moving to QC.",
+        variant: "error",
+        visible: true,
+      });
+      setTimeout(() => setToast((prev) => ({ ...prev, visible: false })), 2500);
+      return;
+    }
+
+    const confirmed = window.confirm(`Move Job #${row.parent.refNumber || row.groupId} to QC?`);
+    if (!confirmed) return;
+
+    try {
+      await Promise.all(
+        row.entries.map((entry) => {
+          const qty = Math.max(1, Number(entry.qty || 1));
+          const quantityNumbers = Array.from({ length: qty }, (_, idx) => idx + 1);
+          return updateOperatorQaStatus(String(entry.id), { quantityNumbers, status: "SENT_TO_QA" });
+        })
+      );
+
+      setJobs((prev) =>
+        prev.map((job) => {
+          if (job.groupId !== row.groupId) return job;
+          const qty = Math.max(1, Number(job.qty || 1));
+          const nextStates: Record<string, "SENT_TO_QA"> = {};
+          for (let i = 1; i <= qty; i += 1) nextStates[String(i)] = "SENT_TO_QA";
+          return { ...job, quantityQaStates: nextStates };
+        })
+      );
+      setToast({ message: "Job moved to QC.", variant: "success", visible: true });
+      setTimeout(() => setToast((prev) => ({ ...prev, visible: false })), 2500);
+    } catch (error) {
+      setToast({ message: "Failed to move job to QC.", variant: "error", visible: true });
+      setTimeout(() => setToast((prev) => ({ ...prev, visible: false })), 2500);
+    }
   };
 
   const handleViewJob = (row: TableRow) => {
@@ -317,6 +378,8 @@ const Operator = () => {
     handleViewJob,
     handleSubmit,
     handleImageInput,
+    handleMoveGroupToQa,
+    canMoveGroupToQa,
     isAdmin,
     isImageInputDisabled: isTaskTimerRunning,
   });
@@ -342,7 +405,11 @@ const Operator = () => {
     const fetchLogs = async () => {
       try {
         setLogsLoading(true);
-        const logs = await getEmployeeLogs({ role: "OPERATOR" });
+        const logs = await getEmployeeLogs({
+          role: "OPERATOR",
+          status: operatorLogStatus || undefined,
+          search: operatorLogSearch.trim() || undefined,
+        });
         if (mounted) setOperatorLogs(logs);
       } catch (error) {
         if (mounted) {
@@ -358,7 +425,62 @@ const Operator = () => {
     return () => {
       mounted = false;
     };
-  }, [activeTab]);
+  }, [activeTab, operatorLogSearch, operatorLogStatus]);
+
+  const designationByUserName = useMemo(() => {
+    const map = new Map<string, string>();
+    users.forEach((u) => {
+      const key = `${u.firstName || ""} ${u.lastName || ""}`.trim();
+      const role = String(u.role || "").toUpperCase();
+      const designation = role === "ADMIN" ? "Admin" : role === "OPERATOR" ? "Operator" : role;
+      if (key) map.set(key.toLowerCase(), designation);
+    });
+    return map;
+  }, [users]);
+
+  const groupWedmByGroupId = useMemo(() => {
+    const map = new Map<number, number>();
+    const groups = new Map<number, JobEntry[]>();
+    jobs.forEach((entry) => {
+      const key = entry.groupId ?? Number(entry.id);
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key)!.push(entry);
+    });
+    groups.forEach((entries, groupId) => {
+      const wedm = entries.reduce((sum, entry) => sum + calculateTotals(entry as any).wedmAmount, 0);
+      map.set(groupId, wedm);
+    });
+    return map;
+  }, [jobs]);
+
+  const getWorkerCountForLog = (log: EmployeeLog): number => {
+    const metadata = (log.metadata || {}) as Record<string, any>;
+    const opsFromMeta = String(metadata.opsName || metadata.operators || "").trim();
+    if (opsFromMeta) {
+      const names = opsFromMeta.split(",").map((n) => n.trim()).filter(Boolean);
+      return Math.max(1, new Set(names).size);
+    }
+
+    const groupId = Number(log.jobGroupId || 0);
+    if (!groupId) return 1;
+    const groupEntries = jobs.filter((entry) => Number(entry.groupId) === groupId);
+    if (!groupEntries.length) return 1;
+    const names = groupEntries.flatMap((entry) =>
+      String(entry.assignedTo || "")
+        .split(",")
+        .map((n) => n.trim())
+        .filter((n) => n && n !== "Unassigned")
+    );
+    return Math.max(1, new Set(names).size);
+  };
+
+  const getRevenueForLog = (log: EmployeeLog): string => {
+    const groupId = Number(log.jobGroupId || 0);
+    const wedm = groupWedmByGroupId.get(groupId) || 0;
+    if (!wedm) return "-";
+    const workers = getWorkerCountForLog(log);
+    return `₹${(wedm / workers).toFixed(2)}`;
+  };
 
   const formatDuration = (seconds?: number): string => {
     const total = Math.max(0, Number(seconds || 0));
@@ -370,11 +492,25 @@ const Operator = () => {
 
   const logsColumns = useMemo<Column<EmployeeLog>[]>(
     () => [
-      { key: "userName", label: "Operator", sortable: false, render: (row) => row.userName || "-" },
+      {
+        key: "userName",
+        label: "User",
+        sortable: false,
+        render: (row) => {
+          const name = String(row.userName || "").trim();
+          const designation = designationByUserName.get(name.toLowerCase()) || "Operator";
+          return (
+            <div className="log-user-stack">
+              <strong>{name || "-"}</strong>
+              <span>{designation}</span>
+            </div>
+          );
+        },
+      },
       { key: "workItemTitle", label: "Work Item", sortable: false, render: (row) => row.workItemTitle || "-" },
       { key: "workSummary", label: "Summary", sortable: false, render: (row) => row.workSummary || "-" },
-      { key: "startedAt", label: "Started", sortable: false, render: (row) => formatDisplayDateTime(row.startedAt) },
-      { key: "endedAt", label: "Ended", sortable: false, render: (row) => formatDisplayDateTime(row.endedAt) },
+      { key: "startedAt", label: "Started at", sortable: false, render: (row) => formatDisplayDateTime(row.startedAt) },
+      { key: "endedAt", label: "Ended at", sortable: false, render: (row) => formatDisplayDateTime(row.endedAt) },
       { key: "durationSeconds", label: "Duration", sortable: false, render: (row) => formatDuration(row.durationSeconds) },
       {
         key: "idleTime",
@@ -388,10 +524,58 @@ const Operator = () => {
         sortable: false,
         render: (row) => String((row.metadata as any)?.remark || "-"),
       },
+      {
+        key: "revenue",
+        label: "Revenue",
+        sortable: false,
+        render: (row) => getRevenueForLog(row),
+      },
       { key: "status", label: "Status", sortable: false, render: (row) => row.status || "-" },
     ],
-    []
+    [designationByUserName, groupWedmByGroupId]
   );
+
+  const handleExportOperatorLogsCsv = () => {
+    const headers = [
+      "User",
+      "Work Item",
+      "Summary",
+      "Started at",
+      "Ended at",
+      "Duration",
+      "Idle Time",
+      "Remark",
+      "Revenue",
+      "Status",
+    ];
+
+    const rows = operatorLogs.map((row) => {
+      const name = String(row.userName || "").trim();
+      const designation = designationByUserName.get(name.toLowerCase()) || "Operator";
+      return [
+        name ? `${name} (${designation})` : designation,
+        row.workItemTitle || "",
+        row.workSummary || "",
+        formatDisplayDateTime(row.startedAt),
+        formatDisplayDateTime(row.endedAt || null),
+        formatDuration(row.durationSeconds),
+        String((row.metadata as any)?.idleTime || "-"),
+        String((row.metadata as any)?.remark || "-"),
+        getRevenueForLog(row),
+        row.status || "-",
+      ];
+    });
+
+    const csvContent = [headers.join(","), ...rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(","))].join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", `operator_logs_${new Date().toISOString().split("T")[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   return (
     <div className="roleboard-container">
@@ -422,8 +606,7 @@ const Operator = () => {
                 filters={filters}
                 filterFields={filterFields}
                 filterCategories={filterCategories}
-                customerFilter={customerFilter}
-                descriptionFilter={descriptionFilter}
+                jobSearchFilter={customerFilter}
                 createdByFilter={createdByFilter}
                 assignedToFilter={assignedToFilter}
                 productionStageFilter={productionStageFilter}
@@ -435,8 +618,10 @@ const Operator = () => {
                 onApplyFilters={handleApplyFiltersWithPageReset}
                 onClearFilters={handleClearFiltersWithPageReset}
                 onRemoveFilter={handleRemoveFilterWithPageReset}
-                onCustomerFilterChange={setCustomerFilter}
-                onDescriptionFilterChange={setDescriptionFilter}
+                onJobSearchFilterChange={(value) => {
+                  setCustomerFilter(value);
+                  setDescriptionFilter(value);
+                }}
                 onCreatedByFilterChange={setCreatedByFilter}
                 onAssignedToFilterChange={setAssignedToFilter}
                 onProductionStageFilterChange={setProductionStageFilter}
@@ -521,13 +706,37 @@ const Operator = () => {
               />
             </>
           ) : (
-            <DataTable
-              columns={logsColumns}
-              data={operatorLogs}
-              emptyMessage={logsLoading ? "Loading logs..." : "No operator logs found."}
-              getRowKey={(row) => row._id}
-              className="left-align operator-logs-table"
-            />
+            <>
+              <div className="operator-logs-filters">
+                <input
+                  type="text"
+                  value={operatorLogSearch}
+                  onChange={(e) => setOperatorLogSearch(e.target.value)}
+                  placeholder="Search logs..."
+                  className="filter-input operator-logs-search"
+                />
+                <select
+                  value={operatorLogStatus}
+                  onChange={(e) => setOperatorLogStatus(e.target.value as "" | "IN_PROGRESS" | "COMPLETED")}
+                  className="filter-select"
+                >
+                  <option value="">All Status</option>
+                  <option value="IN_PROGRESS">In Progress</option>
+                  <option value="COMPLETED">Completed</option>
+                </select>
+                <button className="btn-download-csv" onClick={handleExportOperatorLogsCsv} title="Download Logs CSV">
+                  <DownloadIcon sx={{ fontSize: "1rem" }} />
+                  CSV
+                </button>
+              </div>
+              <DataTable
+                columns={logsColumns}
+                data={operatorLogs}
+                emptyMessage={logsLoading ? "Loading logs..." : "No operator logs found."}
+                getRowKey={(row) => row._id}
+                className="left-align operator-logs-table"
+              />
+            </>
           )}
         </div>
 
