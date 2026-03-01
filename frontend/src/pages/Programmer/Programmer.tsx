@@ -2,16 +2,17 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Sidebar from "../../components/Sidebar";
 import Header from "../../components/Header";
-import DataTable from "../../components/DataTable";
+import DataTable, { type Column } from "../../components/DataTable";
 import Toast from "../../components/Toast";
 import ConfirmDeleteModal from "../../components/ConfirmDeleteModal";
 import { getUserRoleFromToken } from "../../utils/auth";
 import "../../utils/tokenDebug";
 import { getUsers } from "../../services/userApi";
-import { startProgrammerJobLog } from "../../services/employeeLogsApi";
+import { getEmployeeLogs, startProgrammerJobLog } from "../../services/employeeLogsApi";
 import { getMasterConfig } from "../../services/masterConfigApi";
 import type { User } from "../../types/user";
 import type { MasterConfig } from "../../types/masterConfig";
+import type { EmployeeLog } from "../../types/employeeLog";
 import ProgrammerJobForm from "./ProgrammerJobForm.tsx";
 import JobDetailsModal from "./components/JobDetailsModal";
 import { ProgrammerFilters } from "./components/ProgrammerFilters";
@@ -28,6 +29,7 @@ import { useProgrammerState } from "./hooks/useProgrammerState";
 import { exportJobsToCSV } from "./utils/csvExport";
 import type { TableRow } from "./utils/jobDataTransform";
 import { getParentRowClassName } from "./utils/priorityUtils";
+import { formatDisplayDateTime } from "../../utils/date";
 
 const Programmer = () => {
   const PROGRAMMER_ACTIVE_LOG_KEY = "programmer_active_job_log_id";
@@ -56,6 +58,12 @@ const Programmer = () => {
   const [viewingJob, setViewingJob] = useState<TableRow | null>(null);
   const [selectedChildRows, setSelectedChildRows] = useState<Set<string | number>>(new Set());
   const [masterConfig, setMasterConfig] = useState<MasterConfig | null>(null);
+  const [activeTab, setActiveTab] = useState<"jobs" | "logs">("jobs");
+  const [programmerLogs, setProgrammerLogs] = useState<EmployeeLog[]>([]);
+  const [logsLoading, setLogsLoading] = useState(false);
+  const [logSearch, setLogSearch] = useState("");
+  const [logStatus, setLogStatus] = useState<"" | "IN_PROGRESS" | "COMPLETED">("");
+  const [logUserId, setLogUserId] = useState("");
 
   const isAdmin = getUserRoleFromToken() === "ADMIN";
 
@@ -210,6 +218,12 @@ const Programmer = () => {
     ensureProgrammerStartLog();
   }, [isNewJobRoute, isEditRoute]);
 
+  useEffect(() => {
+    if (isNewJobRoute || isEditRoute) {
+      setActiveTab("jobs");
+    }
+  }, [isNewJobRoute, isEditRoute]);
+
   const handleNewJob = async () => {
     handleNewJobState();
     try {
@@ -277,6 +291,101 @@ const Programmer = () => {
 
   const activeFilterCount = useMemo(() => countActiveFilters(filters), [filters]);
 
+  useEffect(() => {
+    if (activeTab !== "logs" || isNewJobRoute || isEditRoute) return;
+    let mounted = true;
+
+    const fetchProgrammerLogs = async () => {
+      try {
+        setLogsLoading(true);
+        const logs = await getEmployeeLogs({
+          role: "PROGRAMMER",
+          status: logStatus || undefined,
+          search: logSearch.trim() || undefined,
+        });
+        if (mounted) setProgrammerLogs(logs);
+      } catch (error) {
+        if (mounted) {
+          setProgrammerLogs([]);
+          setToast({ message: "Failed to fetch programmer logs.", variant: "error", visible: true });
+        }
+      } finally {
+        if (mounted) setLogsLoading(false);
+      }
+    };
+
+    fetchProgrammerLogs();
+    return () => {
+      mounted = false;
+    };
+  }, [activeTab, isNewJobRoute, isEditRoute, logSearch, logStatus]);
+
+  const formatDuration = (seconds?: number): string => {
+    const total = Math.max(0, Number(seconds || 0));
+    const h = Math.floor(total / 3600);
+    const m = Math.floor((total % 3600) / 60);
+    const s = total % 60;
+    return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
+  };
+
+  const getShiftLabel = (startedAt?: string): string => {
+    if (!startedAt) return "-";
+    const date = new Date(startedAt);
+    if (Number.isNaN(date.getTime())) return "-";
+    const hour = date.getHours();
+    return hour >= 6 && hour < 18 ? "Day" : "Night";
+  };
+
+  const designationByUserId = useMemo(() => {
+    const map = new Map<string, string>();
+    users.forEach((u) => {
+      const role = String(u.role || "").toUpperCase();
+      if (role === "ADMIN") map.set(String(u._id), "Admin");
+      else if (role === "PROGRAMMER") map.set(String(u._id), "Programmer");
+    });
+    return map;
+  }, [users]);
+
+  const filteredProgrammerLogs = useMemo(
+    () => programmerLogs.filter((log) => (logUserId ? String(log.userId) === String(logUserId) : true)),
+    [programmerLogs, logUserId]
+  );
+
+  const programmerLogColumns = useMemo<Column<EmployeeLog>[]>(
+    () => [
+      {
+        key: "user",
+        label: "User",
+        sortable: false,
+        render: (row) => designationByUserId.get(String(row.userId)) || "-",
+      },
+      {
+        key: "jobNumber",
+        label: "JOB #",
+        sortable: false,
+        render: (row) => {
+          const ref = String(row.refNumber || "").trim().replace(/^#/, "");
+          return ref ? `#${ref}` : "-";
+        },
+      },
+      { key: "startedAt", label: "Started at", sortable: false, render: (row) => formatDisplayDateTime(row.startedAt) },
+      { key: "endedAt", label: "Ended at", sortable: false, render: (row) => formatDisplayDateTime(row.endedAt || null) },
+      { key: "shift", label: "Shift", sortable: false, render: (row) => getShiftLabel(row.startedAt) },
+      { key: "duration", label: "Duration", sortable: false, render: (row) => formatDuration(row.durationSeconds) },
+      {
+        key: "status",
+        label: "Status",
+        sortable: false,
+        render: (row) =>
+          String(row.status || "-")
+            .split("_")
+            .map((part) => part.charAt(0) + part.slice(1).toLowerCase())
+            .join(" "),
+      },
+    ],
+    [designationByUserId]
+  );
+
   return (
     <div className="programmer-container">
       <Sidebar currentPath="/programmer" onNavigate={(path) => navigate(path)} />
@@ -284,26 +393,22 @@ const Programmer = () => {
         <Header title="Programmer" />
         <div className="programmer-panel">
           {!isNewJobRoute && !isEditRoute && (
-            <ProgrammerFilters
-              filters={filters}
-              customerFilter={customerFilter}
-              descriptionFilter={descriptionFilter}
-              createdByFilter={createdByFilter}
-              criticalFilter={criticalFilter}
-              showFilterModal={showFilterModal}
-              activeFilterCount={activeFilterCount}
-              users={users}
-              onShowFilterModal={setShowFilterModal}
-              onApplyFilters={handleApplyFilters}
-              onClearFilters={handleClearFilters}
-              onRemoveFilter={handleRemoveFilter}
-              onCustomerFilterChange={setCustomerFilter}
-              onDescriptionFilterChange={setDescriptionFilter}
-              onCreatedByFilterChange={setCreatedByFilter}
-              onCriticalFilterChange={setCriticalFilter}
-              onDownloadCSV={handleDownloadCSV}
-              onNewJob={handleNewJob}
-            />
+            <div className="programmer-subtabs">
+              <button
+                type="button"
+                className={`programmer-subtab ${activeTab === "jobs" ? "active" : ""}`}
+                onClick={() => setActiveTab("jobs")}
+              >
+                Jobs
+              </button>
+              <button
+                type="button"
+                className={`programmer-subtab ${activeTab === "logs" ? "active" : ""}`}
+                onClick={() => setActiveTab("logs")}
+              >
+                Logs
+              </button>
+            </div>
           )}
 
           {(isNewJobRoute || isEditRoute || showForm) && (
@@ -319,40 +424,109 @@ const Programmer = () => {
             />
           )}
 
-          {!isNewJobRoute && !isEditRoute && (
-            <DataTable
-              columns={columns}
-              data={tableData}
-              sortField={sortField}
-              sortDirection={sortDirection}
-              onSort={(field) => handleSort(field as keyof JobEntry)}
-              emptyMessage='No entries added yet. Use "New" to add an entry.'
-              expandableRows={expandableRows}
-              showAccordion={false}
-              getRowKey={(row) => row.groupId}
-              getRowClassName={(row) =>
-                getParentRowClassName(
-                  row.parent,
-                  row.entries,
-                  expandedGroups.has(row.groupId)
-                )
-              }
-              className="jobs-table-wrapper"
-              showCheckboxes={true}
-              selectedRows={selectedJobIds}
-              onRowSelect={handleRowSelect}
-              pagination={{
-                currentPage,
-                entriesPerPage,
-                totalEntries: tableData.length,
-                onPageChange: handlePageChange,
-                onEntriesPerPageChange: (entries) => {
-                  setEntriesPerPage(entries);
-                  setCurrentPage(1);
-                },
-                entriesPerPageOptions: [5, 10, 15, 25, 50],
-              }}
-            />
+          {!isNewJobRoute && !isEditRoute && activeTab === "jobs" && (
+            <>
+              <ProgrammerFilters
+                filters={filters}
+                customerFilter={customerFilter}
+                descriptionFilter={descriptionFilter}
+                createdByFilter={createdByFilter}
+                criticalFilter={criticalFilter}
+                showFilterModal={showFilterModal}
+                activeFilterCount={activeFilterCount}
+                users={users}
+                onShowFilterModal={setShowFilterModal}
+                onApplyFilters={handleApplyFilters}
+                onClearFilters={handleClearFilters}
+                onRemoveFilter={handleRemoveFilter}
+                onCustomerFilterChange={setCustomerFilter}
+                onDescriptionFilterChange={setDescriptionFilter}
+                onCreatedByFilterChange={setCreatedByFilter}
+                onCriticalFilterChange={setCriticalFilter}
+                onDownloadCSV={handleDownloadCSV}
+                onNewJob={handleNewJob}
+              />
+              <DataTable
+                columns={columns}
+                data={tableData}
+                sortField={sortField}
+                sortDirection={sortDirection}
+                onSort={(field) => handleSort(field as keyof JobEntry)}
+                emptyMessage='No entries added yet. Use "New" to add an entry.'
+                expandableRows={expandableRows}
+                showAccordion={false}
+                getRowKey={(row) => row.groupId}
+                getRowClassName={(row) =>
+                  getParentRowClassName(
+                    row.parent,
+                    row.entries,
+                    expandedGroups.has(row.groupId)
+                  )
+                }
+                className="jobs-table-wrapper"
+                showCheckboxes={true}
+                selectedRows={selectedJobIds}
+                onRowSelect={handleRowSelect}
+                pagination={{
+                  currentPage,
+                  entriesPerPage,
+                  totalEntries: tableData.length,
+                  onPageChange: handlePageChange,
+                  onEntriesPerPageChange: (entries) => {
+                    setEntriesPerPage(entries);
+                    setCurrentPage(1);
+                  },
+                  entriesPerPageOptions: [5, 10, 15, 25, 50],
+                }}
+              />
+            </>
+          )}
+
+          {!isNewJobRoute && !isEditRoute && activeTab === "logs" && (
+            <>
+              <div className="programmer-logs-filters">
+                <input
+                  type="text"
+                  value={logSearch}
+                  onChange={(e) => setLogSearch(e.target.value)}
+                  placeholder="Search logs..."
+                  className="filter-input programmer-logs-search"
+                />
+                <select
+                  value={logStatus}
+                  onChange={(e) => setLogStatus(e.target.value as "" | "IN_PROGRESS" | "COMPLETED")}
+                  className="filter-select"
+                >
+                  <option value="">All Status</option>
+                  <option value="IN_PROGRESS">In Progress</option>
+                  <option value="COMPLETED">Completed</option>
+                </select>
+                <select
+                  value={logUserId}
+                  onChange={(e) => setLogUserId(e.target.value)}
+                  className="filter-select"
+                >
+                  <option value="">All Users</option>
+                  {users
+                    .filter((user) => user.role === "PROGRAMMER" || user.role === "ADMIN")
+                    .map((user) => {
+                      const displayName = `${user.firstName} ${user.lastName}`.trim() || user.email;
+                      return (
+                        <option key={user._id} value={user._id}>
+                          {displayName}
+                        </option>
+                      );
+                    })}
+                </select>
+              </div>
+              <DataTable
+                columns={programmerLogColumns}
+                data={filteredProgrammerLogs}
+                emptyMessage={logsLoading ? "Loading logs..." : "No programmer logs found."}
+                getRowKey={(row) => row._id}
+                className="jobs-table-wrapper left-align programmer-logs-table"
+              />
+            </>
           )}
         </div>
       </div>
@@ -386,11 +560,13 @@ const Programmer = () => {
         />
       )}
 
-      <MassDeleteButton
-        selectedCount={selectedJobIds.size}
-        onDelete={handleMassDeleteClick}
-        onClear={() => setSelectedJobIds(new Set())}
-      />
+      {!isNewJobRoute && !isEditRoute && activeTab === "jobs" && (
+        <MassDeleteButton
+          selectedCount={selectedJobIds.size}
+          onDelete={handleMassDeleteClick}
+          onClear={() => setSelectedJobIds(new Set())}
+        />
+      )}
     </div>
   );
 };

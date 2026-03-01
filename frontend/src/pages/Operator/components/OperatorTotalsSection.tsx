@@ -20,7 +20,7 @@ export const OperatorTotalsSection: React.FC<OperatorTotalsSectionProps> = ({
   return (
     <div className="operator-totals-section">
       <div className="operator-total-card">
-        <label>Total Hrs/Piece</label>
+        <label>Total Time Needed</label>
         <span>{groupTotalHrs ? formatDecimalHoursToHHMMhrs(groupTotalHrs) : "00:00hrs"}</span>
       </div>
       {isAdmin && (

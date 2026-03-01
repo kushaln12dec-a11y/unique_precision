@@ -22,7 +22,7 @@ export const JobFormActions: React.FC<JobFormActionsProps> = ({
     <div className="form-actions">
       <div className="form-totals">
         <div>
-          <span className="form-total-label">Total Hrs/Piece</span>
+          <span className="form-total-label">Total Time Needed</span>
           <span className="form-total-value">{formatDecimalHoursToHHMMhrs(grandTotals.totalHrs)}</span>
         </div>
         <div>

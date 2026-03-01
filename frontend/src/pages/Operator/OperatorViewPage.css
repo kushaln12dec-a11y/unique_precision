@@ -595,6 +595,8 @@
   border-top: 1px solid #e2e8f0;
   display: flex;
   justify-content: flex-end;
+  align-items: center;
+  gap: 0.75rem;
 }
 
 .btn-save-quantity {

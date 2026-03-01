@@ -293,7 +293,7 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
                         </>
                       )}
                       <div className="cut-detail">
-                        <label>Total Hrs/Piece:</label>
+                        <label>Total Time Needed:</label>
                         <span>
                           {cutItem.totalHrs
                             ? formatDecimalHoursToHHMMhrs(cutItem.totalHrs)
@@ -400,7 +400,7 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
 
           <div className="job-details-totals">
             <div className="total-row">
-              <label>Total Hrs/Piece:</label>
+              <label>Total Time Needed:</label>
               <span>
                 {displayGroupTotalHrs
                   ? formatDecimalHoursToHHMMhrs(displayGroupTotalHrs)

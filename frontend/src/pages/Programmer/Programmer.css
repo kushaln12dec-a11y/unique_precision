@@ -80,6 +80,52 @@
   color: #1a1a2e;
 }
 
+.programmer-subtabs {
+  display: inline-flex;
+  gap: 0.4rem;
+  margin-bottom: 0.7rem;
+}
+
+.programmer-subtab {
+  border: 1px solid #cbd5e1;
+  background: #f8fafc;
+  color: #334155;
+  border-radius: 8px;
+  padding: 0.35rem 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.programmer-subtab.active {
+  background: #1a1a2e;
+  border-color: #1a1a2e;
+  color: #ffffff;
+}
+
+.programmer-logs-filters {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: nowrap;
+  margin-bottom: 0.7rem;
+  overflow-x: auto;
+}
+
+.programmer-logs-filters .programmer-logs-search {
+  min-width: 280px;
+  flex: 1 1 320px;
+}
+
+.programmer-logs-filters .filter-select {
+  min-width: 180px;
+  flex: 0 0 180px;
+}
+
+.programmer-logs-table .data-table td,
+.programmer-logs-table .data-table th {
+  white-space: normal;
+}
+
 .inline-filters {
   display: flex;
   gap: 1rem;

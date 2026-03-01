@@ -102,8 +102,11 @@
   vertical-align: middle;
 }
 
-.operator-table-no-scroll .data-table .checkbox-header-cell input[type="checkbox"],
-.operator-table-no-scroll .data-table .checkbox-cell input[type="checkbox"] {
+.operator-table-no-scroll
+  .data-table
+  .checkbox-header-cell
+  input[type='checkbox'],
+.operator-table-no-scroll .data-table .checkbox-cell input[type='checkbox'] {
   width: 18px;
   height: 18px;
   margin: 0 auto;
@@ -201,7 +204,7 @@
   text-align: left;
 }
 
-/* Total Hrs/Piece Column */
+/* Total Time Needed Column */
 .operator-table-no-scroll .data-table th:nth-child(13),
 .operator-table-no-scroll .data-table td:nth-child(13) {
   width: 95px;
@@ -248,7 +251,9 @@
 .operator-table-no-scroll .data-table th.action-header,
 .operator-table-no-scroll .data-table td.action-cell,
 .operator-table-no-scroll .data-table th:last-child:not(.accordion-header-cell),
-.operator-table-no-scroll .data-table td:last-child:not(.accordion-toggle-cell) {
+.operator-table-no-scroll
+  .data-table
+  td:last-child:not(.accordion-toggle-cell) {
   width: 80px;
   min-width: 80px;
   max-width: 80px;
@@ -332,8 +337,14 @@
 
 /* Child Table Column Widths - Align with Parent Table */
 /* Checkbox column in child table */
-.operator-table-no-scroll .child-row-content .child-jobs-table th.checkbox-header-cell,
-.operator-table-no-scroll .child-row-content .child-jobs-table td.checkbox-cell {
+.operator-table-no-scroll
+  .child-row-content
+  .child-jobs-table
+  th.checkbox-header-cell,
+.operator-table-no-scroll
+  .child-row-content
+  .child-jobs-table
+  td.checkbox-cell {
   width: 40px;
   min-width: 40px;
   max-width: 40px;
@@ -342,8 +353,16 @@
   vertical-align: middle;
 }
 
-.operator-table-no-scroll .child-row-content .child-jobs-table th.checkbox-header-cell input[type="checkbox"],
-.operator-table-no-scroll .child-row-content .child-jobs-table td.checkbox-cell input[type="checkbox"] {
+.operator-table-no-scroll
+  .child-row-content
+  .child-jobs-table
+  th.checkbox-header-cell
+  input[type='checkbox'],
+.operator-table-no-scroll
+  .child-row-content
+  .child-jobs-table
+  td.checkbox-cell
+  input[type='checkbox'] {
   width: 16px;
   height: 16px;
   margin: 0;
@@ -351,8 +370,14 @@
 }
 
 /* Spacer for checkbox alignment - matches checkbox width */
-.operator-table-no-scroll .child-row-content .child-jobs-table th.child-table-spacer,
-.operator-table-no-scroll .child-row-content .child-jobs-table td.child-table-spacer {
+.operator-table-no-scroll
+  .child-row-content
+  .child-jobs-table
+  th.child-table-spacer,
+.operator-table-no-scroll
+  .child-row-content
+  .child-jobs-table
+  td.child-table-spacer {
   width: 40px;
   min-width: 40px;
   max-width: 40px;
@@ -361,8 +386,14 @@
 }
 
 /* Setting # - Extra column in child table - Ensure th and td match */
-.operator-table-no-scroll .child-row-content .child-jobs-table th.setting-number-col,
-.operator-table-no-scroll .child-row-content .child-jobs-table td.setting-number-col {
+.operator-table-no-scroll
+  .child-row-content
+  .child-jobs-table
+  th.setting-number-col,
+.operator-table-no-scroll
+  .child-row-content
+  .child-jobs-table
+  td.setting-number-col {
   width: 55px;
   min-width: 55px;
   text-align: left;
@@ -391,8 +422,14 @@
 }
 
 /* Description - Align with parent Description - Ensure th and td match */
-.operator-table-no-scroll .child-row-content .child-jobs-table th.description-col,
-.operator-table-no-scroll .child-row-content .child-jobs-table td.description-col {
+.operator-table-no-scroll
+  .child-row-content
+  .child-jobs-table
+  th.description-col,
+.operator-table-no-scroll
+  .child-row-content
+  .child-jobs-table
+  td.description-col {
   width: 120px;
   min-width: 120px;
   text-align: left;
@@ -479,9 +516,12 @@
   padding-right: 0.4rem;
 }
 
-/* Total Hrs/Piece - Align with parent Total Hrs - Ensure th and td match */
+/* Total Time Needed - Align with parent Total Hrs - Ensure th and td match */
 .operator-table-no-scroll .child-row-content .child-jobs-table th.total-hrs-col,
-.operator-table-no-scroll .child-row-content .child-jobs-table td.total-hrs-col {
+.operator-table-no-scroll
+  .child-row-content
+  .child-jobs-table
+  td.total-hrs-col {
   width: 90px;
   min-width: 90px;
   text-align: left;
@@ -490,8 +530,14 @@
 }
 
 /* Total Amount - Align with parent Total Amount - Ensure th and td match */
-.operator-table-no-scroll .child-row-content .child-jobs-table th.total-amount-col,
-.operator-table-no-scroll .child-row-content .child-jobs-table td.total-amount-col {
+.operator-table-no-scroll
+  .child-row-content
+  .child-jobs-table
+  th.total-amount-col,
+.operator-table-no-scroll
+  .child-row-content
+  .child-jobs-table
+  td.total-amount-col {
   width: 100px;
   min-width: 100px;
   text-align: left;
@@ -558,21 +604,35 @@
   margin: 0 0.1rem;
 }
 
-.operator-table-no-scroll .data-table td.action-cell .action-icon-button:disabled,
-.operator-table-no-scroll .child-row-content .child-jobs-table .action-icon-button:disabled {
+.operator-table-no-scroll
+  .data-table
+  td.action-cell
+  .action-icon-button:disabled,
+.operator-table-no-scroll
+  .child-row-content
+  .child-jobs-table
+  .action-icon-button:disabled {
   opacity: 0.45;
   cursor: not-allowed;
   background: transparent;
 }
 
 .operator-table-no-scroll .data-table td.action-cell .action-icon-button svg,
-.operator-table-no-scroll .data-table td.action-cell .operator-action-button svg {
+.operator-table-no-scroll
+  .data-table
+  td.action-cell
+  .operator-action-button
+  svg {
   font-size: 1rem;
   width: 1rem;
   height: 1rem;
 }
 
-.operator-table-no-scroll .data-table td.action-cell .operator-action-button svg {
+.operator-table-no-scroll
+  .data-table
+  td.action-cell
+  .operator-action-button
+  svg {
   color: #dc2626;
 }
 
@@ -603,7 +663,6 @@
   margin-left: 0.2rem;
   flex-shrink: 0;
 }
-
 
 /* ============================================
    CREATED AT SPLIT DISPLAY
@@ -666,20 +725,189 @@
   flex: 0 1 205px;
 }
 
+.operator-filters-bottom-row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.operator-filters-legend-row {
+  flex: 1 1 auto;
+  display: flex;
+  justify-content: flex-start;
+}
+
+.roleboard-content .programmer-panel .operator-filters-qa-legend {
+  margin-top: 0.1rem;
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 0.4rem;
+  white-space: nowrap;
+  overflow-x: auto;
+  max-width: 100%;
+  padding-bottom: 0.1rem;
+}
+
+.roleboard-content
+  .programmer-panel
+  .operator-filters-qa-legend
+  .qa-legend-title,
+.roleboard-content
+  .programmer-panel
+  .operator-filters-qa-legend
+  .qa-legend-item {
+  white-space: nowrap;
+}
+
+.operator-filters-bottom-row .panel-header-actions {
+  margin-left: auto;
+}
+
+.operator-task-switch-timer {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.operator-timer-title {
+  margin: 0;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 0.65rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+}
+
+.operator-timer-btn {
+  min-width: 132px;
+  height: 40px;
+  padding: 0 0.9rem;
+  border-radius: 12px;
+  border: 1px solid #f59e0b;
+  background: linear-gradient(180deg, #fffaf0 0%, #fff4db 100%);
+  color: #92400e;
+  font-weight: 700;
+  box-shadow: 0 6px 14px rgba(217, 119, 6, 0.18);
+  justify-content: center;
+}
+
+.operator-timer-btn.running {
+  border-color: #ea580c;
+  background: linear-gradient(180deg, #fff7ed 0%, #ffedd5 100%);
+  color: #9a3412;
+  box-shadow: 0 8px 18px rgba(234, 88, 12, 0.26);
+}
+
+.operator-timer-btn.running svg {
+  animation: operator-timer-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes operator-timer-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.12);
+    opacity: 0.75;
+  }
+}
+
+.operator-timer-popover {
+  position: absolute;
+  top: calc(100% + 0.45rem);
+  right: 0;
+  width: min(360px, 90vw);
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  box-shadow: 0 18px 34px rgba(15, 23, 42, 0.18);
+  padding: 0.85rem;
+  z-index: 80;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.operator-timer-popover-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-weight: 700;
+  color: #1e293b;
+  padding-bottom: 0.2rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.operator-timer-popover-live {
+  font-family: 'Courier New', monospace;
+  font-size: 0.9rem;
+  color: #9a3412;
+}
+
+.operator-timer-popover .filter-group {
+  min-width: 0;
+}
+
+.operator-timer-popover .filter-select,
+.operator-timer-popover .operator-timer-text-input {
+  height: 34px;
+}
+
+.operator-timer-popover .operator-timer-text-input {
+  padding-left: 0.65rem;
+  background-image: none;
+}
+
+.operator-timer-popover-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.45rem;
+}
+
+.operator-save-stop-btn {
+  border-color: #ea580c;
+  background: linear-gradient(180deg, #fff7ed 0%, #ffedd5 100%);
+  color: #9a3412;
+  font-weight: 700;
+}
+
+.operator-save-stop-btn:hover:not(:disabled) {
+  border-color: #c2410c;
+  background: linear-gradient(180deg, #ffedd5 0%, #fed7aa 100%);
+}
+
 .roleboard-content .programmer-panel .operator-filter-created-by,
 .roleboard-content .programmer-panel .operator-filter-assigned-to,
 .roleboard-content .programmer-panel .operator-filter-status {
   flex: 0 1 150px;
+  min-width: 150px;
 }
 
 .operator-status-legend-group {
   display: flex;
   align-items: flex-end;
   gap: 0.45rem;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
+  white-space: normal;
+  flex: 0 1 170px;
+  min-width: 150px;
+}
+
+.operator-top-row-timer-anchor {
+  margin-left: auto;
+  flex: 0 0 auto;
+  display: flex;
+  align-items: flex-end;
   white-space: nowrap;
-  flex: 1 1 auto;
-  min-width: 0;
 }
 
 .operator-timer-inline-top {
@@ -754,7 +982,7 @@
   font-weight: 700;
   color: #334155;
   text-align: center;
-  font-family: "Courier New", monospace;
+  font-family: 'Courier New', monospace;
 }
 
 .operator-idle-transition-svg {
@@ -862,6 +1090,10 @@
     flex-wrap: wrap;
   }
 
+  .operator-filters-bottom-row .panel-header-actions {
+    width: auto;
+  }
+
   .operator-status-legend-group {
     flex-wrap: wrap;
     row-gap: 0.35rem;
@@ -939,19 +1171,6 @@
    FILTER SELECT STYLES
    ============================================ */
 
-.assigned-to-filter-select {
-  border-color: #93c5fd;
-  background: linear-gradient(180deg, #f8fbff 0%, #eef4ff 100%);
-  color: #1e3a8a;
-  font-weight: 700;
-  box-shadow: inset 0 0 0 1px rgba(147, 197, 253, 0.35);
-}
-
-.assigned-to-filter-select:focus {
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.18);
-}
-
 .operator-machine-input {
   width: 100%;
   max-width: 72px;
@@ -1015,7 +1234,10 @@
   background-color: #c4b5fd;
 }
 
-.operator-table-no-scroll .data-table tbody tr.operator-stage-row-not-started:hover {
+.operator-table-no-scroll
+  .data-table
+  tbody
+  tr.operator-stage-row-not-started:hover {
   background-color: #ffe39a;
 }
 
@@ -1023,7 +1245,10 @@
   background-color: #bfdbfe;
 }
 
-.operator-table-no-scroll .data-table tbody tr.operator-stage-row-dispatched:hover {
+.operator-table-no-scroll
+  .data-table
+  tbody
+  tr.operator-stage-row-dispatched:hover {
   background-color: #c4b5fd;
 }
 
@@ -1041,76 +1266,146 @@
 }
 
 /* Programmer flag controls left corner line color in Operator table */
-.operator-table-no-scroll .data-table tr.operator-stage-row-not-started.critical-row,
+.operator-table-no-scroll
+  .data-table
+  tr.operator-stage-row-not-started.critical-row,
 .operator-table-no-scroll .data-table tr.operator-stage-row-logged.critical-row,
-.operator-table-no-scroll .data-table tr.operator-stage-row-dispatched.critical-row {
+.operator-table-no-scroll
+  .data-table
+  tr.operator-stage-row-dispatched.critical-row {
   border-left: none;
 }
 
-.operator-table-no-scroll .data-table tr.operator-stage-row-not-started.critical-row td:first-child,
-.operator-table-no-scroll .data-table tr.operator-stage-row-logged.critical-row td:first-child,
-.operator-table-no-scroll .data-table tr.operator-stage-row-dispatched.critical-row td:first-child {
+.operator-table-no-scroll
+  .data-table
+  tr.operator-stage-row-not-started.critical-row
+  td:first-child,
+.operator-table-no-scroll
+  .data-table
+  tr.operator-stage-row-logged.critical-row
+  td:first-child,
+.operator-table-no-scroll
+  .data-table
+  tr.operator-stage-row-dispatched.critical-row
+  td:first-child {
   box-shadow: inset 4px 0 0 #dc2626;
 }
 
-.operator-table-no-scroll .data-table tr.operator-stage-row-not-started.priority-row.priority-high,
-.operator-table-no-scroll .data-table tr.operator-stage-row-logged.priority-row.priority-high,
-.operator-table-no-scroll .data-table tr.operator-stage-row-dispatched.priority-row.priority-high {
+.operator-table-no-scroll
+  .data-table
+  tr.operator-stage-row-not-started.priority-row.priority-high,
+.operator-table-no-scroll
+  .data-table
+  tr.operator-stage-row-logged.priority-row.priority-high,
+.operator-table-no-scroll
+  .data-table
+  tr.operator-stage-row-dispatched.priority-row.priority-high {
   border-left: none;
 }
 
-.operator-table-no-scroll .data-table tr.operator-stage-row-not-started.priority-row.priority-high td:first-child,
-.operator-table-no-scroll .data-table tr.operator-stage-row-logged.priority-row.priority-high td:first-child,
-.operator-table-no-scroll .data-table tr.operator-stage-row-dispatched.priority-row.priority-high td:first-child {
+.operator-table-no-scroll
+  .data-table
+  tr.operator-stage-row-not-started.priority-row.priority-high
+  td:first-child,
+.operator-table-no-scroll
+  .data-table
+  tr.operator-stage-row-logged.priority-row.priority-high
+  td:first-child,
+.operator-table-no-scroll
+  .data-table
+  tr.operator-stage-row-dispatched.priority-row.priority-high
+  td:first-child {
   box-shadow: inset 3px 0 0 #ef4444;
 }
 
-.operator-table-no-scroll .data-table tr.operator-stage-row-not-started.priority-row.priority-medium,
-.operator-table-no-scroll .data-table tr.operator-stage-row-logged.priority-row.priority-medium,
-.operator-table-no-scroll .data-table tr.operator-stage-row-dispatched.priority-row.priority-medium {
+.operator-table-no-scroll
+  .data-table
+  tr.operator-stage-row-not-started.priority-row.priority-medium,
+.operator-table-no-scroll
+  .data-table
+  tr.operator-stage-row-logged.priority-row.priority-medium,
+.operator-table-no-scroll
+  .data-table
+  tr.operator-stage-row-dispatched.priority-row.priority-medium {
   border-left: none;
 }
 
-.operator-table-no-scroll .data-table tr.operator-stage-row-not-started.priority-row.priority-medium td:first-child,
-.operator-table-no-scroll .data-table tr.operator-stage-row-logged.priority-row.priority-medium td:first-child,
-.operator-table-no-scroll .data-table tr.operator-stage-row-dispatched.priority-row.priority-medium td:first-child {
+.operator-table-no-scroll
+  .data-table
+  tr.operator-stage-row-not-started.priority-row.priority-medium
+  td:first-child,
+.operator-table-no-scroll
+  .data-table
+  tr.operator-stage-row-logged.priority-row.priority-medium
+  td:first-child,
+.operator-table-no-scroll
+  .data-table
+  tr.operator-stage-row-dispatched.priority-row.priority-medium
+  td:first-child {
   box-shadow: inset 3px 0 0 #f59e0b;
 }
 
-.operator-table-no-scroll .data-table tr.operator-stage-row-not-started.priority-row.priority-low,
-.operator-table-no-scroll .data-table tr.operator-stage-row-logged.priority-row.priority-low,
-.operator-table-no-scroll .data-table tr.operator-stage-row-dispatched.priority-row.priority-low {
+.operator-table-no-scroll
+  .data-table
+  tr.operator-stage-row-not-started.priority-row.priority-low,
+.operator-table-no-scroll
+  .data-table
+  tr.operator-stage-row-logged.priority-row.priority-low,
+.operator-table-no-scroll
+  .data-table
+  tr.operator-stage-row-dispatched.priority-row.priority-low {
   border-left: none;
 }
 
-.operator-table-no-scroll .data-table tr.operator-stage-row-not-started.priority-row.priority-low td:first-child,
-.operator-table-no-scroll .data-table tr.operator-stage-row-logged.priority-row.priority-low td:first-child,
-.operator-table-no-scroll .data-table tr.operator-stage-row-dispatched.priority-row.priority-low td:first-child {
+.operator-table-no-scroll
+  .data-table
+  tr.operator-stage-row-not-started.priority-row.priority-low
+  td:first-child,
+.operator-table-no-scroll
+  .data-table
+  tr.operator-stage-row-logged.priority-row.priority-low
+  td:first-child,
+.operator-table-no-scroll
+  .data-table
+  tr.operator-stage-row-dispatched.priority-row.priority-low
+  td:first-child {
   box-shadow: inset 3px 0 0 #10b981;
 }
 
 /* Child rows: Stage legend controls background, flag controls left strip */
-.operator-table-no-scroll .child-jobs-table tr.child-row.operator-stage-row-not-started {
+.operator-table-no-scroll
+  .child-jobs-table
+  tr.child-row.operator-stage-row-not-started {
   background-color: #ffefbf;
 }
 
-.operator-table-no-scroll .child-jobs-table tr.child-row.operator-stage-row-not-started:hover {
+.operator-table-no-scroll
+  .child-jobs-table
+  tr.child-row.operator-stage-row-not-started:hover {
   background-color: #ffe39a;
 }
 
-.operator-table-no-scroll .child-jobs-table tr.child-row.operator-stage-row-logged {
+.operator-table-no-scroll
+  .child-jobs-table
+  tr.child-row.operator-stage-row-logged {
   background-color: #dbeafe;
 }
 
-.operator-table-no-scroll .child-jobs-table tr.child-row.operator-stage-row-logged:hover {
+.operator-table-no-scroll
+  .child-jobs-table
+  tr.child-row.operator-stage-row-logged:hover {
   background-color: #bfdbfe;
 }
 
-.operator-table-no-scroll .child-jobs-table tr.child-row.operator-stage-row-dispatched {
+.operator-table-no-scroll
+  .child-jobs-table
+  tr.child-row.operator-stage-row-dispatched {
   background-color: #ddd6fe;
 }
 
-.operator-table-no-scroll .child-jobs-table tr.child-row.operator-stage-row-dispatched:hover {
+.operator-table-no-scroll
+  .child-jobs-table
+  tr.child-row.operator-stage-row-dispatched:hover {
   background-color: #c4b5fd;
 }
 
@@ -1141,25 +1436,65 @@
   white-space: normal;
 }
 
-.operator-table-no-scroll .child-jobs-table tr.child-row.operator-stage-row-not-started td,
-.operator-table-no-scroll .child-jobs-table tr.child-row.operator-stage-row-logged td,
-.operator-table-no-scroll .child-jobs-table tr.child-row.operator-stage-row-dispatched td {
+.operator-logs-filters {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: nowrap;
+  margin-bottom: 0.7rem;
+  overflow-x: auto;
+}
+
+.operator-logs-filters .operator-logs-search {
+  min-width: 260px;
+  flex: 1 1 320px;
+}
+
+.operator-logs-filters .filter-select {
+  min-width: 180px;
+  flex: 0 0 180px;
+}
+
+.operator-table-no-scroll
+  .child-jobs-table
+  tr.child-row.operator-stage-row-not-started
+  td,
+.operator-table-no-scroll
+  .child-jobs-table
+  tr.child-row.operator-stage-row-logged
+  td,
+.operator-table-no-scroll
+  .child-jobs-table
+  tr.child-row.operator-stage-row-dispatched
+  td {
   background: transparent;
 }
 
-.operator-table-no-scroll .child-jobs-table tr.child-row.child-critical-row td:first-child {
+.operator-table-no-scroll
+  .child-jobs-table
+  tr.child-row.child-critical-row
+  td:first-child {
   box-shadow: inset 4px 0 0 #dc2626;
 }
 
-.operator-table-no-scroll .child-jobs-table tr.child-row.child-priority-row.child-priority-high td:first-child {
+.operator-table-no-scroll
+  .child-jobs-table
+  tr.child-row.child-priority-row.child-priority-high
+  td:first-child {
   box-shadow: inset 3px 0 0 #ef4444;
 }
 
-.operator-table-no-scroll .child-jobs-table tr.child-row.child-priority-row.child-priority-medium td:first-child {
+.operator-table-no-scroll
+  .child-jobs-table
+  tr.child-row.child-priority-row.child-priority-medium
+  td:first-child {
   box-shadow: inset 3px 0 0 #f59e0b;
 }
 
-.operator-table-no-scroll .child-jobs-table tr.child-row.child-priority-row.child-priority-low td:first-child {
+.operator-table-no-scroll
+  .child-jobs-table
+  tr.child-row.child-priority-row.child-priority-low
+  td:first-child {
   box-shadow: inset 3px 0 0 #10b981;
 }
 
@@ -1232,7 +1567,7 @@
     padding: 0.45rem 0.35rem;
     font-size: 0.78rem;
   }
-  
+
   .operator-table-no-scroll .child-row-content .child-jobs-table th,
   .operator-table-no-scroll .child-row-content .child-jobs-table td {
     padding: 0.45rem 0.35rem;
@@ -1246,7 +1581,7 @@
     padding: 0.4rem 0.3rem;
     font-size: 0.75rem;
   }
-  
+
   .operator-table-no-scroll .child-row-content .child-jobs-table th,
   .operator-table-no-scroll .child-row-content .child-jobs-table td {
     padding: 0.4rem 0.3rem;
@@ -1260,7 +1595,7 @@
     padding: 0.35rem 0.25rem;
     font-size: 0.7rem;
   }
-  
+
   .operator-table-no-scroll .child-row-content .child-jobs-table th,
   .operator-table-no-scroll .child-row-content .child-jobs-table td {
     padding: 0.35rem 0.25rem;

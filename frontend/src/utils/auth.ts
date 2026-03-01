@@ -51,3 +51,25 @@ export const getUserDisplayNameFromToken = (): string | null => {
     return null;
   }
 };
+
+export const getUserIdFromToken = (): string | null => {
+  const token = localStorage.getItem("token");
+  if (!token) {
+    return null;
+  }
+
+  const parts = token.split(".");
+  if (parts.length < 2) {
+    return null;
+  }
+
+  try {
+    const payload = parts[1]
+      .replace(/-/g, "+")
+      .replace(/_/g, "/");
+    const decoded = JSON.parse(atob(payload));
+    return decoded.userId || null;
+  } catch {
+    return null;
+  }
+};

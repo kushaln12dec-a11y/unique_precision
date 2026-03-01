@@ -76,6 +76,7 @@ export const OperatorCutCard: React.FC<OperatorCutCardProps> = ({
   isAdmin,
 }) => {
   const quantity = Number(cutItem.qty || 1);
+  const cutTotalTimeNeeded = (Number(cutItem.totalHrs || 0) || 0) * Math.max(1, quantity);
   return (
     <div className="operator-cut-card">
       <div className="operator-cut-header" onClick={onToggleExpansion}>
@@ -101,7 +102,7 @@ export const OperatorCutCard: React.FC<OperatorCutCardProps> = ({
               <div className="cut-detail-item"><label>PIP Finish</label><span className={cutItem.pipFinish ? "pip-badge yes" : "pip-badge no"}>{cutItem.pipFinish ? "Yes" : "No"}</span></div>
               <div className="cut-detail-item"><label>Complex</label><span className={cutItem.critical ? "complex-badge yes" : "complex-badge no"}>{cutItem.critical ? "Yes" : "No"}</span></div>
               <div className="cut-detail-item"><label>Priority</label><span className={`priority-badge priority-${(cutItem.priority || "").toLowerCase()}`}>{cutItem.priority || "-"}</span></div>
-              <div className="cut-detail-item"><label>Total Hrs/Piece</label><span>{cutItem.totalHrs ? formatDecimalHoursToHHMMhrs(cutItem.totalHrs) : "00:00hrs"}</span></div>
+              <div className="cut-detail-item"><label>Total Time Needed</label><span>{cutTotalTimeNeeded ? formatDecimalHoursToHHMMhrs(cutTotalTimeNeeded) : "00:00hrs"}</span></div>
               {isAdmin && (
                 <div className="cut-detail-item">
                   <label>Total Amount (₹)</label>

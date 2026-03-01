@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import FilterModal from "../../../components/FilterModal";
 import FilterButton from "../../../components/FilterButton";
 import FilterBadges from "../../../components/FilterBadges";
 import DownloadIcon from "@mui/icons-material/Download";
+import { getUserIdFromToken, getUserRoleFromToken } from "../../../utils/auth";
 import type { FilterField, FilterCategory, FilterValues } from "../../../components/FilterModal";
 
 type OperatorFiltersProps = {
@@ -72,7 +73,11 @@ export const OperatorFilters: React.FC<OperatorFiltersProps> = ({
   onSendSelectedRowsToQa,
   selectedRowsCount,
 }) => {
-  const TIMER_STORAGE_KEY = "operator_idle_timer_state_v1";
+  const TIMER_STORAGE_KEY = useMemo(() => {
+    const role = getUserRoleFromToken() || "UNKNOWN";
+    const userId = getUserIdFromToken() || "ANON";
+    return `operator_idle_timer_state_v1_${role}_${userId}`;
+  }, []);
   const [idleTransitionRunning, setIdleTransitionRunning] = useState(false);
   const [idleTransitionStartedAt, setIdleTransitionStartedAt] = useState<number | null>(null);
   const [idleTransitionElapsedSeconds, setIdleTransitionElapsedSeconds] = useState(0);

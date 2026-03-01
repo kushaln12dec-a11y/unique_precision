@@ -19,7 +19,7 @@ export const exportJobsToCSV = (tableData: TableRow[], isAdmin: boolean): void =
     "Pass",
     "Setting",
     "Qty",
-    "Total Hrs/Piece",
+    "Total Time Needed",
     ...(isAdmin ? ["Total Amount (₹)"] : []),
     "Created By",
     "Created At",

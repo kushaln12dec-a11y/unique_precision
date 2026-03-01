@@ -1,7 +1,16 @@
 .data-table-wrapper {
-  overflow-x: auto;
+  overflow-y: auto;
+  overflow-x: hidden;
+  max-height: 60vh;
   border-radius: 12px;
   border: 1px solid #e2e8f0;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.data-table-wrapper::-webkit-scrollbar {
+  width: 0;
+  height: 0;
 }
 
 /* Ensure Programmer screen has horizontal scroll */
@@ -17,7 +26,7 @@
   border-radius: 18px;
   background: #ffffff;
   overflow: hidden;
-  table-layout: fixed;
+  table-layout: auto;
 }
 
 .data-table th,
@@ -27,7 +36,8 @@
   text-align: left;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
+  white-space: normal;
+  word-break: break-word;
 }
 
 /* Support for left-aligned tables (e.g., UserManagement) */
@@ -43,6 +53,12 @@
 .data-table thead {
   background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
   border-radius: 18px 18px 0 0;
+}
+
+.data-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 5;
 }
 
 .data-table th {

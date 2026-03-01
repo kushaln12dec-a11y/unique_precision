@@ -143,7 +143,7 @@ const QC = () => {
       },
       { key: "description", label: "Description", render: (row: QcRow) => row.parent.description || "-" },
       { key: "qty", label: "Qty", render: (row: QcRow) => row.entries.reduce((sum, item) => sum + Number(item.qty || 0), 0).toString() },
-      { key: "totalHrs", label: "Hrs/Piece", render: (row: QcRow) => formatHoursToHHMM(row.totalHrs) },
+      { key: "totalHrs", label: "Total Time Needed", render: (row: QcRow) => formatHoursToHHMM(row.totalHrs) },
       { key: "totalAmount", label: "Amount (₹)", render: (row: QcRow) => `₹${Math.round(row.totalAmount || 0)}` },
       { key: "createdBy", label: "Created By", render: (row: QcRow) => row.parent.createdBy || "-" },
       {

@@ -376,24 +376,6 @@ export const OperatorInputSection: React.FC<OperatorInputSectionProps> = ({
                       </span>
                     </div>
                   )}
-                  {/* Show reset button after start time is set (before or after end time) */}
-                  {qtyData.startTime && isAdmin && (
-                    <button
-                      type="button"
-                      className="reset-timer-button"
-                      onClick={() => {
-                        if (onRequestResetTimer) {
-                          onRequestResetTimer(cutId, qtyIndex);
-                        } else {
-                          onInputChange(cutId, qtyIndex, "resetTimer", "");
-                        }
-                      }}
-                      aria-label="Reset timer"
-                      title="Reset timer"
-                    >
-                      Reset
-                    </button>
-                  )}
                 </div>
               )}
             </div>
@@ -603,18 +585,37 @@ export const OperatorInputSection: React.FC<OperatorInputSectionProps> = ({
                     {savedRanges.has(rangeBadgeKey) ? "Saved" : `Save Range ${rangeStartQty}-${rangeEndQty}`}
                   </button>
                 ) : (
-                  <button
-                    type="button"
-                    className={`btn-save-quantity ${savedQuantities.has(qtyIndex) ? "saved" : ""}`}
-                    disabled={savedQuantities.has(qtyIndex)}
-                    onClick={() => {
-                      if (onSaveQuantity) {
-                        onSaveQuantity(cutId, qtyIndex);
-                      }
-                    }}
-                  >
-                    {savedQuantities.has(qtyIndex) ? "Saved" : "Save Quantity " + (qtyIndex + 1)}
-                  </button>
+                  <>
+                    {isAdmin && qtyData.startTime && (
+                      <button
+                        type="button"
+                        className="reset-timer-button"
+                        onClick={() => {
+                          if (onRequestResetTimer) {
+                            onRequestResetTimer(cutId, qtyIndex);
+                          } else {
+                            onInputChange(cutId, qtyIndex, "resetTimer", "");
+                          }
+                        }}
+                        aria-label="Reset timer"
+                        title="Reset timer"
+                      >
+                        Reset Quantity {qtyIndex + 1}
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      className={`btn-save-quantity ${savedQuantities.has(qtyIndex) ? "saved" : ""}`}
+                      disabled={savedQuantities.has(qtyIndex)}
+                      onClick={() => {
+                        if (onSaveQuantity) {
+                          onSaveQuantity(cutId, qtyIndex);
+                        }
+                      }}
+                    >
+                      {savedQuantities.has(qtyIndex) ? "Saved" : "Save Quantity " + (qtyIndex + 1)}
+                    </button>
+                  </>
                 )}
               </div>
             )}

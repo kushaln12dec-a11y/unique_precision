@@ -480,7 +480,7 @@ export const CutSection: React.FC<CutSectionProps> = ({
           </FormInput>
 
           <FormInput 
-            label="Total Hrs/Piece" 
+            label="Total Time Needed" 
             className="grid-total-hrs"
             style={{ gridRow: 2 + operationRows.length }}
           >

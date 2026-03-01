@@ -5,18 +5,19 @@ import type { JobEntry } from "../../../types/job";
 import type { CutInputData, QuantityInputData } from "../types/cutInput";
 import { createEmptyQuantityInputData } from "../types/cutInput";
 import { calculateMachineHrs } from "../utils/machineHrsCalculation";
+import { getUserIdFromToken, getUserRoleFromToken } from "../../../utils/auth";
 
 /**
  * Hook for fetching and managing operator view data
  */
 // Helper functions for localStorage persistence
-const getStorageKey = (groupId: string | null): string => {
-  return `operator_inputs_${groupId || 'default'}`;
+const getStorageKey = (groupId: string | null, userKey: string): string => {
+  return `operator_inputs_${userKey}_${groupId || "default"}`;
 };
 
-const saveToLocalStorage = (groupId: string | null, cutInputs: Map<number | string, CutInputData>) => {
+const saveToLocalStorage = (groupId: string | null, userKey: string, cutInputs: Map<number | string, CutInputData>) => {
   try {
-    const storageKey = getStorageKey(groupId);
+    const storageKey = getStorageKey(groupId, userKey);
     // Convert Map to plain object for storage
     const dataToSave: Record<string, CutInputData> = {};
     cutInputs.forEach((value, key) => {
@@ -35,9 +36,9 @@ const saveToLocalStorage = (groupId: string | null, cutInputs: Map<number | stri
   }
 };
 
-const loadFromLocalStorage = (groupId: string | null): Map<number | string, CutInputData> | null => {
+const loadFromLocalStorage = (groupId: string | null, userKey: string): Map<number | string, CutInputData> | null => {
   try {
-    const storageKey = getStorageKey(groupId);
+    const storageKey = getStorageKey(groupId, userKey);
     const savedData = localStorage.getItem(storageKey);
     if (!savedData) return null;
     
@@ -69,6 +70,7 @@ const loadFromLocalStorage = (groupId: string | null): Map<number | string, CutI
 };
 
 export const useOperatorViewData = (groupId: string | null, cutIdParam: string | null) => {
+  const currentUserKey = `${getUserRoleFromToken() || "UNKNOWN"}_${getUserIdFromToken() || "ANON"}`;
   const [jobs, setJobs] = useState<JobEntry[]>([]);
   const [idleTimeConfigs, setIdleTimeConfigs] = useState<Map<string, number>>(new Map());
   const [cutInputs, setCutInputs] = useState<Map<number | string, CutInputData>>(new Map());
@@ -109,7 +111,7 @@ export const useOperatorViewData = (groupId: string | null, cutIdParam: string |
         }
         
         // Try to load from localStorage first
-        const savedInputs = loadFromLocalStorage(groupId);
+        const savedInputs = loadFromLocalStorage(groupId, currentUserKey);
         
         // Initialize inputs for all cuts
         const initialInputs = new Map<number, CutInputData>();
@@ -248,14 +250,14 @@ export const useOperatorViewData = (groupId: string | null, cutIdParam: string |
       }
     };
     fetchJobs();
-  }, [groupId, cutIdParam, idleTimeConfigs]);
+  }, [groupId, cutIdParam, idleTimeConfigs, currentUserKey]);
   
   // Save to localStorage whenever cutInputs changes
   useEffect(() => {
     if (groupId && cutInputs.size > 0) {
-      saveToLocalStorage(groupId, cutInputs);
+      saveToLocalStorage(groupId, currentUserKey, cutInputs);
     }
-  }, [cutInputs, groupId]);
+  }, [cutInputs, groupId, currentUserKey]);
 
   const toggleCutExpansion = (cutId: number | string) => {
     setExpandedCuts((prev) => {

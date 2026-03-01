@@ -243,9 +243,9 @@ export const useOperatorTable = ({
         key: "totalHrs",
         label: (
           <>
-            Total
+            Total Time
             <br />
-            Hrs/Piece
+            Needed
           </>
         ),
         sortable: true,

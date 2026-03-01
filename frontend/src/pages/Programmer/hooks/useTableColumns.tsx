@@ -143,7 +143,7 @@ export const useTableColumns = ({
       },
       {
         key: "totalHrs",
-        label: "Total Hrs/Piece",
+        label: "Total Time Needed",
         sortable: false,
         sortKey: "totalHrs",
         render: (row) => (row.groupTotalHrs ? formatHoursToHHMM(row.groupTotalHrs) : "—"),

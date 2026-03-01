@@ -1,0 +1,45 @@
+.qa-stage-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.35rem;
+  margin-bottom: 0.15rem;
+}
+
+.qa-legend-title {
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: #334155;
+}
+
+.qa-legend-item {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.18rem 0.48rem;
+  border-radius: 999px;
+  border: 1px solid transparent;
+}
+
+.qa-legend-item.saved {
+  color: #075985;
+  background: #e0f2fe;
+  border-color: #7dd3fc;
+}
+
+.qa-legend-item.ready {
+  color: #166534;
+  background: #ecfdf5;
+  border-color: #86efac;
+}
+
+.qa-legend-item.sent {
+  color: #4338ca;
+  background: #eef2ff;
+  border-color: #c7d2fe;
+}
+
+.qa-legend-item.empty {
+  color: #92400e;
+  background: #fffbeb;
+  border-color: #fcd34d;
+}
