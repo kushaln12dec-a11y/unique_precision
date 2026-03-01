@@ -1,5 +1,5 @@
 ﻿import type { JobEntry } from "../../../types/job";
-import { formatHoursToHHMM, parseDateValue } from "../../../utils/date";
+import { formatDisplayDateTime, formatHoursToHHMM } from "../../../utils/date";
 
 type TableRow = {
   groupId: number;
@@ -37,18 +37,7 @@ export const exportOperatorJobsToCSV = (tableData: TableRow[], isAdmin: boolean)
     row.parent.passLevel || "",
     row.parent.setting || "",
     Number(row.parent.qty || 0).toString(),
-    (() => {
-      const parsed = parseDateValue(row.parent.createdAt);
-      if (!parsed) return "-";
-      const date = new Date(parsed);
-      const day = date.getDate().toString().padStart(2, "0");
-      const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-      const month = months[date.getMonth()];
-      const year = date.getFullYear();
-      const hours = date.getHours().toString().padStart(2, "0");
-      const minutes = date.getMinutes().toString().padStart(2, "0");
-      return `${day} ${month} ${year} ${hours}:${minutes}`;
-    })(),
+    formatDisplayDateTime(row.parent.createdAt),
     row.parent.createdBy || "",
     row.parent.assignedTo || "",
     row.groupTotalHrs ? formatHoursToHHMM(row.groupTotalHrs) : "",

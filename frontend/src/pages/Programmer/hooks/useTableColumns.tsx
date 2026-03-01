@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import type { Column } from "../../../components/DataTable";
-import { parseDateValue, formatHoursToHHMM } from "../../../utils/date";
+import { formatDisplayDateTime, formatHoursToHHMM } from "../../../utils/date";
 import ArrowForwardIosSharpIcon from "@mui/icons-material/ArrowForwardIosSharp";
 import type { TableRow } from "../utils/jobDataTransform";
 import ActionButtons from "../components/ActionButtons";
@@ -172,31 +172,7 @@ export const useTableColumns = ({
         label: "Created At",
         sortable: false,
         sortKey: "createdAt",
-        render: (row) => {
-          const parsed = parseDateValue(row.parent.createdAt);
-          if (!parsed) return "—";
-          const date = new Date(parsed);
-          const day = date.getDate().toString().padStart(2, "0");
-          const months = [
-            "Jan",
-            "Feb",
-            "Mar",
-            "Apr",
-            "May",
-            "Jun",
-            "Jul",
-            "Aug",
-            "Sep",
-            "Oct",
-            "Nov",
-            "Dec",
-          ];
-          const month = months[date.getMonth()];
-          const year = date.getFullYear();
-          const hours = date.getHours().toString().padStart(2, "0");
-          const minutes = date.getMinutes().toString().padStart(2, "0");
-          return `${day} ${month} ${year} ${hours}:${minutes}`;
-        },
+        render: (row) => formatDisplayDateTime(row.parent.createdAt),
       },
       {
         key: "action",
@@ -222,4 +198,5 @@ export const useTableColumns = ({
     [expandableRows, isAdmin, setViewingJob, setShowJobViewModal, handleEditJob, handleDeleteClick]
   );
 };
+
 

@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from "react";
+import PauseIcon from "@mui/icons-material/Pause";
+import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import DateTimeInput from "./DateTimeInput";
 import { MultiSelectOperators } from "./MultiSelectOperators";
 import type { CutInputData, QuantityInputData } from "../types/cutInput";
@@ -48,10 +50,11 @@ type OperatorInputSectionProps = {
   onRequestResetTimer?: (cutId: number | string, quantityIndex: number) => void;
   onStartTimeCaptured?: (cutId: number | string, quantityIndex: number) => void;
   isAdmin: boolean;
+  requiredHoursPerQuantity?: number;
 };
 
-// Helper function to format pause duration
-const formatPauseDuration = (seconds: number): string => {
+// Helper function to format idle duration
+const formatIdleDuration = (seconds: number): string => {
   const hours = Math.floor(seconds / 3600);
   const minutes = Math.floor((seconds % 3600) / 60);
   const secs = seconds % 60;
@@ -76,13 +79,13 @@ export const OperatorInputSection: React.FC<OperatorInputSectionProps> = ({
   onSaveRange,
   qaStatuses = {},
   onSendToQa,
-  savedQuantities = new Set(),
   savedRanges = new Set(),
   validationErrors = {},
   onShowToast,
   onRequestResetTimer,
   onStartTimeCaptured,
   isAdmin,
+  requiredHoursPerQuantity = 0,
 }) => {
   const [captureMode, setCaptureMode] = useState<"PER_QUANTITY" | "RANGE">("PER_QUANTITY");
   const [rangeFrom, setRangeFrom] = useState<string>("1");
@@ -323,7 +326,8 @@ export const OperatorInputSection: React.FC<OperatorInputSectionProps> = ({
       </div>
 
       {displayQuantities.map((qtyData, qtyIndex) => {
-        const { elapsedTime, pauseTime, isRunning } = useQuantityTimer(
+        const quantityRequiredSeconds = Math.max(0, Math.round((Number(requiredHoursPerQuantity || 0) || 0) * 3600));
+        const { elapsedTime, pauseTime, remainingTime, isRunning } = useQuantityTimer(
           qtyData.startTime,
           qtyData.endTime,
           qtyData.isPaused || false,
@@ -331,7 +335,8 @@ export const OperatorInputSection: React.FC<OperatorInputSectionProps> = ({
           qtyData.totalPauseTime || 0,
           qtyData.pausedElapsedTime || 0,
           qtyData.startTimeEpochMs || null,
-          qtyData.endTimeEpochMs || null
+          qtyData.endTimeEpochMs || null,
+          quantityRequiredSeconds
         );
 
         if (isRangeMode && qtyIndex !== activeRangeSourceIndex) {
@@ -360,29 +365,50 @@ export const OperatorInputSection: React.FC<OperatorInputSectionProps> = ({
               </div>
               {qtyData.startTime && (
                 <div className="quantity-timers">
+                  <div className="quantity-timer required-timer">
+                    <span className="timer-label">Time Required:</span>
+                    <span className={`timer-value ${isRunning ? "running" : ""}`}>
+                      {remainingTime}
+                    </span>
+                  </div>
                   <div className="quantity-timer">
                     <span className="timer-label">Running Time:</span>
                     <span className={`timer-value ${isRunning ? "running" : ""}`}>
                       {elapsedTime}
                     </span>
                   </div>
-                  {/* Show pause time if paused (will count up) OR if there's accumulated pause time greater than 0 */}
-                  {/* Don't show if pauseTime is "00:00:00" */}
-                  {((qtyData.isPaused || Number(qtyData.totalPauseTime || 0) > 0) && pauseTime && pauseTime !== "00:00:00") && (
-                    <div className="quantity-timer pause-timer">
-                      <span className="timer-label">Pause Time:</span>
-                      <span className="timer-value pause">
-                        {pauseTime}
-                      </span>
-                    </div>
-                  )}
                 </div>
               )}
             </div>
             <div className="quantity-content-wrapper">
               <div className="operator-inputs-grid">
                 <div className="operator-input-card">
-                  <label>Start Time</label>
+                  <label className="start-time-label-row">
+                    <span>Start Time</span>
+                    {qtyData.startTime && (
+                      <span className="start-time-pause-meta">
+                        <button
+                          type="button"
+                          className="start-time-pause-toggle"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            if (!qtyData.endTime) {
+                              onInputChange(cutId, qtyIndex, "togglePause", "");
+                            }
+                          }}
+                          disabled={!!qtyData.endTime}
+                          aria-label={qtyData.isPaused ? "Resume timer" : "Idle timer"}
+                          title={qtyData.isPaused ? "Resume timer" : "Idle timer"}
+                        >
+                          {qtyData.isPaused ? <PlayArrowIcon fontSize="small" /> : <PauseIcon fontSize="small" />}
+                        </button>
+                        {((qtyData.isPaused || Number(qtyData.totalPauseTime || 0) > 0) && pauseTime && pauseTime !== "00:00:00") && (
+                          <span className="start-time-pause-time">Idle History: {pauseTime}</span>
+                        )}
+                      </span>
+                    )}
+                  </label>
                   <DateTimeInput
                     value={qtyData.startTime}
                     onChange={(value) => {
@@ -409,6 +435,7 @@ export const OperatorInputSection: React.FC<OperatorInputSectionProps> = ({
                     placeholder="DD/MM/YYYY HH:MM"
                     error={validationErrors[qtyIndex]?.startTime}
                     showPauseButton={true}
+                    showPauseButtonInInput={false}
                     isPaused={qtyData.isPaused || false}
                     onPauseToggle={() => {
                       // Don't allow pause toggle if end time is set
@@ -500,15 +527,15 @@ export const OperatorInputSection: React.FC<OperatorInputSectionProps> = ({
                     <p className="field-error">{validationErrors[qtyIndex].opsName}</p>
                   )}
                 </div>
-                {/* Pause Reason Input - Show when paused */}
+                {/* Idle Reason Input - Show when idle */}
                 {qtyData.isPaused && !qtyData.endTime && (
                   <div className="operator-input-card pause-reason-card">
-                    <label>Pause Reason <span style={{ color: "#ef4444" }}>*</span></label>
+                    <label>Idle Reason <span style={{ color: "#ef4444" }}>*</span></label>
                     <input
                       type="text"
                       value={qtyData.currentPauseReason || ""}
                       onChange={(e) => onInputChange(cutId, qtyIndex, "pauseReason", e.target.value)}
-                      placeholder="Enter reason for pause..."
+                      placeholder="Enter reason for idle..."
                       className={`pause-reason-input ${validationErrors[qtyIndex]?.pauseReason ? "input-error" : ""}`}
                     />
                     {validationErrors[qtyIndex]?.pauseReason && (
@@ -519,7 +546,7 @@ export const OperatorInputSection: React.FC<OperatorInputSectionProps> = ({
 
               </div>
 
-              {/* Display Pause Sessions History - Right Side */}
+              {/* Display Idle Sessions History - Right Side */}
               {qtyData.pauseSessions && qtyData.pauseSessions.length > 0 && (
                 <div className="pause-history-sidebar">
                   <div className="pause-history-header">
@@ -527,7 +554,7 @@ export const OperatorInputSection: React.FC<OperatorInputSectionProps> = ({
                       <rect x="6" y="4" width="4" height="16" rx="1" fill="currentColor" />
                       <rect x="14" y="4" width="4" height="16" rx="1" fill="currentColor" />
                     </svg>
-                    <h6 className="pause-history-title">Pause History</h6>
+                    <h6 className="pause-history-title">Idle History</h6>
                     <span className="pause-history-count">{qtyData.pauseSessions.length}</span>
                   </div>
                   <div className="pause-sessions-list">
@@ -542,7 +569,7 @@ export const OperatorInputSection: React.FC<OperatorInputSectionProps> = ({
                               <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
                               <path d="M12 6v6l4 2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
                             </svg>
-                            {formatPauseDuration(session.pauseDuration)}
+                            {formatIdleDuration(session.pauseDuration)}
                           </div>
                           {session.reason && (
                             <div className="pause-session-reason">
@@ -605,15 +632,14 @@ export const OperatorInputSection: React.FC<OperatorInputSectionProps> = ({
                     )}
                     <button
                       type="button"
-                      className={`btn-save-quantity ${savedQuantities.has(qtyIndex) ? "saved" : ""}`}
-                      disabled={savedQuantities.has(qtyIndex)}
+                      className="btn-save-quantity"
                       onClick={() => {
                         if (onSaveQuantity) {
                           onSaveQuantity(cutId, qtyIndex);
                         }
                       }}
                     >
-                      {savedQuantities.has(qtyIndex) ? "Saved" : "Save Quantity " + (qtyIndex + 1)}
+                      {"Save Quantity " + (qtyIndex + 1)}
                     </button>
                   </>
                 )}

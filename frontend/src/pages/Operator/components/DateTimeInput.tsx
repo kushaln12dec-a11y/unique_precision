@@ -11,9 +11,10 @@ type DateTimeInputProps = {
   placeholder?: string;
   error?: string;
   className?: string;
-  showPauseButton?: boolean; // Show pause button for Start Time
-  isPaused?: boolean; // Current pause state
-  onPauseToggle?: () => void; // Callback for pause/resume
+  showPauseButton?: boolean; // Show idle button for Start Time
+  showPauseButtonInInput?: boolean;
+  isPaused?: boolean; // Current idle state
+  onPauseToggle?: () => void; // Callback for idle/resume
   disabled?: boolean; // Disable input (for End Time after first click)
   disablePauseButton?: boolean;
 };
@@ -60,6 +61,7 @@ const DateTimeInput: React.FC<DateTimeInputProps> = ({
   error,
   className = "",
   showPauseButton = false,
+  showPauseButtonInInput = true,
   isPaused = false,
   onPauseToggle,
   disabled = false,
@@ -90,7 +92,7 @@ const DateTimeInput: React.FC<DateTimeInputProps> = ({
 
   return (
     <div className={`datetime-input-wrapper ${className}`}>
-      <div className={`datetime-input-container ${showPauseButton && value ? "has-pause-button" : ""}`}>
+      <div className={`datetime-input-container ${showPauseButton && showPauseButtonInInput && value ? "has-pause-button" : ""}`}>
         <input
           type="text"
           value={value}
@@ -100,14 +102,14 @@ const DateTimeInput: React.FC<DateTimeInputProps> = ({
           disabled={disabled}
           readOnly={disabled}
         />
-        {showPauseButton && value && (
+        {showPauseButton && showPauseButtonInInput && value && (
           <button
             type="button"
             className="datetime-pause-button"
             onClick={handlePauseClick}
             disabled={disablePauseButton}
-            aria-label={isPaused ? "Resume timer" : "Pause timer"}
-            title={disablePauseButton ? "Pause disabled after end time is set" : (isPaused ? "Resume timer" : "Pause timer")}
+            aria-label={isPaused ? "Resume timer" : "Idle timer"}
+            title={disablePauseButton ? "Idle disabled after end time is set" : (isPaused ? "Resume timer" : "Idle timer")}
           >
             {isPaused ? <PlayArrowIcon fontSize="small" /> : <PauseIcon fontSize="small" />}
           </button>

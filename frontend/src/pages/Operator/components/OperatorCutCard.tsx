@@ -135,6 +135,7 @@ export const OperatorCutCard: React.FC<OperatorCutCardProps> = ({
             cutData={cutData}
             cutId={cutItem.id}
             quantity={quantity}
+            requiredHoursPerQuantity={Number(cutItem.totalHrs || 0) || 0}
             operatorUsers={operatorUsers}
             onInputChange={onInputChange}
             onApplyToAllQuantities={onApplyToAllQuantities}

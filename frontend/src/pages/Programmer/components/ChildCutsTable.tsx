@@ -156,9 +156,9 @@ const ChildCutsTable: React.FC<ChildCutsTableProps> = ({
             {isOperator && <th className="mach-col">Mach #</th>}
             <th className="total-hrs-col">
               <span className="th-content">
-                Hrs
+                Total Time
                 <br />
-                /Piece
+                Needed
               </span>
             </th>
             {isAdmin && (
@@ -282,7 +282,11 @@ const ChildCutsTable: React.FC<ChildCutsTableProps> = ({
                   </select>
                 </td>
               )}
-              <td className="total-hrs-col">{entry.totalHrs ? formatHoursToHHMM(entry.totalHrs) : "-"}</td>
+              <td className="total-hrs-col">
+                {entry.totalHrs
+                  ? formatHoursToHHMM((Number(entry.totalHrs || 0) || 0) * Math.max(1, Number(entry.qty || 1)))
+                  : "-"}
+              </td>
               {isAdmin && <td className="total-amount-col">{entry.totalAmount ? `₹${Math.round(entry.totalAmount)}` : "-"}</td>}
               {isOperator && (
                 <td className="status-col">

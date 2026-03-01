@@ -29,7 +29,8 @@ export const useQuantityTimer = (
   totalPauseTime?: number,
   pausedElapsedTime?: number,
   startTimeEpochMs?: number | null,
-  endTimeEpochMs?: number | null
+  endTimeEpochMs?: number | null,
+  requiredDurationSeconds?: number
 ) => {
   const [now, setNow] = useState<number>(Date.now());
 
@@ -77,10 +78,16 @@ export const useQuantityTimer = (
     return base;
   }, [totalPauseTime, isPaused, pauseStartTime, now]);
 
+  const computedRemainingSeconds = useMemo(() => {
+    const required = Math.max(0, Math.floor(Number(requiredDurationSeconds || 0)));
+    if (required <= 0) return 0;
+    return Math.max(0, required - computedElapsedSeconds);
+  }, [requiredDurationSeconds, computedElapsedSeconds]);
+
   return {
     elapsedTime: formatHMS(computedElapsedSeconds),
     pauseTime: formatHMS(computedPauseSeconds),
+    remainingTime: formatHMS(computedRemainingSeconds),
     isRunning: running && !isPaused,
   };
 };
-

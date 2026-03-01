@@ -2,20 +2,12 @@ import { useEffect, useMemo, useState } from "react";
 import DataTable, { type Column } from "../../../components/DataTable";
 import { getEmployeeLogs } from "../../../services/employeeLogsApi";
 import type { EmployeeLog } from "../../../types/employeeLog";
+import { formatDisplayDateTime } from "../../../utils/date";
 
 type RoleTab = "PROGRAMMER" | "OPERATOR" | "QC";
 
 const formatDateTime = (value?: string | null) => {
-  if (!value) return "-";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "-";
-  const day = date.getDate().toString().padStart(2, "0");
-  const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-  const month = months[date.getMonth()];
-  const year = date.getFullYear();
-  const hours = date.getHours().toString().padStart(2, "0");
-  const minutes = date.getMinutes().toString().padStart(2, "0");
-  return `${day} ${month} ${year} ${hours}:${minutes}`;
+  return formatDisplayDateTime(value || null);
 };
 
 const formatDuration = (seconds?: number) => {

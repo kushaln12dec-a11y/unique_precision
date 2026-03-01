@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import type { JobEntry } from "../../../types/job";
-import { formatHoursToHHMM, parseDateValue } from "../../../utils/date";
+import { formatDisplayDateTime, formatHoursToHHMM } from "../../../utils/date";
 import ActionButtons from "../../Programmer/components/ActionButtons";
 import ArrowForwardIosSharpIcon from "@mui/icons-material/ArrowForwardIosSharp";
 import { MultiSelectOperators } from "../components/MultiSelectOperators";
@@ -293,23 +293,7 @@ export const useOperatorTable = ({
         label: "Created At",
         sortable: false,
         sortKey: "createdAt",
-        render: (row) => {
-          const parsed = parseDateValue(row.parent.createdAt);
-          if (!parsed) return "-";
-          const date = new Date(parsed);
-          const day = date.getDate().toString().padStart(2, "0");
-          const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-          const month = months[date.getMonth()];
-          const year = date.getFullYear();
-          const hours = date.getHours().toString().padStart(2, "0");
-          const minutes = date.getMinutes().toString().padStart(2, "0");
-          return (
-            <div className="created-at-split">
-              <span>{`${day} ${month} ${year}`}</span>
-              <span>{`${hours}:${minutes}`}</span>
-            </div>
-          );
-        },
+        render: (row) => formatDisplayDateTime(row.parent.createdAt),
       },
       {
         key: "action",

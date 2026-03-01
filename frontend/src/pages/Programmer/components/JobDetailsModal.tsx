@@ -3,7 +3,7 @@ import ImageZoomModal from "../../../components/ImageZoomModal";
 import ImageUpload from "./ImageUpload";
 import type { JobEntry } from "../../../types/job";
 import { calculateTotals, type CutForm } from "../programmerUtils";
-import { formatDecimalHoursToHHMMhrs } from "../../../utils/date";
+import { formatDecimalHoursToHHMMhrs, formatDisplayDateTime } from "../../../utils/date";
 import "./JobDetailsModal.css";
 import { useLocation } from "react-router-dom";
 import { getQaProgressCounts } from "../../Operator/utils/qaProgress";
@@ -71,30 +71,7 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
     };
   }, [displayEntries]);
 
-  const formatDate = (dateString: string) => {
-    const parsed = new Date(dateString);
-    if (isNaN(parsed.getTime())) return dateString || "—";
-    const day = parsed.getDate().toString().padStart(2, "0");
-    const months = [
-      "Jan",
-      "Feb",
-      "Mar",
-      "Apr",
-      "May",
-      "Jun",
-      "Jul",
-      "Aug",
-      "Sep",
-      "Oct",
-      "Nov",
-      "Dec",
-    ];
-    const month = months[parsed.getMonth()];
-    const year = parsed.getFullYear();
-    const hours = parsed.getHours().toString().padStart(2, "0");
-    const minutes = parsed.getMinutes().toString().padStart(2, "0");
-    return `${day} ${month} ${year} ${hours}:${minutes}`;
-  };
+  const formatDate = (dateString: string) => formatDisplayDateTime(dateString || "");
 
   const Location = useLocation();
   const isOperator = Location.pathname.includes("operator");
@@ -448,4 +425,5 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
 };
 
 export default JobDetailsModal;
+
 

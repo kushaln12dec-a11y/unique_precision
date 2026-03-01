@@ -21,6 +21,7 @@ import { getParentRowClassName } from "../Programmer/utils/priorityUtils";
 import type { JobEntry } from "../../types/job";
 import type { EmployeeLog } from "../../types/employeeLog";
 import type { FilterValues } from "../../components/FilterModal";
+import { formatDisplayDateTime } from "../../utils/date";
 import "../RoleBoard.css";
 import "../Programmer/Programmer.css";
 import "./Operator.css";
@@ -48,7 +49,7 @@ const Operator = () => {
   const [showJobViewModal, setShowJobViewModal] = useState(false);
   const [selectedJobIds, setSelectedJobIds] = useState<Set<number>>(new Set());
   const [selectedEntryIds, setSelectedEntryIds] = useState<Set<string | number>>(new Set());
-  const [isIdleTimerRunning, setIsIdleTimerRunning] = useState(false);
+  const [isTaskTimerRunning, setIsTaskTimerRunning] = useState(false);
   const [activeTab, setActiveTab] = useState<"jobs" | "logs">("jobs");
   const [operatorLogs, setOperatorLogs] = useState<EmployeeLog[]>([]);
   const [logsLoading, setLogsLoading] = useState(false);
@@ -297,7 +298,7 @@ const Operator = () => {
       name: `${user.firstName} ${user.lastName}`.trim() || user.email || String(user._id),
     })),
     isAdmin,
-    isIdleTimerRunning,
+    isTaskTimerRunning,
     selectedEntryIds,
     handleChildRowSelect
   );
@@ -317,7 +318,7 @@ const Operator = () => {
     handleSubmit,
     handleImageInput,
     isAdmin,
-    isImageInputDisabled: isIdleTimerRunning,
+    isImageInputDisabled: isTaskTimerRunning,
   });
 
   const handleApplyFiltersWithPageReset = (newFilters: FilterValues) => {
@@ -359,13 +360,6 @@ const Operator = () => {
     };
   }, [activeTab]);
 
-  const formatDateTime = (value?: string | null): string => {
-    if (!value) return "-";
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return "-";
-    return date.toLocaleString();
-  };
-
   const formatDuration = (seconds?: number): string => {
     const total = Math.max(0, Number(seconds || 0));
     const h = Math.floor(total / 3600);
@@ -379,8 +373,8 @@ const Operator = () => {
       { key: "userName", label: "Operator", sortable: false, render: (row) => row.userName || "-" },
       { key: "workItemTitle", label: "Work Item", sortable: false, render: (row) => row.workItemTitle || "-" },
       { key: "workSummary", label: "Summary", sortable: false, render: (row) => row.workSummary || "-" },
-      { key: "startedAt", label: "Started", sortable: false, render: (row) => formatDateTime(row.startedAt) },
-      { key: "endedAt", label: "Ended", sortable: false, render: (row) => formatDateTime(row.endedAt) },
+      { key: "startedAt", label: "Started", sortable: false, render: (row) => formatDisplayDateTime(row.startedAt) },
+      { key: "endedAt", label: "Ended", sortable: false, render: (row) => formatDisplayDateTime(row.endedAt) },
       { key: "durationSeconds", label: "Duration", sortable: false, render: (row) => formatDuration(row.durationSeconds) },
       {
         key: "idleTime",
@@ -448,7 +442,7 @@ const Operator = () => {
                 onProductionStageFilterChange={setProductionStageFilter}
                 canUseTaskSwitchTimer={canUseTaskSwitchTimer}
                 onSaveTaskSwitch={handleSaveTaskSwitch}
-                onTimerRunningChange={setIsIdleTimerRunning}
+                onTimerRunningChange={setIsTaskTimerRunning}
                 onShowToast={(message, variant = "info") => {
                   setToast({ message, variant, visible: true });
                   setTimeout(() => setToast((prev) => ({ ...prev, visible: false })), 2500);

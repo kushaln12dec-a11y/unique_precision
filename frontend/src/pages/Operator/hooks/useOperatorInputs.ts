@@ -254,20 +254,20 @@ export const useOperatorInputs = (
       
       const qtyData = quantities[quantityIndex];
       
-      // Handle pause/resume toggle
+      // Handle idle/resume toggle
       if (field === "togglePause") {
         const now = Date.now();
         if (qtyData.isPaused) {
-          // Resuming: calculate pause duration and add to sessions
-          // Require pause reason before resuming
+          // Resuming: calculate idle duration and add to sessions
+          // Require idle reason before resuming
           if (!qtyData.currentPauseReason || qtyData.currentPauseReason.trim() === "") {
-            // Show error toast if reason is not provided
+            // Show error if reason is not provided
             if (setValidationErrors) {
               setValidationErrors((prev) => {
                 const newErrors = new Map(prev);
                 const cutErrors = newErrors.get(cutId) || {};
                 const qtyErrors = cutErrors[quantityIndex] || {};
-                qtyErrors.pauseReason = "Please enter a pause reason before resuming";
+                qtyErrors.pauseReason = "Please enter an idle reason before resuming";
                 cutErrors[quantityIndex] = qtyErrors;
                 newErrors.set(cutId, cutErrors);
                 return newErrors;
@@ -280,7 +280,7 @@ export const useOperatorInputs = (
             const pauseDuration = Math.floor((now - qtyData.pauseStartTime) / 1000);
             const newTotalPauseTime = qtyData.totalPauseTime + pauseDuration;
             
-            // Add completed pause session to array
+            // Add completed idle session to array
             const pauseSessions = [...(qtyData.pauseSessions || [])];
             pauseSessions.push({
               pauseStartTime: qtyData.pauseStartTime,
@@ -341,7 +341,7 @@ export const useOperatorInputs = (
         return newMap;
       }
       
-      // Handle pause reason update
+      // Handle idle reason update
       if (field === "pauseReason") {
         const updatedQtyData: QuantityInputData = {
           ...qtyData,
@@ -364,7 +364,7 @@ export const useOperatorInputs = (
         return newMap;
       }
 
-      // Handle reset - reset timer, pause data, and clear start/end times to allow recalculation
+      // Handle reset - reset timer, idle data, and clear start/end times to allow recalculation
       if (field === "resetTimer") {
         const updatedQtyData: QuantityInputData = {
           ...qtyData,
@@ -412,7 +412,7 @@ export const useOperatorInputs = (
       }
       
       // Auto-calculate machine hours when start time or end time changes
-      // Account for pause time in calculation
+      // Account for idle time in calculation
       if (field === "startTime" || field === "endTime") {
         if (field === "endTime" && typeof value === "string" && value && qtyData.isPaused && qtyData.pauseStartTime) {
           const now = Date.now();
@@ -422,7 +422,7 @@ export const useOperatorInputs = (
             pauseStartTime: qtyData.pauseStartTime,
             pauseEndTime: now,
             pauseDuration,
-            reason: (qtyData.currentPauseReason || "").trim() || "Ended while paused",
+            reason: (qtyData.currentPauseReason || "").trim() || "Ended while idle",
           });
 
           updatedQtyData.isPaused = false;
@@ -438,7 +438,7 @@ export const useOperatorInputs = (
             updatedQtyData.endTime,
             ""
           );
-          // Subtract pause time from machine hours
+          // Subtract idle time from machine hours
           const pauseTimeInHours = (updatedQtyData.totalPauseTime || 0) / 3600;
           const adjustedMachineHrs = Math.max(0, parseFloat(baseMachineHrs) - pauseTimeInHours);
           updatedQtyData.machineHrs = adjustedMachineHrs.toFixed(3);
@@ -470,7 +470,7 @@ export const useOperatorInputs = (
       }
       
       // Recalculate machine hours when icon is clicked (legacy support)
-      // Account for pause time in calculation
+      // Account for idle time in calculation
       if (field === "recalculateMachineHrs") {
         if (updatedQtyData.startTime && updatedQtyData.endTime) {
           const baseMachineHrs = calculateMachineHrs(
@@ -478,7 +478,7 @@ export const useOperatorInputs = (
             updatedQtyData.endTime,
             updatedQtyData.idleTimeDuration || ""
           );
-          // Subtract pause time from machine hours
+          // Subtract idle time from machine hours
           const pauseTimeInHours = (updatedQtyData.totalPauseTime || 0) / 3600;
           const adjustedMachineHrs = Math.max(0, parseFloat(baseMachineHrs) - pauseTimeInHours);
           updatedQtyData.machineHrs = adjustedMachineHrs.toFixed(3);

@@ -5,7 +5,7 @@ import Header from "../../components/Header";
 import DataTable from "../../components/DataTable";
 import { getJobs, updateQcDecisionByGroupId } from "../../services/jobApi";
 import type { JobEntry } from "../../types/job";
-import { formatHoursToHHMM, parseDateValue } from "../../utils/date";
+import { formatDisplayDateTime, formatHoursToHHMM, parseDateValue } from "../../utils/date";
 import { isGroupFullySentToQa } from "../Operator/utils/qaProgress";
 import { getParentRowClassName } from "../Programmer/utils/priorityUtils";
 import "../RoleBoard.css";
@@ -149,18 +149,7 @@ const QC = () => {
       {
         key: "createdAt",
         label: "Created At",
-        render: (row: QcRow) => {
-          const parsed = parseDateValue(row.parent.createdAt);
-          if (!parsed) return "-";
-          const date = new Date(parsed);
-          const day = String(date.getDate()).padStart(2, "0");
-          const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-          const month = months[date.getMonth()];
-          const year = date.getFullYear();
-          const hh = String(date.getHours()).padStart(2, "0");
-          const mm = String(date.getMinutes()).padStart(2, "0");
-          return `${day} ${month} ${year} ${hh}:${mm}`;
-        },
+        render: (row: QcRow) => formatDisplayDateTime(row.parent.createdAt),
       },
       {
         key: "print",
