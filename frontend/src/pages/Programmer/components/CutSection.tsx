@@ -104,7 +104,8 @@ export const CutSection: React.FC<CutSectionProps> = ({
 
   const passDropdownOptions = React.useMemo(() => {
     const source = passOptions.length > 0 ? passOptions : ["1", "2", "3", "4", "5", "6"];
-    return source.map((value) => ({ value, label: value }));
+    const normalized = source.includes("0") ? source : ["0", ...source];
+    return normalized.map((value) => ({ value, label: value }));
   }, [passOptions]);
 
   const customerRateMap = React.useMemo(() => {
@@ -291,15 +292,6 @@ export const CutSection: React.FC<CutSectionProps> = ({
             />
           </FormInput>
 
-          <FormInput label="Description" className="grid-description" required error={fieldErrors.description}>
-            <input
-              value={cut.description}
-              onChange={(e) =>
-                onCutChange("description")(e.target.value.toUpperCase())
-              }
-            />
-          </FormInput>
-
           <FormInput label="Program Ref File Name" className="grid-program-ref">
             <input
               type="text"
@@ -308,6 +300,15 @@ export const CutSection: React.FC<CutSectionProps> = ({
                 onCutChange("programRefFile" as keyof CutForm)(e.target.value.toUpperCase())
               }
               placeholder="e.g. UPC001_V1"
+            />
+          </FormInput>
+
+          <FormInput label="Description" className="grid-description" required error={fieldErrors.description}>
+            <input
+              value={cut.description}
+              onChange={(e) =>
+                onCutChange("description")(e.target.value.toUpperCase())
+              }
             />
           </FormInput>
 
@@ -417,9 +418,9 @@ export const CutSection: React.FC<CutSectionProps> = ({
                           updated.splice(rowIndex + 1, 0, {
                             cut: "",
                             thickness: "",
-                            passLevel: "1",
-                            setting: "1",
-                            qty: "1",
+                            passLevel: "0",
+                            setting: "0",
+                            qty: "0",
                           });
                           setOperationRows(updated);
                         }}
@@ -512,7 +513,7 @@ export const CutSection: React.FC<CutSectionProps> = ({
             className="btn-success small"
             onClick={onSaveCut}
           >
-            Save Cut
+            Save Setting
           </button>
           <button
             type="button"

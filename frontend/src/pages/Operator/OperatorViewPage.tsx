@@ -498,7 +498,7 @@ const OperatorViewPage = () => {
   return (
     <div className="roleboard-container">
       <Sidebar currentPath="/operator" onNavigate={(path) => navigate(path)} />
-      <div className="roleboard-content">
+      <div className="roleboard-content operator-viewpage-content">
         <Header title="Operator View" />
         <div className="programmer-panel operator-viewpage-panel">
           {jobs.length > 0 && parentJob && (

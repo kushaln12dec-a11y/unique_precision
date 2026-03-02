@@ -3,7 +3,7 @@ import DataTable, { type Column } from '../../../components/DataTable';
 import { getEmployeeLogs } from '../../../services/employeeLogsApi';
 import DownloadIcon from '@mui/icons-material/Download';
 import type { EmployeeLog } from '../../../types/employeeLog';
-import { formatDisplayDateTime } from '../../../utils/date';
+import { getDisplayDateTimeParts } from '../../../utils/date';
 
 type RoleTab = 'PROGRAMMER' | 'OPERATOR' | 'QC';
 
@@ -14,10 +14,6 @@ const formatRoleLabel = (role?: string) => {
   if (value === 'QC') return 'QC';
   if (value === 'ADMIN') return 'Admin';
   return value || '-';
-};
-
-const formatDateTime = (value?: string | null) => {
-  return formatDisplayDateTime(value || null);
 };
 
 const formatDuration = (seconds?: number) => {
@@ -33,12 +29,20 @@ const formatDuration = (seconds?: number) => {
 export const EmployeeLogsPanel = () => {
   const [activeRole, setActiveRole] = useState<RoleTab>('PROGRAMMER');
   const [statusFilter, setStatusFilter] = useState<
-    '' | 'COMPLETED' | 'IN_PROGRESS'
+    '' | 'COMPLETED' | 'IN_PROGRESS' | 'REJECTED'
   >('');
   const [searchQuery, setSearchQuery] = useState('');
   const [logs, setLogs] = useState<EmployeeLog[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  const getInitials = (value: string) => {
+    const full = String(value || '').trim();
+    if (!full) return '--';
+    const parts = full.split(/\s+/).filter(Boolean);
+    if (parts.length >= 2) return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+    return full.slice(0, 2).toUpperCase();
+  };
 
   useEffect(() => {
     const loadLogs = async () => {
@@ -69,8 +73,13 @@ export const EmployeeLogsPanel = () => {
           label: 'Employee',
           sortable: false,
           render: (row) => (
-            <div className="employee-log-user">
-              <strong>{String(row.userName || 'Unknown User').toUpperCase()}</strong>
+            <div className="employee-log-user employee-log-user-badge">
+              <span
+                className="employee-log-user-initial-badge"
+                title={String(row.userName || 'Unknown User').toUpperCase()}
+              >
+                {getInitials(String(row.userName || 'Unknown User'))}
+              </span>
               <span>{formatRoleLabel((row.metadata as any)?.userRole || row.role)}</span>
             </div>
           ),
@@ -85,7 +94,11 @@ export const EmployeeLogsPanel = () => {
           key: 'workSummary',
           label: 'Summary',
           sortable: false,
-          render: (row) => row.workSummary || '-',
+          render: (row) => {
+            const full = String(row.workSummary || '-');
+            const short = full.length > 44 ? `${full.slice(0, 44)}...` : full;
+            return <span title={full}>{short}</span>;
+          },
         },
         {
           key: 'idleTime',
@@ -121,13 +134,29 @@ export const EmployeeLogsPanel = () => {
           key: 'startedAt',
           label: 'Started At',
           sortable: false,
-          render: (row) => formatDateTime(row.startedAt),
+          render: (row) => {
+            const parts = getDisplayDateTimeParts(row.startedAt);
+            return (
+              <div className="created-at-split">
+                <span>{parts.date}</span>
+                <span>{parts.time}</span>
+              </div>
+            );
+          },
         },
         {
           key: 'endedAt',
           label: 'Ended At',
           sortable: false,
-          render: (row) => formatDateTime(row.endedAt || null),
+          render: (row) => {
+            const parts = getDisplayDateTimeParts(row.endedAt || null);
+            return (
+              <div className="created-at-split">
+                <span>{parts.date}</span>
+                <span>{parts.time}</span>
+              </div>
+            );
+          },
         },
         {
           key: 'durationSeconds',
@@ -143,7 +172,7 @@ export const EmployeeLogsPanel = () => {
             <span
               className={`employee-log-status status-${row.status.toLowerCase()}`}
             >
-              {row.status === 'IN_PROGRESS' ? 'In Progress' : 'Completed'}
+              {row.status === 'IN_PROGRESS' ? 'In Progress' : row.status === 'REJECTED' ? 'Rejected' : 'Completed'}
             </span>
           ),
         },
@@ -156,8 +185,13 @@ export const EmployeeLogsPanel = () => {
         label: 'Employee',
         sortable: false,
         render: (row) => (
-          <div className="employee-log-user">
-            <strong>{String(row.userName || 'Unknown User').toUpperCase()}</strong>
+          <div className="employee-log-user employee-log-user-badge">
+            <span
+              className="employee-log-user-initial-badge"
+              title={String(row.userName || 'Unknown User').toUpperCase()}
+            >
+              {getInitials(String(row.userName || 'Unknown User'))}
+            </span>
             <span>{formatRoleLabel((row.metadata as any)?.userRole || row.role)}</span>
           </div>
         ),
@@ -197,13 +231,29 @@ export const EmployeeLogsPanel = () => {
         key: 'startedAt',
         label: 'Started At',
         sortable: false,
-        render: (row) => formatDateTime(row.startedAt),
+        render: (row) => {
+          const parts = getDisplayDateTimeParts(row.startedAt);
+          return (
+            <div className="created-at-split">
+              <span>{parts.date}</span>
+              <span>{parts.time}</span>
+            </div>
+          );
+        },
       },
       {
         key: 'endedAt',
         label: 'Ended At',
         sortable: false,
-        render: (row) => formatDateTime(row.endedAt || null),
+        render: (row) => {
+          const parts = getDisplayDateTimeParts(row.endedAt || null);
+          return (
+            <div className="created-at-split">
+              <span>{parts.date}</span>
+              <span>{parts.time}</span>
+            </div>
+          );
+        },
       },
       {
         key: 'durationSeconds',
@@ -219,7 +269,7 @@ export const EmployeeLogsPanel = () => {
           <span
             className={`employee-log-status status-${row.status.toLowerCase()}`}
           >
-            {row.status === 'IN_PROGRESS' ? 'In Progress' : 'Completed'}
+            {row.status === 'IN_PROGRESS' ? 'In Progress' : row.status === 'REJECTED' ? 'Rejected' : 'Completed'}
           </span>
         ),
       },
@@ -309,12 +359,13 @@ export const EmployeeLogsPanel = () => {
           className="employee-status-select"
           value={statusFilter}
           onChange={(e) => {
-            setStatusFilter(e.target.value as '' | 'COMPLETED' | 'IN_PROGRESS');
+            setStatusFilter(e.target.value as '' | 'COMPLETED' | 'IN_PROGRESS' | 'REJECTED');
           }}
         >
           <option value="">All Status</option>
           <option value="COMPLETED">Completed</option>
           <option value="IN_PROGRESS">In Progress</option>
+          <option value="REJECTED">Rejected</option>
         </select>
         <button
           type="button"

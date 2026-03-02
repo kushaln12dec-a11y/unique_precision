@@ -5,7 +5,7 @@ import Header from "../../components/Header";
 import DataTable from "../../components/DataTable";
 import { getJobs, updateQcDecisionByGroupId } from "../../services/jobApi";
 import type { JobEntry } from "../../types/job";
-import { formatDisplayDateTime, formatHoursToHHMM, parseDateValue } from "../../utils/date";
+import { formatDisplayDateTime, parseDateValue } from "../../utils/date";
 import { isGroupFullySentToQa } from "../Operator/utils/qaProgress";
 import { getParentRowClassName } from "../Programmer/utils/priorityUtils";
 import "../RoleBoard.css";
@@ -133,19 +133,21 @@ const QC = () => {
   const columns = useMemo(
     () => [
       { key: "customer", label: "Customer", render: (row: QcRow) => row.parent.customer || "-" },
-      {
-        key: "programRefFile",
-        label: "Prog Ref",
-        render: (row: QcRow) => {
-          const ref = row.parent.programRefFile || row.parent.refNumber || "";
-          return ref ? `#${ref}` : "-";
-        },
-      },
       { key: "description", label: "Description", render: (row: QcRow) => row.parent.description || "-" },
       { key: "qty", label: "Qty", render: (row: QcRow) => row.entries.reduce((sum, item) => sum + Number(item.qty || 0), 0).toString() },
-      { key: "totalHrs", label: "Total Time Needed", render: (row: QcRow) => formatHoursToHHMM(row.totalHrs) },
-      { key: "totalAmount", label: "Amount (₹)", render: (row: QcRow) => `₹${Math.round(row.totalAmount || 0)}` },
-      { key: "createdBy", label: "Created By", render: (row: QcRow) => row.parent.createdBy || "-" },
+      {
+        key: "operator",
+        label: "Operator",
+        render: (row: QcRow) => {
+          const raw = String(row.parent.assignedTo || "").trim();
+          if (!raw) return "-";
+          const owner = raw
+            .split(",")
+            .map((name) => name.trim())
+            .find((name) => name && name !== "Unassigned");
+          return owner || "-";
+        },
+      },
       {
         key: "createdAt",
         label: "Created At",
@@ -253,3 +255,4 @@ const QC = () => {
 };
 
 export default QC;
+

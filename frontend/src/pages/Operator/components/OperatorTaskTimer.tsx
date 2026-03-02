@@ -1,5 +1,5 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
-import { getUserIdFromToken, getUserRoleFromToken } from "../../../utils/auth";
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { getUserIdFromToken, getUserRoleFromToken } from '../../../utils/auth';
 
 type TaskSwitchPayload = {
   idleTime: string;
@@ -11,7 +11,10 @@ type TaskSwitchPayload = {
 
 type OperatorTaskTimerProps = {
   onSaveTaskSwitch: (payload: TaskSwitchPayload) => Promise<void>;
-  onShowToast: (message: string, variant?: "success" | "error" | "info") => void;
+  onShowToast: (
+    message: string,
+    variant?: 'success' | 'error' | 'info',
+  ) => void;
   onRunningChange?: (running: boolean) => void;
 };
 
@@ -22,8 +25,8 @@ export const OperatorTaskTimer: React.FC<OperatorTaskTimerProps> = ({
 }) => {
   const timerContainerRef = useRef<HTMLDivElement | null>(null);
   const TIMER_STORAGE_KEY = useMemo(() => {
-    const role = (getUserRoleFromToken() || "UNKNOWN").toUpperCase();
-    const userId = getUserIdFromToken() || "ANON";
+    const role = (getUserRoleFromToken() || 'UNKNOWN').toUpperCase();
+    const userId = getUserIdFromToken() || 'ANON';
     return `operator_task_switch_timer_v2_${role}_${userId}`;
   }, []);
 
@@ -34,9 +37,9 @@ export const OperatorTaskTimer: React.FC<OperatorTaskTimerProps> = ({
         return {
           running: false,
           startedAt: null as number | null,
-          reason: "",
-          otherReason: "",
-          remark: "",
+          reason: '',
+          otherReason: '',
+          remark: '',
           panelOpen: false,
         };
       }
@@ -49,7 +52,7 @@ export const OperatorTaskTimer: React.FC<OperatorTaskTimerProps> = ({
         panelOpen?: boolean;
       };
       const startedAt =
-        typeof parsed.startedAt === "number"
+        typeof parsed.startedAt === 'number'
           ? parsed.startedAt
           : parsed.startedAt
             ? Number(parsed.startedAt)
@@ -58,34 +61,42 @@ export const OperatorTaskTimer: React.FC<OperatorTaskTimerProps> = ({
       return {
         running,
         startedAt,
-        reason: String(parsed.reason || ""),
-        otherReason: String(parsed.otherReason || ""),
-        remark: String(parsed.remark || ""),
+        reason: String(parsed.reason || ''),
+        otherReason: String(parsed.otherReason || ''),
+        remark: String(parsed.remark || ''),
         panelOpen: Boolean(parsed.panelOpen || running),
       };
     } catch {
       return {
         running: false,
         startedAt: null as number | null,
-        reason: "",
-        otherReason: "",
-        remark: "",
+        reason: '',
+        otherReason: '',
+        remark: '',
         panelOpen: false,
       };
     }
   }, [TIMER_STORAGE_KEY]);
 
-  const [timerRunning, setTimerRunning] = useState<boolean>(persistedState.running);
-  const [timerStartedAt, setTimerStartedAt] = useState<number | null>(persistedState.startedAt);
+  const [timerRunning, setTimerRunning] = useState<boolean>(
+    persistedState.running,
+  );
+  const [timerStartedAt, setTimerStartedAt] = useState<number | null>(
+    persistedState.startedAt,
+  );
   const [elapsedSeconds, setElapsedSeconds] = useState<number>(
     persistedState.running && persistedState.startedAt
       ? Math.max(0, Math.floor((Date.now() - persistedState.startedAt) / 1000))
-      : 0
+      : 0,
   );
-  const [timerPanelOpen, setTimerPanelOpen] = useState<boolean>(persistedState.panelOpen);
+  const [timerPanelOpen, setTimerPanelOpen] = useState<boolean>(
+    persistedState.panelOpen,
+  );
   const [savingTimer, setSavingTimer] = useState(false);
   const [idleReason, setIdleReason] = useState<string>(persistedState.reason);
-  const [otherIdleReason, setOtherIdleReason] = useState<string>(persistedState.otherReason);
+  const [otherIdleReason, setOtherIdleReason] = useState<string>(
+    persistedState.otherReason,
+  );
   const [remark, setRemark] = useState<string>(persistedState.remark);
 
   useEffect(() => {
@@ -103,17 +114,27 @@ export const OperatorTaskTimer: React.FC<OperatorTaskTimerProps> = ({
           otherReason: otherIdleReason,
           remark,
           panelOpen: timerPanelOpen,
-        })
+        }),
       );
     } catch {
       // Ignore local storage write issues
     }
-  }, [TIMER_STORAGE_KEY, timerRunning, timerStartedAt, idleReason, otherIdleReason, remark, timerPanelOpen]);
+  }, [
+    TIMER_STORAGE_KEY,
+    timerRunning,
+    timerStartedAt,
+    idleReason,
+    otherIdleReason,
+    remark,
+    timerPanelOpen,
+  ]);
 
   useEffect(() => {
     if (!timerRunning || !timerStartedAt) return;
     const id = window.setInterval(() => {
-      setElapsedSeconds(Math.max(0, Math.floor((Date.now() - timerStartedAt) / 1000)));
+      setElapsedSeconds(
+        Math.max(0, Math.floor((Date.now() - timerStartedAt) / 1000)),
+      );
     }, 1000);
     return () => window.clearInterval(id);
   }, [timerRunning, timerStartedAt]);
@@ -131,7 +152,7 @@ export const OperatorTaskTimer: React.FC<OperatorTaskTimerProps> = ({
           panelOpen?: boolean;
         };
         const startedAt =
-          typeof parsed.startedAt === "number"
+          typeof parsed.startedAt === 'number'
             ? parsed.startedAt
             : parsed.startedAt
               ? Number(parsed.startedAt)
@@ -139,12 +160,14 @@ export const OperatorTaskTimer: React.FC<OperatorTaskTimerProps> = ({
         const running = Boolean(parsed.running && startedAt);
         setTimerRunning(running);
         setTimerStartedAt(startedAt);
-        setIdleReason(String(parsed.reason || ""));
-        setOtherIdleReason(String(parsed.otherReason || ""));
-        setRemark(String(parsed.remark || ""));
+        setIdleReason(String(parsed.reason || ''));
+        setOtherIdleReason(String(parsed.otherReason || ''));
+        setRemark(String(parsed.remark || ''));
         setTimerPanelOpen(Boolean(parsed.panelOpen || running));
         if (running && startedAt) {
-          setElapsedSeconds(Math.max(0, Math.floor((Date.now() - startedAt) / 1000)));
+          setElapsedSeconds(
+            Math.max(0, Math.floor((Date.now() - startedAt) / 1000)),
+          );
         }
       } catch {
         // Ignore sync errors
@@ -152,16 +175,18 @@ export const OperatorTaskTimer: React.FC<OperatorTaskTimerProps> = ({
     };
     const onVisibilityOrFocus = () => {
       if (timerRunning && timerStartedAt) {
-        setElapsedSeconds(Math.max(0, Math.floor((Date.now() - timerStartedAt) / 1000)));
+        setElapsedSeconds(
+          Math.max(0, Math.floor((Date.now() - timerStartedAt) / 1000)),
+        );
       }
     };
-    window.addEventListener("storage", onStorage);
-    document.addEventListener("visibilitychange", onVisibilityOrFocus);
-    window.addEventListener("focus", onVisibilityOrFocus);
+    window.addEventListener('storage', onStorage);
+    document.addEventListener('visibilitychange', onVisibilityOrFocus);
+    window.addEventListener('focus', onVisibilityOrFocus);
     return () => {
-      window.removeEventListener("storage", onStorage);
-      document.removeEventListener("visibilitychange", onVisibilityOrFocus);
-      window.removeEventListener("focus", onVisibilityOrFocus);
+      window.removeEventListener('storage', onStorage);
+      document.removeEventListener('visibilitychange', onVisibilityOrFocus);
+      window.removeEventListener('focus', onVisibilityOrFocus);
     };
   }, [TIMER_STORAGE_KEY, timerRunning, timerStartedAt]);
 
@@ -173,9 +198,9 @@ export const OperatorTaskTimer: React.FC<OperatorTaskTimerProps> = ({
       }
     };
     if (timerPanelOpen) {
-      document.addEventListener("mousedown", onClickOutside);
+      document.addEventListener('mousedown', onClickOutside);
     }
-    return () => document.removeEventListener("mousedown", onClickOutside);
+    return () => document.removeEventListener('mousedown', onClickOutside);
   }, [timerPanelOpen]);
 
   const formatTimer = (totalSeconds: number): string => {
@@ -183,9 +208,9 @@ export const OperatorTaskTimer: React.FC<OperatorTaskTimerProps> = ({
     const hours = Math.floor(safe / 3600);
     const minutes = Math.floor((safe % 3600) / 60);
     const seconds = safe % 60;
-    return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds
+    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds
       .toString()
-      .padStart(2, "0")}`;
+      .padStart(2, '0')}`;
   };
 
   const handleTimerButtonClick = () => {
@@ -202,25 +227,29 @@ export const OperatorTaskTimer: React.FC<OperatorTaskTimerProps> = ({
 
   const handleSaveAndStopTimer = async () => {
     if (!timerRunning || !timerStartedAt) {
-      onShowToast("Start timer first.", "error");
+      onShowToast('Start timer first.', 'error');
       return;
     }
     if (!idleReason.trim()) {
-      onShowToast("Please select idle reason.", "error");
+      onShowToast('Please select idle reason.', 'error');
       return;
     }
-    if (idleReason === "Others" && !otherIdleReason.trim()) {
-      onShowToast("Please enter other reason.", "error");
+    if (idleReason === 'Others' && !otherIdleReason.trim()) {
+      onShowToast('Please enter other reason.', 'error');
       return;
     }
     if (!remark.trim()) {
-      onShowToast("Remark is required.", "error");
+      onShowToast('Remark is required.', 'error');
       return;
     }
 
     const endedAtMs = Date.now();
-    const durationSeconds = Math.max(0, Math.floor((endedAtMs - timerStartedAt) / 1000));
-    const finalReason = idleReason === "Others" ? otherIdleReason.trim() : idleReason.trim();
+    const durationSeconds = Math.max(
+      0,
+      Math.floor((endedAtMs - timerStartedAt) / 1000),
+    );
+    const finalReason =
+      idleReason === 'Others' ? otherIdleReason.trim() : idleReason.trim();
 
     try {
       setSavingTimer(true);
@@ -235,39 +264,58 @@ export const OperatorTaskTimer: React.FC<OperatorTaskTimerProps> = ({
       setTimerStartedAt(null);
       setElapsedSeconds(0);
       setTimerPanelOpen(false);
-      setIdleReason("");
-      setOtherIdleReason("");
-      setRemark("");
+      setIdleReason('');
+      setOtherIdleReason('');
+      setRemark('');
       localStorage.removeItem(TIMER_STORAGE_KEY);
-      onShowToast("Timer saved successfully.", "success");
+      onShowToast('Timer saved successfully.', 'success');
     } catch (error: any) {
-      onShowToast(error?.message || "Failed to save timer.", "error");
+      onShowToast(error?.message || 'Failed to save timer.', 'error');
     } finally {
       setSavingTimer(false);
     }
   };
 
   return (
-    <div className="filter-group operator-inline-timer-group" ref={timerContainerRef}>
-      <label htmlFor="operator-task-switch-timer-btn" className="operator-inline-timer-label">
+    <div
+      className="filter-group operator-inline-timer-group"
+      ref={timerContainerRef}
+    >
+      <label
+        htmlFor="operator-task-switch-timer-btn"
+        className="operator-inline-timer-label"
+      >
         Task Timer
       </label>
       <div className="operator-inline-timer-anchor">
         <button
           id="operator-task-switch-timer-btn"
           type="button"
-          className={`operator-inline-timer-btn ${timerRunning ? "running" : ""}`}
+          className={`operator-inline-timer-btn ${timerRunning ? 'running' : ''}`}
           onClick={handleTimerButtonClick}
           aria-label="Task switch timer"
-          title={timerRunning ? "Open timer details" : "Start timer"}
+          title={timerRunning ? 'Open timer details' : 'Start timer'}
         >
           <span className="operator-inline-timer-icon" aria-hidden="true">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-              <circle cx="12" cy="12" r="8" stroke="currentColor" strokeWidth="2" />
-              <path d="M12 8V12L15 14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+              <circle
+                cx="12"
+                cy="12"
+                r="8"
+                stroke="currentColor"
+                strokeWidth="2"
+              />
+              <path
+                d="M12 8V12L15 14"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+              />
             </svg>
           </span>
-          <span className="operator-inline-timer-text">{formatTimer(elapsedSeconds)}</span>
+          <span className="operator-inline-timer-text">
+            {formatTimer(elapsedSeconds)}
+          </span>
         </button>
       </div>
       {timerPanelOpen && (
@@ -293,7 +341,7 @@ export const OperatorTaskTimer: React.FC<OperatorTaskTimerProps> = ({
               <option value="Others">Others</option>
             </select>
           </div>
-          {idleReason === "Others" && (
+          {idleReason === 'Others' && (
             <div className="filter-group">
               <label htmlFor="operator-idle-other-reason">Other Reason</label>
               <input
@@ -324,7 +372,7 @@ export const OperatorTaskTimer: React.FC<OperatorTaskTimerProps> = ({
               onClick={handleSaveAndStopTimer}
               disabled={savingTimer}
             >
-              {savingTimer ? "Saving..." : "Save & Stop"}
+              {savingTimer ? 'Saving...' : 'Save & Stop'}
             </button>
           </div>
         </div>

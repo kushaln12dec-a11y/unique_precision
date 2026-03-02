@@ -1,15 +1,17 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Sidebar from "../../components/Sidebar";
 import Header from "../../components/Header";
 import DataTable, { type Column } from "../../components/DataTable";
 import Toast from "../../components/Toast";
 import DownloadIcon from "@mui/icons-material/Download";
+import WbSunnyOutlinedIcon from "@mui/icons-material/WbSunnyOutlined";
+import DarkModeOutlinedIcon from "@mui/icons-material/DarkModeOutlined";
 import ConfirmDeleteModal from "../../components/ConfirmDeleteModal";
 import { getUserRoleFromToken } from "../../utils/auth";
 import "../../utils/tokenDebug";
 import { getUsers } from "../../services/userApi";
-import { getEmployeeLogs, startProgrammerJobLog } from "../../services/employeeLogsApi";
+import { getEmployeeLogs, rejectProgrammerJobLog, startProgrammerJobLog } from "../../services/employeeLogsApi";
 import { getMasterConfig } from "../../services/masterConfigApi";
 import type { User } from "../../types/user";
 import type { MasterConfig } from "../../types/masterConfig";
@@ -61,7 +63,7 @@ const Programmer = () => {
   const [programmerLogs, setProgrammerLogs] = useState<EmployeeLog[]>([]);
   const [logsLoading, setLogsLoading] = useState(false);
   const [logSearch, setLogSearch] = useState("");
-  const [logStatus, setLogStatus] = useState<"" | "IN_PROGRESS" | "COMPLETED">("");
+  const [logStatus, setLogStatus] = useState<"" | "IN_PROGRESS" | "COMPLETED" | "REJECTED">("");
   const [logUserId, setLogUserId] = useState("");
 
   const isAdmin = getUserRoleFromToken() === "ADMIN";
@@ -200,21 +202,54 @@ const Programmer = () => {
     fetchUsers();
   }, []);
 
+  const rejectActiveProgrammerDraftLog = useCallback(async () => {
+    const activeLogId = localStorage.getItem(PROGRAMMER_ACTIVE_LOG_KEY);
+    if (!activeLogId) return;
+    try {
+      await rejectProgrammerJobLog({ logId: activeLogId });
+    } catch (error) {
+      console.error("Failed to reject programmer draft log", error);
+    } finally {
+      localStorage.removeItem(PROGRAMMER_ACTIVE_LOG_KEY);
+    }
+  }, []);
+
   useEffect(() => {
-    const ensureProgrammerStartLog = async () => {
-      if (!isNewJobRoute || isEditRoute) return;
-      const activeLogId = localStorage.getItem(PROGRAMMER_ACTIVE_LOG_KEY);
-      if (activeLogId) return;
+    if (!(isNewJobRoute || isEditRoute)) return;
+    const customerValue = String(cuts[0]?.customer || "").trim();
+    if (!customerValue) return;
+    const activeLogId = localStorage.getItem(PROGRAMMER_ACTIVE_LOG_KEY);
+    if (activeLogId) return;
+
+    const startLogOnCustomerInput = async () => {
       try {
-        const startedLog = await startProgrammerJobLog({});
+        const startedLog = await startProgrammerJobLog({
+          refNumber: String(refNumber || "").trim() || undefined,
+        });
         if (startedLog?._id) {
           localStorage.setItem(PROGRAMMER_ACTIVE_LOG_KEY, startedLog._id);
         }
       } catch (error) {
-        console.error("Failed to ensure programmer start log", error);
+        console.error("Failed to start programmer log on customer input", error);
       }
     };
-    ensureProgrammerStartLog();
+
+    startLogOnCustomerInput();
+  }, [cuts, isEditRoute, isNewJobRoute, refNumber]);
+
+  useEffect(() => {
+    if (!(isNewJobRoute || isEditRoute)) return;
+    return () => {
+      const activeLogId = localStorage.getItem(PROGRAMMER_ACTIVE_LOG_KEY);
+      if (!activeLogId) return;
+      void rejectProgrammerJobLog({ logId: activeLogId })
+        .catch((error) => {
+          console.error("Failed to reject programmer log on leave", error);
+        })
+        .finally(() => {
+          localStorage.removeItem(PROGRAMMER_ACTIVE_LOG_KEY);
+        });
+    };
   }, [isNewJobRoute, isEditRoute]);
 
   useEffect(() => {
@@ -223,22 +258,22 @@ const Programmer = () => {
     }
   }, [isNewJobRoute, isEditRoute]);
 
-  const handleNewJob = async () => {
+  const handleNewJob = () => {
     handleNewJobState();
-    try {
-      const startedLog = await startProgrammerJobLog({});
-      if (startedLog?._id) {
-        localStorage.setItem(PROGRAMMER_ACTIVE_LOG_KEY, startedLog._id);
-      }
-    } catch (error) {
-      console.error("Failed to start programmer log", error);
-    }
     navigate("/programmer/newjob");
   };
 
-  const handleCancel = () => {
+  const getInitials = (value: string): string => {
+    const full = String(value || "").trim();
+    if (!full) return "--";
+    const parts = full.split(/\s+/).filter(Boolean);
+    if (parts.length >= 2) return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+    return full.slice(0, 2).toUpperCase();
+  };
+
+  const handleCancel = async () => {
     handleCancelState();
-    localStorage.removeItem(PROGRAMMER_ACTIVE_LOG_KEY);
+    await rejectActiveProgrammerDraftLog();
     if (isNewJobRoute || isEditRoute) {
       navigate("/programmer");
     }
@@ -356,8 +391,10 @@ const Programmer = () => {
           const designation = designationByUserId.get(String(row.userId)) || "Programmer";
           const name = String(row.userName || "").trim();
           return (
-            <div className="log-user-stack">
-              <strong>{(name || "-").toUpperCase()}</strong>
+            <div className="log-user-stack log-user-badge-stack">
+              <span className="log-user-initial-badge" title={(name || "-").toUpperCase()}>
+                {getInitials(name)}
+              </span>
               <span>{designation}</span>
             </div>
           );
@@ -400,7 +437,29 @@ const Programmer = () => {
           );
         },
       },
-      { key: "shift", label: "Shift", sortable: false, render: (row) => getShiftLabel(row.startedAt) },
+      {
+        key: "shift",
+        label: "Shift",
+        sortable: false,
+        render: (row) => {
+          const shift = getShiftLabel(row.startedAt);
+          if (shift === "Day") {
+            return (
+              <span className="shift-icon-badge day" title="Day Shift">
+                <WbSunnyOutlinedIcon sx={{ fontSize: "1rem" }} />
+              </span>
+            );
+          }
+          if (shift === "Night") {
+            return (
+              <span className="shift-icon-badge night" title="Night Shift">
+                <DarkModeOutlinedIcon sx={{ fontSize: "1rem" }} />
+              </span>
+            );
+          }
+          return "-";
+        },
+      },
       { key: "duration", label: "Duration", sortable: false, render: (row) => formatDuration(row.durationSeconds) },
       {
         key: "status",
@@ -415,7 +474,8 @@ const Programmer = () => {
                   .split("_")
                   .map((part) => part.charAt(0) + part.slice(1).toLowerCase())
                   .join(" ");
-          const statusClass = raw === "IN_PROGRESS" ? "in-progress" : "completed";
+          const statusClass =
+            raw === "IN_PROGRESS" ? "in-progress" : raw === "REJECTED" ? "rejected" : "completed";
           return <span className={`log-status-badge ${statusClass}`}>{label}</span>;
         },
       },
@@ -455,9 +515,9 @@ const Programmer = () => {
   return (
     <div className="programmer-container">
       <Sidebar currentPath="/programmer" onNavigate={(path) => navigate(path)} />
-      <div className="programmer-content">
+      <div className={`programmer-content ${isNewJobRoute || isEditRoute ? "programmer-content-scrollable" : ""}`}>
         <Header title="Programmer" />
-        <div className="programmer-panel">
+        <div className={`programmer-panel ${isNewJobRoute || isEditRoute ? "programmer-panel-scrollable" : ""}`}>
           {!isNewJobRoute && !isEditRoute && (
             <div className="programmer-subtabs">
               <button
@@ -550,12 +610,13 @@ const Programmer = () => {
                 />
                 <select
                   value={logStatus}
-                  onChange={(e) => setLogStatus(e.target.value as "" | "IN_PROGRESS" | "COMPLETED")}
+                  onChange={(e) => setLogStatus(e.target.value as "" | "IN_PROGRESS" | "COMPLETED" | "REJECTED")}
                   className="filter-select"
                 >
                   <option value="">All Status</option>
                   <option value="IN_PROGRESS">In Progress</option>
                   <option value="COMPLETED">Completed</option>
+                  <option value="REJECTED">Rejected</option>
                 </select>
                 <select
                   value={logUserId}

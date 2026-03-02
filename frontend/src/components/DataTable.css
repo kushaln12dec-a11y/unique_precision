@@ -1,11 +1,12 @@
 .data-table-wrapper {
   overflow-y: auto;
   overflow-x: auto;
-  max-height: 65vh;
+  max-height: 75vh;
   width: 100%;
   border-radius: 12px;
   border: 1px solid #e2e8f0;
   box-sizing: border-box;
+  position: relative;
   scrollbar-width: none;
   -ms-overflow-style: none;
 }
@@ -28,7 +29,7 @@
   font-size: 0.9rem;
   border-radius: 18px;
   background: #ffffff;
-  overflow: hidden;
+  overflow: visible;
   table-layout: auto;
 }
 
@@ -69,7 +70,7 @@
 .data-table thead th {
   position: sticky;
   top: 0;
-  z-index: 25;
+  z-index: 60;
   background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
 }
 

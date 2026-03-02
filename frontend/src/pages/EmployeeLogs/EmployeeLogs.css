@@ -158,6 +158,25 @@
   font-weight: 700;
 }
 
+.employee-log-user.employee-log-user-badge {
+  align-items: flex-start;
+}
+
+.employee-log-user-initial-badge {
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #e2e8f0;
+  color: #0f172a;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+}
+
 .employee-work-item {
   display: inline-flex;
   align-items: center;
@@ -201,6 +220,44 @@
   background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
   color: #92400e;
   border-color: #fcd34d;
+}
+
+.employee-log-status.status-rejected {
+  background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+  color: #991b1b;
+  border-color: #fca5a5;
+}
+
+.created-at-split {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.125rem;
+  line-height: 1.2;
+}
+
+.created-at-split span {
+  white-space: nowrap;
+}
+
+.data-table-wrapper.employee-logs-table {
+  max-height: calc(100vh - 300px);
+  overflow-y: auto;
+  overflow-x: auto;
+  position: relative;
+}
+
+.employee-logs-table .data-table {
+  overflow: visible;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.employee-logs-table .data-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 60;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
 }
 
 .qa-placeholder-card {

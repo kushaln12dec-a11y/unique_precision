@@ -8,10 +8,13 @@
   width: 100%;
   max-width: 100%;
   overflow-x: auto;
-  overflow-y: hidden;
+  overflow-y: auto;
+  max-height: calc(100vh - 280px);
   box-sizing: border-box;
   -webkit-overflow-scrolling: touch;
   touch-action: pan-x pan-y;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
 
 .data-table-wrapper.operator-table-no-scroll {
@@ -19,12 +22,9 @@
   box-shadow: none;
 }
 
-.operator-table-no-scroll .data-table-wrapper {
-  width: 100%;
-  max-width: 100%;
-  box-sizing: border-box;
-  overflow-x: visible;
-  overflow-y: visible;
+.data-table-wrapper.operator-table-no-scroll::-webkit-scrollbar {
+  width: 0;
+  height: 0;
 }
 
 .operator-table-no-scroll .data-table {
@@ -92,6 +92,7 @@
   position: sticky;
   top: 0;
   z-index: 25;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
 }
 
 /* ============================================
@@ -199,16 +200,16 @@
 /* Assigned To Column */
 .operator-table-no-scroll .data-table th:nth-child(11),
 .operator-table-no-scroll .data-table td:nth-child(11) {
-  width: 80px;
-  min-width: 80px;
+  width: 68px;
+  min-width: 68px;
   text-align: left;
 }
 
 /* Mach # Column */
 .operator-table-no-scroll .data-table th:nth-child(12),
 .operator-table-no-scroll .data-table td:nth-child(12) {
-  width: 64px;
-  min-width: 64px;
+  width: 52px;
+  min-width: 52px;
   text-align: left;
 }
 
@@ -262,9 +263,9 @@
 .operator-table-no-scroll
   .data-table
   td:last-child:not(.accordion-toggle-cell) {
-  width: 80px;
-  min-width: 80px;
-  max-width: 80px;
+  width: 124px;
+  min-width: 124px;
+  max-width: 124px;
   white-space: nowrap;
   padding: 0.5rem 0.25rem;
   text-align: left;
@@ -510,8 +511,8 @@
 /* Assigned To - Align with parent Assigned To - Ensure th and td match */
 .operator-table-no-scroll .child-row-content .child-jobs-table th.assigned-col,
 .operator-table-no-scroll .child-row-content .child-jobs-table td.assigned-col {
-  width: 95px;
-  min-width: 95px;
+  width: 80px;
+  min-width: 80px;
   text-align: left;
   padding-left: 0.4rem;
   padding-right: 0.4rem;
@@ -569,8 +570,8 @@
 /* Act - Action column - Ensure th and td match */
 .operator-table-no-scroll .child-row-content .child-jobs-table th.act-col,
 .operator-table-no-scroll .child-row-content .child-jobs-table td.act-col {
-  width: 80px;
-  min-width: 80px;
+  width: 110px;
+  min-width: 110px;
   text-align: left;
   padding-left: 0.4rem;
   padding-right: 0.4rem;
@@ -687,12 +688,16 @@
   line-height: 1.2;
 }
 
+.created-at-split span {
+  white-space: nowrap;
+}
+
 /* ============================================
    PANEL AND FILTER STYLES
    ============================================ */
 
 .roleboard-content .programmer-panel {
-  overflow-x: hidden;
+  overflow: visible;
   max-width: 100%;
   box-sizing: border-box;
   margin: 0.5rem 0.25rem;
@@ -816,10 +821,11 @@
 
 .operator-timer-right-slot {
   margin-left: auto;
-  display: inline-flex;
-  align-items: flex-end;
+  display: flex;
+  align-items: flex-start;
   justify-content: flex-end;
   width: 100%;
+  min-width: 0;
 }
 
 .operator-actions-row {
@@ -831,8 +837,17 @@
   flex-wrap: nowrap;
 }
 
+.operator-timer-right-slot .operator-inline-timer-group {
+  width: 190px;
+  min-width: 190px;
+  margin-right: 0.65rem;
+}
+
 .operator-inline-timer-label {
-  text-align: left;
+  text-align: center;
+  width: 100%;
+  margin-bottom: 0.25rem;
+  line-height: 1.2;
 }
 
 .operator-inline-timer-anchor {
@@ -909,6 +924,7 @@
 .operator-inline-timer-panel {
   position: absolute;
   top: calc(100% + 0.45rem);
+  left: auto;
   right: 0;
   width: 290px;
   border-radius: 14px;
@@ -916,7 +932,7 @@
   background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
   box-shadow: 0 18px 36px rgba(15, 23, 42, 0.2);
   padding: 0.7rem;
-  z-index: 110;
+  z-index: 5000;
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
@@ -1009,8 +1025,8 @@
 /* Single owner/operator dropdown */
 .operator-assigned-dropdown {
   width: 100%;
-  min-width: 120px;
-  max-width: 150px;
+  min-width: 0;
+  max-width: 100%;
   height: 30px;
   border: 1px solid #93c5fd;
   border-radius: 8px;
@@ -1020,9 +1036,13 @@
   font-weight: 600;
   padding: 0 1.8rem 0 0.55rem;
   appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 12 12'%3E%3Cpath fill='%233b82f6' d='M6 9L1 4h10z'/%3E%3C/svg%3E"), linear-gradient(135deg, #ffffff 0%, #eff6ff 100%);
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 12 12'%3E%3Cpath fill='%233b82f6' d='M6 9L1 4h10z'/%3E%3C/svg%3E"),
+    linear-gradient(135deg, #ffffff 0%, #eff6ff 100%);
   background-repeat: no-repeat, no-repeat;
-  background-position: right 0.55rem center, center;
+  background-position:
+    right 0.55rem center,
+    center;
 }
 
 .operator-assigned-dropdown:focus {
@@ -1052,6 +1072,25 @@
   font-weight: 700;
 }
 
+.log-user-badge-stack {
+  align-items: flex-start;
+}
+
+.log-user-initial-badge {
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #e2e8f0;
+  color: #0f172a;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+}
+
 .log-status-badge {
   display: inline-flex;
   align-items: center;
@@ -1072,6 +1111,12 @@
   background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
   color: #92400e;
   border-color: #fcd34d;
+}
+
+.log-status-badge.rejected {
+  background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+  color: #991b1b;
+  border-color: #fca5a5;
 }
 
 .created-by-badge {
@@ -1185,7 +1230,8 @@
 
 .operator-machine-input {
   width: 100%;
-  max-width: 72px;
+  min-width: 0;
+  max-width: 68px;
   height: 30px;
   border: 1px solid #cbd5e1;
   border-radius: 8px;
@@ -1448,9 +1494,58 @@
   word-break: break-word;
 }
 
+.data-table-wrapper.operator-logs-table {
+  max-height: calc(100vh - 250px);
+  overflow-y: auto;
+  overflow-x: auto;
+  position: relative;
+}
+
+.operator-logs-table .data-table {
+  overflow: visible;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.operator-logs-table .data-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 60;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+}
+
 .operator-logs-table .data-table th:nth-child(1),
 .operator-logs-table .data-table td:nth-child(1) {
-  min-width: 170px;
+  width: 110px;
+  min-width: 110px;
+  max-width: 110px;
+}
+
+.operator-logs-table .data-table th:nth-child(3),
+.operator-logs-table .data-table td:nth-child(3) {
+  width: 230px;
+  min-width: 230px;
+  max-width: 230px;
+}
+
+.operator-logs-table .data-table th:nth-child(6),
+.operator-logs-table .data-table td:nth-child(6) {
+  width: 92px;
+  min-width: 92px;
+  max-width: 92px;
+}
+
+.operator-logs-table .data-table th:nth-child(12),
+.operator-logs-table .data-table td:nth-child(12) {
+  width: 150px;
+  min-width: 150px;
+  max-width: 150px;
+}
+
+.operator-logs-table .data-table td:nth-child(3) {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .operator-logs-filters {
@@ -1470,6 +1565,10 @@
 .operator-logs-filters .filter-select {
   min-width: 180px;
   flex: 0 0 180px;
+}
+
+.operator-logs-table .log-status-badge {
+  white-space: nowrap;
 }
 
 .operator-table-no-scroll

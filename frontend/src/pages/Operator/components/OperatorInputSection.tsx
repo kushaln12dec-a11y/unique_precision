@@ -521,6 +521,7 @@ export const OperatorInputSection: React.FC<OperatorInputSectionProps> = ({
                     availableOperators={operatorUsers}
                     onChange={(operators) => onInputChange(cutId, qtyIndex, "opsName", operators)}
                     placeholder="Select operators..."
+                    compact={true}
                     className={validationErrors[qtyIndex]?.opsName ? "input-error" : ""}
                   />
                   {validationErrors[qtyIndex]?.opsName && (

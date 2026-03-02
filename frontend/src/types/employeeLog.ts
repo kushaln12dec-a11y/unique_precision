@@ -1,5 +1,5 @@
 export type EmployeeLogRole = "PROGRAMMER" | "OPERATOR" | "QC";
-export type EmployeeLogStatus = "IN_PROGRESS" | "COMPLETED";
+export type EmployeeLogStatus = "IN_PROGRESS" | "COMPLETED" | "REJECTED";
 export type EmployeeLogActivityType =
   | "PROGRAMMER_JOB_CREATION"
   | "OPERATOR_PRODUCTION"

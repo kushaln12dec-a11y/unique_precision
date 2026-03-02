@@ -10,7 +10,7 @@ const getAuthHeaders = () => {
 
 type GetEmployeeLogsParams = {
   role?: "PROGRAMMER" | "OPERATOR" | "QC";
-  status?: "IN_PROGRESS" | "COMPLETED";
+  status?: "IN_PROGRESS" | "COMPLETED" | "REJECTED";
   search?: string;
   startDate?: string;
   endDate?: string;
@@ -68,6 +68,22 @@ export const completeProgrammerJobLog = async (payload: {
 
   if (!res.ok) {
     throw new Error("Failed to complete programmer log");
+  }
+
+  return res.json();
+};
+
+export const rejectProgrammerJobLog = async (payload: {
+  logId?: string;
+}): Promise<EmployeeLog> => {
+  const res = await fetch("/api/employee-logs/programmer/reject", {
+    method: "POST",
+    headers: getAuthHeaders(),
+    body: JSON.stringify(payload),
+  });
+
+  if (!res.ok) {
+    throw new Error("Failed to reject programmer log");
   }
 
   return res.json();

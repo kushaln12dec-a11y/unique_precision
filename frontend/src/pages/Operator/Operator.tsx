@@ -5,6 +5,8 @@ import Header from "../../components/Header";
 import DataTable, { type Column } from "../../components/DataTable";
 import Toast from "../../components/Toast";
 import DownloadIcon from "@mui/icons-material/Download";
+import WbSunnyOutlinedIcon from "@mui/icons-material/WbSunnyOutlined";
+import DarkModeOutlinedIcon from "@mui/icons-material/DarkModeOutlined";
 import JobDetailsModal from "../Programmer/components/JobDetailsModal";
 import { OperatorFilters } from "./components/OperatorFilters";
 import { useOperatorData } from "./hooks/useOperatorData";
@@ -54,7 +56,7 @@ const Operator = () => {
   const [operatorLogs, setOperatorLogs] = useState<EmployeeLog[]>([]);
   const [logsLoading, setLogsLoading] = useState(false);
   const [operatorLogSearch, setOperatorLogSearch] = useState("");
-  const [operatorLogStatus, setOperatorLogStatus] = useState<"" | "IN_PROGRESS" | "COMPLETED">("");
+  const [operatorLogStatus, setOperatorLogStatus] = useState<"" | "IN_PROGRESS" | "COMPLETED" | "REJECTED">("");
   const [toast, setToast] = useState<{ message: string; variant: "success" | "error" | "info"; visible: boolean }>({
     message: "",
     variant: "info",
@@ -378,6 +380,14 @@ const Operator = () => {
     isImageInputDisabled: isTaskTimerRunning,
   });
 
+  const getInitials = (value: string): string => {
+    const full = String(value || "").trim();
+    if (!full) return "--";
+    const parts = full.split(/\s+/).filter(Boolean);
+    if (parts.length >= 2) return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+    return full.slice(0, 2).toUpperCase();
+  };
+
   const handleApplyFiltersWithPageReset = (newFilters: FilterValues) => {
     handleApplyFilters(newFilters);
   };
@@ -481,6 +491,25 @@ const Operator = () => {
     return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
   };
 
+  const getShiftLabel = (startedAt?: string): string => {
+    if (!startedAt) return "-";
+    const date = new Date(startedAt);
+    if (Number.isNaN(date.getTime())) return "-";
+    const hour = date.getHours();
+    return hour >= 6 && hour < 18 ? "Day" : "Night";
+  };
+
+  const getMachineNumberForLog = (log: EmployeeLog): string => {
+    const machineFromMeta = String((log.metadata as any)?.machineNumber || "").trim();
+    if (machineFromMeta) return machineFromMeta;
+    const groupId = Number(log.jobGroupId || 0);
+    if (!groupId) return "-";
+    const groupEntries = jobs.filter((entry) => Number(entry.groupId) === groupId);
+    if (!groupEntries.length) return "-";
+    const firstMachine = String(groupEntries.find((entry) => String(entry.machineNumber || "").trim())?.machineNumber || "").trim();
+    return firstMachine || "-";
+  };
+
   const logsColumns = useMemo<Column<EmployeeLog>[]>(
     () => [
       {
@@ -491,15 +520,26 @@ const Operator = () => {
           const name = String(row.userName || "").trim();
           const designation = designationByUserName.get(name.toLowerCase()) || "Operator";
           return (
-            <div className="log-user-stack">
-              <strong>{(name || "-").toUpperCase()}</strong>
+            <div className="log-user-stack log-user-badge-stack">
+              <span className="log-user-initial-badge" title={(name || "-").toUpperCase()}>
+                {getInitials(name)}
+              </span>
               <span>{designation}</span>
             </div>
           );
         },
       },
       { key: "workItemTitle", label: "Work Item", sortable: false, render: (row) => row.workItemTitle || "-" },
-      { key: "workSummary", label: "Summary", sortable: false, render: (row) => row.workSummary || "-" },
+      {
+        key: "workSummary",
+        label: "Summary",
+        sortable: false,
+        render: (row) => {
+          const full = String(row.workSummary || "-");
+          const short = full.length > 44 ? `${full.slice(0, 44)}...` : full;
+          return <span title={full}>{short}</span>;
+        },
+      },
       {
         key: "startedAt",
         label: "Started at",
@@ -513,6 +553,35 @@ const Operator = () => {
             </div>
           );
         },
+      },
+      {
+        key: "shift",
+        label: "Shift",
+        sortable: false,
+        render: (row) => {
+          const shift = getShiftLabel(row.startedAt);
+          if (shift === "Day") {
+            return (
+              <span className="shift-icon-badge day" title="Day Shift">
+                <WbSunnyOutlinedIcon sx={{ fontSize: "1rem" }} />
+              </span>
+            );
+          }
+          if (shift === "Night") {
+            return (
+              <span className="shift-icon-badge night" title="Night Shift">
+                <DarkModeOutlinedIcon sx={{ fontSize: "1rem" }} />
+              </span>
+            );
+          }
+          return "-";
+        },
+      },
+      {
+        key: "machineNumber",
+        label: "MACH #",
+        sortable: false,
+        render: (row) => getMachineNumberForLog(row),
       },
       {
         key: "endedAt",
@@ -560,12 +629,13 @@ const Operator = () => {
                   .split("_")
                   .map((part) => part.charAt(0) + part.slice(1).toLowerCase())
                   .join(" ");
-          const statusClass = raw === "IN_PROGRESS" ? "in-progress" : "completed";
+          const statusClass =
+            raw === "IN_PROGRESS" ? "in-progress" : raw === "REJECTED" ? "rejected" : "completed";
           return <span className={`log-status-badge ${statusClass}`}>{label}</span>;
         },
       },
     ],
-    [designationByUserName, groupWedmByGroupId]
+    [designationByUserName, groupWedmByGroupId, jobs]
   );
 
   const handleExportOperatorLogsCsv = () => {
@@ -574,6 +644,8 @@ const Operator = () => {
       "Work Item",
       "Summary",
       "Started at",
+      "Shift",
+      "MACH #",
       "Ended at",
       "Duration",
       "Idle Time",
@@ -590,6 +662,8 @@ const Operator = () => {
         row.workItemTitle || "",
         row.workSummary || "",
         formatDisplayDateTime(row.startedAt),
+        getShiftLabel(row.startedAt),
+        getMachineNumberForLog(row),
         formatDisplayDateTime(row.endedAt || null),
         formatDuration(row.durationSeconds),
         String((row.metadata as any)?.idleTime || "-"),
@@ -739,12 +813,15 @@ const Operator = () => {
                 />
                 <select
                   value={operatorLogStatus}
-                  onChange={(e) => setOperatorLogStatus(e.target.value as "" | "IN_PROGRESS" | "COMPLETED")}
+                  onChange={(e) =>
+                    setOperatorLogStatus(e.target.value as "" | "IN_PROGRESS" | "COMPLETED" | "REJECTED")
+                  }
                   className="filter-select"
                 >
                   <option value="">All Status</option>
                   <option value="IN_PROGRESS">In Progress</option>
                   <option value="COMPLETED">Completed</option>
+                  <option value="REJECTED">Rejected</option>
                 </select>
                 <button className="btn-download-csv" onClick={handleExportOperatorLogsCsv} title="Download Logs CSV">
                   <DownloadIcon sx={{ fontSize: "1rem" }} />

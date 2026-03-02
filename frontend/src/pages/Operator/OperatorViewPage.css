@@ -4,6 +4,13 @@
   gap: 1.5rem;
   padding: 1.5rem;
   background: #ffffff;
+  max-height: none;
+  overflow: visible;
+}
+
+.roleboard-content.operator-viewpage-content {
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 /* Page Heading */

@@ -34,6 +34,14 @@ button {
   font-family: inherit;
 }
 
-select {
-  border-radius: var(--dropdown-radius);
+select,
+.filter-select,
+.role-filter-select,
+.employee-status-select,
+.qc-filter-select,
+.customer-autocomplete-input,
+.option-dropdown-trigger,
+.multi-select-operators,
+.operator-assigned-dropdown {
+  border-radius: var(--dropdown-radius) !important;
 }

@@ -15,7 +15,7 @@ export const JobFormHeader: React.FC<JobFormHeaderProps> = ({ refNumber, onAddCu
         </span>
       </div>
       <button className="btn-new-job btn-add-cut" onClick={onAddCut}>
-        Add new setting
+        Add New Setting
       </button>
     </div>
   );
