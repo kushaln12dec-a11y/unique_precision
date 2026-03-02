@@ -8,8 +8,7 @@ import { filterFields, filterCategories } from "../config/filterConfig";
 
 type ProgrammerFiltersProps = {
   filters: FilterValues;
-  customerFilter: string;
-  descriptionFilter: string;
+  jobSearchFilter: string;
   createdByFilter: string;
   criticalFilter: boolean;
   showFilterModal: boolean;
@@ -19,8 +18,7 @@ type ProgrammerFiltersProps = {
   onApplyFilters: (filters: FilterValues) => void;
   onClearFilters: () => void;
   onRemoveFilter: (key: string, type: "inline" | "modal") => void;
-  onCustomerFilterChange: (value: string) => void;
-  onDescriptionFilterChange: (value: string) => void;
+  onJobSearchFilterChange: (value: string) => void;
   onCreatedByFilterChange: (value: string) => void;
   onCriticalFilterChange: (checked: boolean) => void;
   onDownloadCSV: () => void;
@@ -29,8 +27,7 @@ type ProgrammerFiltersProps = {
 
 export const ProgrammerFilters: React.FC<ProgrammerFiltersProps> = ({
   filters,
-  customerFilter,
-  descriptionFilter,
+  jobSearchFilter,
   createdByFilter,
   criticalFilter,
   showFilterModal,
@@ -40,8 +37,7 @@ export const ProgrammerFilters: React.FC<ProgrammerFiltersProps> = ({
   onApplyFilters,
   onClearFilters,
   onRemoveFilter,
-  onCustomerFilterChange,
-  onDescriptionFilterChange,
+  onJobSearchFilterChange,
   onCreatedByFilterChange,
   onCriticalFilterChange,
   onDownloadCSV,
@@ -52,24 +48,13 @@ export const ProgrammerFilters: React.FC<ProgrammerFiltersProps> = ({
       <div className="panel-header">
         <div className="inline-filters">
           <div className="filter-group">
-            <label htmlFor="customer-search">Customer</label>
+            <label htmlFor="programmer-search">Search</label>
             <input
-              id="customer-search"
+              id="programmer-search"
               type="text"
-              placeholder="Search customer..."
-              value={customerFilter}
-              onChange={(e) => onCustomerFilterChange(e.target.value)}
-              className="filter-input"
-            />
-          </div>
-          <div className="filter-group">
-            <label htmlFor="description-search">Description</label>
-            <input
-              id="description-search"
-              type="text"
-              placeholder="Search by description..."
-              value={descriptionFilter}
-              onChange={(e) => onDescriptionFilterChange(e.target.value)}
+              placeholder="Search customer or description..."
+              value={jobSearchFilter}
+              onChange={(e) => onJobSearchFilterChange(e.target.value)}
               className="filter-input"
             />
           </div>
@@ -86,7 +71,7 @@ export const ProgrammerFilters: React.FC<ProgrammerFiltersProps> = ({
                 const displayName = `${user.firstName} ${user.lastName}`.trim() || user.email;
                 return (
                   <option key={user._id} value={displayName}>
-                    {displayName}
+                    {displayName.toUpperCase()}
                   </option>
                 );
               })}
@@ -135,7 +120,8 @@ export const ProgrammerFilters: React.FC<ProgrammerFiltersProps> = ({
       <FilterBadges
         filters={filters}
         filterFields={filterFields}
-        customerFilter={customerFilter}
+        customerFilter={jobSearchFilter}
+        descriptionFilter=""
         createdByFilter={createdByFilter}
         onRemoveFilter={onRemoveFilter}
       />

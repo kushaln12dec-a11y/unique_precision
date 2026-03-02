@@ -1,7 +1,9 @@
 .user-management-container {
   display: flex;
   min-height: 100vh;
+  height: 100vh;
   background: #f8fafc;
+  overflow: hidden;
 }
 
 .user-management-content {
@@ -9,6 +11,7 @@
   margin-left: 240px;
   padding: 0;
   transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
 }
 
 

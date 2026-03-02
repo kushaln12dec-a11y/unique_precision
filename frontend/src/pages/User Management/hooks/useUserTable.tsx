@@ -16,7 +16,7 @@ export const useUserTable = (
         label: "Name",
         sortable: true,
         sortKey: "firstName",
-        render: (user) => `${user.firstName} ${user.lastName}`,
+        render: (user) => `${user.firstName} ${user.lastName}`.trim().toUpperCase(),
       },
       {
         key: "email",

@@ -47,7 +47,7 @@ export const getUserDisplayNameFromToken = (): string | null => {
     decoded.username ||
     (decoded.email ? "User" : null);
 
-  return displayName;
+  return displayName ? String(displayName).toUpperCase() : null;
 };
 
 export const getUserIdFromToken = (): string | null => {

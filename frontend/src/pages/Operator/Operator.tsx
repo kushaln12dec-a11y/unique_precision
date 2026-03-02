@@ -22,7 +22,7 @@ import { getParentRowClassName } from "../Programmer/utils/priorityUtils";
 import type { JobEntry } from "../../types/job";
 import type { EmployeeLog } from "../../types/employeeLog";
 import type { FilterValues } from "../../components/FilterModal";
-import { formatDisplayDateTime } from "../../utils/date";
+import { formatDisplayDateTime, getDisplayDateTimeParts } from "../../utils/date";
 import { calculateTotals } from "../Programmer/programmerUtils";
 import "../RoleBoard.css";
 import "../Programmer/Programmer.css";
@@ -42,8 +42,6 @@ const Operator = () => {
   const currentUserName = (getUserDisplayNameFromToken() || "").trim();
   const isAdmin = userRole === "ADMIN";
   const canUseTaskSwitchTimer = userRole === "ADMIN" || userRole === "OPERATOR";
-  const [currentPage, setCurrentPage] = useState(1);
-  const [jobsPerPage, setJobsPerPage] = useState(5);
   const [sortField, setSortField] = useState<keyof JobEntry | null>(null);
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [expandedGroups, setExpandedGroups] = useState<Set<number>>(() => new Set());
@@ -200,10 +198,6 @@ const Operator = () => {
       setSortField(field);
       setSortDirection("asc");
     }
-  };
-
-  const handlePageChange = (pageNumber: number) => {
-    setCurrentPage(pageNumber);
   };
 
   const handleDownloadCSV = () => {
@@ -386,17 +380,14 @@ const Operator = () => {
 
   const handleApplyFiltersWithPageReset = (newFilters: FilterValues) => {
     handleApplyFilters(newFilters);
-    setCurrentPage(1);
   };
 
   const handleClearFiltersWithPageReset = () => {
     handleClearFilters();
-    setCurrentPage(1);
   };
 
   const handleRemoveFilterWithPageReset = (key: string, type: "inline" | "modal") => {
     handleRemoveFilter(key, type);
-    setCurrentPage(1);
   };
 
   useEffect(() => {
@@ -501,7 +492,7 @@ const Operator = () => {
           const designation = designationByUserName.get(name.toLowerCase()) || "Operator";
           return (
             <div className="log-user-stack">
-              <strong>{name || "-"}</strong>
+              <strong>{(name || "-").toUpperCase()}</strong>
               <span>{designation}</span>
             </div>
           );
@@ -509,8 +500,34 @@ const Operator = () => {
       },
       { key: "workItemTitle", label: "Work Item", sortable: false, render: (row) => row.workItemTitle || "-" },
       { key: "workSummary", label: "Summary", sortable: false, render: (row) => row.workSummary || "-" },
-      { key: "startedAt", label: "Started at", sortable: false, render: (row) => formatDisplayDateTime(row.startedAt) },
-      { key: "endedAt", label: "Ended at", sortable: false, render: (row) => formatDisplayDateTime(row.endedAt) },
+      {
+        key: "startedAt",
+        label: "Started at",
+        sortable: false,
+        render: (row) => {
+          const parts = getDisplayDateTimeParts(row.startedAt);
+          return (
+            <div className="created-at-split">
+              <span>{parts.date}</span>
+              <span>{parts.time}</span>
+            </div>
+          );
+        },
+      },
+      {
+        key: "endedAt",
+        label: "Ended at",
+        sortable: false,
+        render: (row) => {
+          const parts = getDisplayDateTimeParts(row.endedAt);
+          return (
+            <div className="created-at-split">
+              <span>{parts.date}</span>
+              <span>{parts.time}</span>
+            </div>
+          );
+        },
+      },
       { key: "durationSeconds", label: "Duration", sortable: false, render: (row) => formatDuration(row.durationSeconds) },
       {
         key: "idleTime",
@@ -530,7 +547,23 @@ const Operator = () => {
         sortable: false,
         render: (row) => getRevenueForLog(row),
       },
-      { key: "status", label: "Status", sortable: false, render: (row) => row.status || "-" },
+      {
+        key: "status",
+        label: "Status",
+        sortable: false,
+        render: (row) => {
+          const raw = String(row.status || "-").toUpperCase();
+          const label =
+            raw === "IN_PROGRESS"
+              ? "In Progress"
+              : raw
+                  .split("_")
+                  .map((part) => part.charAt(0) + part.slice(1).toLowerCase())
+                  .join(" ");
+          const statusClass = raw === "IN_PROGRESS" ? "in-progress" : "completed";
+          return <span className={`log-status-badge ${statusClass}`}>{label}</span>;
+        },
+      },
     ],
     [designationByUserName, groupWedmByGroupId]
   );
@@ -691,17 +724,6 @@ const Operator = () => {
                     }
                     return next;
                   });
-                }}
-                pagination={{
-                  currentPage,
-                  entriesPerPage: jobsPerPage,
-                  totalEntries: tableData.length,
-                  onPageChange: handlePageChange,
-                  onEntriesPerPageChange: (entries) => {
-                    setJobsPerPage(entries);
-                    setCurrentPage(1);
-                  },
-                  entriesPerPageOptions: [5, 10, 15, 25, 50],
                 }}
               />
             </>

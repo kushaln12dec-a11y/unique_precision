@@ -1,9 +1,11 @@
 .data-table-wrapper {
   overflow-y: auto;
-  overflow-x: hidden;
-  max-height: 60vh;
+  overflow-x: auto;
+  max-height: 65vh;
+  width: 100%;
   border-radius: 12px;
   border: 1px solid #e2e8f0;
+  box-sizing: border-box;
   scrollbar-width: none;
   -ms-overflow-style: none;
 }
@@ -15,11 +17,12 @@
 
 /* Ensure Programmer screen has horizontal scroll */
 .jobs-table-wrapper {
+  overflow-y: auto;
   overflow-x: auto;
 }
 
 .data-table {
-  width: 100%;
+  width: max(100%, 1200px);
   border-collapse: separate;
   border-spacing: 0;
   font-size: 0.9rem;
@@ -36,6 +39,14 @@
   text-align: left;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.data-table th {
+  white-space: nowrap;
+  word-break: normal;
+}
+
+.data-table td {
   white-space: normal;
   word-break: break-word;
 }
@@ -58,7 +69,8 @@
 .data-table thead th {
   position: sticky;
   top: 0;
-  z-index: 5;
+  z-index: 25;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
 }
 
 .data-table th {
@@ -76,6 +88,8 @@
   justify-content: flex-start;
   gap: 0.375rem;
   width: 100%;
+  white-space: nowrap;
+  flex-wrap: nowrap;
 }
 
 .data-table td:last-child {

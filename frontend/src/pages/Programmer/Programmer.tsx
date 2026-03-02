@@ -30,7 +30,7 @@ import { useProgrammerState } from "./hooks/useProgrammerState";
 import { exportJobsToCSV } from "./utils/csvExport";
 import type { TableRow } from "./utils/jobDataTransform";
 import { getParentRowClassName } from "./utils/priorityUtils";
-import { formatDisplayDateTime } from "../../utils/date";
+import { formatDisplayDateTime, getDisplayDateTimeParts } from "../../utils/date";
 
 const Programmer = () => {
   const PROGRAMMER_ACTIVE_LOG_KEY = "programmer_active_job_log_id";
@@ -45,8 +45,6 @@ const Programmer = () => {
   const [createdByFilter, setCreatedByFilter] = useState("");
   const [criticalFilter, setCriticalFilter] = useState(false);
   const [users, setUsers] = useState<User[]>([]);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [entriesPerPage, setEntriesPerPage] = useState(10);
   const [toast, setToast] = useState<{ message: string; variant: "success" | "error" | "info"; visible: boolean }>({
     message: "",
     variant: "success",
@@ -282,10 +280,6 @@ const Programmer = () => {
     }
   };
 
-  const handlePageChange = (pageNumber: number) => {
-    setCurrentPage(pageNumber);
-  };
-
   const handleDownloadCSV = () => {
     exportJobsToCSV(tableData, isAdmin);
   };
@@ -363,7 +357,7 @@ const Programmer = () => {
           const name = String(row.userName || "").trim();
           return (
             <div className="log-user-stack">
-              <strong>{name || "-"}</strong>
+              <strong>{(name || "-").toUpperCase()}</strong>
               <span>{designation}</span>
             </div>
           );
@@ -378,19 +372,52 @@ const Programmer = () => {
           return ref ? `#${ref}` : "-";
         },
       },
-      { key: "startedAt", label: "Started at", sortable: false, render: (row) => formatDisplayDateTime(row.startedAt) },
-      { key: "endedAt", label: "Ended at", sortable: false, render: (row) => formatDisplayDateTime(row.endedAt || null) },
+      {
+        key: "startedAt",
+        label: "Started at",
+        sortable: false,
+        render: (row) => {
+          const parts = getDisplayDateTimeParts(row.startedAt);
+          return (
+            <div className="created-at-split">
+              <span>{parts.date}</span>
+              <span>{parts.time}</span>
+            </div>
+          );
+        },
+      },
+      {
+        key: "endedAt",
+        label: "Ended at",
+        sortable: false,
+        render: (row) => {
+          const parts = getDisplayDateTimeParts(row.endedAt || null);
+          return (
+            <div className="created-at-split">
+              <span>{parts.date}</span>
+              <span>{parts.time}</span>
+            </div>
+          );
+        },
+      },
       { key: "shift", label: "Shift", sortable: false, render: (row) => getShiftLabel(row.startedAt) },
       { key: "duration", label: "Duration", sortable: false, render: (row) => formatDuration(row.durationSeconds) },
       {
         key: "status",
         label: "Status",
         sortable: false,
-        render: (row) =>
-          String(row.status || "-")
-            .split("_")
-            .map((part) => part.charAt(0) + part.slice(1).toLowerCase())
-            .join(" "),
+        render: (row) => {
+          const raw = String(row.status || "-").toUpperCase();
+          const label =
+            raw === "IN_PROGRESS"
+              ? "In Progress"
+              : raw
+                  .split("_")
+                  .map((part) => part.charAt(0) + part.slice(1).toLowerCase())
+                  .join(" ");
+          const statusClass = raw === "IN_PROGRESS" ? "in-progress" : "completed";
+          return <span className={`log-status-badge ${statusClass}`}>{label}</span>;
+        },
       },
     ],
     [designationByUserId]
@@ -467,8 +494,7 @@ const Programmer = () => {
             <>
               <ProgrammerFilters
                 filters={filters}
-                customerFilter={customerFilter}
-                descriptionFilter={descriptionFilter}
+                jobSearchFilter={customerFilter}
                 createdByFilter={createdByFilter}
                 criticalFilter={criticalFilter}
                 showFilterModal={showFilterModal}
@@ -478,8 +504,10 @@ const Programmer = () => {
                 onApplyFilters={handleApplyFilters}
                 onClearFilters={handleClearFilters}
                 onRemoveFilter={handleRemoveFilter}
-                onCustomerFilterChange={setCustomerFilter}
-                onDescriptionFilterChange={setDescriptionFilter}
+                onJobSearchFilterChange={(value) => {
+                  setCustomerFilter(value);
+                  setDescriptionFilter(value);
+                }}
                 onCreatedByFilterChange={setCreatedByFilter}
                 onCriticalFilterChange={setCriticalFilter}
                 onDownloadCSV={handleDownloadCSV}
@@ -506,17 +534,6 @@ const Programmer = () => {
                 showCheckboxes={true}
                 selectedRows={selectedJobIds}
                 onRowSelect={handleRowSelect}
-                pagination={{
-                  currentPage,
-                  entriesPerPage,
-                  totalEntries: tableData.length,
-                  onPageChange: handlePageChange,
-                  onEntriesPerPageChange: (entries) => {
-                    setEntriesPerPage(entries);
-                    setCurrentPage(1);
-                  },
-                  entriesPerPageOptions: [5, 10, 15, 25, 50],
-                }}
               />
             </>
           )}
@@ -552,7 +569,7 @@ const Programmer = () => {
                       const displayName = `${user.firstName} ${user.lastName}`.trim() || user.email;
                       return (
                         <option key={user._id} value={user._id}>
-                          {displayName}
+                          {displayName.toUpperCase()}
                         </option>
                       );
                     })}

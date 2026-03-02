@@ -59,6 +59,11 @@ export const useUserManagement = () => {
       return;
     }
 
+    if (name === "firstName" || name === "lastName") {
+      setFormData((prev) => ({ ...prev, [name]: value.toUpperCase() }));
+      return;
+    }
+
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 

@@ -148,13 +148,6 @@ export const OperatorFilters: React.FC<OperatorFiltersProps> = ({
                   <option value="PENDING_INPUT">Not Started</option>
                 </select>
               </div>
-              {canUseTaskSwitchTimer && (
-                <OperatorTaskTimer
-                  onSaveTaskSwitch={onSaveTaskSwitch}
-                  onShowToast={onShowToast}
-                  onRunningChange={onTimerRunningChange}
-                />
-              )}
             </div>
           </div>
           <div className="operator-stage-legend-inline">
@@ -166,19 +159,30 @@ export const OperatorFilters: React.FC<OperatorFiltersProps> = ({
         </div>
 
         <div className="panel-header-actions">
-          <button className="btn-download-csv" onClick={onDownloadCSV} title="Download CSV">
-            <DownloadIcon sx={{ fontSize: "1rem" }} />
-            CSV
-          </button>
-          <button
-            className="btn-download-csv"
-            onClick={onSendSelectedRowsToQa}
-            disabled={selectedRowsCount === 0}
-            title="Move selected rows to QA"
-          >
-            Send To QA{selectedRowsCount > 0 ? ` (${selectedRowsCount})` : ""}
-          </button>
-          <FilterButton onClick={() => onShowFilterModal(true)} activeFilterCount={activeFilterCount} />
+          {canUseTaskSwitchTimer && (
+            <div className="operator-timer-right-slot">
+              <OperatorTaskTimer
+                onSaveTaskSwitch={onSaveTaskSwitch}
+                onShowToast={onShowToast}
+                onRunningChange={onTimerRunningChange}
+              />
+            </div>
+          )}
+          <div className="operator-actions-row">
+            <button className="btn-download-csv" onClick={onDownloadCSV} title="Download CSV">
+              <DownloadIcon sx={{ fontSize: "1rem" }} />
+              CSV
+            </button>
+            <button
+              className="btn-download-csv"
+              onClick={onSendSelectedRowsToQa}
+              disabled={selectedRowsCount === 0}
+              title="Move selected rows to QA"
+            >
+              Send To QA{selectedRowsCount > 0 ? ` (${selectedRowsCount})` : ""}
+            </button>
+            <FilterButton onClick={() => onShowFilterModal(true)} activeFilterCount={activeFilterCount} />
+          </div>
         </div>
       </div>
       <FilterModal

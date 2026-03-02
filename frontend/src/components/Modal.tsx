@@ -39,7 +39,7 @@ const Modal: React.FC<ModalProps> = ({
             onClick={onClose}
             aria-label="Close modal"
           >
-            ×
+            x
           </button>
         </div>
         <div className="modal-content">{children}</div>

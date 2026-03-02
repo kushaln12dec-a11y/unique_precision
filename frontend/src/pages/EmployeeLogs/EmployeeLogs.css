@@ -12,7 +12,7 @@
   margin-left: 70px;
   min-height: 100vh;
   max-height: 100vh;
-  overflow-y: auto;
+  overflow: hidden;
 }
 
 .employee-logs-page-shell {

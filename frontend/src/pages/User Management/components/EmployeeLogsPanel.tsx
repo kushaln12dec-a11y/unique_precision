@@ -39,8 +39,6 @@ export const EmployeeLogsPanel = () => {
   const [logs, setLogs] = useState<EmployeeLog[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [currentPage, setCurrentPage] = useState(1);
-  const [entriesPerPage, setEntriesPerPage] = useState(10);
 
   useEffect(() => {
     const loadLogs = async () => {
@@ -72,7 +70,7 @@ export const EmployeeLogsPanel = () => {
           sortable: false,
           render: (row) => (
             <div className="employee-log-user">
-              <strong>{row.userName || 'Unknown User'}</strong>
+              <strong>{String(row.userName || 'Unknown User').toUpperCase()}</strong>
               <span>{formatRoleLabel((row.metadata as any)?.userRole || row.role)}</span>
             </div>
           ),
@@ -159,7 +157,7 @@ export const EmployeeLogsPanel = () => {
         sortable: false,
         render: (row) => (
           <div className="employee-log-user">
-            <strong>{row.userName || 'Unknown User'}</strong>
+            <strong>{String(row.userName || 'Unknown User').toUpperCase()}</strong>
             <span>{formatRoleLabel((row.metadata as any)?.userRole || row.role)}</span>
           </div>
         ),
@@ -273,7 +271,6 @@ export const EmployeeLogsPanel = () => {
           className={`employee-role-tab ${activeRole === 'PROGRAMMER' ? 'active' : ''}`}
           onClick={() => {
             setActiveRole('PROGRAMMER');
-            setCurrentPage(1);
           }}
         >
           Programmer
@@ -283,7 +280,6 @@ export const EmployeeLogsPanel = () => {
           className={`employee-role-tab ${activeRole === 'OPERATOR' ? 'active' : ''}`}
           onClick={() => {
             setActiveRole('OPERATOR');
-            setCurrentPage(1);
           }}
         >
           Operator
@@ -293,7 +289,6 @@ export const EmployeeLogsPanel = () => {
           className={`employee-role-tab ${activeRole === 'QC' ? 'active' : ''}`}
           onClick={() => {
             setActiveRole('QC');
-            setCurrentPage(1);
           }}
         >
           QA
@@ -308,7 +303,6 @@ export const EmployeeLogsPanel = () => {
           value={searchQuery}
           onChange={(e) => {
             setSearchQuery(e.target.value);
-            setCurrentPage(1);
           }}
         />
         <select
@@ -316,7 +310,6 @@ export const EmployeeLogsPanel = () => {
           value={statusFilter}
           onChange={(e) => {
             setStatusFilter(e.target.value as '' | 'COMPLETED' | 'IN_PROGRESS');
-            setCurrentPage(1);
           }}
         >
           <option value="">All Status</option>
@@ -353,17 +346,6 @@ export const EmployeeLogsPanel = () => {
           emptyMessage="No logs found for the current filters."
           getRowKey={(row) => row._id}
           className="left-align employee-logs-table"
-          pagination={{
-            currentPage,
-            entriesPerPage,
-            totalEntries: logs.length,
-            onPageChange: setCurrentPage,
-            onEntriesPerPageChange: (entries) => {
-              setEntriesPerPage(entries);
-              setCurrentPage(1);
-            },
-            entriesPerPageOptions: [5, 10, 15, 25, 50],
-          }}
         />
       )}
     </div>

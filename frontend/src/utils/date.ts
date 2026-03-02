@@ -41,6 +41,17 @@ export const formatDisplayDateTime = (value: string | number | Date | null | und
   return `${formatDisplayDate(date)} ${formatDisplayTime(date)}`;
 };
 
+export const getDisplayDateTimeParts = (
+  value: string | number | Date | null | undefined
+): { date: string; time: string } => {
+  const date = resolveDate(value);
+  if (!date) return { date: "-", time: "-" };
+  return {
+    date: formatDisplayDate(date),
+    time: formatDisplayTime(date),
+  };
+};
+
 export const formatDateLabel = (date: Date) => {
   return formatDisplayDateTime(date);
 };

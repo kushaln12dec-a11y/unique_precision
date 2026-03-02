@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import type { JobEntry } from "../../../types/job";
-import { formatDisplayDateTime, formatHoursToHHMM } from "../../../utils/date";
+import { formatHoursToHHMM, getDisplayDateTimeParts } from "../../../utils/date";
 import ActionButtons from "../../Programmer/components/ActionButtons";
 import ArrowForwardIosSharpIcon from "@mui/icons-material/ArrowForwardIosSharp";
 import { getGroupQaProgressCounts } from "../utils/qaProgress";
@@ -45,6 +45,16 @@ export const useOperatorTable = ({
   isAdmin,
   isImageInputDisabled,
 }: UseOperatorTableProps): Column<TableRow>[] => {
+  const getInitials = (name: string): string => {
+    const clean = String(name || "").trim();
+    if (!clean) return "--";
+    const parts = clean.split(/\s+/).filter(Boolean);
+    if (parts.length >= 2) {
+      return `${parts[0][0] || ""}${parts[1][0] || ""}`.toUpperCase();
+    }
+    return clean.slice(0, 2).toUpperCase();
+  };
+
   const truncateDescription = (value: string | undefined | null): string => {
     const text = (value || "-").trim();
     if (text === "-") return text;
@@ -291,14 +301,29 @@ export const useOperatorTable = ({
         label: "Created By",
         sortable: false,
         sortKey: "createdBy",
-        render: (row) => row.parent.createdBy,
+        render: (row) => {
+          const fullName = String(row.parent.createdBy || "-").toUpperCase();
+          return (
+            <span className="created-by-badge" title={fullName}>
+              {getInitials(fullName)}
+            </span>
+          );
+        },
       },
       {
         key: "createdAt",
         label: "Created At",
         sortable: false,
         sortKey: "createdAt",
-        render: (row) => formatDisplayDateTime(row.parent.createdAt),
+        render: (row) => {
+          const parts = getDisplayDateTimeParts(row.parent.createdAt);
+          return (
+            <div className="created-at-split">
+              <span>{parts.date}</span>
+              <span>{parts.time}</span>
+            </div>
+          );
+        },
       },
       {
         key: "action",

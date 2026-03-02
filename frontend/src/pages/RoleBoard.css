@@ -1,7 +1,9 @@
 .roleboard-container {
   display: flex;
   min-height: 100vh;
+  height: 100vh;
   padding-left: 70px;
+  overflow: hidden;
 }
 
 .roleboard-content {
@@ -9,6 +11,7 @@
   background: #f5f6fb;
   padding: 0.25rem;
   box-sizing: border-box;
+  overflow: hidden;
 }
 
 .roleboard-body {
