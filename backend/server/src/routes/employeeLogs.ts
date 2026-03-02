@@ -112,6 +112,57 @@ router.post("/programmer/complete", async (req, res) => {
   }
 });
 
+router.post("/programmer/reject", async (req, res) => {
+  try {
+    const reqUser = req.user as any;
+    const { logId } = req.body || {};
+
+    let log: any = null;
+
+    if (logId) {
+      log = await EmployeeLog.findOne({
+        _id: logId,
+        role: "PROGRAMMER",
+        activityType: "PROGRAMMER_JOB_CREATION",
+        status: "IN_PROGRESS",
+        userId: String(reqUser?.userId || ""),
+      });
+    }
+
+    if (!log) {
+      log = await EmployeeLog.findOne({
+        role: "PROGRAMMER",
+        activityType: "PROGRAMMER_JOB_CREATION",
+        status: "IN_PROGRESS",
+        userId: String(reqUser?.userId || ""),
+      }).sort({ startedAt: -1 });
+    }
+
+    if (!log) {
+      return res.status(404).json({ message: "No active programmer log found." });
+    }
+
+    const endedAt = new Date();
+    const startedAt = log.startedAt instanceof Date ? log.startedAt : endedAt;
+    const durationSeconds = Math.max(0, Math.floor((endedAt.getTime() - startedAt.getTime()) / 1000));
+
+    log.status = "REJECTED";
+    log.endedAt = endedAt;
+    log.durationSeconds = durationSeconds;
+    log.workSummary = "Draft discarded before save";
+    log.metadata = {
+      ...(log.metadata || {}),
+      rejected: true,
+    };
+
+    await log.save();
+    res.json(log);
+  } catch (error: any) {
+    console.error("Error rejecting programmer log:", error);
+    res.status(500).json({ message: "Error rejecting programmer log" });
+  }
+});
+
 router.post("/operator/complete", async (req, res) => {
   try {
     const reqUser = req.user as any;
@@ -304,7 +355,7 @@ router.get("/", async (req, res) => {
     if (!query.role && reqRole === "OPERATOR") {
       query.role = "OPERATOR";
     }
-    if (status && ["IN_PROGRESS", "COMPLETED"].includes(status)) {
+    if (status && ["IN_PROGRESS", "COMPLETED", "REJECTED"].includes(status)) {
       query.status = status;
     }
 

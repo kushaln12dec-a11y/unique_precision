@@ -16,7 +16,7 @@ const employeeLogSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ["IN_PROGRESS", "COMPLETED"],
+      enum: ["IN_PROGRESS", "COMPLETED", "REJECTED"],
       default: "COMPLETED",
       index: true,
     },
