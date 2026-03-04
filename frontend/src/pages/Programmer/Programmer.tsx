@@ -25,7 +25,6 @@ import { countActiveFilters } from "../../utils/filterUtils";
 import type { JobEntry } from "../../types/job";
 import type { FilterValues } from "../../components/FilterModal";
 import { useJobHandlers } from "./hooks/useJobHandlers";
-import { useFilterHandlers } from "./hooks/useFilterHandlers";
 import { useJobData } from "./hooks/useJobData";
 import { useTableColumns } from "./hooks/useTableColumns";
 import { useProgrammerState } from "./hooks/useProgrammerState";
@@ -33,19 +32,32 @@ import { exportJobsToCSV } from "./utils/csvExport";
 import type { TableRow } from "./utils/jobDataTransform";
 import { getParentRowClassName } from "./utils/priorityUtils";
 import { formatDisplayDateTime, getDisplayDateTimeParts } from "../../utils/date";
+import { useAppDispatch, useAppSelector } from "../../store/hooks";
+import {
+  setProgrammerCreatedByFilter,
+  setProgrammerCriticalFilter,
+  setProgrammerCustomerFilter,
+  setProgrammerDescriptionFilter,
+  setProgrammerFilters,
+  setProgrammerShowFilterModal,
+} from "../../store/slices/filtersSlice";
+import { getInitials } from "../../utils/jobFormatting";
 
 const Programmer = () => {
   const PROGRAMMER_ACTIVE_LOG_KEY = "programmer_active_job_log_id";
   const navigate = useNavigate();
+  const dispatch = useAppDispatch();
   const [sortField, setSortField] = useState<keyof JobEntry | null>(null);
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [expandedGroups, setExpandedGroups] = useState<Set<number>>(() => new Set());
-  const [filters, setFilters] = useState<FilterValues>({});
-  const [showFilterModal, setShowFilterModal] = useState(false);
-  const [customerFilter, setCustomerFilter] = useState("");
-  const [descriptionFilter, setDescriptionFilter] = useState("");
-  const [createdByFilter, setCreatedByFilter] = useState("");
-  const [criticalFilter, setCriticalFilter] = useState(false);
+  const {
+    filters,
+    showFilterModal,
+    customerFilter,
+    descriptionFilter,
+    createdByFilter,
+    criticalFilter,
+  } = useAppSelector((state) => state.filters.programmer);
   const [users, setUsers] = useState<User[]>([]);
   const [toast, setToast] = useState<{ message: string; variant: "success" | "error" | "info"; visible: boolean }>({
     message: "",
@@ -121,12 +133,26 @@ const Programmer = () => {
     totals,
   });
 
-  const { handleApplyFilters, handleClearFilters, handleRemoveFilter } = useFilterHandlers({
-    setFilters,
-    setCustomerFilter,
-    setDescriptionFilter,
-    setCreatedByFilter,
-  });
+  const handleApplyFilters = (newFilters: FilterValues) => {
+    dispatch(setProgrammerFilters(newFilters));
+  };
+
+  const handleClearFilters = () => {
+    dispatch(setProgrammerFilters({}));
+  };
+
+  const handleRemoveFilter = (key: string, type: "inline" | "modal") => {
+    if (type === "inline") {
+      if (key === "customer") dispatch(setProgrammerCustomerFilter(""));
+      else if (key === "description") dispatch(setProgrammerDescriptionFilter(""));
+      else if (key === "createdBy") dispatch(setProgrammerCreatedByFilter(""));
+      return;
+    }
+
+    const updated = { ...filters };
+    delete updated[key];
+    dispatch(setProgrammerFilters(updated));
+  };
 
   const toggleGroup = (groupId: number) => {
     setExpandedGroups((prev) => {
@@ -261,14 +287,6 @@ const Programmer = () => {
   const handleNewJob = () => {
     handleNewJobState();
     navigate("/programmer/newjob");
-  };
-
-  const getInitials = (value: string): string => {
-    const full = String(value || "").trim();
-    if (!full) return "--";
-    const parts = full.split(/\s+/).filter(Boolean);
-    if (parts.length >= 2) return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
-    return full.slice(0, 2).toUpperCase();
   };
 
   const handleCancel = async () => {
@@ -560,16 +578,16 @@ const Programmer = () => {
                 showFilterModal={showFilterModal}
                 activeFilterCount={activeFilterCount}
                 users={users}
-                onShowFilterModal={setShowFilterModal}
+                onShowFilterModal={(show) => dispatch(setProgrammerShowFilterModal(show))}
                 onApplyFilters={handleApplyFilters}
                 onClearFilters={handleClearFilters}
                 onRemoveFilter={handleRemoveFilter}
                 onJobSearchFilterChange={(value) => {
-                  setCustomerFilter(value);
-                  setDescriptionFilter(value);
+                  dispatch(setProgrammerCustomerFilter(value));
+                  dispatch(setProgrammerDescriptionFilter(value));
                 }}
-                onCreatedByFilterChange={setCreatedByFilter}
-                onCriticalFilterChange={setCriticalFilter}
+                onCreatedByFilterChange={(value) => dispatch(setProgrammerCreatedByFilter(value))}
+                onCriticalFilterChange={(value) => dispatch(setProgrammerCriticalFilter(value))}
                 onDownloadCSV={handleDownloadCSV}
                 onNewJob={handleNewJob}
               />

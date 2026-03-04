@@ -7,6 +7,7 @@ import { getRowClassName } from "../utils/priorityUtils";
 import { getUserRoleFromToken } from "../../../utils/auth";
 import { MultiSelectOperators } from "../../Operator/components/MultiSelectOperators";
 import { getQaProgressCounts } from "../../Operator/utils/qaProgress";
+import { estimatedTimeFromAmount, toYN } from "../../../utils/jobFormatting";
 
 type ChildCutsTableProps = {
   entries: JobEntry[];
@@ -41,13 +42,6 @@ const ChildCutsTable: React.FC<ChildCutsTableProps> = ({
   onRowSelect,
   getRowKey = (entry, index) => entry.id || index,
 }) => {
-  const toYN = (value: unknown): string => {
-    if (typeof value === "boolean") return value ? "Y" : "N";
-    const text = String(value || "").trim().toLowerCase();
-    if (text === "yes" || text === "y" || text === "true") return "Y";
-    if (text === "no" || text === "n" || text === "false") return "N";
-    return String(value || "-");
-  };
   const getMachineNumber = (entry: JobEntry): string => {
     const direct = String((entry as any).machineNumber || "").trim();
     if (direct) return direct;
@@ -304,7 +298,7 @@ const ChildCutsTable: React.FC<ChildCutsTableProps> = ({
                   ? formatHoursToHHMM((Number(entry.totalHrs || 0) || 0) * Math.max(1, Number(entry.qty || 1)))
                   : "-"}
               </td>
-              <td className="estimated-time-col">{((entry.totalAmount || 0) / 625).toFixed(2)}</td>
+              <td className="estimated-time-col">{estimatedTimeFromAmount(entry.totalAmount || 0)}</td>
               {isAdmin && <td className="total-amount-col">{entry.totalAmount ? `₹${Math.round(entry.totalAmount)}` : "-"}</td>}
               {isOperator && (
                 <td className="status-col">

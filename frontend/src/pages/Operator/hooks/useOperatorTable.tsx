@@ -5,6 +5,7 @@ import ActionButtons from "../../Programmer/components/ActionButtons";
 import ArrowForwardIosSharpIcon from "@mui/icons-material/ArrowForwardIosSharp";
 import { getGroupQaProgressCounts } from "../utils/qaProgress";
 import type { Column } from "../../../components/DataTable";
+import { estimatedTimeFromAmount, getInitials, toYN } from "../../../utils/jobFormatting";
 
 type TableRow = {
   groupId: number;
@@ -45,23 +46,6 @@ export const useOperatorTable = ({
   isAdmin,
   isImageInputDisabled,
 }: UseOperatorTableProps): Column<TableRow>[] => {
-  const getInitials = (name: string): string => {
-    const clean = String(name || "").trim();
-    if (!clean) return "--";
-    const parts = clean.split(/\s+/).filter(Boolean);
-    if (parts.length >= 2) {
-      return `${parts[0][0] || ""}${parts[1][0] || ""}`.toUpperCase();
-    }
-    return clean.slice(0, 2).toUpperCase();
-  };
-
-  const toYN = (value: unknown): string => {
-    if (typeof value === "boolean") return value ? "Y" : "N";
-    const text = String(value || "").trim().toLowerCase();
-    if (text === "yes" || text === "y" || text === "true") return "Y";
-    if (text === "no" || text === "n" || text === "false") return "N";
-    return String(value || "-");
-  };
   const getMachineNumber = (job: JobEntry): string => {
     const direct = String((job as any).machineNumber || "").trim();
     if (direct) return direct;
@@ -299,7 +283,7 @@ export const useOperatorTable = ({
           </>
         ),
         sortable: false,
-        render: (row) => ((row.groupTotalAmount || 0) > 0 ? (row.groupTotalAmount / 625).toFixed(2) : "0.00"),
+        render: (row) => estimatedTimeFromAmount(row.groupTotalAmount || 0),
       },
       ...(isAdmin
         ? [

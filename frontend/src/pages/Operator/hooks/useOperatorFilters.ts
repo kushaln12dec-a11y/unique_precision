@@ -1,18 +1,29 @@
-import { useState, useMemo } from "react";
+import { useMemo } from "react";
 import type { FilterValues, FilterField, FilterCategory } from "../../../components/FilterModal";
 import { countActiveFilters } from "../../../utils/filterUtils";
+import { useAppDispatch, useAppSelector } from "../../../store/hooks";
+import {
+  clearOperatorFilters,
+  setOperatorAssignedToFilter,
+  setOperatorCreatedByFilter,
+  setOperatorCustomerFilter,
+  setOperatorDescriptionFilter,
+  setOperatorFilters,
+  setOperatorProductionStageFilter,
+  setOperatorShowFilterModal,
+} from "../../../store/slices/filtersSlice";
 
-/**
- * Hook for managing operator filters
- */
 export const useOperatorFilters = () => {
-  const [filters, setFilters] = useState<FilterValues>({});
-  const [showFilterModal, setShowFilterModal] = useState(false);
-  const [customerFilter, setCustomerFilter] = useState("");
-  const [descriptionFilter, setDescriptionFilter] = useState("");
-  const [createdByFilter, setCreatedByFilter] = useState("");
-  const [assignedToFilter, setAssignedToFilter] = useState("");
-  const [productionStageFilter, setProductionStageFilter] = useState("");
+  const dispatch = useAppDispatch();
+  const {
+    filters,
+    showFilterModal,
+    customerFilter,
+    descriptionFilter,
+    createdByFilter,
+    assignedToFilter,
+    productionStageFilter,
+  } = useAppSelector((state) => state.filters.operator);
 
   const filterCategories: FilterCategory[] = [
     { id: "dimensions", label: "Dimensions", icon: "📏" },
@@ -22,26 +33,8 @@ export const useOperatorFilters = () => {
   ];
 
   const filterFields: FilterField[] = [
-    {
-      key: "cut",
-      label: "Cut (mm)",
-      type: "numberRange",
-      category: "dimensions",
-      min: 0,
-      max: 1000,
-      step: 0.1,
-      unit: "mm",
-    },
-    {
-      key: "thickness",
-      label: "Thickness (mm)",
-      type: "numberRange",
-      category: "dimensions",
-      min: 0,
-      max: 500,
-      step: 0.1,
-      unit: "mm",
-    },
+    { key: "cut", label: "Cut (mm)", type: "numberRange", category: "dimensions", min: 0, max: 1000, step: 0.1, unit: "mm" },
+    { key: "thickness", label: "Thickness (mm)", type: "numberRange", category: "dimensions", min: 0, max: 500, step: 0.1, unit: "mm" },
     {
       key: "passLevel",
       label: "Pass Level",
@@ -56,113 +49,59 @@ export const useOperatorFilters = () => {
       ],
       category: "production",
     },
-    {
-      key: "setting",
-      label: "Setting",
-      type: "text",
-      placeholder: "Enter setting",
-      category: "production",
-    },
-    {
-      key: "qty",
-      label: "Quantity",
-      type: "numberRange",
-      category: "production",
-      min: 0,
-      max: 10000,
-      step: 1,
-    },
-    {
-      key: "rate",
-      label: "Rate (₹)",
-      type: "numberRange",
-      category: "financial",
-      min: 0,
-      max: 100000,
-      step: 0.01,
-      unit: "₹",
-    },
-    {
-      key: "totalHrs",
-      label: "Total Hours",
-      type: "numberRange",
-      category: "financial",
-      min: 0,
-      max: 1000,
-      step: 0.001,
-      unit: "hrs",
-    },
-    {
-      key: "totalAmount",
-      label: "Total Amount (₹)",
-      type: "numberRange",
-      category: "financial",
-      min: 0,
-      max: 1000000,
-      step: 0.01,
-      unit: "₹",
-    },
-    {
-      key: "createdAt",
-      label: "Created Date",
-      type: "dateRange",
-      category: "dates",
-    },
+    { key: "setting", label: "Setting", type: "text", placeholder: "Enter setting", category: "production" },
+    { key: "qty", label: "Quantity", type: "numberRange", category: "production", min: 0, max: 10000, step: 1 },
+    { key: "rate", label: "Rate (Rs)", type: "numberRange", category: "financial", min: 0, max: 100000, step: 0.01, unit: "Rs" },
+    { key: "totalHrs", label: "Total Hours", type: "numberRange", category: "financial", min: 0, max: 1000, step: 0.001, unit: "hrs" },
+    { key: "totalAmount", label: "Total Amount (Rs)", type: "numberRange", category: "financial", min: 0, max: 1000000, step: 0.01, unit: "Rs" },
+    { key: "createdAt", label: "Created Date", type: "dateRange", category: "dates" },
   ];
 
   const activeFilterCount = useMemo(() => countActiveFilters(filters), [filters]);
 
   const handleApplyFilters = (newFilters: FilterValues) => {
-    setFilters(newFilters);
-    setCustomerFilter("");
-    setDescriptionFilter("");
-    setCreatedByFilter("");
-    setAssignedToFilter("");
-    setProductionStageFilter("");
+    dispatch(setOperatorFilters(newFilters));
+    dispatch(setOperatorCustomerFilter(""));
+    dispatch(setOperatorDescriptionFilter(""));
+    dispatch(setOperatorCreatedByFilter(""));
+    dispatch(setOperatorAssignedToFilter(""));
+    dispatch(setOperatorProductionStageFilter(""));
   };
 
   const handleClearFilters = () => {
-    setFilters({});
+    dispatch(clearOperatorFilters());
   };
 
   const handleRemoveFilter = (key: string, type: "inline" | "modal") => {
     if (type === "inline") {
-      if (key === "customer") {
-        setCustomerFilter("");
-      } else if (key === "description") {
-        setDescriptionFilter("");
-      } else if (key === "createdBy") {
-        setCreatedByFilter("");
-      } else if (key === "assignedTo") {
-        setAssignedToFilter("");
-      } else if (key === "productionStage") {
-        setProductionStageFilter("");
-      }
-    } else {
-      // Modal filter
-      setFilters((prev) => {
-        const updated = { ...prev };
-        delete updated[key];
-        return updated;
-      });
+      if (key === "customer") dispatch(setOperatorCustomerFilter(""));
+      else if (key === "description") dispatch(setOperatorDescriptionFilter(""));
+      else if (key === "createdBy") dispatch(setOperatorCreatedByFilter(""));
+      else if (key === "assignedTo") dispatch(setOperatorAssignedToFilter(""));
+      else if (key === "productionStage") dispatch(setOperatorProductionStageFilter(""));
+      return;
     }
+
+    const updated = { ...filters };
+    delete updated[key];
+    dispatch(setOperatorFilters(updated));
   };
 
   return {
     filters,
-    setFilters,
+    setFilters: (newFilters: FilterValues) => dispatch(setOperatorFilters(newFilters)),
     showFilterModal,
-    setShowFilterModal,
+    setShowFilterModal: (show: boolean) => dispatch(setOperatorShowFilterModal(show)),
     customerFilter,
-    setCustomerFilter,
+    setCustomerFilter: (value: string) => dispatch(setOperatorCustomerFilter(value)),
     descriptionFilter,
-    setDescriptionFilter,
+    setDescriptionFilter: (value: string) => dispatch(setOperatorDescriptionFilter(value)),
     createdByFilter,
-    setCreatedByFilter,
+    setCreatedByFilter: (value: string) => dispatch(setOperatorCreatedByFilter(value)),
     assignedToFilter,
-    setAssignedToFilter,
+    setAssignedToFilter: (value: string) => dispatch(setOperatorAssignedToFilter(value)),
     productionStageFilter,
-    setProductionStageFilter,
+    setProductionStageFilter: (value: string) => dispatch(setOperatorProductionStageFilter(value)),
     filterCategories,
     filterFields,
     activeFilterCount,

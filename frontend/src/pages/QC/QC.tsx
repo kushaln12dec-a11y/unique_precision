@@ -8,6 +8,12 @@ import type { JobEntry } from "../../types/job";
 import { formatDisplayDateTime, parseDateValue } from "../../utils/date";
 import { isGroupFullySentToQa } from "../Operator/utils/qaProgress";
 import { getParentRowClassName } from "../Programmer/utils/priorityUtils";
+import { useAppDispatch, useAppSelector } from "../../store/hooks";
+import {
+  setQcCreatedByFilter,
+  setQcCustomerFilter,
+  setQcDescriptionFilter,
+} from "../../store/slices/filtersSlice";
 import "../RoleBoard.css";
 import "../Programmer/Programmer.css";
 import "./QC.css";
@@ -22,10 +28,9 @@ type QcRow = {
 
 const QC = () => {
   const navigate = useNavigate();
+  const dispatch = useAppDispatch();
   const [jobs, setJobs] = useState<JobEntry[]>([]);
-  const [customerFilter, setCustomerFilter] = useState("");
-  const [descriptionFilter, setDescriptionFilter] = useState("");
-  const [createdByFilter, setCreatedByFilter] = useState("");
+  const { customerFilter, descriptionFilter, createdByFilter } = useAppSelector((state) => state.filters.qc);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -219,20 +224,20 @@ const QC = () => {
             <input
               type="text"
               value={customerFilter}
-              onChange={(e) => setCustomerFilter(e.target.value)}
+              onChange={(e) => dispatch(setQcCustomerFilter(e.target.value))}
               placeholder="Search customer..."
               className="qc-filter-input"
             />
             <input
               type="text"
               value={descriptionFilter}
-              onChange={(e) => setDescriptionFilter(e.target.value)}
+              onChange={(e) => dispatch(setQcDescriptionFilter(e.target.value))}
               placeholder="Search description..."
               className="qc-filter-input"
             />
             <select
               value={createdByFilter}
-              onChange={(e) => setCreatedByFilter(e.target.value)}
+              onChange={(e) => dispatch(setQcCreatedByFilter(e.target.value))}
               className="qc-filter-select"
             >
               <option value="">All Users</option>

@@ -4,6 +4,7 @@ import { formatHoursToHHMM, getDisplayDateTimeParts } from "../../../utils/date"
 import ArrowForwardIosSharpIcon from "@mui/icons-material/ArrowForwardIosSharp";
 import type { TableRow } from "../utils/jobDataTransform";
 import ActionButtons from "../components/ActionButtons";
+import { estimatedTimeFromAmount, getInitials, toYN } from "../../../utils/jobFormatting";
 
 type UseTableColumnsProps = {
   expandableRows: Map<number, any>;
@@ -22,24 +23,6 @@ export const useTableColumns = ({
   handleEditJob,
   handleDeleteClick,
 }: UseTableColumnsProps): Column<TableRow>[] => {
-  const getInitials = (name: string): string => {
-    const clean = String(name || "").trim();
-    if (!clean) return "--";
-    const parts = clean.split(/\s+/).filter(Boolean);
-    if (parts.length >= 2) {
-      return `${parts[0][0] || ""}${parts[1][0] || ""}`.toUpperCase();
-    }
-    return clean.slice(0, 2).toUpperCase();
-  };
-
-  const toYN = (value: unknown): string => {
-    if (typeof value === "boolean") return value ? "Y" : "N";
-    const text = String(value || "").trim().toLowerCase();
-    if (text === "yes" || text === "y" || text === "true") return "Y";
-    if (text === "no" || text === "n" || text === "false") return "N";
-    return String(value || "—");
-  };
-
   return useMemo(
     () => [
       {
@@ -80,7 +63,7 @@ export const useTableColumns = ({
                 </button>
               )}
               {!expandable && <span style={{ width: "1rem" }} />}
-              <span>{row.parent.customer || "—"}</span>
+              <span>{row.parent.customer || "-"}</span>
             </div>
           );
         },
@@ -91,7 +74,7 @@ export const useTableColumns = ({
         sortable: false,
         render: (row) => {
           const ref = row.parent.refNumber || "";
-          return ref ? `#${ref}` : "—";
+          return ref ? `#${ref}` : "-";
         },
       },
       {
@@ -121,7 +104,7 @@ export const useTableColumns = ({
         className: "program-ref-file-col",
         headerClassName: "program-ref-file-col",
         render: (row) => {
-          const value = String((row.parent as any).programRefFile || (row.parent as any).programRefFileName || "—");
+          const value = String((row.parent as any).programRefFile || (row.parent as any).programRefFileName || "-");
           return (
             <div className="description-marquee" title={value}>
               <span>{value}</span>
@@ -136,7 +119,6 @@ export const useTableColumns = ({
         sortKey: "cut",
         render: (row) => Math.round(Number(row.parent.cut || 0)),
       },
-
       {
         key: "thickness",
         label: "TH (MM)",
@@ -180,7 +162,7 @@ export const useTableColumns = ({
         label: "Total Time Needed",
         sortable: false,
         sortKey: "totalHrs",
-        render: (row) => (row.groupTotalHrs ? formatHoursToHHMM(row.groupTotalHrs) : "—"),
+        render: (row) => (row.groupTotalHrs ? formatHoursToHHMM(row.groupTotalHrs) : "-"),
       },
       {
         key: "estimatedTime",
@@ -194,17 +176,17 @@ export const useTableColumns = ({
         sortable: false,
         className: "estimated-time-col",
         headerClassName: "estimated-time-col",
-        render: (row) => ((row.groupTotalAmount || 0) > 0 ? (row.groupTotalAmount / 625).toFixed(2) : "0.00"),
+        render: (row) => estimatedTimeFromAmount(row.groupTotalAmount || 0),
       },
       ...(isAdmin
         ? [
             {
               key: "totalAmount",
-              label: "Total Amount (₹)",
+              label: "Total Amount (Rs)",
               sortable: false,
               sortKey: "totalAmount",
               render: (row: TableRow) =>
-                row.groupTotalAmount ? `₹${Math.round(row.groupTotalAmount)}` : "—",
+                row.groupTotalAmount ? `Rs${Math.round(row.groupTotalAmount)}` : "-",
             },
           ]
         : []),
@@ -261,8 +243,3 @@ export const useTableColumns = ({
     [expandableRows, isAdmin, setViewingJob, setShowJobViewModal, handleEditJob, handleDeleteClick]
   );
 };
-
-
-
-
-
