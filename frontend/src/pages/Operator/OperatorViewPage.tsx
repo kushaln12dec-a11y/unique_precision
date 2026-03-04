@@ -15,7 +15,7 @@ import type { CutInputData } from "./types/cutInput";
 import { createEmptyCutInputData } from "./types/cutInput";
 import { getUsers } from "../../services/userApi";
 import { startOperatorProductionLog } from "../../services/employeeLogsApi";
-import { captureOperatorInput, updateOperatorQaStatus } from "../../services/operatorApi";
+import { captureOperatorInput, updateOperatorJob, updateOperatorQaStatus } from "../../services/operatorApi";
 import { validateQuantityInputs, validateRangeSelection } from "./utils/validation";
 import { getQuantityProgressStatuses } from "./utils/qaProgress";
 import type { QuantityQaStatus } from "../../types/job";
@@ -195,6 +195,8 @@ const OperatorViewPage = () => {
         ? qtyData.opsName.join(", ")
         : (qtyData.opsName || "");
 
+      const assignedToValue = opsName.trim() || "Unassigned";
+
       // Save this quantity's data
       const payload = {
         startTime: qtyData.startTime,
@@ -216,6 +218,7 @@ const OperatorViewPage = () => {
         await captureOperatorInput(String(cutId), payload);
       } catch (error: any) {
         if (error?.message?.includes("overlaps")) {
+          await updateOperatorJob(String(cutId), { assignedTo: assignedToValue });
           setSavedQuantities((prev) => {
             const newMap = new Map(prev);
             const saved = newMap.get(cutId) || new Set<number>();
@@ -234,6 +237,8 @@ const OperatorViewPage = () => {
         }
         throw error;
       }
+
+      await updateOperatorJob(String(cutId), { assignedTo: assignedToValue });
 
       // Mark this quantity as saved
       setSavedQuantities((prev) => {
@@ -337,6 +342,8 @@ const OperatorViewPage = () => {
         ? qtyData.opsName.join(", ")
         : (qtyData.opsName || "");
 
+      const assignedToValue = opsName.trim() || "Unassigned";
+
       const payload = {
         startTime: qtyData.startTime,
         endTime: qtyData.endTime,
@@ -367,6 +374,8 @@ const OperatorViewPage = () => {
         }
         throw error;
       }
+
+      await updateOperatorJob(String(cutId), { assignedTo: assignedToValue });
 
       setSavedRanges((prev) => {
         const newMap = new Map(prev);

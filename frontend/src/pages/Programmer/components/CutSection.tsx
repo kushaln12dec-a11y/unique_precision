@@ -8,7 +8,6 @@ import MaterialAutocomplete from "./MaterialAutocomplete";
 import SelectDropdown from "./SelectDropdown";
 import FlagIcon from "@mui/icons-material/Flag";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
-import { formatDecimalHoursToHHMMhrs } from "../../../utils/date";
 import type { CustomerRate } from "../../../types/masterConfig";
 
 type CutTotals = {
@@ -70,12 +69,20 @@ const parseOperationRows = (cut: CutForm): OperationRow[] => {
     const rows = parsed
       .filter((row) => row && typeof row === "object")
       .map((row) => ({
-        cut: String((row as any).cut ?? ""),
-        thickness: String((row as any).thickness ?? ""),
-        passLevel: String((row as any).passLevel ?? "0"),
-        setting: String((row as any).setting ?? "0"),
-        qty: String((row as any).qty ?? "0"),
-      }));
+        cut: String((row as any).cut ?? (row as any).cutLength ?? ""),
+        thickness: String((row as any).thickness ?? (row as any).thk ?? ""),
+        passLevel: String((row as any).passLevel ?? (row as any).pass ?? "0"),
+        setting: String((row as any).setting ?? (row as any).settingHrs ?? "0"),
+        qty: String((row as any).qty ?? (row as any).quantity ?? "0"),
+      }))
+      .filter((row) => {
+        const cutValue = Number(row.cut || 0);
+        const thkValue = Number(row.thickness || 0);
+        const passValue = Number(row.passLevel || 0);
+        const settingValue = Number(row.setting || 0);
+        const qtyValue = Number(row.qty || 0);
+        return cutValue > 0 || thkValue > 0 || passValue > 0 || settingValue > 0 || qtyValue > 0;
+      });
     return rows.length > 0 ? rows : [fallbackRow];
   } catch (error) {
     return [fallbackRow];
@@ -112,6 +119,7 @@ export const CutSection: React.FC<CutSectionProps> = ({
   materialOptions,
   passOptions,
 }) => {
+  const previousCustomerRef = React.useRef<string>(String(cut.customer || "").trim().toUpperCase());
   const [operationRows, setOperationRows] = React.useState<OperationRow[]>(() => parseOperationRows(cut));
 
   React.useEffect(() => {
@@ -152,12 +160,15 @@ export const CutSection: React.FC<CutSectionProps> = ({
   React.useEffect(() => {
     if (!isFirstCut) return;
     const selected = String(cut.customer || "").trim().toUpperCase();
+    const previous = previousCustomerRef.current;
+    if (selected === previous) return;
+    previousCustomerRef.current = selected;
     if (!selected) return;
     const matchedRate = customerRateMap.get(selected);
-    if (matchedRate !== undefined && matchedRate !== String(cut.rate || "")) {
+    if (matchedRate !== undefined) {
       onCutChange("rate")(matchedRate);
     }
-  }, [isFirstCut, cut.customer, cut.rate, customerRateMap, onCutChange]);
+  }, [isFirstCut, cut.customer, customerRateMap, onCutChange]);
   
   return (
     <div className={`cut-section ${isCollapsed ? "collapsed" : ""}`}>
@@ -512,13 +523,25 @@ export const CutSection: React.FC<CutSectionProps> = ({
           </FormInput>
 
           <FormInput 
-            label="Total Time Needed" 
+            label="Cut Length Hrs" 
             className="grid-total-hrs"
             style={{ gridRow: 2 + operationRows.length }}
           >
             <input
               type="text"
-              value={formatDecimalHoursToHHMMhrs(cutTotals.totalHrs)}
+              value={cutTotals.totalHrs.toFixed(2)}
+              readOnly
+            />
+          </FormInput>
+
+          <FormInput
+            label="Estimated Time"
+            className="grid-estimated-time"
+            style={{ gridRow: 2 + operationRows.length }}
+          >
+            <input
+              type="text"
+              value={(cutTotals.totalAmount / 625).toFixed(2)}
               readOnly
             />
           </FormInput>

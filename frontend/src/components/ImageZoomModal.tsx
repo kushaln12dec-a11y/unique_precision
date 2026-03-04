@@ -25,6 +25,9 @@ const ImageZoomModal: React.FC<ImageZoomModalProps> = ({ imageSrc, onClose }) =>
   return (
     <div className="image-zoom-modal-overlay" onClick={onClose}>
       <div className="image-zoom-modal-content" onClick={(e) => e.stopPropagation()}>
+        <button className="image-zoom-close" onClick={onClose} aria-label="Close zoomed image">
+          x
+        </button>
         <img src={imageSrc} alt="Zoomed" className="image-zoom-img" />
       </div>
     </div>

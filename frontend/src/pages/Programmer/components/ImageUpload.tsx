@@ -236,7 +236,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
             {/* Paste Hint */}
             {!readOnly && (
               <div className="paste-hint-container">
-                <span className="paste-hint-text">Press Ctrl+V to paste image</span>
+                <span className="paste-hint-text">Press Ctrl+V to Drop image</span>
               </div>
             )}
           </div>
@@ -246,7 +246,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
               <span>No images</span>
             ) : (
               <div className="paste-area">
-                <span>Press Ctrl+V to paste image</span>
+                <span>Press Ctrl+V to Drop image</span>
               </div>
             )}
           </div>

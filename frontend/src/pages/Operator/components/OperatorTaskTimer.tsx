@@ -334,6 +334,7 @@ export const OperatorTaskTimer: React.FC<OperatorTaskTimerProps> = ({
             >
               <option value="">Select</option>
               <option value="Power Break">Power Break</option>
+              <option value="Shift Over">Shift Over</option>
               <option value="Machine Breakdown">Machine Breakdown</option>
               <option value="Vertical Dial">Vertical Dial</option>
               <option value="Cleaning">Cleaning</option>

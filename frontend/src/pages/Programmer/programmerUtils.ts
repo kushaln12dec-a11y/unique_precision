@@ -193,16 +193,19 @@ const parseOperationRows = (form: CutForm): OperationRow[] => {
     const rows = parsed
       .filter((row) => row && typeof row === "object")
       .map((row) => ({
-        cut: String((row as any).cut ?? "0"),
-        thickness: String((row as any).thickness ?? "0"),
-        passLevel: String((row as any).passLevel ?? "0"),
-        setting: String((row as any).setting ?? "0"),
-        qty: String((row as any).qty ?? "0"),
+        cut: String((row as any).cut ?? (row as any).cutLength ?? "0"),
+        thickness: String((row as any).thickness ?? (row as any).thk ?? "0"),
+        passLevel: String((row as any).passLevel ?? (row as any).pass ?? "0"),
+        setting: String((row as any).setting ?? (row as any).settingHrs ?? "0"),
+        qty: String((row as any).qty ?? (row as any).quantity ?? "0"),
       }))
       .filter((row) => {
-        const hasValue = [row.cut, row.thickness, row.passLevel, row.setting, row.qty]
-          .some((value) => String(value || "").trim() !== "");
-        return hasValue;
+        const cutValue = Number(row.cut || 0);
+        const thkValue = Number(row.thickness || 0);
+        const passValue = Number(row.passLevel || 0);
+        const settingValue = Number(row.setting || 0);
+        const qtyValue = Number(row.qty || 0);
+        return cutValue > 0 || thkValue > 0 || passValue > 0 || settingValue > 0 || qtyValue > 0;
       });
     return rows.length > 0 ? rows : [fallbackRow];
   } catch (error) {
@@ -210,24 +213,37 @@ const parseOperationRows = (form: CutForm): OperationRow[] => {
   }
 };
 
+const getSettingHours = (rawSetting: number): number => {
+  if (!Number.isFinite(rawSetting) || rawSetting <= 0) return 0;
+  // Business rule:
+  // - Integer levels use mapped values: 1->0.5, 2->1, 3->2, 4->3, ...
+  // - Decimal input (e.g. 1.25) is treated as direct hours.
+  if (Number.isInteger(rawSetting)) {
+    if (rawSetting === 1) return 0.5;
+    if (rawSetting === 2) return 1;
+    return rawSetting - 1;
+  }
+  return rawSetting;
+};
+
 export const calculateTotals = (form: CutForm, config: CalculationConfig = {}) => {
   const customerRate = Number(form.rate) || 0;
   const operationRows = parseOperationRows(form);
   
   const sedmAmount = calculateSedmAmount(form);
-  const thicknessDivisor = 1500;
-  const settingFactor = Number(config.settingHoursPerSetting ?? 0.5) || 0.5;
   const complexHours = Number(config.complexExtraHours ?? 1) || 1;
   const pipHours = Number(config.pipExtraHours ?? 1) || 1;
   const extraHours = (form.critical ? complexHours : 0) + (form.pipFinish ? pipHours : 0);
   const totalHrs = operationRows.reduce((sum, row) => {
     const cut = Number(row.cut) || 0;
-    const thickness = Number(row.thickness) || 0;
+    // Business rule: treat thickness below 20 mm as 20 mm for calculation only.
+    const thickness = Math.max(20, Number(row.thickness) || 0);
     const passMultiplier = PASS_MAP[row.passLevel] || 1;
     const settingLevel = Number(row.setting) || 0;
     const qty = Number(row.qty) || 0;
+    const thicknessDivisor = thickness > 100 ? 1200 : 1500;
     const cutHoursPerPiece = (cut * thickness) / thicknessDivisor * passMultiplier;
-    const settingHours = settingLevel * settingFactor;
+    const settingHours = getSettingHours(settingLevel);
 
     // Quantity should scale total time for each operation row.
     return sum + (cutHoursPerPiece + settingHours + extraHours) * qty;

@@ -41,12 +41,6 @@ const ChildCutsTable: React.FC<ChildCutsTableProps> = ({
   onRowSelect,
   getRowKey = (entry, index) => entry.id || index,
 }) => {
-  const truncateDescription = (value: string | undefined | null): string => {
-    const text = (value || "-").trim();
-    if (text === "-") return text;
-    return text.length > 12 ? `${text.slice(0, 12)}...` : text;
-  };
-
   const toYN = (value: unknown): string => {
     if (typeof value === "boolean") return value ? "Y" : "N";
     const text = String(value || "").trim().toLowerCase();
@@ -130,11 +124,15 @@ const ChildCutsTable: React.FC<ChildCutsTableProps> = ({
             <th className="customer-col">
               <span className="th-content">Customer</span>
             </th>
-            <th className="prog-ref-col">
-              <span className="th-content">Prog Ref</span>
-            </th>
             <th className="description-col">
               <span className="th-content">Desc</span>
+            </th>
+            <th className="program-ref-file-col">
+              <span className="th-content">
+                Program Ref
+                <br />
+                File Name
+              </span>
             </th>
             <th className="cut-col">
               <span className="th-content">Cut (MM)</span>
@@ -152,7 +150,7 @@ const ChildCutsTable: React.FC<ChildCutsTableProps> = ({
               <span className="th-content">Qty</span>
             </th>
             <th className="sedm-col">SEDM</th>
-            {isOperator && <th className="assigned-col">Assigned</th>}
+            {isOperator && <th className="assigned-col">Operator</th>}
             {isOperator && <th className="mach-col">Mach #</th>}
             <th className="total-hrs-col">
               <span className="th-content">
@@ -161,13 +159,20 @@ const ChildCutsTable: React.FC<ChildCutsTableProps> = ({
                 Needed
               </span>
             </th>
+            <th className="estimated-time-col">
+              <span className="th-content">
+                Estimated
+                <br />
+                Time
+              </span>
+            </th>
             {isAdmin && (
               <th className="total-amount-col">
                 <span className="th-content">Amount</span>
               </th>
             )}
             {isOperator && <th className="status-col">Status</th>}
-            <th className="act-col">Act</th>
+            <th className="act-col">Action</th>
           </tr>
         </thead>
         <tbody>
@@ -203,16 +208,28 @@ const ChildCutsTable: React.FC<ChildCutsTableProps> = ({
                 )}
                 <td className="setting-number-col">{index + 1}</td>
               <td className="customer-col">{entry.customer || "-"}</td>
-              <td className="prog-ref-col" title={entry.programRefFile || entry.refNumber || "-"}>
-                {entry.programRefFile || entry.refNumber || "-"}
+              <td className="description-col" title={entry.description || "-"}>
+                <div className="description-marquee">
+                  <span>{entry.description || "-"}</span>
+                </div>
               </td>
-              <td className="description-col" title={entry.description || "-"}>{truncateDescription(entry.description)}</td>
+              <td className="program-ref-file-col" title={(entry as any).programRefFile || (entry as any).programRefFileName || "-"}>
+                <div className="description-marquee">
+                  <span>{String((entry as any).programRefFile || (entry as any).programRefFileName || "-")}</span>
+                </div>
+              </td>
               <td className="cut-col">{Math.round(Number(entry.cut || 0))}</td>
               <td className="th-col">{Math.round(Number(entry.thickness || 0))}</td>
               <td className="pass-col">{entry.passLevel}</td>
               <td className="setting-col">{entry.setting}</td>
               <td className="qty-col">{Number(entry.qty || 0).toString()}</td>
-              <td className="sedm-col">{toYN(entry.sedm)}</td>
+              <td className="sedm-col">
+                {(() => {
+                  const sedm = toYN(entry.sedm);
+                  const sedmClass = sedm === "Y" ? "sedm-badge yes" : sedm === "N" ? "sedm-badge no" : "sedm-badge";
+                  return <span className={sedmClass}>{sedm}</span>;
+                })()}
+              </td>
               {isOperator && (
                 <td className="assigned-col">
                   {canAssign && onAssignChange && operatorUsers.length > 0 ? (
@@ -287,6 +304,7 @@ const ChildCutsTable: React.FC<ChildCutsTableProps> = ({
                   ? formatHoursToHHMM((Number(entry.totalHrs || 0) || 0) * Math.max(1, Number(entry.qty || 1)))
                   : "-"}
               </td>
+              <td className="estimated-time-col">{((entry.totalAmount || 0) / 625).toFixed(2)}</td>
               {isAdmin && <td className="total-amount-col">{entry.totalAmount ? `₹${Math.round(entry.totalAmount)}` : "-"}</td>}
               {isOperator && (
                 <td className="status-col">

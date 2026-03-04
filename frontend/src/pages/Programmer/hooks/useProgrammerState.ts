@@ -71,7 +71,7 @@ export const useProgrammerState = (
   useEffect(() => {
     if (isEditRoute && params.groupId) {
       const groupId = Number(params.groupId);
-      if (!isNaN(groupId) && groupId !== editingGroupId) {
+      if (!isNaN(groupId)) {
         const groupCuts = jobs
           .filter((job) => job.groupId === groupId)
           .sort((a, b) => {
@@ -83,13 +83,13 @@ export const useProgrammerState = (
           setEditingGroupId(groupId);
           setCuts(
             groupCuts.map((job) => ({
-              customer: job.customer,
-              rate: job.rate,
-              cut: job.cut,
-              thickness: job.thickness,
-              passLevel: job.passLevel,
-              setting: job.setting,
-              qty: job.qty,
+              customer: String(job.customer ?? ""),
+              rate: String(job.rate ?? ""),
+              cut: String(job.cut ?? ""),
+              thickness: String(job.thickness ?? ""),
+              passLevel: String(job.passLevel ?? "0"),
+              setting: String(job.setting ?? "0"),
+              qty: String(job.qty ?? "0"),
               sedm: job.sedm,
               sedmSelectionType: job.sedmSelectionType ?? "range",
               sedmRangeKey: job.sedmRangeKey ?? "0.3-0.4",
@@ -107,7 +107,10 @@ export const useProgrammerState = (
               material: (job as any).material ?? "",
               priority: job.priority,
               description: job.description,
-              cutImage: job.cutImage ?? null,
+              programRefFile: String((job as any).programRefFile ?? (job as any).programRefFileName ?? ""),
+              cutImage: Array.isArray(job.cutImage)
+                ? job.cutImage
+                : (job.cutImage ? [job.cutImage as unknown as string] : []),
               critical: job.critical,
               pipFinish: job.pipFinish,
               refNumber: (job as any).refNumber || "",

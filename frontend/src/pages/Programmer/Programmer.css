@@ -612,7 +612,7 @@
   grid-template-areas:
   "customer rate material programref description"
   "cut thickness pass setting qty"
-  "sedm totalhrs totalamount . .";
+  "sedm totalhrs estimated totalamount .";
 
 
 }
@@ -1031,6 +1031,9 @@
 }
 .grid-total-hrs {
   grid-area: totalhrs;
+}
+.grid-estimated-time {
+  grid-area: estimated;
 }
 .grid-total-amount {
   grid-area: totalamount;
@@ -1527,6 +1530,19 @@
   min-width: 100px;
   max-width: 110px;
   padding: 0.5rem 0.5rem;
+  text-align: center;
+}
+
+.jobs-table-wrapper .data-table th.program-ref-file-col,
+.jobs-table-wrapper .data-table td.program-ref-file-col {
+  width: 108px;
+  min-width: 108px;
+}
+
+.jobs-table-wrapper .data-table th.estimated-time-col,
+.jobs-table-wrapper .data-table td.estimated-time-col {
+  width: 84px;
+  min-width: 84px;
 }
 
 .jobs-table {
@@ -1859,7 +1875,7 @@
   background: #f9fafb;
   width: 100%;
   max-width: 100%;
-  padding: 0;
+  padding: 0 0 0.55rem 0;
   box-sizing: border-box;
 }
 
@@ -1879,6 +1895,7 @@
   font-size: 0.8rem;
   table-layout: fixed;
   box-sizing: border-box;
+  margin-bottom: 0.4rem;
 }
 
 .child-jobs-table th,
@@ -1968,6 +1985,13 @@
   text-align: left;
 }
 
+.child-jobs-table th.program-ref-file-col,
+.child-jobs-table td.program-ref-file-col {
+  width: 96px;
+  min-width: 96px;
+  text-align: left;
+}
+
 .child-jobs-table th.cut-col,
 .child-jobs-table td.cut-col {
   width: 80px;
@@ -2043,7 +2067,55 @@
 .child-jobs-table td.act-col {
   width: 100px;
   min-width: 100px;
+  text-align: center;
+}
+
+.child-jobs-table th.mach-col,
+.child-jobs-table td.mach-col {
+  width: 62px;
+  min-width: 62px;
   text-align: left;
+}
+
+.child-jobs-table th.estimated-time-col,
+.child-jobs-table td.estimated-time-col {
+  width: 82px;
+  min-width: 82px;
+  text-align: left;
+}
+
+.child-jobs-table th.total-amount-col,
+.child-jobs-table td.total-amount-col {
+  width: 84px;
+  min-width: 84px;
+  text-align: left;
+}
+
+.sedm-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  padding: 0.14rem 0.44rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  line-height: 1;
+  border: 1px solid #cbd5e1;
+  color: #334155;
+  background: #f8fafc;
+}
+
+.sedm-badge.yes {
+  color: #166534;
+  border-color: #86efac;
+  background: #dcfce7;
+}
+
+.sedm-badge.no {
+  color: #92400e;
+  border-color: #fcd34d;
+  background: #fef3c7;
 }
 
 .child-jobs-table thead {
@@ -2074,6 +2146,40 @@
 
 .child-jobs-table th.sortable:hover {
   background: rgba(255, 255, 255, 0.1);
+}
+
+.description-marquee {
+  position: relative;
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.description-marquee > span {
+  display: inline-block;
+  min-width: 100%;
+  padding-left: 100%;
+  animation: description-marquee-scroll 10s linear infinite;
+}
+
+@keyframes description-marquee-scroll {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-100%);
+  }
+}
+
+@media (max-width: 1024px) {
+  .jobs-table-wrapper .data-table {
+    min-width: 1600px;
+  }
+
+  .child-jobs-table {
+    min-width: 1220px;
+  }
 }
 
 .child-jobs-table th .th-content {
@@ -2450,18 +2556,34 @@
   }
 
   .cut-section-body {
-    grid-template-columns: 1fr;
+    grid-template-columns: 140px minmax(0, 1fr);
+    gap: 0.85rem;
   }
 
   .job-form-image {
     grid-row: auto;
-    min-height: 160px;
-    width: 100%;
-    height: 200px;
+    min-height: 140px;
+    width: 140px;
+    height: 140px;
+  }
+
+  .job-form-image .job-form-image-container,
+  .job-form-image .image-slider-wrapper,
+  .job-form-image .image-slider-display,
+  .job-form-image .image-placeholder-empty,
+  .job-form-image .slider-image {
+    min-height: 140px;
+    height: 140px;
   }
 
   .cut-section-grid {
-    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-areas:
+      "customer rate material"
+      "programref description description"
+      "cut thickness pass"
+      "setting qty sedm"
+      "totalhrs estimated totalamount";
   }
 
   .description-box {

@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import type { JobEntry } from "../../../types/job";
-import { formatHoursToHHMM, getDisplayDateTimeParts } from "../../../utils/date";
+import { formatHoursToHHMM } from "../../../utils/date";
 import ActionButtons from "../../Programmer/components/ActionButtons";
 import ArrowForwardIosSharpIcon from "@mui/icons-material/ArrowForwardIosSharp";
 import { getGroupQaProgressCounts } from "../utils/qaProgress";
@@ -55,11 +55,6 @@ export const useOperatorTable = ({
     return clean.slice(0, 2).toUpperCase();
   };
 
-  const truncateDescription = (value: string | undefined | null): string => {
-    const text = (value || "-").trim();
-    if (text === "-") return text;
-    return text.length > 12 ? `${text.slice(0, 12)}...` : text;
-  };
   const toYN = (value: unknown): string => {
     if (typeof value === "boolean") return value ? "Y" : "N";
     const text = String(value || "").trim().toLowerCase();
@@ -124,10 +119,10 @@ export const useOperatorTable = ({
       },
       {
         key: "programRef",
-        label: "Prog Ref",
+        label: "Job ref",
         sortable: false,
         render: (row) => {
-          const ref = row.parent.programRefFile || row.parent.refNumber || "";
+          const ref = row.parent.refNumber || "";
           return ref ? `#${ref}` : "-";
         },
       },
@@ -138,7 +133,30 @@ export const useOperatorTable = ({
         sortKey: "description",
         render: (row) => {
           const full = row.parent.description || "-";
-          return <span title={full}>{truncateDescription(full)}</span>;
+          return (
+            <div className="description-marquee" title={full}>
+              <span>{full}</span>
+            </div>
+          );
+        },
+      },
+      {
+        key: "programRefFileName",
+        label: (
+          <>
+            Program Ref
+            <br />
+            File Name
+          </>
+        ),
+        sortable: false,
+        render: (row) => {
+          const value = String((row.parent as any).programRefFile || (row.parent as any).programRefFileName || "-");
+          return (
+            <div className="description-marquee" title={value}>
+              <span>{value}</span>
+            </div>
+          );
         },
       },
       {
@@ -176,11 +194,15 @@ export const useOperatorTable = ({
         sortKey: "qty",
         render: (row) => Number(row.parent.qty || 0).toString(),
       },
-            {
+      {
         key: "sedm",
         label: "SEDM",
         sortable: false,
-        render: (row) => toYN(row.parent.sedm),
+        render: (row) => {
+          const sedm = toYN(row.parent.sedm);
+          const sedmClass = sedm === "Y" ? "sedm-badge yes" : sedm === "N" ? "sedm-badge no" : "sedm-badge";
+          return <span className={sedmClass}>{sedm}</span>;
+        },
       },
       {
         key: "assignedTo",
@@ -267,6 +289,18 @@ export const useOperatorTable = ({
         sortKey: "totalHrs",
         render: (row) => (row.groupTotalHrs ? formatHoursToHHMM(row.groupTotalHrs) : "-"),
       },
+      {
+        key: "estimatedTime",
+        label: (
+          <>
+            Estimated
+            <br />
+            Time
+          </>
+        ),
+        sortable: false,
+        render: (row) => ((row.groupTotalAmount || 0) > 0 ? (row.groupTotalAmount / 625).toFixed(2) : "0.00"),
+      },
       ...(isAdmin
         ? [
           {
@@ -274,6 +308,8 @@ export const useOperatorTable = ({
             label: "Amount (₹)",
             sortable: false,
             sortKey: "totalAmount",
+            className: "operator-amount-cell",
+            headerClassName: "operator-amount-header",
             render: (row: TableRow) => (row.groupTotalAmount ? `₹${Math.round(row.groupTotalAmount)}` : "-"),
           } as Column<TableRow>,
         ]
@@ -301,6 +337,8 @@ export const useOperatorTable = ({
         label: "Created By",
         sortable: false,
         sortKey: "createdBy",
+        className: "created-by-cell",
+        headerClassName: "created-by-header",
         render: (row) => {
           const fullName = String(row.parent.createdBy || "-").toUpperCase();
           return (
@@ -311,23 +349,8 @@ export const useOperatorTable = ({
         },
       },
       {
-        key: "createdAt",
-        label: "Created At",
-        sortable: false,
-        sortKey: "createdAt",
-        render: (row) => {
-          const parts = getDisplayDateTimeParts(row.parent.createdAt);
-          return (
-            <div className="created-at-split">
-              <span>{parts.date}</span>
-              <span>{parts.time}</span>
-            </div>
-          );
-        },
-      },
-      {
         key: "action",
-        label: "Act",
+        label: "Action",
         sortable: false,
         className: "action-cell",
         headerClassName: "action-header",
@@ -365,3 +388,4 @@ export const useOperatorTable = ({
     ]
   );
 };
+

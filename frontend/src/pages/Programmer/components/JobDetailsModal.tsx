@@ -1,5 +1,4 @@
 import React, { useMemo, useState } from "react";
-import ImageZoomModal from "../../../components/ImageZoomModal";
 import ImageUpload from "./ImageUpload";
 import type { JobEntry } from "../../../types/job";
 import { calculateTotals, type CutForm } from "../programmerUtils";
@@ -22,6 +21,16 @@ interface JobDetailsModalProps {
   onClose: () => void;
 }
 
+type DetailPair = { label: string; value: React.ReactNode };
+
+const toRows = (pairs: DetailPair[], pairCountPerRow = 2): DetailPair[][] => {
+  const rows: DetailPair[][] = [];
+  for (let i = 0; i < pairs.length; i += pairCountPerRow) {
+    rows.push(pairs.slice(i, i + pairCountPerRow));
+  }
+  return rows;
+};
+
 const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
   job,
   cut,
@@ -30,32 +39,23 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
 }) => {
   const canSeeAmounts = userRole === "ADMIN";
   const isSingleCut = !!cut;
-  const [zoomedImage, setZoomedImage] = useState<string | null>(null);
+  const [collapsedCuts, setCollapsedCuts] = useState<Set<number>>(new Set());
 
   if (!job && !cut) return null;
 
   const displayCut = cut || (job ? job.parent : null);
   const displayEntries = cut ? [cut] : job ? job.entries : [];
   const displayGroupId = cut ? cut.groupId : job ? job.groupId : 0;
-  const displayGroupTotalHrs = cut
-    ? cut.totalHrs || 0
-    : job
-    ? job.groupTotalHrs
-    : 0;
-  const displayGroupTotalAmount = cut
-    ? cut.totalAmount || 0
-    : job
-    ? job.groupTotalAmount
-    : 0;
+  const displayGroupTotalHrs = cut ? cut.totalHrs || 0 : job ? job.groupTotalHrs : 0;
+  const displayGroupTotalAmount = cut ? cut.totalAmount || 0 : job ? job.groupTotalAmount : 0;
 
-  const totalQuantity = useMemo(() => {
-    return displayEntries.reduce((sum, entry) => sum + Number(entry.qty || 0), 0);
-  }, [displayEntries]);
+  const totalQuantity = useMemo(
+    () => displayEntries.reduce((sum, entry) => sum + Number(entry.qty || 0), 0),
+    [displayEntries]
+  );
 
   const amounts = useMemo(() => {
-    const totals = displayEntries.map((entry) =>
-      calculateTotals(entry as CutForm)
-    );
+    const totals = displayEntries.map((entry) => calculateTotals(entry as CutForm));
     const totalWedmAmount = totals.reduce((sum, t) => sum + t.wedmAmount, 0);
     const totalSedmAmount = totals.reduce((sum, t) => sum + t.sedmAmount, 0);
     return {
@@ -70,352 +70,260 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
 
   const formatDate = (dateString: string) => formatDisplayDateTime(dateString || "");
 
-  const Location = useLocation();
-  const isOperator = Location.pathname.includes("operator");
-  const canSeeOperatorFields =
-    isOperator && (userRole === "OPERATOR" || userRole === "ADMIN");
+  const location = useLocation();
+  const isOperator = location.pathname.includes("operator");
+  const canSeeOperatorFields = isOperator && (userRole === "OPERATOR" || userRole === "ADMIN");
+
+  const jobInfoPairs: DetailPair[] = [
+    { label: "Customer", value: displayCut?.customer || "-" },
+    { label: "Created By", value: displayCut?.createdBy || "-" },
+    { label: "Created At", value: formatDate(displayCut?.createdAt || "") },
+    { label: "Updated By", value: (displayCut as any)?.updatedBy || "-" },
+    {
+      label: "Updated At",
+      value: (displayCut as any)?.updatedAt ? formatDate((displayCut as any).updatedAt) : "-",
+    },
+    { label: "Job Number", value: `#${(displayCut as any)?.refNumber || displayGroupId || "-"}` },
+    { label: "Priority", value: displayCut?.priority || "-" },
+    { label: "Complex", value: displayCut?.critical ? "Yes" : "No" },
+  ];
+
+  const isCutExpanded = (index: number): boolean => {
+    if (isSingleCut) return true;
+    return !collapsedCuts.has(index);
+  };
+
+  const toggleCut = (index: number) => {
+    setCollapsedCuts((prev) => {
+      const next = new Set(prev);
+      if (next.has(index)) {
+        next.delete(index);
+      } else {
+        next.add(index);
+      }
+      return next;
+    });
+  };
 
   return (
     <>
       <div className="job-details-overlay" onClick={onClose} />
-      <div
-        className={`job-details-modal ${
-          isSingleCut ? "cut-details-modal" : ""
-        }`}
-      >
+      <div className={`job-details-modal ${isSingleCut ? "cut-details-modal" : ""}`}>
         <div className="job-details-header">
           <h2 className="job-details-title">
-            <span className="job-title">Job Details - {displayCut?.customer || "—"}</span>
+            <span className="job-title">Job Details - {displayCut?.customer || "-"}</span>
             <span className="job-meta">
-              | {displayCut?.description || "—"} | Total Qty: {Math.max(1, totalQuantity || Number(displayCut?.qty || 0) || 1)}
+              | {displayCut?.description || "-"} | Total Qty:{" "}
+              {Math.max(1, totalQuantity || Number(displayCut?.qty || 0) || 1)}
             </span>
           </h2>
-
-
-          <button
-            className="job-details-close"
-            onClick={onClose}
-            aria-label="Close"
-          >
-            ✕
+          <button className="job-details-close" onClick={onClose} aria-label="Close">
+            x
           </button>
         </div>
 
         <div className="job-details-content">
-          {!isSingleCut && (
-            <div className="job-details-section">
-              <h3>Job Information</h3>
-              <table className="job-details-table">
-                <tbody>
-                  <tr>
-                    <td className="job-details-label">Customer:</td>
-                    <td className="job-details-value">
-                      {displayCut?.customer || "—"}
-                    </td>
+          <div className="job-details-section">
+            <h3>Job Information</h3>
+            <table className="job-details-table compact-table">
+              <tbody>
+                {toRows(jobInfoPairs, 2).map((row, rowIndex) => (
+                  <tr key={`job-info-${rowIndex}`}>
+                    {row.map((cell, cellIndex) => (
+                      <React.Fragment key={`${cell.label}-${cellIndex}`}>
+                        <td className="job-details-label">{cell.label}:</td>
+                        <td className="job-details-value">{cell.value}</td>
+                      </React.Fragment>
+                    ))}
+                    {row.length === 1 && (
+                      <>
+                        <td className="job-details-label">-</td>
+                        <td className="job-details-value">-</td>
+                      </>
+                    )}
                   </tr>
-                  <tr>
-                    <td className="job-details-label">Created By:</td>
-                    <td className="job-details-value">
-                      {displayCut?.createdBy || "—"}
-                    </td>
-                  </tr>
-                  <tr>
-                    <td className="job-details-label">Created At:</td>
-                    <td className="job-details-value">
-                      {formatDate(displayCut?.createdAt || "")}
-                    </td>
-                  </tr>
-                  {(displayCut as any)?.updatedBy && (
-                    <tr>
-                      <td className="job-details-label">Updated By:</td>
-                      <td className="job-details-value">
-                        {(displayCut as any).updatedBy || "—"}
-                      </td>
-                    </tr>
-                  )}
-                  {(displayCut as any)?.updatedAt && (
-                    <tr>
-                      <td className="job-details-label">Updated At:</td>
-                      <td className="job-details-value">
-                        {formatDate((displayCut as any).updatedAt)}
-                      </td>
-                    </tr>
-                  )}
-                  <tr>
-                    <td className="job-details-label">Job Number:</td>
-                    <td className="job-details-value">
-                      #{(displayCut as any)?.refNumber || displayGroupId || "—"}
-                    </td>
-                  </tr>
-                  <tr>
-                    <td className="job-details-label">Priority:</td>
-                    <td className="job-details-value">
-                      {displayCut?.priority || "—"}
-                    </td>
-                  </tr>
-                  <tr>
-                    <td className="job-details-label">Complex:</td>
-                    <td className="job-details-value">
-                      {displayCut?.critical ? "Yes" : "No"}
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          )}
+                ))}
+              </tbody>
+            </table>
+          </div>
 
           <div className="job-details-section">
-            <h3>
-              {isSingleCut
-                ? "Setting Information"
-                : `Settings (${displayEntries.length})`}
-            </h3>
+            <h3>{isSingleCut ? "Setting Information" : `Settings (${displayEntries.length})`}</h3>
             <div className="cuts-container">
-              {displayEntries.map((cutItem, index) => (
-                <div key={cutItem.id} className="cut-item">
-                  {!isSingleCut && (
-                    <div className="cut-item-header">
+              {displayEntries.map((cutItem, index) => {
+                const basePairs: DetailPair[] = [
+                  { label: "Customer", value: cutItem.customer || "-" },
+                  { label: "Rate (Rs/hr)", value: `Rs${Number(cutItem.rate || 0).toFixed(2)}` },
+                  { label: "Cut Length (mm)", value: Number(cutItem.cut || 0).toFixed(2) },
+                  { label: "Description", value: cutItem.description || "-" },
+                  {
+                    label: "Program Ref File Name",
+                    value: (cutItem as any).programRefFile || (cutItem as any).programRefFileName || "-",
+                  },
+                  { label: "TH (MM)", value: Number(cutItem.thickness || 0).toFixed(2) },
+                  { label: "Pass", value: cutItem.passLevel || "-" },
+                  { label: "Setting", value: cutItem.setting || "-" },
+                  { label: "Quantity", value: Number(cutItem.qty || 0) },
+                  {
+                    label: "QA Progress",
+                    value: (() => {
+                      const qty = Math.max(1, Number(cutItem.qty || 1));
+                      const c = getQaProgressCounts(cutItem, qty);
+                      return `Logged ${c.saved + c.ready} | QA Dispatched ${c.sent} | Pending ${c.empty}`;
+                    })(),
+                  },
+                  { label: "SEDM", value: cutItem.sedm || "-" },
+                  { label: "Material", value: cutItem.material || "-" },
+                  { label: "PIP Finish", value: cutItem.pipFinish ? "Yes" : "No" },
+                  { label: "Complex", value: cutItem.critical ? "Yes" : "No" },
+                  { label: "Priority", value: cutItem.priority || "-" },
+                  {
+                    label: "Total Time Needed",
+                    value: cutItem.totalHrs ? formatDecimalHoursToHHMMhrs(cutItem.totalHrs) : "00:00hrs",
+                  },
+                ];
+
+                if (isSingleCut) {
+                  basePairs.push(
+                    { label: "Created By", value: cutItem.createdBy || "-" },
+                    { label: "Created At", value: formatDate(cutItem.createdAt) },
+                    { label: "Updated By", value: (cutItem as any).updatedBy || "-" },
+                    {
+                      label: "Updated At",
+                      value: (cutItem as any).updatedAt ? formatDate((cutItem as any).updatedAt) : "-",
+                    }
+                  );
+                }
+
+                if (canSeeAmounts || canSeeOperatorFields) {
+                  if (canSeeAmounts) {
+                    basePairs.push(
+                      {
+                        label: "WEDM Amount (Rs)",
+                        value: `Rs${amounts.perCut[index]?.wedmAmount.toFixed(2) || "0.00"}`,
+                      },
+                      {
+                        label: "SEDM Amount (Rs)",
+                        value: `Rs${amounts.perCut[index]?.sedmAmount.toFixed(2) || "0.00"}`,
+                      }
+                    );
+                  }
+
+                  if (canSeeOperatorFields) {
+                    if ((cutItem as any).startTime) {
+                      basePairs.push({ label: "Start Time", value: (cutItem as any).startTime });
+                    }
+                    if ((cutItem as any).endTime) {
+                      basePairs.push({ label: "End Time", value: (cutItem as any).endTime });
+                    }
+                    if ((cutItem as any).machineHrs) {
+                      basePairs.push({ label: "Machine Hrs", value: (cutItem as any).machineHrs });
+                    }
+                    if ((cutItem as any).machineNumber) {
+                      basePairs.push({ label: "Machine #", value: (cutItem as any).machineNumber });
+                    }
+                    if ((cutItem as any).opsName) {
+                      basePairs.push({ label: "Operator Name", value: (cutItem as any).opsName });
+                    }
+                    if ((cutItem as any).idleTime) {
+                      basePairs.push({ label: "Idle Time", value: (cutItem as any).idleTime });
+                    }
+                  }
+                }
+
+                const cutImages = Array.isArray(cutItem.cutImage)
+                  ? cutItem.cutImage
+                  : cutItem.cutImage
+                    ? [cutItem.cutImage]
+                    : [];
+
+                return (
+                  <div key={cutItem.id} className={`cut-item ${isCutExpanded(index) ? "expanded" : "collapsed"}`}>
+                    <button
+                      type="button"
+                      className="cut-item-header cut-accordion-trigger"
+                      onClick={() => toggleCut(index)}
+                      aria-expanded={isCutExpanded(index)}
+                    >
                       <h4>Cut {index + 1}</h4>
-                    </div>
-                  )}
-                  <div className="cut-item-content-wrapper">
-                    <div className="cut-item-grid">
-                      <div className="cut-detail">
-                        <label>Customer:</label>
-                        <span>{cutItem.customer || "—"}</span>
-                      </div>
-                      <div className="cut-detail">
-                        <label>Rate (₹/hr):</label>
-                        <span>₹{Number(cutItem.rate || 0).toFixed(2)}</span>
-                      </div>
-                      <div className="cut-detail">
-                        <label>Cut Length (mm):</label>
-                        <span>{Number(cutItem.cut || 0).toFixed(2)}</span>
-                      </div>
-                      <div className="cut-detail">
-                        <label>Description:</label>
-                        <span>{cutItem.description || "—"}</span>
-                      </div>
-                      <div className="cut-detail">
-                        <label>TH (MM):</label>
-                        <span>{Number(cutItem.thickness || 0).toFixed(2)}</span>
-                      </div>
-                      <div className="cut-detail">
-                        <label>Pass:</label>
-                        <span>{cutItem.passLevel || "—"}</span>
-                      </div>
-                      <div className="cut-detail">
-                        <label>Setting:</label>
-                        <span>{cutItem.setting || "—"}</span>
-                      </div>
-                      <div className="cut-detail">
-                        <label>Quantity:</label>
-                        <span>{Number(cutItem.qty || 0)}</span>
-                      </div>
-                      <div className="cut-detail">
-                        <label>QA Progress:</label>
-                        {(() => {
-                          const qty = Math.max(1, Number(cutItem.qty || 1));
-                          const c = getQaProgressCounts(cutItem, qty);
-                          return <span>Logged {c.saved + c.ready} | QA Dispatched {c.sent} | Pending {c.empty}</span>;
-                        })()}
-                      </div>
-                      <div className="cut-detail">
-                        <label>SEDM:</label>
-                        <span>{cutItem.sedm || "—"}</span>
-                      </div>
-                      <div className="cut-detail">
-                        <label>Material:</label>
-                        <span>{cutItem.material || "—"}</span>
-                      </div>
-                      <div className="cut-detail">
-                        <label>PIP Finish:</label>
-                        <span>{cutItem.pipFinish ? "Yes" : "No"}</span>
-                      </div>
-                      <div className="cut-detail">
-                        <label>Complex:</label>
-                        <span>{cutItem.critical ? "Yes" : "No"}</span>
-                      </div>
-                      <div className="cut-detail">
-                        <label>Priority:</label>
-                        <span>{cutItem.priority || "—"}</span>
-                      </div>
-                      {isSingleCut && (
+                      {!isSingleCut && (
+                        <span className={`cut-accordion-icon ${isCutExpanded(index) ? "open" : ""}`}>▾</span>
+                      )}
+                    </button>
+
+                    <div
+                      className={`cut-item-content-wrapper ${cutImages.length === 0 ? "no-image" : ""} ${isCutExpanded(index) ? "open" : "closed"}`}
+                    >
+                      {isCutExpanded(index) && (
                         <>
-                          <div className="cut-detail">
-                            <label>Created By:</label>
-                            <span>{cutItem.createdBy || "—"}</span>
-                          </div>
-                          <div className="cut-detail">
-                            <label>Created At:</label>
-                            <span>{formatDate(cutItem.createdAt)}</span>
-                          </div>
-                          {(cutItem as any).updatedBy && (
-                            <div className="cut-detail">
-                              <label>Updated By:</label>
-                              <span>{(cutItem as any).updatedBy || "—"}</span>
-                            </div>
-                          )}
-                          {(cutItem as any).updatedAt && (
-                            <div className="cut-detail">
-                              <label>Updated At:</label>
-                              <span>
-                                {formatDate((cutItem as any).updatedAt)}
-                              </span>
+                          <table className="job-details-table cut-details-table compact-table">
+                            <tbody>
+                              {toRows(basePairs, 2).map((row, rowIndex) => (
+                                <tr key={`cut-${index}-row-${rowIndex}`}>
+                                  {row.map((cell, cellIndex) => (
+                                    <React.Fragment key={`${cell.label}-${cellIndex}`}>
+                                      <td className="job-details-label">{cell.label}:</td>
+                                      <td className="job-details-value">{cell.value}</td>
+                                    </React.Fragment>
+                                  ))}
+                                  {row.length === 1 && (
+                                    <>
+                                      <td className="job-details-label">-</td>
+                                      <td className="job-details-value">-</td>
+                                    </>
+                                  )}
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+
+                          {cutImages.length > 0 && (
+                            <div className="cut-image-side">
+                              <label>Image</label>
+                              <ImageUpload
+                                images={cutImages}
+                                label={`Cut ${index + 1}`}
+                                onImageChange={() => {}}
+                                onRemove={() => {}}
+                                readOnly={true}
+                              />
                             </div>
                           )}
                         </>
                       )}
-                      <div className="cut-detail">
-                        <label>Total Time Needed:</label>
-                        <span>
-                          {cutItem.totalHrs
-                            ? formatDecimalHoursToHHMMhrs(cutItem.totalHrs)
-                            : "00:00hrs"}
-                        </span>
-                      </div>
-                      {(canSeeAmounts || canSeeOperatorFields) && (
-                        <>
-                          {canSeeAmounts && (
-                            <>
-                          <div className="cut-detail">
-                            <label>WEDM Amount (₹):</label>
-                            <span>
-                              ₹
-                              {amounts.perCut[index]?.wedmAmount.toFixed(2) ||
-                                "0.00"}
-                            </span>
-                          </div>
-                          <div className="cut-detail">
-                            <label>SEDM Amount (₹):</label>
-                            <span>
-                              ₹
-                              {amounts.perCut[index]?.sedmAmount.toFixed(2) ||
-                                "0.00"}
-                            </span>
-                          </div>
-                            </>
-                          )}
-                          {/* Operator Input Details */}
-                          {canSeeOperatorFields && (
-                            <>
-                              {(cutItem as any).startTime && (
-                                <div className="cut-detail">
-                                  <label>Start Time:</label>
-                                  <span>{(cutItem as any).startTime}</span>
-                                </div>
-                              )}
-
-                              {(cutItem as any).endTime && (
-                                <div className="cut-detail">
-                                  <label>End Time:</label>
-                                  <span>{(cutItem as any).endTime}</span>
-                                </div>
-                              )}
-
-                              {(cutItem as any).machineHrs && (
-                                <div className="cut-detail">
-                                  <label>Machine Hrs:</label>
-                                  <span>{(cutItem as any).machineHrs}</span>
-                                </div>
-                              )}
-
-                              {(cutItem as any).machineNumber && (
-                                <div className="cut-detail">
-                                  <label>Machine #:</label>
-                                  <span>{(cutItem as any).machineNumber}</span>
-                                </div>
-                              )}
-
-                              {(cutItem as any).opsName && (
-                                <div className="cut-detail">
-                                  <label>Operator Name:</label>
-                                  <span>{(cutItem as any).opsName}</span>
-                                </div>
-                              )}
-
-                              {(cutItem as any).idleTime && (
-                                <div className="cut-detail">
-                                  <label>Idle Time:</label>
-                                  <span>{(cutItem as any).idleTime}</span>
-                                </div>
-                              )}
-                            </>
-                          )}
-                        </>
-                      )}
                     </div>
-                    {cutItem.cutImage &&
-                      (Array.isArray(cutItem.cutImage)
-                        ? cutItem.cutImage.length > 0
-                        : cutItem.cutImage) && (
-                        <div className="cut-image-side">
-                          <label>Images:</label>
-                          <ImageUpload
-                            images={
-                              Array.isArray(cutItem.cutImage)
-                                ? cutItem.cutImage
-                                : cutItem.cutImage
-                                ? [cutItem.cutImage]
-                                : []
-                            }
-                            label={`Cut ${index + 1}`}
-                            onImageChange={() => {}}
-                            onRemove={() => {}}
-                            readOnly={true}
-                          />
-                        </div>
-                      )}
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
 
           <div className="job-details-totals">
             <div className="total-row">
               <label>Total Time Needed:</label>
-              <span>
-                {displayGroupTotalHrs
-                  ? formatDecimalHoursToHHMMhrs(displayGroupTotalHrs)
-                  : "00:00hrs"}
-              </span>
+              <span>{displayGroupTotalHrs ? formatDecimalHoursToHHMMhrs(displayGroupTotalHrs) : "00:00hrs"}</span>
             </div>
             {canSeeAmounts && (
               <>
                 <div className="total-row">
-                  <label>WEDM Amount (₹):</label>
-                  <span>₹{amounts.totalWedmAmount.toFixed(2)}</span>
+                  <label>WEDM Amount (Rs):</label>
+                  <span>Rs{amounts.totalWedmAmount.toFixed(2)}</span>
                 </div>
                 <div className="total-row">
-                  <label>SEDM Amount (₹):</label>
-                  <span>₹{amounts.totalSedmAmount.toFixed(2)}</span>
+                  <label>SEDM Amount (Rs):</label>
+                  <span>Rs{amounts.totalSedmAmount.toFixed(2)}</span>
                 </div>
                 <div className="total-row">
-                  <label>Total Amount (₹):</label>
-                  <span>
-                    ₹
-                    {displayGroupTotalAmount
-                      ? displayGroupTotalAmount.toFixed(2)
-                      : "0.00"}
-                  </span>
+                  <label>Total Amount (Rs):</label>
+                  <span>{displayGroupTotalAmount ? `Rs${displayGroupTotalAmount.toFixed(2)}` : "0.00"}</span>
                 </div>
               </>
             )}
           </div>
         </div>
-
       </div>
-      {zoomedImage && (
-        <ImageZoomModal
-          imageSrc={zoomedImage}
-          onClose={() => setZoomedImage(null)}
-        />
-      )}
     </>
   );
 };
 
 export default JobDetailsModal;
-
-

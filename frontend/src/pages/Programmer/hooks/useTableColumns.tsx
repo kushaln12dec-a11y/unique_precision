@@ -32,11 +32,6 @@ export const useTableColumns = ({
     return clean.slice(0, 2).toUpperCase();
   };
 
-  const truncateDescription = (value: string | undefined | null): string => {
-    const text = (value || "-").trim();
-    if (text === "-") return text;
-    return text.length > 12 ? `${text.slice(0, 12)}...` : text;
-  };
   const toYN = (value: unknown): string => {
     if (typeof value === "boolean") return value ? "Y" : "N";
     const text = String(value || "").trim().toLowerCase();
@@ -92,10 +87,10 @@ export const useTableColumns = ({
       },
       {
         key: "programRef",
-        label: "Prog Ref",
+        label: "Job ref",
         sortable: false,
         render: (row) => {
-          const ref = row.parent.programRefFile || row.parent.refNumber || "";
+          const ref = row.parent.refNumber || "";
           return ref ? `#${ref}` : "—";
         },
       },
@@ -106,7 +101,32 @@ export const useTableColumns = ({
         sortKey: "description",
         render: (row) => {
           const full = row.parent.description || "-";
-          return <span title={full}>{truncateDescription(full)}</span>;
+          return (
+            <div className="description-marquee" title={full}>
+              <span>{full}</span>
+            </div>
+          );
+        },
+      },
+      {
+        key: "programRefFileName",
+        label: (
+          <>
+            Program Ref
+            <br />
+            File Name
+          </>
+        ),
+        sortable: false,
+        className: "program-ref-file-col",
+        headerClassName: "program-ref-file-col",
+        render: (row) => {
+          const value = String((row.parent as any).programRefFile || (row.parent as any).programRefFileName || "—");
+          return (
+            <div className="description-marquee" title={value}>
+              <span>{value}</span>
+            </div>
+          );
         },
       },
       {
@@ -149,7 +169,11 @@ export const useTableColumns = ({
         key: "sedm",
         label: "SEDM",
         sortable: false,
-        render: (row) => toYN(row.parent.sedm),
+        render: (row) => {
+          const sedm = toYN(row.parent.sedm);
+          const sedmClass = sedm === "Y" ? "sedm-badge yes" : sedm === "N" ? "sedm-badge no" : "sedm-badge";
+          return <span className={sedmClass}>{sedm}</span>;
+        },
       },
       {
         key: "totalHrs",
@@ -157,6 +181,20 @@ export const useTableColumns = ({
         sortable: false,
         sortKey: "totalHrs",
         render: (row) => (row.groupTotalHrs ? formatHoursToHHMM(row.groupTotalHrs) : "—"),
+      },
+      {
+        key: "estimatedTime",
+        label: (
+          <>
+            Estimated
+            <br />
+            Time
+          </>
+        ),
+        sortable: false,
+        className: "estimated-time-col",
+        headerClassName: "estimated-time-col",
+        render: (row) => ((row.groupTotalAmount || 0) > 0 ? (row.groupTotalAmount / 625).toFixed(2) : "0.00"),
       },
       ...(isAdmin
         ? [
@@ -223,5 +261,8 @@ export const useTableColumns = ({
     [expandableRows, isAdmin, setViewingJob, setShowJobViewModal, handleEditJob, handleDeleteClick]
   );
 };
+
+
+
 
 

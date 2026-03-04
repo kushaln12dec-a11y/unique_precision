@@ -65,6 +65,27 @@ export const EmployeeLogsPanel = () => {
     loadLogs();
   }, [activeRole, statusFilter, searchQuery]);
 
+  const getWorkedSecondsForLog = (log: EmployeeLog): number => {
+    const metadata = (log.metadata || {}) as Record<string, any>;
+    const machineHrs = Number(metadata.machineHrs || 0);
+    if (Number.isFinite(machineHrs) && machineHrs > 0) {
+      return Math.max(0, Math.round(machineHrs * 3600));
+    }
+    return Math.max(0, Number(log.durationSeconds || 0));
+  };
+
+  const groupWorkedSecondsByGroupId = useMemo(() => {
+    const map = new Map<number, number>();
+    logs.forEach((log) => {
+      const groupId = Number(log.jobGroupId || 0);
+      if (!groupId) return;
+      if (String(log.role || '').toUpperCase() !== 'OPERATOR') return;
+      const workedSeconds = getWorkedSecondsForLog(log);
+      map.set(groupId, (map.get(groupId) || 0) + workedSeconds);
+    });
+    return map;
+  }, [logs]);
+
   const columns = useMemo<Column<EmployeeLog>[]>(() => {
     if (activeRole === 'OPERATOR') {
       return [
@@ -126,8 +147,13 @@ export const EmployeeLogsPanel = () => {
             )
               return String(explicit);
             const wedm = Number(metadata.wedmAmount || 0);
-            const users = Math.max(1, Number(metadata.workedUserCount || 1));
-            return wedm > 0 ? `₹${(wedm / users).toFixed(2)}` : '-';
+            if (!wedm) return '-';
+            const groupId = Number(row.jobGroupId || 0);
+            const totalWorkedSeconds = groupWorkedSecondsByGroupId.get(groupId) || 0;
+            if (!totalWorkedSeconds) return '-';
+            const workedSeconds = getWorkedSecondsForLog(row);
+            const share = Math.max(0, workedSeconds) / totalWorkedSeconds;
+            return `Rs ${(wedm * share).toFixed(2)}`;
           },
         },
         {
@@ -274,7 +300,7 @@ export const EmployeeLogsPanel = () => {
         ),
       },
     ] as Column<EmployeeLog>[];
-  }, [activeRole]);
+  }, [activeRole, groupWorkedSecondsByGroupId]);
 
   const handleExportCsv = () => {
     const headers = columns.map((col) => String(col.label));

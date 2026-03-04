@@ -5,19 +5,19 @@ import type { JobEntry } from "../../../types/job";
 import type { CutInputData, QuantityInputData } from "../types/cutInput";
 import { createEmptyQuantityInputData } from "../types/cutInput";
 import { calculateMachineHrs } from "../utils/machineHrsCalculation";
-import { getUserIdFromToken, getUserRoleFromToken } from "../../../utils/auth";
 
 /**
  * Hook for fetching and managing operator view data
  */
 // Helper functions for localStorage persistence
-const getStorageKey = (groupId: string | null, userKey: string): string => {
-  return `operator_inputs_${userKey}_${groupId || "default"}`;
+const getStorageKey = (groupId: string | null): string => {
+  // Shared per group so another operator can continue/resume the same in-progress capture.
+  return `operator_inputs_shared_${groupId || "default"}`;
 };
 
-const saveToLocalStorage = (groupId: string | null, userKey: string, cutInputs: Map<number | string, CutInputData>) => {
+const saveToLocalStorage = (groupId: string | null, cutInputs: Map<number | string, CutInputData>) => {
   try {
-    const storageKey = getStorageKey(groupId, userKey);
+    const storageKey = getStorageKey(groupId);
     // Convert Map to plain object for storage
     const dataToSave: Record<string, CutInputData> = {};
     cutInputs.forEach((value, key) => {
@@ -36,9 +36,9 @@ const saveToLocalStorage = (groupId: string | null, userKey: string, cutInputs: 
   }
 };
 
-const loadFromLocalStorage = (groupId: string | null, userKey: string): Map<number | string, CutInputData> | null => {
+const loadFromLocalStorage = (groupId: string | null): Map<number | string, CutInputData> | null => {
   try {
-    const storageKey = getStorageKey(groupId, userKey);
+    const storageKey = getStorageKey(groupId);
     const savedData = localStorage.getItem(storageKey);
     if (!savedData) return null;
     
@@ -70,7 +70,6 @@ const loadFromLocalStorage = (groupId: string | null, userKey: string): Map<numb
 };
 
 export const useOperatorViewData = (groupId: string | null, cutIdParam: string | null) => {
-  const currentUserKey = `${getUserRoleFromToken() || "UNKNOWN"}_${getUserIdFromToken() || "ANON"}`;
   const [jobs, setJobs] = useState<JobEntry[]>([]);
   const [idleTimeConfigs, setIdleTimeConfigs] = useState<Map<string, number>>(new Map());
   const [cutInputs, setCutInputs] = useState<Map<number | string, CutInputData>>(new Map());
@@ -111,28 +110,36 @@ export const useOperatorViewData = (groupId: string | null, cutIdParam: string |
         }
         
         // Try to load from localStorage first
-        const savedInputs = loadFromLocalStorage(groupId, currentUserKey);
+        const savedInputs = loadFromLocalStorage(groupId);
         
         // Initialize inputs for all cuts
         const initialInputs = new Map<number, CutInputData>();
         filteredJobs.forEach((job) => {
           const jobId = job.id as number;
-          
-          // If we have saved data for this cut, use it
-          if (savedInputs && savedInputs.has(jobId)) {
-            initialInputs.set(jobId, savedInputs.get(jobId)!);
-            return;
-          }
-          
-          // Otherwise, initialize from job data
           const existing = job as any;
-          const quantity = Math.max(1, Number(job.qty || 1));
-
-          // Handle backward compatibility: if opsName is a string, convert to array
           const getOpsNameArray = (rawOpsName: string | string[]) => {
             if (Array.isArray(rawOpsName)) return rawOpsName;
             return rawOpsName && rawOpsName !== "Unassigned" ? rawOpsName.split(", ").filter(Boolean) : [];
           };
+          const assignedToArray = getOpsNameArray(existing.assignedTo || "");
+          
+          // If we have saved data for this cut, use it
+          if (savedInputs && savedInputs.has(jobId)) {
+            const saved = savedInputs.get(jobId)!;
+            initialInputs.set(jobId, {
+              quantities: (saved.quantities || []).map((qty) => ({
+                ...qty,
+                opsName:
+                  assignedToArray.length > 0
+                    ? assignedToArray
+                    : (Array.isArray(qty.opsName) && qty.opsName.length > 0 ? qty.opsName : []),
+              })),
+            });
+            return;
+          }
+          
+          // Otherwise, initialize from job data
+          const quantity = Math.max(1, Number(job.qty || 1));
 
           const quantities: QuantityInputData[] = Array.from({ length: quantity }, () => createEmptyQuantityInputData());
           const captures = Array.isArray(existing.operatorCaptures) ? existing.operatorCaptures : [];
@@ -141,7 +148,8 @@ export const useOperatorViewData = (groupId: string | null, cutIdParam: string |
             captures.forEach((capture: any) => {
               const fromQty = Math.max(1, Number(capture.fromQty || 1));
               const toQty = Math.min(quantity, Math.max(fromQty, Number(capture.toQty || fromQty)));
-              const opsNameArray = getOpsNameArray(capture.opsName || "");
+              const captureOps = getOpsNameArray(capture.opsName || "");
+              const opsNameArray = assignedToArray.length > 0 ? assignedToArray : captureOps;
               const startTime = capture.startTime || "";
               const endTime = capture.endTime || "";
               let idleTime = capture.idleTime || "";
@@ -189,7 +197,8 @@ export const useOperatorViewData = (groupId: string | null, cutIdParam: string |
             });
           } else {
             const opsName = existing.opsName || "";
-            const opsNameArray = getOpsNameArray(opsName);
+            const baseOps = getOpsNameArray(opsName);
+            const opsNameArray = assignedToArray.length > 0 ? assignedToArray : baseOps;
             const startTime = existing.startTime || "";
             const endTime = existing.endTime || "";
             let idleTime = existing.idleTime || "";
@@ -250,14 +259,14 @@ export const useOperatorViewData = (groupId: string | null, cutIdParam: string |
       }
     };
     fetchJobs();
-  }, [groupId, cutIdParam, idleTimeConfigs, currentUserKey]);
+  }, [groupId, cutIdParam, idleTimeConfigs]);
   
   // Save to localStorage whenever cutInputs changes
   useEffect(() => {
     if (groupId && cutInputs.size > 0) {
-      saveToLocalStorage(groupId, currentUserKey, cutInputs);
+      saveToLocalStorage(groupId, cutInputs);
     }
-  }, [cutInputs, groupId, currentUserKey]);
+  }, [cutInputs, groupId]);
 
   const toggleCutExpansion = (cutId: number | string) => {
     setExpandedCuts((prev) => {

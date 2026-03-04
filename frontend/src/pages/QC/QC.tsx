@@ -134,6 +134,14 @@ const QC = () => {
     () => [
       { key: "customer", label: "Customer", render: (row: QcRow) => row.parent.customer || "-" },
       { key: "description", label: "Description", render: (row: QcRow) => row.parent.description || "-" },
+      {
+        key: "jobRef",
+        label: "Job ref",
+        render: (row: QcRow) => {
+          const value = String(row.parent.refNumber || "").trim();
+          return value ? `#${value}` : "-";
+        },
+      },
       { key: "qty", label: "Qty", render: (row: QcRow) => row.entries.reduce((sum, item) => sum + Number(item.qty || 0), 0).toString() },
       {
         key: "operator",

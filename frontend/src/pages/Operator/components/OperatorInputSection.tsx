@@ -67,6 +67,16 @@ const formatIdleDuration = (seconds: number): string => {
   }
 };
 
+const IDLE_REASON_OPTIONS = [
+  "Shift Over",
+  "Power Break",
+  "Machine Breakdown",
+  "Vertical Dial",
+  "Cleaning",
+  "Consumables Change",
+  "Others",
+];
+
 export const OperatorInputSection: React.FC<OperatorInputSectionProps> = ({
   cutData,
   cutId,
@@ -365,6 +375,14 @@ export const OperatorInputSection: React.FC<OperatorInputSectionProps> = ({
               </div>
               {qtyData.startTime && (
                 <div className="quantity-timers">
+                  {((qtyData.isPaused || Number(qtyData.totalPauseTime || 0) > 0) && pauseTime && pauseTime !== "00:00:00") && (
+                    <div className="quantity-timer idle-timer">
+                      <span className="timer-label">Idel Time:</span>
+                      <span className={`timer-value ${isRunning ? "running" : ""}`}>
+                        {pauseTime}
+                      </span>
+                    </div>
+                  )}
                   <div className="quantity-timer required-timer">
                     <span className="timer-label">Time Required:</span>
                     <span className={`timer-value ${isRunning ? "running" : ""}`}>
@@ -403,9 +421,6 @@ export const OperatorInputSection: React.FC<OperatorInputSectionProps> = ({
                         >
                           {qtyData.isPaused ? <PlayArrowIcon fontSize="small" /> : <PauseIcon fontSize="small" />}
                         </button>
-                        {((qtyData.isPaused || Number(qtyData.totalPauseTime || 0) > 0) && pauseTime && pauseTime !== "00:00:00") && (
-                          <span className="start-time-pause-time">Idle History: {pauseTime}</span>
-                        )}
                       </span>
                     )}
                   </label>
@@ -504,10 +519,8 @@ export const OperatorInputSection: React.FC<OperatorInputSectionProps> = ({
                   <input
                     type="text"
                     value={qtyData.machineNumber}
-                    onChange={(e) =>
-                      onInputChange(cutId, qtyIndex, "machineNumber", e.target.value)
-                    }
                     placeholder="Machine Number"
+                    readOnly
                     className={validationErrors[qtyIndex]?.machineNumber ? "input-error" : ""}
                   />
                   {validationErrors[qtyIndex]?.machineNumber && (
@@ -532,13 +545,18 @@ export const OperatorInputSection: React.FC<OperatorInputSectionProps> = ({
                 {qtyData.isPaused && !qtyData.endTime && (
                   <div className="operator-input-card pause-reason-card">
                     <label>Idle Reason <span style={{ color: "#ef4444" }}>*</span></label>
-                    <input
-                      type="text"
+                    <select
                       value={qtyData.currentPauseReason || ""}
                       onChange={(e) => onInputChange(cutId, qtyIndex, "pauseReason", e.target.value)}
-                      placeholder="Enter reason for idle..."
                       className={`pause-reason-input ${validationErrors[qtyIndex]?.pauseReason ? "input-error" : ""}`}
-                    />
+                    >
+                      <option value="">Select reason</option>
+                      {IDLE_REASON_OPTIONS.map((reason) => (
+                        <option key={reason} value={reason}>
+                          {reason}
+                        </option>
+                      ))}
+                    </select>
                     {validationErrors[qtyIndex]?.pauseReason && (
                       <p className="field-error">{validationErrors[qtyIndex].pauseReason}</p>
                     )}
@@ -555,7 +573,7 @@ export const OperatorInputSection: React.FC<OperatorInputSectionProps> = ({
                       <rect x="6" y="4" width="4" height="16" rx="1" fill="currentColor" />
                       <rect x="14" y="4" width="4" height="16" rx="1" fill="currentColor" />
                     </svg>
-                    <h6 className="pause-history-title">Idle History</h6>
+                    <h6 className="pause-history-title">Idel Time</h6>
                     <span className="pause-history-count">{qtyData.pauseSessions.length}</span>
                   </div>
                   <div className="pause-sessions-list">

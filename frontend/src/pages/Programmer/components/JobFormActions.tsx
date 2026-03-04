@@ -1,5 +1,4 @@
 import React from "react";
-import { formatDecimalHoursToHHMMhrs } from "../../../utils/date";
 
 type JobFormActionsProps = {
   grandTotals: { totalHrs: number; totalAmount: number };
@@ -22,8 +21,12 @@ export const JobFormActions: React.FC<JobFormActionsProps> = ({
     <div className="form-actions">
       <div className="form-totals">
         <div>
-          <span className="form-total-label">Total Time Needed</span>
-          <span className="form-total-value">{formatDecimalHoursToHHMMhrs(grandTotals.totalHrs)}</span>
+          <span className="form-total-label">Cut Length Hrs</span>
+          <span className="form-total-value">{grandTotals.totalHrs.toFixed(2)}</span>
+        </div>
+        <div>
+          <span className="form-total-label">Estimated Time</span>
+          <span className="form-total-value">{(grandTotals.totalAmount / 625).toFixed(2)}</span>
         </div>
         <div>
           {isAdmin && (

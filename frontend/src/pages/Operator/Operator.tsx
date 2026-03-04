@@ -454,33 +454,46 @@ const Operator = () => {
     return map;
   }, [jobs]);
 
-  const getWorkerCountForLog = (log: EmployeeLog): number => {
+  const getWorkedSecondsForLog = (log: EmployeeLog): number => {
     const metadata = (log.metadata || {}) as Record<string, any>;
-    const opsFromMeta = String(metadata.opsName || metadata.operators || "").trim();
-    if (opsFromMeta) {
-      const names = opsFromMeta.split(",").map((n) => n.trim()).filter(Boolean);
-      return Math.max(1, new Set(names).size);
+    const machineHrs = Number(metadata.machineHrs || 0);
+    if (Number.isFinite(machineHrs) && machineHrs > 0) {
+      return Math.max(0, Math.round(machineHrs * 3600));
+    }
+    return Math.max(0, Number(log.durationSeconds || 0));
+  };
+
+  const groupWorkedSecondsByGroupId = useMemo(() => {
+    const map = new Map<number, number>();
+    operatorLogs.forEach((log) => {
+      const groupId = Number(log.jobGroupId || 0);
+      if (!groupId) return;
+      if (String(log.role || "").toUpperCase() !== "OPERATOR") return;
+      const workedSeconds = getWorkedSecondsForLog(log);
+      map.set(groupId, (map.get(groupId) || 0) + workedSeconds);
+    });
+    return map;
+  }, [operatorLogs]);
+
+  const getRevenueForLog = (log: EmployeeLog): string => {
+    const metadata = (log.metadata || {}) as Record<string, any>;
+    const explicitRevenue = metadata.revenue;
+    if (
+      explicitRevenue !== undefined &&
+      explicitRevenue !== null &&
+      String(explicitRevenue).trim() !== ""
+    ) {
+      return String(explicitRevenue);
     }
 
     const groupId = Number(log.jobGroupId || 0);
-    if (!groupId) return 1;
-    const groupEntries = jobs.filter((entry) => Number(entry.groupId) === groupId);
-    if (!groupEntries.length) return 1;
-    const names = groupEntries.flatMap((entry) =>
-      String(entry.assignedTo || "")
-        .split(",")
-        .map((n) => n.trim())
-        .filter((n) => n && n !== "Unassigned")
-    );
-    return Math.max(1, new Set(names).size);
-  };
-
-  const getRevenueForLog = (log: EmployeeLog): string => {
-    const groupId = Number(log.jobGroupId || 0);
     const wedm = groupWedmByGroupId.get(groupId) || 0;
     if (!wedm) return "-";
-    const workers = getWorkerCountForLog(log);
-    return `₹${(wedm / workers).toFixed(2)}`;
+    const totalWorkedSeconds = groupWorkedSecondsByGroupId.get(groupId) || 0;
+    if (!totalWorkedSeconds) return "-";
+    const workedSeconds = getWorkedSecondsForLog(log);
+    const share = Math.max(0, workedSeconds) / totalWorkedSeconds;
+    return "Rs " + (wedm * share).toFixed(2);
   };
 
   const formatDuration = (seconds?: number): string => {
@@ -635,7 +648,7 @@ const Operator = () => {
         },
       },
     ],
-    [designationByUserName, groupWedmByGroupId, jobs]
+    [designationByUserName, groupWedmByGroupId, groupWorkedSecondsByGroupId, jobs]
   );
 
   const handleExportOperatorLogsCsv = () => {
