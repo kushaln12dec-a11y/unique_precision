@@ -15,6 +15,7 @@ export type CutForm = {
   sedmLengthValue: string;
   sedmHoles: string; // Number of holes per piece
   sedmEntriesJson?: string; // JSON string storing multiple SEDM entries
+  operationRowsJson?: string; // JSON string storing additional operation rows
   material: string;
   priority: "Low" | "Medium" | "High";
   description: string;
@@ -69,6 +70,7 @@ export const DEFAULT_CUT: CutForm = {
   refNumber: "",
   sedmHoles: "1", // Default to 1 hole per piece
   sedmEntriesJson: "",
+  operationRowsJson: "",
   material: "",
   priority: "Medium",
   description: "",
@@ -164,24 +166,73 @@ export const calculateSedmAmount = (form: CutForm) => {
   return baseValue * holes * qty;
 };
 
+type OperationRow = {
+  cut: string;
+  thickness: string;
+  passLevel: string;
+  setting: string;
+  qty: string;
+};
+
+const parseOperationRows = (form: CutForm): OperationRow[] => {
+  const fallbackRow: OperationRow = {
+    cut: form.cut || "0",
+    thickness: form.thickness || "0",
+    passLevel: form.passLevel || "0",
+    setting: form.setting || "0",
+    qty: form.qty || "0",
+  };
+
+  if (!form.operationRowsJson || !form.operationRowsJson.trim()) {
+    return [fallbackRow];
+  }
+
+  try {
+    const parsed = JSON.parse(form.operationRowsJson);
+    if (!Array.isArray(parsed) || parsed.length === 0) return [fallbackRow];
+    const rows = parsed
+      .filter((row) => row && typeof row === "object")
+      .map((row) => ({
+        cut: String((row as any).cut ?? "0"),
+        thickness: String((row as any).thickness ?? "0"),
+        passLevel: String((row as any).passLevel ?? "0"),
+        setting: String((row as any).setting ?? "0"),
+        qty: String((row as any).qty ?? "0"),
+      }))
+      .filter((row) => {
+        const hasValue = [row.cut, row.thickness, row.passLevel, row.setting, row.qty]
+          .some((value) => String(value || "").trim() !== "");
+        return hasValue;
+      });
+    return rows.length > 0 ? rows : [fallbackRow];
+  } catch (error) {
+    return [fallbackRow];
+  }
+};
+
 export const calculateTotals = (form: CutForm, config: CalculationConfig = {}) => {
   const customerRate = Number(form.rate) || 0;
-  const cut = Number(form.cut) || 0;
-  const thickness = Number(form.thickness) || 0;
-  const passMultiplier = PASS_MAP[form.passLevel] || 1;
-  const settingLevel = Number(form.setting) || 0;
-  const qty = Number(form.qty) || 0;
+  const operationRows = parseOperationRows(form);
   
   const sedmAmount = calculateSedmAmount(form);
   const thicknessDivisor = 1500;
-  const cutHoursPerPiece = (cut * thickness) / thicknessDivisor * passMultiplier;
   const settingFactor = Number(config.settingHoursPerSetting ?? 0.5) || 0.5;
   const complexHours = Number(config.complexExtraHours ?? 1) || 1;
   const pipHours = Number(config.pipExtraHours ?? 1) || 1;
-  const settingHours = settingLevel * settingFactor;
   const extraHours = (form.critical ? complexHours : 0) + (form.pipFinish ? pipHours : 0);
-  const totalHrs = cutHoursPerPiece + settingHours + extraHours;
-  const wedmAmount = totalHrs * customerRate * qty;
+  const totalHrs = operationRows.reduce((sum, row) => {
+    const cut = Number(row.cut) || 0;
+    const thickness = Number(row.thickness) || 0;
+    const passMultiplier = PASS_MAP[row.passLevel] || 1;
+    const settingLevel = Number(row.setting) || 0;
+    const qty = Number(row.qty) || 0;
+    const cutHoursPerPiece = (cut * thickness) / thicknessDivisor * passMultiplier;
+    const settingHours = settingLevel * settingFactor;
+
+    // Quantity should scale total time for each operation row.
+    return sum + (cutHoursPerPiece + settingHours + extraHours) * qty;
+  }, 0);
+  const wedmAmount = totalHrs * customerRate;
   const totalAmount = wedmAmount + sedmAmount;
 
   return {

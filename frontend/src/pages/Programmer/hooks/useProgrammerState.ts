@@ -103,6 +103,7 @@ export const useProgrammerState = (
                   : job.sedmStandardValue ?? ""),
               sedmHoles: job.sedmHoles ?? "1",
               sedmEntriesJson: (job as any).sedmEntriesJson ?? "",
+              operationRowsJson: (job as any).operationRowsJson ?? "",
               material: (job as any).material ?? "",
               priority: job.priority,
               description: job.description,

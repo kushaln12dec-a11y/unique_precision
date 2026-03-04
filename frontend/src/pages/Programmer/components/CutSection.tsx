@@ -51,6 +51,37 @@ type OperationRow = {
   qty: string;
 };
 
+const parseOperationRows = (cut: CutForm): OperationRow[] => {
+  const fallbackRow: OperationRow = {
+    cut: cut.cut,
+    thickness: cut.thickness,
+    passLevel: cut.passLevel,
+    setting: cut.setting,
+    qty: cut.qty,
+  };
+
+  if (!cut.operationRowsJson || !cut.operationRowsJson.trim()) {
+    return [fallbackRow];
+  }
+
+  try {
+    const parsed = JSON.parse(cut.operationRowsJson);
+    if (!Array.isArray(parsed) || parsed.length === 0) return [fallbackRow];
+    const rows = parsed
+      .filter((row) => row && typeof row === "object")
+      .map((row) => ({
+        cut: String((row as any).cut ?? ""),
+        thickness: String((row as any).thickness ?? ""),
+        passLevel: String((row as any).passLevel ?? "0"),
+        setting: String((row as any).setting ?? "0"),
+        qty: String((row as any).qty ?? "0"),
+      }));
+    return rows.length > 0 ? rows : [fallbackRow];
+  } catch (error) {
+    return [fallbackRow];
+  }
+};
+
 const SEDM_OPTIONS: Array<{ value: CutForm["sedm"]; label: string }> = [
   { value: "No", label: "No" },
   { value: "Yes", label: "Yes" },
@@ -81,15 +112,11 @@ export const CutSection: React.FC<CutSectionProps> = ({
   materialOptions,
   passOptions,
 }) => {
-  const [operationRows, setOperationRows] = React.useState<OperationRow[]>([
-    {
-      cut: cut.cut,
-      thickness: cut.thickness,
-      passLevel: cut.passLevel,
-      setting: cut.setting,
-      qty: cut.qty,
-    },
-  ]);
+  const [operationRows, setOperationRows] = React.useState<OperationRow[]>(() => parseOperationRows(cut));
+
+  React.useEffect(() => {
+    setOperationRows(parseOperationRows(cut));
+  }, [cut.operationRowsJson, cut.cut, cut.thickness, cut.passLevel, cut.setting, cut.qty]);
 
   React.useEffect(() => {
     const first = operationRows[0];
@@ -99,6 +126,10 @@ export const CutSection: React.FC<CutSectionProps> = ({
     if (first.passLevel !== cut.passLevel) onCutChange("passLevel")(first.passLevel);
     if (first.setting !== cut.setting) onCutChange("setting")(first.setting);
     if (first.qty !== cut.qty) onCutChange("qty")(first.qty);
+    const nextRowsJson = JSON.stringify(operationRows);
+    if (nextRowsJson !== String(cut.operationRowsJson || "")) {
+      onCutChange("operationRowsJson")(nextRowsJson);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [operationRows]);
 

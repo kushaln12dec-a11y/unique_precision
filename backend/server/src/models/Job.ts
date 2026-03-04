@@ -73,6 +73,10 @@ const jobSchema = new mongoose.Schema({
     type: String,
     default: "",
   },
+  operationRowsJson: {
+    type: String,
+    default: "",
+  },
   material: {
     type: String,
     default: "",

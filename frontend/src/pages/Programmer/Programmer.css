@@ -866,6 +866,21 @@
   border-bottom: 2px solid #e2e8f0;
 }
 
+.sedm-add-entry-btn {
+  padding: 0.45rem 0.85rem;
+  border-radius: 8px;
+  border: 1px solid #93c5fd;
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.sedm-add-entry-btn:hover {
+  background: #dbeafe;
+}
+
 .sedm-entry-section {
   margin-bottom: 1.5rem;
   padding: 1rem;
@@ -883,6 +898,35 @@
   font-size: 1rem;
   font-weight: 600;
   color: #1e293b;
+}
+
+.sedm-entry-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.sedm-entry-header .sedm-entry-title {
+  margin: 0;
+}
+
+.sedm-remove-entry-btn {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  border: 1px solid #fecaca;
+  background: #fef2f2;
+  color: #b91c1c;
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.sedm-remove-entry-btn:hover {
+  background: #fee2e2;
 }
 
 /* Keep SEDM modal wider than generic .modal-card so dropdowns stay inside */

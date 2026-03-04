@@ -83,7 +83,6 @@ const SEDMModal: React.FC<SEDMModalProps> = ({
         { value: "per", label: "Greater than 20mm" },
       ];
 
-  const [sedmQuantity, setSedmQuantity] = useState<number>(1);
   const [sedmEntries, setSedmEntries] = useState<SEDMEntry[]>([
     {
       thickness: cut.thickness || "",
@@ -100,7 +99,6 @@ const SEDMModal: React.FC<SEDMModalProps> = ({
           const entries: Array<{ thickness: string; lengthValue: string; lengthType?: string; holes: string }> = 
             JSON.parse(cut.sedmEntriesJson);
           if (entries.length > 0) {
-            setSedmQuantity(entries.length);
             setSedmEntries(
               entries.map(e => ({
                 thickness: e.thickness || cut.thickness || "",
@@ -115,7 +113,6 @@ const SEDMModal: React.FC<SEDMModalProps> = ({
         }
       }
       
-      setSedmQuantity(1);
       setSedmEntries([
         {
           thickness: cut.thickness || "",
@@ -127,35 +124,23 @@ const SEDMModal: React.FC<SEDMModalProps> = ({
     }
   }, [isOpen, cut]);
 
-  const handleQuantityChange = (value: string) => {
-    if (value === "" || value === null || value === undefined) {
-      setSedmQuantity(1);
-      setSedmEntries([
-        {
-          thickness: cut.thickness || "",
-          lengthValue: cut.sedmLengthValue || "",
-          lengthType: cut.sedmLengthType || "min",
-          holes: cut.sedmHoles || "1",
-        },
-      ]);
-      return;
-    }
-    
-    const qty = Math.max(1, Number(value) || 1);
-    setSedmQuantity(qty);
-    
-    const currentLength = sedmEntries.length;
-    if (qty > currentLength) {
-      const newEntries = Array.from({ length: qty - currentLength }, () => ({
+  const handleAddEntry = () => {
+    setSedmEntries((prev) => [
+      ...prev,
+      {
         thickness: cut.thickness || "",
         lengthValue: "",
-        lengthType: "min" as const,
+        lengthType: "min",
         holes: "1",
-      }));
-      setSedmEntries([...sedmEntries, ...newEntries]);
-    } else if (qty < currentLength) {
-      setSedmEntries(sedmEntries.slice(0, qty));
-    }
+      },
+    ]);
+  };
+
+  const handleRemoveEntry = (index: number) => {
+    setSedmEntries((prev) => {
+      if (prev.length <= 1) return prev;
+      return prev.filter((_, idx) => idx !== index);
+    });
   };
 
   const handleEntryChange = (index: number, field: keyof SEDMEntry, value: string) => {
@@ -217,27 +202,27 @@ const SEDMModal: React.FC<SEDMModalProps> = ({
       disableOverlayClick={true}
     >
       <div className="sedm-quantity-section">
-        <div className="input-pair">
-          <label>How many SEDM entries?</label>
-          <input
-            type="number"
-            min="1"
-            step="1"
-            value={sedmQuantity}
-            onChange={(e) => handleQuantityChange(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Backspace" || e.key === "Delete") {
-                return;
-              }
-            }}
-            placeholder="1"
-          />
-        </div>
+        <button type="button" className="sedm-add-entry-btn" onClick={handleAddEntry}>
+          + Add SEDM Entry
+        </button>
       </div>
 
       {sedmEntries.map((entry, index) => (
         <div key={index} className="sedm-entry-section">
-          <h4 className="sedm-entry-title">SEDM Entry {index + 1}</h4>
+          <div className="sedm-entry-header">
+            <h4 className="sedm-entry-title">SEDM Entry {index + 1}</h4>
+            {sedmEntries.length > 1 && (
+              <button
+                type="button"
+                className="sedm-remove-entry-btn"
+                onClick={() => handleRemoveEntry(index)}
+                aria-label={`Remove SEDM Entry ${index + 1}`}
+                title="Remove entry"
+              >
+                -
+              </button>
+            )}
+          </div>
           <div className="sedm-grid">
             <div className="input-pair">
               <label>TH (mm)</label>
