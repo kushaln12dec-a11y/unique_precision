@@ -305,14 +305,35 @@
 .logo-container {
   display: flex;
   justify-content: center;
+  align-items: center;
+  gap: 0.9rem;
   margin-bottom: 2rem;
 }
 
 .login-logo {
-  width: 100%;
-  max-width: 280px;
-  height: auto;
+  width: 64px;
+  height: 64px;
+  object-fit: contain;
   animation: fadeIn 0.6s ease-out;
+}
+
+.login-brand-name {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  font-family: "Lucida Calligraphy", "Lucida Handwriting", cursive;
+  color: #102a63;
+  line-height: 0.96;
+  letter-spacing: 0.2px;
+  font-weight: 700;
+  text-shadow: 0.35px 0 0 currentColor, 0 0 0.2px currentColor;
+}
+
+.login-brand-line {
+  display: block;
+  font-size: 2rem;
+  white-space: nowrap;
 }
 
 .login-title {

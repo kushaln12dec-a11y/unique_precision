@@ -38,7 +38,7 @@
 }
 
 .sidebar.collapsed:hover .logo-expanded {
-  display: block !important;
+  display: inline-flex !important;
   opacity: 1 !important;
   visibility: visible !important;
 }
@@ -73,23 +73,53 @@
   justify-content: center;
   width: 100%;
   transition: all 0.3s ease;
-  padding: 0.5rem;
+  padding: 0.35rem 0.5rem;
   min-height: 50px;
+  overflow: hidden;
 }
 
 .logo-expanded {
   width: 100%;
-  max-width: 160px;
-  height: auto;
-  object-fit: contain;
+  max-width: 220px;
+  height: 52px;
   display: none;
+  align-items: center;
+  justify-content: center;
+  gap: 0.65rem;
+  white-space: normal;
+}
+
+.logo-expanded-image {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+  flex-shrink: 0;
 }
 
 .logo-collapsed {
-  width: 35px;
-  height: 35px;
+  width: 32px;
+  height: 32px;
   object-fit: contain;
   display: block;
+}
+
+.sidebar-company-name {
+  font-family: "Lucida Calligraphy", "Lucida Handwriting", cursive;
+  font-size: 1.08rem;
+  line-height: 0.98;
+  color: #102a63;
+  letter-spacing: 0.2px;
+  font-weight: 700;
+  text-shadow: 0.35px 0 0 currentColor, 0 0 0.2px currentColor;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  max-width: none;
+}
+
+.sidebar-company-name-line {
+  display: block;
+  white-space: nowrap;
 }
 
 /* Show full logo on hover */
@@ -98,7 +128,7 @@
 }
 
 .sidebar.collapsed:hover .logo-expanded {
-  display: block;
+  display: inline-flex;
 }
 
 .sidebar-nav {

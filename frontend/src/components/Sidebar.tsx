@@ -46,15 +46,21 @@ const Sidebar = ({ currentPath = '/dashboard', onNavigate }: SidebarProps) => {
       <div className="sidebar-header">
         <div className="sidebar-logo">
           <img
-            src="/logo-cropped.svg"
+            src="/output-onlinepngtools.svg"
             alt="Unique Precision"
             className="logo-collapsed"
           />
-          <img
-            src="/logo.svg"
-            alt="Unique Precision"
-            className="logo-expanded"
-          />
+          <div className="logo-expanded">
+            <img
+              src="/output-onlinepngtools.svg"
+              alt="Unique Precision"
+              className="logo-expanded-image"
+            />
+            <span className="sidebar-company-name" aria-label="Unique Precision">
+              <span className="sidebar-company-name-line">UNIQUE</span>
+              <span className="sidebar-company-name-line">PRECISION</span>
+            </span>
+          </div>
         </div>
       </div>
 

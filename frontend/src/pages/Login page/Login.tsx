@@ -157,7 +157,11 @@ const Login = () => {
       <div className="login-section">
         <div className="login-form-container">
           <div className="logo-container">
-            <img src="/logo.svg" alt="Unique Precision Logo" className="login-logo" />
+            <img src="/output-onlinepngtools.svg" alt="Unique Precision Logo" className="login-logo" />
+            <div className="login-brand-name" aria-label="Unique Precision">
+              <span className="login-brand-line">UNIQUE</span>
+              <span className="login-brand-line">PRECISION</span>
+            </div>
           </div>
           <h1 className="login-title">Welcome Back</h1>
           <p className="login-subtitle">Sign in to access your account</p>

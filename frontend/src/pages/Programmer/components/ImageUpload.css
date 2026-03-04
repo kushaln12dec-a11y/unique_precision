@@ -211,3 +211,28 @@
 .image-input {
   display: none;
 }
+
+@media only screen and (min-width: 768px) and (max-width: 1024px) and (orientation: portrait) {
+  .job-form-image-container,
+  .image-slider-wrapper,
+  .image-slider-display,
+  .slider-image,
+  .image-placeholder-empty {
+    min-height: 110px;
+    height: 110px;
+  }
+
+  .job-form-image-container {
+    padding: 0.5rem;
+  }
+
+  .paste-area {
+    padding: 0.5rem;
+    max-width: 220px;
+    font-size: 0.75rem;
+  }
+
+  .paste-hint-text {
+    font-size: 0.7rem;
+  }
+}
