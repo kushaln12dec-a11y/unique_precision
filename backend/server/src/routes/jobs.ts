@@ -1,18 +1,9 @@
 import { Router } from "express";
 import Job from "../models/Job";
 import { authMiddleware } from "../middleware/auth";
+import { formatDateForQuery } from "../utils/dateTime";
 
 const router = Router();
-
-// Convert ISO date (YYYY-MM-DD) to format used in database (DD MMM YYYY)
-const formatDateForQuery = (isoDate: string): string => {
-  const date = new Date(isoDate);
-  const day = date.getDate().toString().padStart(2, "0");
-  const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-  const month = months[date.getMonth()];
-  const year = date.getFullYear();
-  return `${day} ${month} ${year}`;
-};
 
 // All routes require authentication
 router.use(authMiddleware);

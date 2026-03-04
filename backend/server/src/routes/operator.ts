@@ -2,23 +2,18 @@ import { Router } from "express";
 import Job from "../models/Job";
 import { authMiddleware } from "../middleware/auth";
 import EmployeeLog from "../models/EmployeeLog";
+import { formatDbDateTime, parseOperatorDateTime } from "../utils/dateTime";
 
 const router = Router();
 
 // All routes require authentication
 router.use(authMiddleware);
 
-const parseOperatorDateTime = (value?: string): Date | null => {
-  if (!value || typeof value !== "string") return null;
-  const match = value.match(/^(\d{2})\/(\d{2})\/(\d{4})\s+(\d{2}):(\d{2})$/);
-  if (!match) return null;
-  const day = Number(match[1]);
-  const month = Number(match[2]);
-  const year = Number(match[3]);
-  const hour = Number(match[4]);
-  const minute = Number(match[5]);
-  const date = new Date(year, month - 1, day, hour, minute, 0, 0);
-  return Number.isNaN(date.getTime()) ? null : date;
+const getUpdatedByName = (req: any): string => {
+  if (req.user && (req.user as any).fullName) {
+    return String((req.user as any).fullName);
+  }
+  return "";
 };
 
 // Get operator jobs with filters
@@ -74,20 +69,9 @@ router.put("/jobs/:id", async (req, res) => {
   try {
     const { id, ...updateData } = req.body;
 
-    // Add updatedBy and updatedAt
-    const now = new Date();
-    const day = now.getDate().toString().padStart(2, "0");
-    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-    const month = months[now.getMonth()];
-    const year = now.getFullYear();
-    const hours = now.getHours().toString().padStart(2, "0");
-    const minutes = now.getMinutes().toString().padStart(2, "0");
-    const updatedAt = `${day} ${month} ${year} ${hours}:${minutes}`;
-
-    updateData.updatedAt = updatedAt;
-    if (req.user && (req.user as any).fullName) {
-      updateData.updatedBy = (req.user as any).fullName;
-    }
+    updateData.updatedAt = formatDbDateTime();
+    const updatedBy = getUpdatedByName(req);
+    if (updatedBy) updateData.updatedBy = updatedBy;
 
     const job = await Job.findByIdAndUpdate(req.params.id, updateData, { new: true });
 
@@ -122,15 +106,7 @@ router.post("/jobs/:id/capture-input", async (req, res) => {
       operatorLogId,
     } = req.body;
 
-    // Add updatedBy and updatedAt
-    const now = new Date();
-    const day = now.getDate().toString().padStart(2, "0");
-    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-    const month = months[now.getMonth()];
-    const year = now.getFullYear();
-    const hours = now.getHours().toString().padStart(2, "0");
-    const minutes = now.getMinutes().toString().padStart(2, "0");
-    const updatedAt = `${day} ${month} ${year} ${hours}:${minutes}`;
+    const updatedAt = formatDbDateTime();
 
     const updateData: any = {
       startTime,
@@ -144,9 +120,8 @@ router.post("/jobs/:id/capture-input", async (req, res) => {
       updatedAt
     };
 
-    if (req.user && (req.user as any).fullName) {
-      updateData.updatedBy = (req.user as any).fullName;
-    }
+    const updatedBy = getUpdatedByName(req);
+    if (updatedBy) updateData.updatedBy = updatedBy;
 
     const job = await Job.findById(req.params.id);
     if (!job) {
@@ -338,16 +313,10 @@ router.post("/jobs/:id/qa-status", async (req, res) => {
     });
     (job as any).quantityQaStates = qaStates;
 
-    const now = new Date();
-    const day = now.getDate().toString().padStart(2, "0");
-    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-    const month = months[now.getMonth()];
-    const year = now.getFullYear();
-    const hours = now.getHours().toString().padStart(2, "0");
-    const minutes = now.getMinutes().toString().padStart(2, "0");
-    (job as any).updatedAt = `${day} ${month} ${year} ${hours}:${minutes}`;
-    if (req.user && (req.user as any).fullName) {
-      (job as any).updatedBy = (req.user as any).fullName;
+    (job as any).updatedAt = formatDbDateTime();
+    const updatedBy = getUpdatedByName(req);
+    if (updatedBy) {
+      (job as any).updatedBy = updatedBy;
     }
 
     await job.save();
@@ -367,23 +336,14 @@ router.put("/jobs/bulk", async (req, res) => {
       return res.status(400).json({ message: "jobIds array is required" });
     }
 
-    // Add updatedBy and updatedAt
-    const now = new Date();
-    const day = now.getDate().toString().padStart(2, "0");
-    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-    const month = months[now.getMonth()];
-    const year = now.getFullYear();
-    const hours = now.getHours().toString().padStart(2, "0");
-    const minutes = now.getMinutes().toString().padStart(2, "0");
-    const updatedAt = `${day} ${month} ${year} ${hours}:${minutes}`;
+    const updatedAt = formatDbDateTime();
 
     const finalUpdateData = {
       ...updateData,
       updatedAt,
     };
-    if (req.user && (req.user as any).fullName) {
-      finalUpdateData.updatedBy = (req.user as any).fullName;
-    }
+    const updatedBy = getUpdatedByName(req);
+    if (updatedBy) finalUpdateData.updatedBy = updatedBy;
 
     const result = await Job.updateMany(
       { _id: { $in: jobIds } },
