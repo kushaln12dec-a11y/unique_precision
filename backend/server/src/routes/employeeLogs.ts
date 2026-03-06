@@ -348,6 +348,7 @@ router.get("/", async (req, res) => {
     const role = String(req.query.role || "").trim().toUpperCase();
     const status = String(req.query.status || "").trim().toUpperCase();
     const search = String(req.query.search || "").trim();
+    const machine = String(req.query.machine || "").trim();
 
     if (role && ["PROGRAMMER", "OPERATOR", "QC"].includes(role)) {
       query.role = role;
@@ -384,6 +385,19 @@ router.get("/", async (req, res) => {
         { jobCustomer: regex },
         { jobDescription: regex },
         { refNumber: regex },
+      ];
+    }
+
+    if (machine) {
+      const machineRegex = { $regex: machine, $options: "i" };
+      query["$and"] = [
+        ...(Array.isArray(query["$and"]) ? query["$and"] : []),
+        {
+          $or: [
+            { "metadata.machineNumber": machineRegex },
+            { workSummary: machineRegex },
+          ],
+        },
       ];
     }
 

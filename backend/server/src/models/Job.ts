@@ -90,6 +90,10 @@ const jobSchema = new mongoose.Schema({
     type: String,
     default: "",
   },
+  programRefFile: {
+    type: String,
+    default: "",
+  },
   cutImage: {
     type: String,
     default: null,
