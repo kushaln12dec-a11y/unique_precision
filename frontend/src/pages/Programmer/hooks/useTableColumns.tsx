@@ -159,7 +159,7 @@ export const useTableColumns = ({
       },
       {
         key: "totalHrs",
-        label: "Total Time Needed",
+        label: "Cut Length Hrs",
         sortable: false,
         sortKey: "totalHrs",
         render: (row) => (row.groupTotalHrs ? formatHoursToHHMM(row.groupTotalHrs) : "-"),
@@ -182,11 +182,11 @@ export const useTableColumns = ({
         ? [
             {
               key: "totalAmount",
-              label: "Total Amount (Rs)",
+              label: "Total Amount (Rs.)",
               sortable: false,
               sortKey: "totalAmount",
               render: (row: TableRow) =>
-                row.groupTotalAmount ? `Rs${Math.round(row.groupTotalAmount)}` : "-",
+                row.groupTotalAmount ? `Rs. ${Math.round(row.groupTotalAmount)}` : "-",
             },
           ]
         : []),

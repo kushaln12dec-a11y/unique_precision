@@ -1,5 +1,5 @@
 ﻿import type { JobEntry } from "../../../types/job";
-import { formatDisplayDateTime, formatHoursToHHMM } from "../../../utils/date";
+import { formatDisplayDateTime } from "../../../utils/date";
 
 type TableRow = {
   groupId: number;
@@ -22,15 +22,14 @@ export const exportOperatorJobsToCSV = (tableData: TableRow[], isAdmin: boolean)
     "Created At",
     "Created By",
     "Assigned To",
-    "Total Time Needed",
-    ...(isAdmin ? ["Total Amount (₹)"] : []),
+    ...(isAdmin ? ["Total Amount (Rs.)"] : []),
     "Priority",
     "Complex",
   ];
 
   const rows = tableData.map((row) => [
     row.parent.customer || "",
-    `₹${Number(row.parent.rate || 0).toFixed(2)}`,
+    `Rs. ${Number(row.parent.rate || 0).toFixed(2)}`,
     Number(row.parent.cut || 0).toFixed(2),
     row.parent.description || "",
     Number(row.parent.thickness || 0).toFixed(2),
@@ -40,8 +39,7 @@ export const exportOperatorJobsToCSV = (tableData: TableRow[], isAdmin: boolean)
     formatDisplayDateTime(row.parent.createdAt),
     row.parent.createdBy || "",
     row.parent.assignedTo || "",
-    row.groupTotalHrs ? formatHoursToHHMM(row.groupTotalHrs) : "",
-    ...(isAdmin ? [row.groupTotalAmount ? `₹${row.groupTotalAmount.toFixed(2)}` : ""] : []),
+    ...(isAdmin ? [row.groupTotalAmount ? `Rs. ${row.groupTotalAmount.toFixed(2)}` : ""] : []),
     row.parent.priority || "",
     row.parent.critical ? "Yes" : "No",
   ]);

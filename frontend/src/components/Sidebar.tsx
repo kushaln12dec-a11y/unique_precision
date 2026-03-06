@@ -57,8 +57,8 @@ const Sidebar = ({ currentPath = '/dashboard', onNavigate }: SidebarProps) => {
               className="logo-expanded-image"
             />
             <span className="sidebar-company-name" aria-label="Unique Precision">
-              <span className="sidebar-company-name-line">UNIQUE</span>
-              <span className="sidebar-company-name-line">PRECISION</span>
+              <span className="sidebar-company-name-line">Unique</span>
+              <span className="sidebar-company-name-line">Precison</span>
             </span>
           </div>
         </div>

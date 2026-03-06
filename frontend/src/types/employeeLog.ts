@@ -5,6 +5,8 @@ export type EmployeeLogActivityType =
   | "OPERATOR_PRODUCTION"
   | "QA_REVIEW";
 
+export type EmployeeLogQueryStatus = "IN_PROGRESS" | "COMPLETED" | "REJECTED";
+
 export type EmployeeLog = {
   _id: string;
   role: EmployeeLogRole;

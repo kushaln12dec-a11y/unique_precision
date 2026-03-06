@@ -240,7 +240,8 @@
   border-color: #fcd34d;
 }
 
-.log-status-badge.rejected {
+.log-status-badge.rejected,
+.log-status-badge.stopped {
   background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
   color: #991b1b;
   border-color: #fca5a5;

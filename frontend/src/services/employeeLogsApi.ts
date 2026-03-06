@@ -1,4 +1,4 @@
-import type { EmployeeLog } from "../types/employeeLog";
+import type { EmployeeLog, EmployeeLogQueryStatus } from "../types/employeeLog";
 
 const getAuthHeaders = () => {
   const token = localStorage.getItem("token");
@@ -10,8 +10,9 @@ const getAuthHeaders = () => {
 
 type GetEmployeeLogsParams = {
   role?: "PROGRAMMER" | "OPERATOR" | "QC";
-  status?: "IN_PROGRESS" | "COMPLETED" | "REJECTED";
+  status?: EmployeeLogQueryStatus;
   search?: string;
+  machine?: string;
   startDate?: string;
   endDate?: string;
 };
@@ -21,6 +22,7 @@ export const getEmployeeLogs = async (params: GetEmployeeLogsParams = {}): Promi
   if (params.role) query.append("role", params.role);
   if (params.status) query.append("status", params.status);
   if (params.search) query.append("search", params.search);
+  if (params.machine) query.append("machine", params.machine);
   if (params.startDate) query.append("startDate", params.startDate);
   if (params.endDate) query.append("endDate", params.endDate);
 

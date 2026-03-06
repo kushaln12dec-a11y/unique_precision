@@ -3,7 +3,7 @@ import { formatDecimalHoursToHHMMhrs } from "../../../utils/date";
 import "../OperatorViewPage.css";
 
 type OperatorTotalsSectionProps = {
-  groupTotalHrs: number;
+  groupEstimatedHrs: number;
   totalWedmAmount: number;
   totalSedmAmount: number;
   groupTotalAmount: number;
@@ -11,7 +11,7 @@ type OperatorTotalsSectionProps = {
 };
 
 export const OperatorTotalsSection: React.FC<OperatorTotalsSectionProps> = ({
-  groupTotalHrs,
+  groupEstimatedHrs,
   totalWedmAmount,
   totalSedmAmount,
   groupTotalAmount,
@@ -20,22 +20,22 @@ export const OperatorTotalsSection: React.FC<OperatorTotalsSectionProps> = ({
   return (
     <div className="operator-totals-section">
       <div className="operator-total-card">
-        <label>Total Time Needed</label>
-        <span>{groupTotalHrs ? formatDecimalHoursToHHMMhrs(groupTotalHrs) : "00:00hrs"}</span>
+        <label>Estimated Time</label>
+        <span>{groupEstimatedHrs ? formatDecimalHoursToHHMMhrs(groupEstimatedHrs) : "00:00hrs"}</span>
       </div>
       {isAdmin && (
         <>
           <div className="operator-total-card">
-            <label>WEDM Amount (₹)</label>
-            <span>₹{totalWedmAmount.toFixed(2)}</span>
+            <label>WEDM Amount (Rs.)</label>
+            <span>Rs. {totalWedmAmount.toFixed(2)}</span>
           </div>
           <div className="operator-total-card">
-            <label>SEDM Amount (₹)</label>
-            <span>₹{totalSedmAmount.toFixed(2)}</span>
+            <label>SEDM Amount (Rs.)</label>
+            <span>Rs. {totalSedmAmount.toFixed(2)}</span>
           </div>
           <div className="operator-total-card">
-            <label>Total Amount (₹)</label>
-            <span>₹{groupTotalAmount ? groupTotalAmount.toFixed(2) : "0.00"}</span>
+            <label>Total Amount (Rs.)</label>
+            <span>Rs. {groupTotalAmount ? groupTotalAmount.toFixed(2) : "0.00"}</span>
           </div>
         </>
       )}

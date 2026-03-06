@@ -373,7 +373,9 @@ const Programmer = () => {
     const h = Math.floor(total / 3600);
     const m = Math.floor((total % 3600) / 60);
     const s = total % 60;
-    return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
+    if (h > 0) return `${h}h ${m}m ${s}s`;
+    if (m > 0) return `${m}m ${s}s`;
+    return `${s}s`;
   };
 
   const getShiftLabel = (startedAt?: string): string => {
@@ -488,12 +490,14 @@ const Programmer = () => {
           const label =
             raw === "IN_PROGRESS"
               ? "In Progress"
+              : raw === "REJECTED"
+                ? "Stopped"
               : raw
                   .split("_")
                   .map((part) => part.charAt(0) + part.slice(1).toLowerCase())
                   .join(" ");
           const statusClass =
-            raw === "IN_PROGRESS" ? "in-progress" : raw === "REJECTED" ? "rejected" : "completed";
+            raw === "IN_PROGRESS" ? "in-progress" : raw === "REJECTED" ? "stopped" : "completed";
           return <span className={`log-status-badge ${statusClass}`}>{label}</span>;
         },
       },
@@ -515,7 +519,7 @@ const Programmer = () => {
         formatDisplayDateTime(row.endedAt || null),
         getShiftLabel(row.startedAt),
         formatDuration(row.durationSeconds),
-        String(row.status || "-"),
+        String(row.status || "").toUpperCase() === "REJECTED" ? "Stopped" : String(row.status || "-"),
       ];
     });
 
@@ -634,7 +638,7 @@ const Programmer = () => {
                   <option value="">All Status</option>
                   <option value="IN_PROGRESS">In Progress</option>
                   <option value="COMPLETED">Completed</option>
-                  <option value="REJECTED">Rejected</option>
+                  <option value="REJECTED">Stopped</option>
                 </select>
                 <select
                   value={logUserId}

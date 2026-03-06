@@ -1,6 +1,5 @@
 import { useMemo } from "react";
 import type { JobEntry } from "../../../types/job";
-import { formatHoursToHHMM } from "../../../utils/date";
 import ActionButtons from "../../Programmer/components/ActionButtons";
 import ArrowForwardIosSharpIcon from "@mui/icons-material/ArrowForwardIosSharp";
 import { getGroupQaProgressCounts } from "../utils/qaProgress";
@@ -261,19 +260,6 @@ export const useOperatorTable = ({
       },
 
       {
-        key: "totalHrs",
-        label: (
-          <>
-            Total Time
-            <br />
-            Needed
-          </>
-        ),
-        sortable: true,
-        sortKey: "totalHrs",
-        render: (row) => (row.groupTotalHrs ? formatHoursToHHMM(row.groupTotalHrs) : "-"),
-      },
-      {
         key: "estimatedTime",
         label: (
           <>
@@ -285,16 +271,16 @@ export const useOperatorTable = ({
         sortable: false,
         render: (row) => estimatedTimeFromAmount(row.groupTotalAmount || 0),
       },
-      ...(isAdmin
-        ? [
+        ...(isAdmin
+          ? [
           {
             key: "totalAmount",
-            label: "Amount (₹)",
+            label: "Amount (Rs.)",
             sortable: false,
             sortKey: "totalAmount",
             className: "operator-amount-cell",
             headerClassName: "operator-amount-header",
-            render: (row: TableRow) => (row.groupTotalAmount ? `₹${Math.round(row.groupTotalAmount)}` : "-"),
+            render: (row: TableRow) => (row.groupTotalAmount ? `Rs. ${Math.round(row.groupTotalAmount)}` : "-"),
           } as Column<TableRow>,
         ]
         : []),

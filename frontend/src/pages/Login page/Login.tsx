@@ -159,8 +159,8 @@ const Login = () => {
           <div className="logo-container">
             <img src="/output-onlinepngtools.svg" alt="Unique Precision Logo" className="login-logo" />
             <div className="login-brand-name" aria-label="Unique Precision">
-              <span className="login-brand-line">UNIQUE</span>
-              <span className="login-brand-line">PRECISION</span>
+              <span className="login-brand-line">Unique</span>
+              <span className="login-brand-line">Precision</span>
             </div>
           </div>
           <h1 className="login-title">Welcome Back</h1>

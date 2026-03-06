@@ -31,7 +31,7 @@ export const JobFormActions: React.FC<JobFormActionsProps> = ({
         <div>
           {isAdmin && (
             <>
-              <span className="form-total-label">Total Amount (₹)</span>
+              <span className="form-total-label">Total Amount (Rs.)</span>
               <span className="form-total-value">{grandTotals.totalAmount.toFixed(2)}</span>
             </>
           )}

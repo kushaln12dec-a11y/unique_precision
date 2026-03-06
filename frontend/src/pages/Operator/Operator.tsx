@@ -57,6 +57,7 @@ const Operator = () => {
   const [logsLoading, setLogsLoading] = useState(false);
   const [operatorLogSearch, setOperatorLogSearch] = useState("");
   const [operatorLogStatus, setOperatorLogStatus] = useState<"" | "IN_PROGRESS" | "COMPLETED" | "REJECTED">("");
+  const [operatorLogMachine, setOperatorLogMachine] = useState("");
   const [toast, setToast] = useState<{ message: string; variant: "success" | "error" | "info"; visible: boolean }>({
     message: "",
     variant: "info",
@@ -410,6 +411,7 @@ const Operator = () => {
           role: "OPERATOR",
           status: operatorLogStatus || undefined,
           search: operatorLogSearch.trim() || undefined,
+          machine: operatorLogMachine || undefined,
         });
         if (mounted) setOperatorLogs(logs);
       } catch (error) {
@@ -426,7 +428,7 @@ const Operator = () => {
     return () => {
       mounted = false;
     };
-  }, [activeTab, operatorLogSearch, operatorLogStatus]);
+  }, [activeTab, operatorLogSearch, operatorLogStatus, operatorLogMachine]);
 
   const designationByUserName = useMemo(() => {
     const map = new Map<string, string>();
@@ -483,6 +485,10 @@ const Operator = () => {
       explicitRevenue !== null &&
       String(explicitRevenue).trim() !== ""
     ) {
+      const numericValue = Number(explicitRevenue);
+      if (Number.isFinite(numericValue)) {
+        return `Rs. ${Math.round(numericValue)}`;
+      }
       return String(explicitRevenue);
     }
 
@@ -493,7 +499,7 @@ const Operator = () => {
     if (!totalWorkedSeconds) return "-";
     const workedSeconds = getWorkedSecondsForLog(log);
     const share = Math.max(0, workedSeconds) / totalWorkedSeconds;
-    return "Rs " + (wedm * share).toFixed(2);
+    return `Rs. ${Math.round(wedm * share)}`;
   };
 
   const formatDuration = (seconds?: number): string => {
@@ -501,7 +507,9 @@ const Operator = () => {
     const h = Math.floor(total / 3600);
     const m = Math.floor((total % 3600) / 60);
     const s = total % 60;
-    return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
+    if (h > 0) return `${h}h ${m}m ${s}s`;
+    if (m > 0) return `${m}m ${s}s`;
+    return `${s}s`;
   };
 
   const getShiftLabel = (startedAt?: string): string => {
@@ -523,6 +531,15 @@ const Operator = () => {
     return firstMachine || "-";
   };
 
+  const machineFilterOptions = useMemo(() => {
+    const unique = new Set<string>();
+    operatorLogs.forEach((log) => {
+      const machine = getMachineNumberForLog(log);
+      if (machine && machine !== "-") unique.add(machine);
+    });
+    return Array.from(unique).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+  }, [operatorLogs, jobs]);
+
   const logsColumns = useMemo<Column<EmployeeLog>[]>(
     () => [
       {
@@ -542,6 +559,12 @@ const Operator = () => {
           );
         },
       },
+      {
+        key: "machineNumber",
+        label: "MACH #",
+        sortable: false,
+        render: (row) => getMachineNumberForLog(row),
+      },
       { key: "workItemTitle", label: "Work Item", sortable: false, render: (row) => row.workItemTitle || "-" },
       {
         key: "workSummary",
@@ -559,6 +582,20 @@ const Operator = () => {
         sortable: false,
         render: (row) => {
           const parts = getDisplayDateTimeParts(row.startedAt);
+          return (
+            <div className="created-at-split">
+              <span>{parts.date}</span>
+              <span>{parts.time}</span>
+            </div>
+          );
+        },
+      },
+      {
+        key: "endedAt",
+        label: "Ended at",
+        sortable: false,
+        render: (row) => {
+          const parts = getDisplayDateTimeParts(row.endedAt);
           return (
             <div className="created-at-split">
               <span>{parts.date}</span>
@@ -590,26 +627,6 @@ const Operator = () => {
           return "-";
         },
       },
-      {
-        key: "machineNumber",
-        label: "MACH #",
-        sortable: false,
-        render: (row) => getMachineNumberForLog(row),
-      },
-      {
-        key: "endedAt",
-        label: "Ended at",
-        sortable: false,
-        render: (row) => {
-          const parts = getDisplayDateTimeParts(row.endedAt);
-          return (
-            <div className="created-at-split">
-              <span>{parts.date}</span>
-              <span>{parts.time}</span>
-            </div>
-          );
-        },
-      },
       { key: "durationSeconds", label: "Duration", sortable: false, render: (row) => formatDuration(row.durationSeconds) },
       {
         key: "idleTime",
@@ -627,7 +644,7 @@ const Operator = () => {
         key: "revenue",
         label: "Revenue",
         sortable: false,
-        render: (row) => getRevenueForLog(row),
+        render: (row) => <span className="log-revenue-value">{getRevenueForLog(row)}</span>,
       },
       {
         key: "status",
@@ -654,12 +671,12 @@ const Operator = () => {
   const handleExportOperatorLogsCsv = () => {
     const headers = [
       "User",
+      "MACH #",
       "Work Item",
       "Summary",
       "Started at",
-      "Shift",
-      "MACH #",
       "Ended at",
+      "Shift",
       "Duration",
       "Idle Time",
       "Remark",
@@ -672,12 +689,12 @@ const Operator = () => {
       const designation = designationByUserName.get(name.toLowerCase()) || "Operator";
       return [
         name ? `${name} (${designation})` : designation,
+        getMachineNumberForLog(row),
         row.workItemTitle || "",
         row.workSummary || "",
         formatDisplayDateTime(row.startedAt),
-        getShiftLabel(row.startedAt),
-        getMachineNumberForLog(row),
         formatDisplayDateTime(row.endedAt || null),
+        getShiftLabel(row.startedAt),
         formatDuration(row.durationSeconds),
         String((row.metadata as any)?.idleTime || "-"),
         String((row.metadata as any)?.remark || "-"),
@@ -835,6 +852,18 @@ const Operator = () => {
                   <option value="IN_PROGRESS">In Progress</option>
                   <option value="COMPLETED">Completed</option>
                   <option value="REJECTED">Rejected</option>
+                </select>
+                <select
+                  value={operatorLogMachine}
+                  onChange={(e) => setOperatorLogMachine(e.target.value)}
+                  className="filter-select"
+                >
+                  <option value="">All Machines</option>
+                  {machineFilterOptions.map((machine) => (
+                    <option key={machine} value={machine}>
+                      Machine {machine}
+                    </option>
+                  ))}
                 </select>
                 <button className="btn-download-csv" onClick={handleExportOperatorLogsCsv} title="Download Logs CSV">
                   <DownloadIcon sx={{ fontSize: "1rem" }} />

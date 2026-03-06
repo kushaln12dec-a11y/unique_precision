@@ -76,7 +76,8 @@ export const OperatorCutCard: React.FC<OperatorCutCardProps> = ({
   isAdmin,
 }) => {
   const quantity = Number(cutItem.qty || 1);
-  const cutTotalTimeNeeded = (Number(cutItem.totalHrs || 0) || 0) * Math.max(1, quantity);
+  const cutEstimatedHrs = Number((((Number(cutItem.totalAmount || 0) || 0) / 625).toFixed(2)));
+  const expectedHoursPerQuantity = cutEstimatedHrs / Math.max(1, quantity);
   return (
     <div className="operator-cut-card">
       <div className="operator-cut-header" onClick={onToggleExpansion}>
@@ -89,7 +90,7 @@ export const OperatorCutCard: React.FC<OperatorCutCardProps> = ({
           <div className="operator-cut-details-section">
             <div className="operator-cut-details-grid">
               <div className="cut-detail-item"><label>Customer</label><span>{cutItem.customer || "-"}</span></div>
-              <div className="cut-detail-item"><label>Rate (₹/hr)</label><span>₹{Number(cutItem.rate || 0).toFixed(2)}</span></div>
+              <div className="cut-detail-item"><label>Rate (Rs./hr)</label><span>Rs. {Number(cutItem.rate || 0).toFixed(2)}</span></div>
               <div className="cut-detail-item"><label>Description</label><span>{cutItem.description || "-"}</span></div>
               <div className="cut-detail-item"><label>Material</label><span>{cutItem.material || "-"}</span></div>
               <div className="cut-detail-item"><label>Program Ref File Name</label><span>{(cutItem as any).programRefFile || "-"}</span></div>
@@ -102,11 +103,11 @@ export const OperatorCutCard: React.FC<OperatorCutCardProps> = ({
               <div className="cut-detail-item"><label>PIP Finish</label><span className={cutItem.pipFinish ? "pip-badge yes" : "pip-badge no"}>{cutItem.pipFinish ? "Yes" : "No"}</span></div>
               <div className="cut-detail-item"><label>Complex</label><span className={cutItem.critical ? "complex-badge yes" : "complex-badge no"}>{cutItem.critical ? "Yes" : "No"}</span></div>
               <div className="cut-detail-item"><label>Priority</label><span className={`priority-badge priority-${(cutItem.priority || "").toLowerCase()}`}>{cutItem.priority || "-"}</span></div>
-              <div className="cut-detail-item"><label>Total Time Needed</label><span>{cutTotalTimeNeeded ? formatDecimalHoursToHHMMhrs(cutTotalTimeNeeded) : "00:00hrs"}</span></div>
+              <div className="cut-detail-item"><label>Estimated Time</label><span>{cutEstimatedHrs ? formatDecimalHoursToHHMMhrs(cutEstimatedHrs) : "00:00hrs"}</span></div>
               {isAdmin && (
                 <div className="cut-detail-item">
-                  <label>Total Amount (₹)</label>
-                  <span>₹{cutItem.totalAmount ? cutItem.totalAmount.toFixed(2) : "0.00"}</span>
+                  <label>Total Amount (Rs.)</label>
+                  <span>Rs. {cutItem.totalAmount ? cutItem.totalAmount.toFixed(2) : "0.00"}</span>
                 </div>
               )}
             </div>
@@ -135,7 +136,7 @@ export const OperatorCutCard: React.FC<OperatorCutCardProps> = ({
             cutData={cutData}
             cutId={cutItem.id}
             quantity={quantity}
-            requiredHoursPerQuantity={Number(cutItem.totalHrs || 0) || 0}
+            requiredHoursPerQuantity={expectedHoursPerQuantity}
             operatorUsers={operatorUsers}
             onInputChange={onInputChange}
             onApplyToAllQuantities={onApplyToAllQuantities}

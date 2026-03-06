@@ -153,7 +153,7 @@ export const EmployeeLogsPanel = () => {
             if (!totalWorkedSeconds) return '-';
             const workedSeconds = getWorkedSecondsForLog(row);
             const share = Math.max(0, workedSeconds) / totalWorkedSeconds;
-            return `Rs ${(wedm * share).toFixed(2)}`;
+            return `Rs. ${(wedm * share).toFixed(2)}`;
           },
         },
         {

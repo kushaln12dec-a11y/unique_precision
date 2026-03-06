@@ -275,7 +275,7 @@ const SEDMModal: React.FC<SEDMModalProps> = ({
         Job Quantity: {cut.qty || "0"} | Total Holes: {totalHoles}
       </p>
       <p className="sedm-amount">
-        Total SEDM Amount: ₹{totalSedmAmount.toFixed(2)}
+        Total SEDM Amount: Rs. {totalSedmAmount.toFixed(2)}
       </p>
       <div className="sedm-modal-actions">
         <button

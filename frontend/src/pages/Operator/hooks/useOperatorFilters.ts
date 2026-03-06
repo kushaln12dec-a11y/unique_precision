@@ -51,9 +51,9 @@ export const useOperatorFilters = () => {
     },
     { key: "setting", label: "Setting", type: "text", placeholder: "Enter setting", category: "production" },
     { key: "qty", label: "Quantity", type: "numberRange", category: "production", min: 0, max: 10000, step: 1 },
-    { key: "rate", label: "Rate (Rs)", type: "numberRange", category: "financial", min: 0, max: 100000, step: 0.01, unit: "Rs" },
+    { key: "rate", label: "Rate (Rs.)", type: "numberRange", category: "financial", min: 0, max: 100000, step: 0.01, unit: "Rs." },
     { key: "totalHrs", label: "Total Hours", type: "numberRange", category: "financial", min: 0, max: 1000, step: 0.001, unit: "hrs" },
-    { key: "totalAmount", label: "Total Amount (Rs)", type: "numberRange", category: "financial", min: 0, max: 1000000, step: 0.01, unit: "Rs" },
+    { key: "totalAmount", label: "Total Amount (Rs.)", type: "numberRange", category: "financial", min: 0, max: 1000000, step: 0.01, unit: "Rs." },
     { key: "createdAt", label: "Created Date", type: "dateRange", category: "dates" },
   ];
 

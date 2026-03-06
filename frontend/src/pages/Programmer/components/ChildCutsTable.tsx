@@ -146,13 +146,15 @@ const ChildCutsTable: React.FC<ChildCutsTableProps> = ({
             <th className="sedm-col">SEDM</th>
             {isOperator && <th className="assigned-col">Operator</th>}
             {isOperator && <th className="mach-col">Mach #</th>}
-            <th className="total-hrs-col">
-              <span className="th-content">
-                Total Time
-                <br />
-                Needed
-              </span>
-            </th>
+            {!isOperator && (
+              <th className="total-hrs-col">
+                <span className="th-content">
+                  Cut Length
+                  <br />
+                  Hrs
+                </span>
+              </th>
+            )}
             <th className="estimated-time-col">
               <span className="th-content">
                 Estimated
@@ -293,13 +295,15 @@ const ChildCutsTable: React.FC<ChildCutsTableProps> = ({
                   </select>
                 </td>
               )}
-              <td className="total-hrs-col">
-                {entry.totalHrs
-                  ? formatHoursToHHMM((Number(entry.totalHrs || 0) || 0) * Math.max(1, Number(entry.qty || 1)))
-                  : "-"}
-              </td>
+              {!isOperator && (
+                <td className="total-hrs-col">
+                  {entry.totalHrs
+                    ? formatHoursToHHMM((Number(entry.totalHrs || 0) || 0) * Math.max(1, Number(entry.qty || 1)))
+                    : "-"}
+                </td>
+              )}
               <td className="estimated-time-col">{estimatedTimeFromAmount(entry.totalAmount || 0)}</td>
-              {isAdmin && <td className="total-amount-col">{entry.totalAmount ? `₹${Math.round(entry.totalAmount)}` : "-"}</td>}
+              {isAdmin && <td className="total-amount-col">{entry.totalAmount ? `Rs. ${Math.round(entry.totalAmount)}` : "-"}</td>}
               {isOperator && (
                 <td className="status-col">
                   {(() => {

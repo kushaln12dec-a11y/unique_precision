@@ -19,8 +19,8 @@ export const exportJobsToCSV = (tableData: TableRow[], isAdmin: boolean): void =
     "Pass",
     "Setting",
     "Qty",
-    "Total Time Needed",
-    ...(isAdmin ? ["Total Amount (₹)"] : []),
+    "Cut Length Hrs",
+    ...(isAdmin ? ["Total Amount (Rs.)"] : []),
     "Created By",
     "Created At",
     "Priority",
@@ -29,7 +29,7 @@ export const exportJobsToCSV = (tableData: TableRow[], isAdmin: boolean): void =
 
   const rows = tableData.map((row) => [
     row.parent.customer || "",
-    `₹${Number(row.parent.rate || 0).toFixed(2)}`,
+    `Rs. ${Number(row.parent.rate || 0).toFixed(2)}`,
     Number(row.parent.cut || 0).toFixed(2),
     row.parent.description || "",
     Number(row.parent.thickness || 0).toFixed(2),
@@ -37,7 +37,7 @@ export const exportJobsToCSV = (tableData: TableRow[], isAdmin: boolean): void =
     row.parent.setting || "",
     Number(row.parent.qty || 0).toString(),
     row.groupTotalHrs ? formatHoursToHHMM(row.groupTotalHrs) : "",
-    ...(isAdmin ? [row.groupTotalAmount ? `₹${row.groupTotalAmount.toFixed(2)}` : ""] : []),
+    ...(isAdmin ? [row.groupTotalAmount ? `Rs. ${row.groupTotalAmount.toFixed(2)}` : ""] : []),
     row.parent.createdBy || "",
     formatCreatedAt(row.parent.createdAt),
     row.parent.priority || "",

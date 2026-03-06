@@ -289,7 +289,7 @@ export const CutSection: React.FC<CutSectionProps> = ({
             disabled={isFirstCut}
             aria-label={isCollapsed ? "Expand cut" : "Collapse cut"}
           >
-            {isCollapsed ? "+" : "–"}
+            {isCollapsed ? "+" : "-"}
           </button>
         </div>
       </div>
@@ -318,7 +318,7 @@ export const CutSection: React.FC<CutSectionProps> = ({
             />
           </FormInput>
 
-          <FormInput label="Rate (₹/hr)" className="grid-rate" required error={fieldErrors.rate}>
+          <FormInput label="Rate (Rs./hr)" className="grid-rate" required error={fieldErrors.rate}>
             <input
               type="number"
               value={cut.rate}
@@ -548,7 +548,7 @@ export const CutSection: React.FC<CutSectionProps> = ({
 
           {isAdmin && (
             <FormInput 
-              label="Total Amount (₹)" 
+              label="Total Amount (Rs.)" 
               className="grid-total-amount"
               style={{ gridRow: 2 + operationRows.length }}
             >

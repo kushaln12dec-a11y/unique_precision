@@ -153,7 +153,7 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
               {displayEntries.map((cutItem, index) => {
                 const basePairs: DetailPair[] = [
                   { label: "Customer", value: cutItem.customer || "-" },
-                  { label: "Rate (Rs/hr)", value: `Rs${Number(cutItem.rate || 0).toFixed(2)}` },
+                  { label: "Rate (Rs./hr)", value: `Rs. ${Number(cutItem.rate || 0).toFixed(2)}` },
                   { label: "Cut Length (mm)", value: Number(cutItem.cut || 0).toFixed(2) },
                   { label: "Description", value: cutItem.description || "-" },
                   {
@@ -178,8 +178,10 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
                   { label: "Complex", value: cutItem.critical ? "Yes" : "No" },
                   { label: "Priority", value: cutItem.priority || "-" },
                   {
-                    label: "Total Time Needed",
-                    value: cutItem.totalHrs ? formatDecimalHoursToHHMMhrs(cutItem.totalHrs) : "00:00hrs",
+                    label: isOperator ? "Estimated Time" : "Cut Length Hrs",
+                    value: isOperator
+                      ? formatDecimalHoursToHHMMhrs(Number((((Number(cutItem.totalAmount || 0) || 0) / 625).toFixed(2))))
+                      : (cutItem.totalHrs ? formatDecimalHoursToHHMMhrs(cutItem.totalHrs) : "00:00hrs"),
                   },
                 ];
 
@@ -199,12 +201,12 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
                   if (canSeeAmounts) {
                     basePairs.push(
                       {
-                        label: "WEDM Amount (Rs)",
-                        value: `Rs${amounts.perCut[index]?.wedmAmount.toFixed(2) || "0.00"}`,
+                        label: "WEDM Amount (Rs.)",
+                        value: `Rs. ${amounts.perCut[index]?.wedmAmount.toFixed(2) || "0.00"}`,
                       },
                       {
-                        label: "SEDM Amount (Rs)",
-                        value: `Rs${amounts.perCut[index]?.sedmAmount.toFixed(2) || "0.00"}`,
+                        label: "SEDM Amount (Rs.)",
+                        value: `Rs. ${amounts.perCut[index]?.sedmAmount.toFixed(2) || "0.00"}`,
                       }
                     );
                   }
@@ -300,22 +302,31 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
 
           <div className="job-details-totals">
             <div className="total-row">
-              <label>Total Time Needed:</label>
-              <span>{displayGroupTotalHrs ? formatDecimalHoursToHHMMhrs(displayGroupTotalHrs) : "00:00hrs"}</span>
+              <label>{isOperator ? "Estimated Time:" : "Cut Length Hrs:"}</label>
+              <span>
+                {isOperator
+                  ? formatDecimalHoursToHHMMhrs(
+                      displayEntries.reduce(
+                        (sum, cutItem) => sum + Number((((Number(cutItem.totalAmount || 0) || 0) / 625).toFixed(2))),
+                        0
+                      )
+                    )
+                  : (displayGroupTotalHrs ? formatDecimalHoursToHHMMhrs(displayGroupTotalHrs) : "00:00hrs")}
+              </span>
             </div>
             {canSeeAmounts && (
               <>
                 <div className="total-row">
-                  <label>WEDM Amount (Rs):</label>
-                  <span>Rs{amounts.totalWedmAmount.toFixed(2)}</span>
+                  <label>WEDM Amount (Rs.):</label>
+                  <span>Rs. {amounts.totalWedmAmount.toFixed(2)}</span>
                 </div>
                 <div className="total-row">
-                  <label>SEDM Amount (Rs):</label>
-                  <span>Rs{amounts.totalSedmAmount.toFixed(2)}</span>
+                  <label>SEDM Amount (Rs.):</label>
+                  <span>Rs. {amounts.totalSedmAmount.toFixed(2)}</span>
                 </div>
                 <div className="total-row">
-                  <label>Total Amount (Rs):</label>
-                  <span>{displayGroupTotalAmount ? `Rs${displayGroupTotalAmount.toFixed(2)}` : "0.00"}</span>
+                  <label>Total Amount (Rs.):</label>
+                  <span>{displayGroupTotalAmount ? `Rs. ${displayGroupTotalAmount.toFixed(2)}` : "0.00"}</span>
                 </div>
               </>
             )}

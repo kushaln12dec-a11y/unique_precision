@@ -221,17 +221,9 @@
   text-align: left;
 }
 
-/* Total Time Needed Column */
+/* Estimated Time Column */
 .operator-table-no-scroll .data-table th:nth-child(14),
 .operator-table-no-scroll .data-table td:nth-child(14) {
-  width: 95px;
-  min-width: 95px;
-  text-align: left;
-}
-
-/* Estimated Time Column */
-.operator-table-no-scroll .data-table th:nth-child(15),
-.operator-table-no-scroll .data-table td:nth-child(15) {
   width: 82px;
   min-width: 82px;
   text-align: left;
@@ -259,7 +251,11 @@
 .operator-table-no-scroll .data-table td.created-by-cell {
   width: 70px;
   min-width: 70px;
-  text-align: left;
+  text-align: center;
+}
+
+.operator-table-no-scroll .data-table th.created-by-header .th-content {
+  justify-content: center;
 }
 
 /* Action Column */
@@ -275,6 +271,10 @@
   white-space: nowrap;
   padding: 0.5rem 0.25rem;
   text-align: center;
+}
+
+.operator-table-no-scroll .data-table th.action-header .th-content {
+  justify-content: center;
 }
 
 /* ============================================
@@ -1585,16 +1585,23 @@
 
 .operator-logs-table .data-table th:nth-child(3),
 .operator-logs-table .data-table td:nth-child(3) {
-  width: 230px;
-  min-width: 230px;
-  max-width: 230px;
+  width: 190px;
+  min-width: 190px;
+  max-width: 190px;
+}
+
+.operator-logs-table .data-table th:nth-child(4),
+.operator-logs-table .data-table td:nth-child(4) {
+  width: 180px;
+  min-width: 180px;
+  max-width: 180px;
 }
 
 .operator-logs-table .data-table th:nth-child(6),
 .operator-logs-table .data-table td:nth-child(6) {
-  width: 92px;
-  min-width: 92px;
-  max-width: 92px;
+  width: 130px;
+  min-width: 130px;
+  max-width: 130px;
 }
 
 .operator-logs-table .data-table th:nth-child(12),
@@ -1604,7 +1611,7 @@
   max-width: 150px;
 }
 
-.operator-logs-table .data-table td:nth-child(3) {
+.operator-logs-table .data-table td:nth-child(4) {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1631,6 +1638,11 @@
 
 .operator-logs-table .log-status-badge {
   white-space: nowrap;
+}
+
+.operator-logs-table .log-revenue-value {
+  white-space: nowrap;
+  display: inline-block;
 }
 
 .operator-table-no-scroll

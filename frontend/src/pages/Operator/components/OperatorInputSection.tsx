@@ -384,7 +384,7 @@ export const OperatorInputSection: React.FC<OperatorInputSectionProps> = ({
                     </div>
                   )}
                   <div className="quantity-timer required-timer">
-                    <span className="timer-label">Time Required:</span>
+                    <span className="timer-label">Estimated Time:</span>
                     <span className={`timer-value ${isRunning ? "running" : ""}`}>
                       {remainingTime}
                     </span>
