@@ -60,6 +60,46 @@
   box-sizing: border-box;
 }
 
+.admin-option-input-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.45rem;
+  align-items: center;
+}
+
+.admin-option-list {
+  margin-top: 0.6rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  max-height: 260px;
+  overflow-y: auto;
+  padding-right: 0.2rem;
+}
+
+.admin-option-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 0.42rem 0.55rem;
+  background: #f8fafc;
+}
+
+.admin-option-row span {
+  font-size: 0.84rem;
+  color: #1e293b;
+  word-break: break-word;
+}
+
+.admin-empty-text {
+  margin: 0.2rem 0 0;
+  font-size: 0.82rem;
+  color: #64748b;
+}
+
 .admin-help {
   margin: 0 0 0.6rem;
   font-size: 0.82rem;

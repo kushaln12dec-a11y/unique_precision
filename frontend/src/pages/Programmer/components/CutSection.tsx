@@ -74,15 +74,7 @@ const parseOperationRows = (cut: CutForm): OperationRow[] => {
         passLevel: String((row as any).passLevel ?? (row as any).pass ?? "0"),
         setting: String((row as any).setting ?? (row as any).settingHrs ?? "0"),
         qty: String((row as any).qty ?? (row as any).quantity ?? "0"),
-      }))
-      .filter((row) => {
-        const cutValue = Number(row.cut || 0);
-        const thkValue = Number(row.thickness || 0);
-        const passValue = Number(row.passLevel || 0);
-        const settingValue = Number(row.setting || 0);
-        const qtyValue = Number(row.qty || 0);
-        return cutValue > 0 || thkValue > 0 || passValue > 0 || settingValue > 0 || qtyValue > 0;
-      });
+      }));
     return rows.length > 0 ? rows : [fallbackRow];
   } catch (error) {
     return [fallbackRow];

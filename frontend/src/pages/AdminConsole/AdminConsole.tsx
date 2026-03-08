@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import type { Dispatch, SetStateAction } from "react";
 import { useNavigate } from "react-router-dom";
 import Sidebar from "../../components/Sidebar";
 import Header from "../../components/Header";
@@ -10,11 +11,21 @@ import type { MasterConfig } from "../../types/masterConfig";
 import "../RoleBoard.css";
 import "./AdminConsole.css";
 
-const parseCsv = (input: string): string[] =>
-  input
-    .split(",")
-    .map((v) => v.trim())
-    .filter(Boolean);
+const normalizeOptionValue = (input: string): string => input.trim().replace(/\s+/g, " ");
+
+const sanitizeOptions = (values: string[]): string[] => {
+  const seen = new Set<string>();
+  const next: string[] = [];
+  values.forEach((value) => {
+    const normalized = normalizeOptionValue(value);
+    if (!normalized) return;
+    const key = normalized.toLowerCase();
+    if (seen.has(key)) return;
+    seen.add(key);
+    next.push(normalized);
+  });
+  return next;
+};
 
 type AdminSection = "customers" | "materials" | "pass" | "sedm" | "hours" | null;
 
@@ -30,9 +41,12 @@ const AdminConsole = () => {
     visible: false,
   });
 
-  const [materialsText, setMaterialsText] = useState("");
-  const [passText, setPassText] = useState("");
-  const [electrodeText, setElectrodeText] = useState("");
+  const [materials, setMaterials] = useState<string[]>([]);
+  const [passOptions, setPassOptions] = useState<string[]>([]);
+  const [electrodeOptions, setElectrodeOptions] = useState<string[]>([]);
+  const [materialInput, setMaterialInput] = useState("");
+  const [passInput, setPassInput] = useState("");
+  const [electrodeInput, setElectrodeInput] = useState("");
   const [customers, setCustomers] = useState<Array<{ customer: string; rate: string }>>([]);
 
   const isAdmin = useMemo(() => getUserRoleFromToken() === "ADMIN", []);
@@ -48,9 +62,9 @@ const AdminConsole = () => {
         const fetched = await getMasterConfig();
         setConfig(fetched);
         setCustomers(fetched.customers);
-        setMaterialsText(fetched.materials.join(", "));
-        setPassText(fetched.passOptions.join(", "));
-        setElectrodeText(fetched.sedmElectrodeOptions.join(", "));
+        setMaterials(sanitizeOptions(fetched.materials));
+        setPassOptions(sanitizeOptions(fetched.passOptions));
+        setElectrodeOptions(sanitizeOptions(fetched.sedmElectrodeOptions));
       } catch {
         setToast({ message: "Failed to load Admin Console data", variant: "error", visible: true });
       } finally {
@@ -69,9 +83,9 @@ const AdminConsole = () => {
         customers: customers
           .map((item) => ({ customer: item.customer.trim().toUpperCase(), rate: item.rate.trim() }))
           .filter((item) => item.customer),
-        materials: parseCsv(materialsText),
-        passOptions: parseCsv(passText),
-        sedmElectrodeOptions: parseCsv(electrodeText),
+        materials: sanitizeOptions(materials),
+        passOptions: sanitizeOptions(passOptions),
+        sedmElectrodeOptions: sanitizeOptions(electrodeOptions),
         sedmThOptions: config.sedmThOptions || [],
         settingHoursPerSetting: Number(config.settingHoursPerSetting) || 0.5,
         complexExtraHours: Number(config.complexExtraHours) || 1,
@@ -107,6 +121,25 @@ const AdminConsole = () => {
     setCustomers((prev) => prev.filter((_, idx) => idx !== index));
   };
 
+  const addOption = (
+    rawValue: string,
+    setValue: Dispatch<SetStateAction<string>>,
+    setList: Dispatch<SetStateAction<string[]>>,
+    emptyMessage: string
+  ) => {
+    const nextValue = normalizeOptionValue(rawValue);
+    if (!nextValue) {
+      setToast({ message: emptyMessage, variant: "info", visible: true });
+      return;
+    }
+    setList((prev) => sanitizeOptions([...prev, nextValue]));
+    setValue("");
+  };
+
+  const removeOption = (index: number, setList: Dispatch<SetStateAction<string[]>>) => {
+    setList((prev) => prev.filter((_, idx) => idx !== index));
+  };
+
   return (
     <div className="roleboard-container">
       <Sidebar currentPath="/admin-console" onNavigate={(path) => navigate(path)} />
@@ -125,15 +158,15 @@ const AdminConsole = () => {
                 </button>
                 <button type="button" className="admin-mini-card" onClick={() => setActiveSection("materials")}>
                   <h4>Material Options</h4>
-                  <p>Comma-separated material dropdown values.</p>
+                  <p>Add materials one by one and save changes.</p>
                 </button>
                 <button type="button" className="admin-mini-card" onClick={() => setActiveSection("pass")}>
                   <h4>Pass Options</h4>
-                  <p>Configure available pass values.</p>
+                  <p>Add pass values one by one and save changes.</p>
                 </button>
                 <button type="button" className="admin-mini-card" onClick={() => setActiveSection("sedm")}>
                   <h4>SEDM Electrode</h4>
-                  <p>Configure electrode dropdown list.</p>
+                  <p>Add electrode values one by one and save changes.</p>
                 </button>
                 <button type="button" className="admin-mini-card" onClick={() => setActiveSection("hours")}>
                   <h4>Hours Config</h4>
@@ -196,8 +229,36 @@ const AdminConsole = () => {
         className="admin-section-modal"
         size="small"
       >
-        <label>Material (comma-separated)</label>
-        <textarea value={materialsText} onChange={(e) => setMaterialsText(e.target.value)} rows={5} />
+        <label>Add Material</label>
+        <div className="admin-option-input-row">
+          <input
+            type="text"
+            value={materialInput}
+            placeholder="e.g. SS (Stainless Steel)"
+            onChange={(e) => setMaterialInput(e.target.value)}
+          />
+          <button
+            type="button"
+            className="admin-add-btn"
+            onClick={() => addOption(materialInput, setMaterialInput, setMaterials, "Enter a material value first")}
+          >
+            Save
+          </button>
+        </div>
+        <div className="admin-option-list">
+          {materials.length === 0 ? (
+            <p className="admin-empty-text">No material options added yet.</p>
+          ) : (
+            materials.map((item, index) => (
+              <div className="admin-option-row" key={`material-${index}`}>
+                <span>{item}</span>
+                <button type="button" className="admin-remove-btn" onClick={() => removeOption(index, setMaterials)}>
+                  Remove
+                </button>
+              </div>
+            ))
+          )}
+        </div>
         <div className="admin-modal-actions">
           <button type="button" className="btn-primary" disabled={saving} onClick={handleSaveAndClose}>
             {saving ? "Saving..." : "Save"}
@@ -212,8 +273,36 @@ const AdminConsole = () => {
         className="admin-section-modal"
         size="small"
       >
-        <label>Pass (comma-separated)</label>
-        <textarea value={passText} onChange={(e) => setPassText(e.target.value)} rows={4} />
+        <label>Add Pass</label>
+        <div className="admin-option-input-row">
+          <input
+            type="text"
+            value={passInput}
+            placeholder="e.g. 1"
+            onChange={(e) => setPassInput(e.target.value)}
+          />
+          <button
+            type="button"
+            className="admin-add-btn"
+            onClick={() => addOption(passInput, setPassInput, setPassOptions, "Enter a pass value first")}
+          >
+            Save
+          </button>
+        </div>
+        <div className="admin-option-list">
+          {passOptions.length === 0 ? (
+            <p className="admin-empty-text">No pass options added yet.</p>
+          ) : (
+            passOptions.map((item, index) => (
+              <div className="admin-option-row" key={`pass-${index}`}>
+                <span>{item}</span>
+                <button type="button" className="admin-remove-btn" onClick={() => removeOption(index, setPassOptions)}>
+                  Remove
+                </button>
+              </div>
+            ))
+          )}
+        </div>
         <div className="admin-modal-actions">
           <button type="button" className="btn-primary" disabled={saving} onClick={handleSaveAndClose}>
             {saving ? "Saving..." : "Save"}
@@ -228,8 +317,42 @@ const AdminConsole = () => {
         className="admin-section-modal"
         size="small"
       >
-        <label>SEDM Electrode (comma-separated)</label>
-        <textarea value={electrodeText} onChange={(e) => setElectrodeText(e.target.value)} rows={5} />
+        <label>Add SEDM Electrode</label>
+        <div className="admin-option-input-row">
+          <input
+            type="text"
+            value={electrodeInput}
+            placeholder="e.g. 0.3"
+            onChange={(e) => setElectrodeInput(e.target.value)}
+          />
+          <button
+            type="button"
+            className="admin-add-btn"
+            onClick={() =>
+              addOption(electrodeInput, setElectrodeInput, setElectrodeOptions, "Enter an electrode value first")
+            }
+          >
+            Save
+          </button>
+        </div>
+        <div className="admin-option-list">
+          {electrodeOptions.length === 0 ? (
+            <p className="admin-empty-text">No electrode options added yet.</p>
+          ) : (
+            electrodeOptions.map((item, index) => (
+              <div className="admin-option-row" key={`electrode-${index}`}>
+                <span>{item}</span>
+                <button
+                  type="button"
+                  className="admin-remove-btn"
+                  onClick={() => removeOption(index, setElectrodeOptions)}
+                >
+                  Remove
+                </button>
+              </div>
+            ))
+          )}
+        </div>
         <div className="admin-modal-actions">
           <button type="button" className="btn-primary" disabled={saving} onClick={handleSaveAndClose}>
             {saving ? "Saving..." : "Save"}
