@@ -6,7 +6,7 @@
   display: flex;
   gap: 0.65rem;
   margin: 0.5rem 0 0.9rem;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
 }
 
 .qc-filter-input,
@@ -19,27 +19,12 @@
 }
 
 .qc-filter-input {
-  min-width: 220px;
+  min-width: 260px;
+  max-width: 460px;
 }
 
 .qc-filter-select {
   min-width: 180px;
-}
-
-.qc-print-btn {
-  height: 30px;
-  padding: 0 0.85rem;
-  border-radius: 8px;
-  border: 1px solid #94a3b8;
-  background: #ffffff;
-  color: #0f172a;
-  font-size: 0.82rem;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.qc-print-btn:hover {
-  background: #f8fafc;
 }
 
 .qc-decision-actions {
@@ -78,18 +63,100 @@
   background: #fee2e2;
 }
 
-.qc-approved-row {
-  background: #ecfdf5 !important;
+.qc-inspection-report-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
 }
 
-.qc-approved-row td:first-child {
-  box-shadow: inset 4px 0 0 #22c55e;
+.qc-inspection-report-btn,
+.qc-inspection-report-download-btn {
+  height: 30px;
+  padding: 0 0.7rem;
+  border-radius: 8px;
+  border: 1px solid #93c5fd;
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
 }
 
-.qc-rejected-row {
-  background: #fef2f2 !important;
+.qc-inspection-report-btn:hover {
+  background: #dbeafe;
 }
 
-.qc-rejected-row td:first-child {
-  box-shadow: inset 4px 0 0 #ef4444;
+.qc-inspection-report-download-btn {
+  border-color: #86efac;
+  background: #ecfdf5;
+  color: #166534;
+}
+
+.qc-inspection-report-download-btn:hover {
+  background: #dcfce7;
+}
+
+/* Programmer-style priority/critical row colors for QC table */
+.jobs-table-wrapper .group-row.critical-row {
+  border-left: 4px solid #dc2626;
+  background-image:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.54) 0%, rgba(255, 255, 255, 0.08) 48%, rgba(255, 255, 255, 0) 100%),
+    linear-gradient(90deg, rgba(220, 38, 38, 0.2) 0%, rgba(220, 38, 38, 0.07) 38%, rgba(255, 255, 255, 0.95) 100%);
+}
+
+.jobs-table-wrapper .group-row.critical-row td:first-child {
+  box-shadow: inset 4px 0 0 #dc2626;
+}
+
+.jobs-table-wrapper .group-row.critical-row td {
+  background: transparent !important;
+  color: #0f172a;
+}
+
+.jobs-table-wrapper .group-row.priority-row.priority-high {
+  border-left: 3px solid #ef4444;
+  background-image:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0.08) 48%, rgba(255, 255, 255, 0) 100%),
+    linear-gradient(90deg, rgba(239, 68, 68, 0.18) 0%, rgba(239, 68, 68, 0.06) 38%, rgba(255, 255, 255, 0.96) 100%);
+}
+
+.jobs-table-wrapper .group-row.priority-row.priority-high td:first-child {
+  box-shadow: inset 3px 0 0 #ef4444;
+}
+
+.jobs-table-wrapper .group-row.priority-row.priority-high td {
+  background: transparent !important;
+  color: #0f172a;
+}
+
+.jobs-table-wrapper .group-row.priority-row.priority-medium {
+  border-left: 3px solid #f59e0b;
+  background-image:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.52) 0%, rgba(255, 255, 255, 0.08) 48%, rgba(255, 255, 255, 0) 100%),
+    linear-gradient(90deg, rgba(245, 158, 11, 0.2) 0%, rgba(245, 158, 11, 0.07) 38%, rgba(255, 255, 255, 0.96) 100%);
+}
+
+.jobs-table-wrapper .group-row.priority-row.priority-medium td:first-child {
+  box-shadow: inset 3px 0 0 #f59e0b;
+}
+
+.jobs-table-wrapper .group-row.priority-row.priority-medium td {
+  background: transparent !important;
+  color: #0f172a;
+}
+
+.jobs-table-wrapper .group-row.priority-row.priority-low {
+  border-left: 3px solid #10b981;
+  background-image:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0.08) 48%, rgba(255, 255, 255, 0) 100%),
+    linear-gradient(90deg, rgba(16, 185, 129, 0.19) 0%, rgba(16, 185, 129, 0.065) 38%, rgba(255, 255, 255, 0.96) 100%);
+}
+
+.jobs-table-wrapper .group-row.priority-row.priority-low td:first-child {
+  box-shadow: inset 3px 0 0 #10b981;
+}
+
+.jobs-table-wrapper .group-row.priority-row.priority-low td {
+  background: transparent !important;
+  color: #0f172a;
 }

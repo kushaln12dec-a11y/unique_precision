@@ -80,6 +80,11 @@ const Header = ({ title }: HeaderProps) => {
       { label: 'Dashboard', path: '/dashboard', icon: DashboardIcon },
       { label: 'QC', path: '/qc', icon: VerifiedUserIcon },
     ],
+    '/qc/inspection-report': [
+      { label: 'Dashboard', path: '/dashboard', icon: DashboardIcon },
+      { label: 'QC', path: '/qc', icon: VerifiedUserIcon },
+      { label: 'Inspection Report', path: '/qc/inspection-report', icon: VerifiedUserIcon },
+    ],
     '/inventory': [
       { label: 'Dashboard', path: '/dashboard', icon: DashboardIcon },
       { label: 'Inventory', path: '/inventory', icon: InventoryIcon },

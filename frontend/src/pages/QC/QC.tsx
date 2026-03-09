@@ -4,13 +4,16 @@ import Sidebar from "../../components/Sidebar";
 import Header from "../../components/Header";
 import DataTable from "../../components/DataTable";
 import { getJobs, updateQcDecisionByGroupId } from "../../services/jobApi";
+import {
+  generateInspectionReport,
+  type InspectionReportPayload,
+} from "../../services/inspectionReportApi";
 import type { JobEntry } from "../../types/job";
 import { formatDisplayDateTime, parseDateValue } from "../../utils/date";
 import { isGroupFullySentToQa } from "../Operator/utils/qaProgress";
 import { getParentRowClassName } from "../Programmer/utils/priorityUtils";
 import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import {
-  setQcCreatedByFilter,
   setQcCustomerFilter,
   setQcDescriptionFilter,
 } from "../../store/slices/filtersSlice";
@@ -26,11 +29,18 @@ type QcRow = {
   totalAmount: number;
 };
 
+const formatDateForTemplate = (date: Date) => {
+  const day = String(date.getDate()).padStart(2, "0");
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const year = String(date.getFullYear());
+  return `${day}/${month}/${year}`;
+};
+
 const QC = () => {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const [jobs, setJobs] = useState<JobEntry[]>([]);
-  const { customerFilter, descriptionFilter, createdByFilter } = useAppSelector((state) => state.filters.qc);
+  const { customerFilter, descriptionFilter } = useAppSelector((state) => state.filters.qc);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -82,58 +92,9 @@ const QC = () => {
       const descriptionMatch = descriptionFilter
         ? String(row.parent.description || "").toLowerCase().includes(descriptionFilter.toLowerCase())
         : true;
-      const createdByMatch = createdByFilter
-        ? String(row.parent.createdBy || "") === createdByFilter
-        : true;
-      return customerMatch && descriptionMatch && createdByMatch;
+      return customerMatch && descriptionMatch;
     });
-  }, [tableData, customerFilter, descriptionFilter, createdByFilter]);
-
-  const createdByOptions = useMemo(
-    () => Array.from(new Set(tableData.map((row) => row.parent.createdBy).filter(Boolean))),
-    [tableData]
-  );
-
-  const handlePrintReport = (row: QcRow) => {
-    const quantity = row.entries.reduce((sum, item) => sum + Number(item.qty || 0), 0);
-    const reportHtml = `
-      <!doctype html>
-      <html>
-      <head>
-        <meta charset="utf-8" />
-        <title>Inspection Report</title>
-        <style>
-          body { font-family: Arial, sans-serif; margin: 24px; color: #111; }
-          h1 { font-size: 22px; margin: 0 0 16px; }
-          .grid { display: grid; grid-template-columns: 220px 1fr; row-gap: 10px; column-gap: 12px; }
-          .label { font-weight: 700; }
-          .value { border-bottom: 1px solid #999; min-height: 20px; }
-          .spacer { height: 24px; }
-        </style>
-      </head>
-      <body>
-        <h1>Inspection Report</h1>
-        <div class="grid">
-          <div class="label">Customer ID</div><div class="value">${row.parent.customer || ""}</div>
-          <div class="label">Drawing Name</div><div class="value">${row.parent.description || ""}</div>
-          <div class="label">Drawing No</div><div class="value">${row.parent.refNumber || row.parent.programRefFile || ""}</div>
-          <div class="label">Quantity</div><div class="value">${quantity}</div>
-          <div class="label">Inspector</div><div class="value"></div>
-          <div class="label">Date</div><div class="value"></div>
-          <div class="label">Remarks</div><div class="value"></div>
-        </div>
-        <div class="spacer"></div>
-      </body>
-      </html>
-    `;
-    const printWindow = window.open("", "_blank");
-    if (!printWindow) return;
-    printWindow.document.open();
-    printWindow.document.write(reportHtml);
-    printWindow.document.close();
-    printWindow.focus();
-    printWindow.print();
-  };
+  }, [tableData, customerFilter, descriptionFilter]);
 
   const columns = useMemo(
     () => [
@@ -165,15 +126,6 @@ const QC = () => {
         key: "createdAt",
         label: "Created At",
         render: (row: QcRow) => formatDisplayDateTime(row.parent.createdAt),
-      },
-      {
-        key: "print",
-        label: "Print",
-        render: (row: QcRow) => (
-          <button type="button" className="qc-print-btn" onClick={() => handlePrintReport(row)}>
-            Print
-          </button>
-        ),
       },
       {
         key: "decision",
@@ -209,8 +161,85 @@ const QC = () => {
           </div>
         ),
       },
+      {
+        key: "inspectionReport",
+        label: "Inspection Report",
+        render: (row: QcRow) => (
+          <div className="qc-inspection-report-actions">
+            <button
+              type="button"
+              className="qc-inspection-report-btn"
+              onClick={() => navigate(`/qc/inspection-report?groupId=${row.groupId}`)}
+            >
+              Open
+            </button>
+            <button
+              type="button"
+              className="qc-inspection-report-download-btn"
+              onClick={async () => {
+                const quantityTotal = row.entries.reduce(
+                  (sum, item) => sum + Number(item.qty || 0),
+                  0
+                );
+                const seededRows = row.entries.slice(0, 17).map((entry) => ({
+                  actualDimension: String(entry.cut ?? ""),
+                  tolerance: "",
+                  measuringDimension: "",
+                  deviation: "",
+                  instruments: {
+                    hm: false,
+                    sg: false,
+                    pg: false,
+                    vc: false,
+                    dm: false,
+                  },
+                }));
+                const decision =
+                  row.parent.qcDecision === "APPROVED"
+                    ? "ACCEPTED"
+                    : row.parent.qcDecision === "REJECTED"
+                      ? "REJECTED"
+                      : "PENDING";
+
+                const payload: InspectionReportPayload = {
+                  groupId: row.groupId,
+                  customerId: String(row.parent.customer || ""),
+                  date: formatDateForTemplate(new Date()),
+                  drawingName: String(row.parent.description || ""),
+                  drawingNo: String((row.parent as any).programRefFile || row.parent.refNumber || ""),
+                  quantity: quantityTotal > 0 ? String(quantityTotal) : "",
+                  decision,
+                  rows: seededRows.length > 0 ? seededRows : [],
+                  remarks: "",
+                  workPieceDamage: "",
+                  rightAngleProblem: "",
+                  materialProblem: "",
+                  inspectedBy: "",
+                  approvedBy: "",
+                };
+
+                try {
+                  const blob = await generateInspectionReport(payload);
+                  const link = document.createElement("a");
+                  const url = URL.createObjectURL(blob);
+                  link.href = url;
+                  link.download = `inspection-report-${row.groupId}.pdf`;
+                  document.body.appendChild(link);
+                  link.click();
+                  document.body.removeChild(link);
+                  URL.revokeObjectURL(url);
+                } catch (error) {
+                  console.error("Failed to download inspection report", error);
+                }
+              }}
+            >
+              Download
+            </button>
+          </div>
+        ),
+      },
     ],
-    []
+    [navigate]
   );
 
   return (
@@ -223,40 +252,22 @@ const QC = () => {
           <div className="qc-filters">
             <input
               type="text"
-              value={customerFilter}
-              onChange={(e) => dispatch(setQcCustomerFilter(e.target.value))}
-              placeholder="Search customer..."
+              value={customerFilter || descriptionFilter}
+              onChange={(e) => {
+                const value = e.target.value;
+                dispatch(setQcCustomerFilter(value));
+                dispatch(setQcDescriptionFilter(value));
+              }}
+              placeholder="Search customer or description..."
               className="qc-filter-input"
             />
-            <input
-              type="text"
-              value={descriptionFilter}
-              onChange={(e) => dispatch(setQcDescriptionFilter(e.target.value))}
-              placeholder="Search description..."
-              className="qc-filter-input"
-            />
-            <select
-              value={createdByFilter}
-              onChange={(e) => dispatch(setQcCreatedByFilter(e.target.value))}
-              className="qc-filter-select"
-            >
-              <option value="">All Users</option>
-              {createdByOptions.map((name) => (
-                <option key={name} value={name}>
-                  {name}
-                </option>
-              ))}
-            </select>
           </div>
           <DataTable
             columns={columns as any}
             data={filteredTableData as any}
             getRowKey={(row: QcRow) => row.groupId}
             getRowClassName={(row: QcRow) => {
-              const baseClass = getParentRowClassName(row.parent, row.entries, false);
-              if (row.parent.qcDecision === "APPROVED") return `${baseClass} qc-approved-row`.trim();
-              if (row.parent.qcDecision === "REJECTED") return `${baseClass} qc-rejected-row`.trim();
-              return baseClass;
+              return getParentRowClassName(row.parent, row.entries, false);
             }}
             emptyMessage="No rows dispatched to QA yet."
             className="jobs-table-wrapper"

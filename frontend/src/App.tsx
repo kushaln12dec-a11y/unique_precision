@@ -5,6 +5,7 @@ import Programmer from "./pages/Programmer/Programmer";
 import Operator from "./pages/Operator/Operator";
 import OperatorViewPage from "./pages/Operator/OperatorViewPage.tsx";
 import QC from "./pages/QC/QC";
+import InspectionReportPage from "./pages/QC/InspectionReportPage";
 import Inventory from "./pages/Inventory/Inventory";
 import UserManagement from "./pages/User Management/UserManagement";
 import EmployeeLogs from "./pages/EmployeeLogs/EmployeeLogs";
@@ -69,6 +70,14 @@ function App() {
           element={
             <ProtectedRoute>
               <QC />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/qc/inspection-report"
+          element={
+            <ProtectedRoute>
+              <InspectionReportPage />
             </ProtectedRoute>
           }
         />
