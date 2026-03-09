@@ -10,6 +10,7 @@ import operatorRoutes from "./routes/operator";
 import idleTimeConfigRoutes from "./routes/idleTimeConfig";
 import employeeLogsRoutes from "./routes/employeeLogs";
 import masterConfigRoutes from "./routes/masterConfig";
+import inspectionReportsRoutes from "./routes/inspectionReports";
 import { authMiddleware } from "./middleware/auth";
 import { connectDB } from "./config/database";
 
@@ -62,6 +63,9 @@ app.use("/api/employee-logs", employeeLogsRoutes);
 
 // Master config routes
 app.use("/api/master-config", masterConfigRoutes);
+
+// Inspection report routes
+app.use("/api/inspection-reports", inspectionReportsRoutes);
 
 
 
