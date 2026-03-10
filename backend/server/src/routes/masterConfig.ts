@@ -16,8 +16,9 @@ const DEFAULT_MASTER_CONFIG = {
   materials: ["SS (Stainless Steel)", "Copper", "Brass", "Carbide"],
   passOptions: ["1", "2", "3", "4", "5", "6"],
   sedmElectrodeOptions: ["0.3", "0.4", "0.5", "0.6", "0.7", "0.8", "1.0", "1.5", "2.0", "2.5", "3.0"],
+  machineOptions: ["1", "2", "3", "4", "5", "6"],
   sedmThOptions: [
-    { value: "min", label: "Min 20mm" },
+    { value: "min", label: "Min" },
     { value: "per", label: "Greater than 20mm" },
   ],
   settingHoursPerSetting: 0.5,
@@ -85,6 +86,7 @@ router.put("/", adminMiddleware, async (req, res) => {
       materials: normalizeList(payload.materials),
       passOptions: normalizeList(payload.passOptions),
       sedmElectrodeOptions: normalizeList(payload.sedmElectrodeOptions),
+      machineOptions: normalizeList(payload.machineOptions),
       sedmThOptions: normalizeThOptions(payload.sedmThOptions),
       settingHoursPerSetting: Number(payload.settingHoursPerSetting) || 0.5,
       complexExtraHours: Number(payload.complexExtraHours) || 1,
@@ -105,4 +107,3 @@ router.put("/", adminMiddleware, async (req, res) => {
 });
 
 export default router;
-

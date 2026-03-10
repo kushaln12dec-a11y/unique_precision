@@ -23,6 +23,7 @@ const masterConfigSchema = new mongoose.Schema(
     materials: { type: [String], default: [] },
     passOptions: { type: [String], default: [] },
     sedmElectrodeOptions: { type: [String], default: [] },
+    machineOptions: { type: [String], default: [] },
     sedmThOptions: { type: [thOptionSchema], default: [] },
     settingHoursPerSetting: { type: Number, default: 0.5 },
     complexExtraHours: { type: Number, default: 1 },
@@ -32,4 +33,3 @@ const masterConfigSchema = new mongoose.Schema(
 );
 
 export default mongoose.model("MasterConfig", masterConfigSchema);
-
