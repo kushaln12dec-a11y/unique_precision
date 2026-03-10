@@ -14,6 +14,8 @@ import "./components/CustomerAutocomplete.css";
 type CutTotals = {
   totalHrs: number;
   totalAmount: number;
+  wedmAmount: number;
+  sedmAmount: number;
 };
 
 type ProgrammerJobFormProps = {
@@ -90,8 +92,10 @@ const ProgrammerJobForm = ({
       (acc, current) => ({
         totalHrs: acc.totalHrs + current.totalHrs,
         totalAmount: acc.totalAmount + current.totalAmount,
+        wedmAmount: acc.wedmAmount + current.wedmAmount,
+        sedmAmount: acc.sedmAmount + current.sedmAmount,
       }),
-      { totalHrs: 0, totalAmount: 0 }
+      { totalHrs: 0, totalAmount: 0, wedmAmount: 0, sedmAmount: 0 }
     );
   }, [totals]);
 
@@ -102,7 +106,7 @@ const ProgrammerJobForm = ({
 
         {cuts.map((cut, index) => {
           const isCollapsed = index === 0 ? false : collapsedCuts.has(index);
-          const cutTotals = totals[index] ?? { totalHrs: 0, totalAmount: 0 };
+          const cutTotals = totals[index] ?? { totalHrs: 0, totalAmount: 0, wedmAmount: 0, sedmAmount: 0 };
           const isSaved = savedCuts.has(index);
           const fieldErrors = cutValidationErrors[index] ?? {};
 

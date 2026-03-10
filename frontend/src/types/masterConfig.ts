@@ -13,9 +13,9 @@ export type MasterConfig = {
   materials: string[];
   passOptions: string[];
   sedmElectrodeOptions: string[];
+  machineOptions: string[];
   sedmThOptions: SedmThOption[];
   settingHoursPerSetting: number;
   complexExtraHours: number;
   pipExtraHours: number;
 };
-

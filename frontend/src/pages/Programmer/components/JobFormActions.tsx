@@ -1,7 +1,7 @@
 import React from "react";
 
 type JobFormActionsProps = {
-  grandTotals: { totalHrs: number; totalAmount: number };
+  grandTotals: { totalHrs: number; totalAmount: number; wedmAmount: number; sedmAmount: number };
   allCutsSaved: boolean;
   isAdmin: boolean;
   onClearAll: () => void;
@@ -36,6 +36,18 @@ export const JobFormActions: React.FC<JobFormActionsProps> = ({
             </>
           )}
         </div>
+        {isAdmin && (
+          <>
+            <div>
+              <span className="form-total-label">WEDM Cost (Rs.)</span>
+              <span className="form-total-value">{grandTotals.wedmAmount.toFixed(2)}</span>
+            </div>
+            <div>
+              <span className="form-total-label">SEDM Cost (Rs.)</span>
+              <span className="form-total-value">{grandTotals.sedmAmount.toFixed(2)}</span>
+            </div>
+          </>
+        )}
       </div>
       <div className="form-action-buttons">
         <button

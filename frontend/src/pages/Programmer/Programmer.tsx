@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import Sidebar from "../../components/Sidebar";
 import Header from "../../components/Header";
 import DataTable, { type Column } from "../../components/DataTable";
@@ -46,6 +46,7 @@ import { getInitials } from "../../utils/jobFormatting";
 const Programmer = () => {
   const PROGRAMMER_ACTIVE_LOG_KEY = "programmer_active_job_log_id";
   const navigate = useNavigate();
+  const params = useParams<{ groupId?: string }>();
   const dispatch = useAppDispatch();
   const [sortField, setSortField] = useState<keyof JobEntry | null>(null);
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
@@ -534,6 +535,14 @@ const Programmer = () => {
     document.body.removeChild(link);
   };
 
+  const routeEditGroupId = Number(params.groupId);
+  const isEditFormReady =
+    isEditRoute &&
+    !Number.isNaN(routeEditGroupId) &&
+    editingGroupId === routeEditGroupId &&
+    cuts.length > 0;
+  const shouldRenderJobForm = isNewJobRoute || (isEditRoute ? isEditFormReady : showForm);
+
   return (
     <div className="programmer-container">
       <Sidebar currentPath="/programmer" onNavigate={(path) => navigate(path)} />
@@ -559,7 +568,7 @@ const Programmer = () => {
             </div>
           )}
 
-          {(isNewJobRoute || isEditRoute || showForm) && (
+          {shouldRenderJobForm && (
             <ProgrammerJobForm
               cuts={cuts}
               setCuts={setCuts}

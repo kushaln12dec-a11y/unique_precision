@@ -2160,16 +2160,28 @@
 .description-marquee > span {
   display: inline-block;
   min-width: 100%;
-  padding-left: 100%;
-  animation: description-marquee-scroll 10s linear infinite;
+  animation: description-marquee-scroll 8s linear infinite;
+  will-change: transform;
+}
+
+/* Pause all marquee cells together when hovering the table area. */
+.jobs-table-wrapper .data-table:hover .description-marquee > span,
+.operator-table-no-scroll .data-table:hover .description-marquee > span,
+.child-jobs-table:hover .description-marquee > span {
+  animation-play-state: paused;
 }
 
 @keyframes description-marquee-scroll {
-  0% {
+  0%,
+  12% {
     transform: translateX(0);
   }
+  50% {
+    transform: translateX(-42px);
+  }
+  88%,
   100% {
-    transform: translateX(-100%);
+    transform: translateX(0);
   }
 }
 
@@ -2658,4 +2670,26 @@
   .programmer-container {
     padding-left: 0;
   }
+}
+
+/* Keep child table headers centered across Programmer/Operator shared child table. */
+.child-jobs-table thead th,
+.child-jobs-table thead th[class] {
+  text-align: center;
+}
+
+.child-jobs-table thead th .th-content,
+.child-jobs-table thead th[class] .th-content {
+  justify-content: center;
+}
+
+/* Keep Programmer table headers centered. */
+.jobs-table-wrapper .data-table thead th,
+.jobs-table-wrapper .data-table thead th[class] {
+  text-align: center;
+}
+
+.jobs-table-wrapper .data-table thead th .th-content,
+.jobs-table-wrapper .data-table thead th[class] .th-content {
+  justify-content: center;
 }

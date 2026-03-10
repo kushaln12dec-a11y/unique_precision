@@ -57,7 +57,6 @@
 }
 
 .sidebar-header {
-  padding: 1.25rem 1rem;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -74,14 +73,14 @@
   width: 100%;
   transition: all 0.3s ease;
   padding: 0.35rem 0.5rem;
-  min-height: 50px;
+  min-height: 78px;
   overflow: hidden;
 }
 
 .logo-expanded {
   width: 100%;
   max-width: 220px;
-  height: 52px;
+  height: 78px;
   display: none;
   align-items: center;
   justify-content: center;
@@ -90,22 +89,22 @@
 }
 
 .logo-expanded-image {
-  width: 40px;
-  height: 40px;
+  width: 64px;
+  height: 64px;
   object-fit: contain;
   flex-shrink: 0;
 }
 
 .logo-collapsed {
-  width: 32px;
-  height: 32px;
+  width: 52px;
+  height: 52px;
   object-fit: contain;
   display: block;
 }
 
 .sidebar-company-name {
   font-family: "Lucida Calligraphy", "Lucida Handwriting", cursive;
-  font-size: 1.28rem;
+  font-size: 1.48rem;
   line-height: 1.04;
   color: #102a63;
   letter-spacing: 0.2px;

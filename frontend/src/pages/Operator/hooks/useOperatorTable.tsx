@@ -4,7 +4,14 @@ import ActionButtons from "../../Programmer/components/ActionButtons";
 import ArrowForwardIosSharpIcon from "@mui/icons-material/ArrowForwardIosSharp";
 import { getGroupQaProgressCounts } from "../utils/qaProgress";
 import type { Column } from "../../../components/DataTable";
-import { estimatedTimeFromAmount, getInitials, toYN } from "../../../utils/jobFormatting";
+import {
+  estimatedTimeFromAmount,
+  formatMachineLabel,
+  getInitials,
+  MACHINE_OPTIONS,
+  toMachineIndex,
+  toYN,
+} from "../../../utils/jobFormatting";
 
 type TableRow = {
   groupId: number;
@@ -19,6 +26,7 @@ type UseOperatorTableProps = {
   expandableRows: Map<number, any>;
   canAssign: boolean;
   operatorUsers: Array<{ id: string | number; name: string }>;
+  machineOptions: string[];
   currentUserName: string;
   handleAssignChange: (jobId: number | string, value: string) => void;
   handleMachineNumberChange: (groupId: number, machineNumber: string) => void;
@@ -35,6 +43,7 @@ export const useOperatorTable = ({
   expandableRows,
   canAssign,
   operatorUsers,
+  machineOptions,
   currentUserName,
   handleAssignChange,
   handleMachineNumberChange,
@@ -45,13 +54,20 @@ export const useOperatorTable = ({
   isAdmin,
   isImageInputDisabled,
 }: UseOperatorTableProps): Column<TableRow>[] => {
+  const machineDropdownOptions = useMemo(() => {
+    const normalized = machineOptions
+      .map((value) => toMachineIndex(value))
+      .filter(Boolean);
+    return normalized.length > 0 ? normalized : [...MACHINE_OPTIONS];
+  }, [machineOptions]);
+
   const getMachineNumber = (job: JobEntry): string => {
     const direct = String((job as any).machineNumber || "").trim();
-    if (direct) return direct;
+    if (direct) return toMachineIndex(direct);
     const captures = Array.isArray(job.operatorCaptures) ? job.operatorCaptures : [];
     const latest = captures[captures.length - 1];
     const captureMachine = String(latest?.machineNumber || "").trim();
-    return captureMachine || "-";
+    return toMachineIndex(captureMachine);
   };
 
   return useMemo(
@@ -110,20 +126,6 @@ export const useOperatorTable = ({
         },
       },
       {
-        key: "description",
-        label: "Description",
-        sortable: false,
-        sortKey: "description",
-        render: (row) => {
-          const full = row.parent.description || "-";
-          return (
-            <div className="description-marquee" title={full}>
-              <span>{full}</span>
-            </div>
-          );
-        },
-      },
-      {
         key: "programRefFileName",
         label: (
           <>
@@ -138,6 +140,20 @@ export const useOperatorTable = ({
           return (
             <div className="description-marquee" title={value}>
               <span>{value}</span>
+            </div>
+          );
+        },
+      },
+      {
+        key: "description",
+        label: "Description",
+        sortable: false,
+        sortKey: "description",
+        render: (row) => {
+          const full = row.parent.description || "-";
+          return (
+            <div className="description-marquee" title={full}>
+              <span>{full}</span>
             </div>
           );
         },
@@ -241,7 +257,7 @@ export const useOperatorTable = ({
         render: (row) => (
           <select
             className="operator-machine-input"
-            value={["1", "2", "3", "4", "5", "6"].includes(getMachineNumber(row.parent)) ? getMachineNumber(row.parent) : ""}
+            value={machineDropdownOptions.includes(getMachineNumber(row.parent)) ? getMachineNumber(row.parent) : ""}
             onClick={(event) => event.stopPropagation()}
             onChange={(event) => {
               const nextValue = event.target.value;
@@ -249,12 +265,11 @@ export const useOperatorTable = ({
             }}
           >
             <option value="">Select</option>
-            <option value="1">1</option>
-            <option value="2">2</option>
-            <option value="3">3</option>
-            <option value="4">4</option>
-            <option value="5">5</option>
-            <option value="6">6</option>
+            {machineDropdownOptions.map((machine) => (
+              <option key={machine} value={machine}>
+                {formatMachineLabel(machine)}
+              </option>
+            ))}
           </select>
         ),
       },
@@ -345,6 +360,7 @@ export const useOperatorTable = ({
     [
       canAssign,
       operatorUsers,
+      machineDropdownOptions,
       currentUserName,
       handleAssignChange,
       handleMachineNumberChange,

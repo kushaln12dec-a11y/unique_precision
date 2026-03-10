@@ -112,13 +112,19 @@ export const CutSection: React.FC<CutSectionProps> = ({
   passOptions,
 }) => {
   const previousCustomerRef = React.useRef<string>(String(cut.customer || "").trim().toUpperCase());
+  const isHydratingRowsRef = React.useRef<boolean>(false);
   const [operationRows, setOperationRows] = React.useState<OperationRow[]>(() => parseOperationRows(cut));
 
   React.useEffect(() => {
+    isHydratingRowsRef.current = true;
     setOperationRows(parseOperationRows(cut));
   }, [cut.operationRowsJson, cut.cut, cut.thickness, cut.passLevel, cut.setting, cut.qty]);
 
   React.useEffect(() => {
+    if (isHydratingRowsRef.current) {
+      isHydratingRowsRef.current = false;
+      return;
+    }
     const first = operationRows[0];
     if (!first) return;
     if (first.cut !== cut.cut) onCutChange("cut")(first.cut);

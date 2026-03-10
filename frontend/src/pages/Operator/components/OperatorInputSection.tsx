@@ -8,6 +8,7 @@ import { decimalHoursToHHMM } from "../utils/machineHrsCalculation";
 import { useQuantityTimer } from "../hooks/useQuantityTimer";
 import type { QuantityProgressStatus } from "../utils/qaProgress";
 import { getQaStageLabel } from "../utils/qaProgress";
+import { formatMachineLabel } from "../../../utils/jobFormatting";
 import "../OperatorViewPage.css";
 
 type InputField = keyof QuantityInputData | "recalculateMachineHrs" | "addIdleTimeToMachineHrs" | "togglePause" | "resetTimer" | "pauseReason";
@@ -518,7 +519,7 @@ export const OperatorInputSection: React.FC<OperatorInputSectionProps> = ({
                   <label>Mach #</label>
                   <input
                     type="text"
-                    value={qtyData.machineNumber}
+                    value={formatMachineLabel(qtyData.machineNumber)}
                     placeholder="Machine Number"
                     readOnly
                     className={validationErrors[qtyIndex]?.machineNumber ? "input-error" : ""}

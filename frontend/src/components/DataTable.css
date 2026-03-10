@@ -52,14 +52,9 @@
   word-break: break-word;
 }
 
-/* Support for left-aligned tables (e.g., UserManagement) */
-.data-table-wrapper.left-align .data-table th,
+/* Support for left-aligned cell content in specific tables */
 .data-table-wrapper.left-align .data-table td {
   text-align: left;
-}
-
-.data-table-wrapper.left-align .data-table .th-content {
-  justify-content: flex-start;
 }
 
 .data-table thead {
@@ -81,12 +76,13 @@
   text-transform: uppercase;
   letter-spacing: 0.5px;
   border-bottom: 2px solid #16213e;
+  text-align: center;
 }
 
 .data-table .th-content {
   display: inline-flex;
   align-items: center;
-  justify-content: flex-start;
+  justify-content: center;
   gap: 0.375rem;
   width: 100%;
   white-space: nowrap;

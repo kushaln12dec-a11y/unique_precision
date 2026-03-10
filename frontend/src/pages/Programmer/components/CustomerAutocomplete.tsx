@@ -94,6 +94,16 @@ const CustomerAutocomplete: React.FC<CustomerAutocompleteProps> = ({
     } else if (e.key === "Enter" && filteredOptions.length > 0 && isOpen) {
       e.preventDefault();
       handleOptionSelect(filteredOptions[0]);
+    } else if (e.key === "Tab" && filteredOptions.length > 0 && isOpen) {
+      const exactMatch = filteredOptions.some(
+        (option) => option.toLowerCase() === inputValue.trim().toLowerCase()
+      );
+      if (!exactMatch) {
+        const nextValue = filteredOptions[0];
+        setInputValue(nextValue);
+        onChange(nextValue);
+      }
+      setIsOpen(false);
     }
   };
 
@@ -112,7 +122,7 @@ const CustomerAutocomplete: React.FC<CustomerAutocompleteProps> = ({
           placeholder="Select or type customer..."
           className="customer-autocomplete-input"
         />
-        <span className="customer-autocomplete-arrow">▾</span>
+        <span className="customer-autocomplete-arrow">{"\u25BE"}</span>
       </div>
       {isOpen && !disabled && filteredOptions.length > 0 && (
         <div className="customer-autocomplete-dropdown">
@@ -135,3 +145,4 @@ const CustomerAutocomplete: React.FC<CustomerAutocompleteProps> = ({
 };
 
 export default CustomerAutocomplete;
+

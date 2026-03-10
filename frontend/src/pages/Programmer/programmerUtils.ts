@@ -245,8 +245,8 @@ export const calculateTotals = (form: CutForm, config: CalculationConfig = {}) =
     const cutHoursPerPiece = (cut * thickness) / thicknessDivisor * passMultiplier;
     const settingHours = getSettingHours(settingLevel);
 
-    // Quantity should scale total time for each operation row.
-    return sum + (cutHoursPerPiece + settingHours + extraHours) * qty;
+    // Quantity scales only machining cut-hours; setup/extra are added once per row.
+    return sum + (cutHoursPerPiece * qty) + settingHours + extraHours;
   }, 0);
   const wedmAmount = totalHrs * customerRate;
   const totalAmount = wedmAmount + sedmAmount;

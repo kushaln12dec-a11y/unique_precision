@@ -17,3 +17,17 @@ export const toYN = (value: unknown): string => {
 export const estimatedTimeFromAmount = (amount: number): string => {
   return ((Number(amount || 0) || 0) / 625).toFixed(2);
 };
+
+export const MACHINE_OPTIONS = ["1", "2", "3", "4", "5", "6"] as const;
+
+export const toMachineIndex = (value: unknown): string => {
+  const raw = String(value || "").trim().toUpperCase();
+  if (!raw) return "";
+  const normalized = raw.startsWith("M") ? raw.slice(1) : raw;
+  return MACHINE_OPTIONS.includes(normalized as (typeof MACHINE_OPTIONS)[number]) ? normalized : "";
+};
+
+export const formatMachineLabel = (value: unknown): string => {
+  const index = toMachineIndex(value);
+  return index ? `M${index}` : "-";
+};

@@ -24,6 +24,7 @@ export const getMasterConfig = async (): Promise<MasterConfig> => {
     materials: Array.isArray(data.materials) ? data.materials : [],
     passOptions: Array.isArray(data.passOptions) ? data.passOptions : [],
     sedmElectrodeOptions: Array.isArray(data.sedmElectrodeOptions) ? data.sedmElectrodeOptions : [],
+    machineOptions: Array.isArray(data.machineOptions) ? data.machineOptions : [],
     sedmThOptions: Array.isArray(data.sedmThOptions) ? data.sedmThOptions : [],
     settingHoursPerSetting: Number(data.settingHoursPerSetting) || 0.5,
     complexExtraHours: Number(data.complexExtraHours) || 1,
@@ -45,4 +46,3 @@ export const updateMasterConfig = async (payload: MasterConfig): Promise<MasterC
 
   return getMasterConfig();
 };
-

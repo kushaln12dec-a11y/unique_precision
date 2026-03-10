@@ -3,6 +3,7 @@ import ImageUpload from "./ImageUpload";
 import type { JobEntry } from "../../../types/job";
 import { calculateTotals, type CutForm } from "../programmerUtils";
 import { formatDecimalHoursToHHMMhrs, formatDisplayDateTime } from "../../../utils/date";
+import { formatMachineLabel } from "../../../utils/jobFormatting";
 import "./JobDetailsModal.css";
 import { useLocation } from "react-router-dom";
 import { getQaProgressCounts } from "../../Operator/utils/qaProgress";
@@ -222,7 +223,10 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
                       basePairs.push({ label: "Machine Hrs", value: (cutItem as any).machineHrs });
                     }
                     if ((cutItem as any).machineNumber) {
-                      basePairs.push({ label: "Machine #", value: (cutItem as any).machineNumber });
+                      basePairs.push({
+                        label: "Machine #",
+                        value: formatMachineLabel((cutItem as any).machineNumber),
+                      });
                     }
                     if ((cutItem as any).opsName) {
                       basePairs.push({ label: "Operator Name", value: (cutItem as any).opsName });

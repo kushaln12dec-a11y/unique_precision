@@ -1798,3 +1798,25 @@
     max-width: none;
   }
 }
+
+/* Keep all table headers centered (parent + child). */
+.operator-table-no-scroll .data-table thead th,
+.operator-table-no-scroll .data-table thead th:nth-child(n),
+.operator-table-no-scroll .data-table thead th[class] {
+  text-align: center;
+}
+
+.operator-table-no-scroll .data-table thead th .th-content,
+.operator-table-no-scroll .data-table thead th[class] .th-content {
+  justify-content: center;
+}
+
+.operator-table-no-scroll .child-row-content .child-jobs-table thead th,
+.operator-table-no-scroll .child-row-content .child-jobs-table thead th[class] {
+  text-align: center;
+}
+
+.operator-table-no-scroll .child-row-content .child-jobs-table thead th .th-content,
+.operator-table-no-scroll .child-row-content .child-jobs-table thead th[class] .th-content {
+  justify-content: center;
+}

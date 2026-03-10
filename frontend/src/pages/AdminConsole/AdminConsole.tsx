@@ -8,6 +8,7 @@ import Toast from "../../components/Toast";
 import { getUserRoleFromToken } from "../../utils/auth";
 import { getMasterConfig, updateMasterConfig } from "../../services/masterConfigApi";
 import type { MasterConfig } from "../../types/masterConfig";
+import { formatMachineLabel, MACHINE_OPTIONS, toMachineIndex } from "../../utils/jobFormatting";
 import "../RoleBoard.css";
 import "./AdminConsole.css";
 
@@ -27,7 +28,20 @@ const sanitizeOptions = (values: string[]): string[] => {
   return next;
 };
 
-type AdminSection = "customers" | "materials" | "pass" | "sedm" | "hours" | null;
+const sanitizeMachineOptions = (values: string[]): string[] => {
+  const seen = new Set<string>();
+  const next: string[] = [];
+  values.forEach((value) => {
+    const normalized = toMachineIndex(value);
+    if (!normalized) return;
+    if (seen.has(normalized)) return;
+    seen.add(normalized);
+    next.push(normalized);
+  });
+  return next.sort((a, b) => Number(a) - Number(b));
+};
+
+type AdminSection = "customers" | "materials" | "pass" | "sedm" | "machines" | "hours" | null;
 
 const AdminConsole = () => {
   const navigate = useNavigate();
@@ -44,9 +58,11 @@ const AdminConsole = () => {
   const [materials, setMaterials] = useState<string[]>([]);
   const [passOptions, setPassOptions] = useState<string[]>([]);
   const [electrodeOptions, setElectrodeOptions] = useState<string[]>([]);
+  const [machineOptions, setMachineOptions] = useState<string[]>([]);
   const [materialInput, setMaterialInput] = useState("");
   const [passInput, setPassInput] = useState("");
   const [electrodeInput, setElectrodeInput] = useState("");
+  const [machineInput, setMachineInput] = useState("");
   const [customers, setCustomers] = useState<Array<{ customer: string; rate: string }>>([]);
 
   const isAdmin = useMemo(() => getUserRoleFromToken() === "ADMIN", []);
@@ -65,6 +81,13 @@ const AdminConsole = () => {
         setMaterials(sanitizeOptions(fetched.materials));
         setPassOptions(sanitizeOptions(fetched.passOptions));
         setElectrodeOptions(sanitizeOptions(fetched.sedmElectrodeOptions));
+        setMachineOptions(
+          sanitizeMachineOptions(
+            Array.isArray(fetched.machineOptions) && fetched.machineOptions.length > 0
+              ? fetched.machineOptions
+              : [...MACHINE_OPTIONS]
+          )
+        );
       } catch {
         setToast({ message: "Failed to load Admin Console data", variant: "error", visible: true });
       } finally {
@@ -86,6 +109,7 @@ const AdminConsole = () => {
         materials: sanitizeOptions(materials),
         passOptions: sanitizeOptions(passOptions),
         sedmElectrodeOptions: sanitizeOptions(electrodeOptions),
+        machineOptions: sanitizeMachineOptions(machineOptions),
         sedmThOptions: config.sedmThOptions || [],
         settingHoursPerSetting: Number(config.settingHoursPerSetting) || 0.5,
         complexExtraHours: Number(config.complexExtraHours) || 1,
@@ -167,6 +191,10 @@ const AdminConsole = () => {
                 <button type="button" className="admin-mini-card" onClick={() => setActiveSection("sedm")}>
                   <h4>SEDM Electrode</h4>
                   <p>Add electrode values one by one and save changes.</p>
+                </button>
+                <button type="button" className="admin-mini-card" onClick={() => setActiveSection("machines")}>
+                  <h4>Machine Options</h4>
+                  <p>Add machine list for Operator assignment (M1, M2...).</p>
                 </button>
                 <button type="button" className="admin-mini-card" onClick={() => setActiveSection("hours")}>
                   <h4>Hours Config</h4>
@@ -347,6 +375,58 @@ const AdminConsole = () => {
                   className="admin-remove-btn"
                   onClick={() => removeOption(index, setElectrodeOptions)}
                 >
+                  Remove
+                </button>
+              </div>
+            ))
+          )}
+        </div>
+        <div className="admin-modal-actions">
+          <button type="button" className="btn-primary" disabled={saving} onClick={handleSaveAndClose}>
+            {saving ? "Saving..." : "Save"}
+          </button>
+        </div>
+      </Modal>
+
+      <Modal
+        isOpen={activeSection === "machines"}
+        onClose={() => setActiveSection(null)}
+        title="Machine Options"
+        className="admin-section-modal"
+        size="small"
+      >
+        <label>Add Machine</label>
+        <div className="admin-option-input-row">
+          <input
+            type="text"
+            value={machineInput}
+            placeholder="e.g. M1 or 1"
+            onChange={(e) => setMachineInput(e.target.value.toUpperCase())}
+          />
+          <button
+            type="button"
+            className="admin-add-btn"
+            onClick={() => {
+              const normalized = toMachineIndex(machineInput);
+              if (!normalized) {
+                setToast({ message: "Enter a valid machine value (e.g. M1)", variant: "info", visible: true });
+                return;
+              }
+              setMachineOptions((prev) => sanitizeMachineOptions([...prev, normalized]));
+              setMachineInput("");
+            }}
+          >
+            Save
+          </button>
+        </div>
+        <div className="admin-option-list">
+          {machineOptions.length === 0 ? (
+            <p className="admin-empty-text">No machine options added yet.</p>
+          ) : (
+            machineOptions.map((item, index) => (
+              <div className="admin-option-row" key={`machine-${index}`}>
+                <span>{formatMachineLabel(item)}</span>
+                <button type="button" className="admin-remove-btn" onClick={() => removeOption(index, setMachineOptions)}>
                   Remove
                 </button>
               </div>

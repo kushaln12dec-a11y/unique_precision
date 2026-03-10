@@ -31,6 +31,7 @@ export const useOperatorTableData = (
   handleAssignChange: (jobId: number | string, value: string) => void,
   handleChildMachineNumberChange: (jobId: number | string, machineNumber: string) => void,
   operatorUsers: Array<{ id: string | number; name: string }>,
+  machineOptions: string[],
   isAdmin: boolean,
   isImageInputDisabled: boolean,
   selectedChildRows: Set<string | number> = new Set(),
@@ -151,6 +152,7 @@ export const useOperatorTableData = (
               onAssignChange={handleAssignChange}
               onMachineNumberChange={handleChildMachineNumberChange}
               operatorUsers={operatorUsers}
+              machineOptions={machineOptions}
               isOperator={true}
               isAdmin={isAdmin}
               disableImageButton={isImageInputDisabled}
@@ -179,6 +181,7 @@ export const useOperatorTableData = (
     handleAssignChange,
     handleChildMachineNumberChange,
     operatorUsers,
+    machineOptions,
     isAdmin,
     isImageInputDisabled,
     selectedChildRows,

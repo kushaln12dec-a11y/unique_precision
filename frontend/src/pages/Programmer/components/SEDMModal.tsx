@@ -79,9 +79,16 @@ const SEDMModal: React.FC<SEDMModalProps> = ({
   const resolvedThOptions = thOptions.length > 0
     ? thOptions
     : [
-        { value: "min", label: "Min 20mm" },
+        { value: "min", label: "Min" },
         { value: "per", label: "Greater than 20mm" },
       ];
+  const normalizedThOptions = resolvedThOptions.map((option) => {
+    const value = String(option.value || "").trim().toLowerCase();
+    const label = String(option.label || "").trim();
+    if (value === "min") return { ...option, label: "Min" };
+    if (/^min\s*20/i.test(label)) return { ...option, label: "Min" };
+    return option;
+  });
 
   const [sedmEntries, setSedmEntries] = useState<SEDMEntry[]>([
     {
@@ -249,7 +256,7 @@ const SEDMModal: React.FC<SEDMModalProps> = ({
               <label>TH Option</label>
               <SelectDropdown
                 value={entry.lengthType}
-                    options={resolvedThOptions}
+                options={normalizedThOptions}
                 onChange={(nextValue) =>
                   handleEntryChange(index, "lengthType", nextValue as "min" | "per")
                 }

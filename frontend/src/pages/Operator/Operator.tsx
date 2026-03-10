@@ -16,6 +16,7 @@ import { useOperatorTable } from "./hooks/useOperatorTable.tsx";
 import { exportOperatorJobsToCSV } from "./utils/csvExport";
 import { updateOperatorJob, updateOperatorQaStatus } from "../../services/operatorApi";
 import { deleteJob } from "../../services/jobApi";
+import { getMasterConfig } from "../../services/masterConfigApi";
 import { createOperatorTaskSwitchLog, getEmployeeLogs } from "../../services/employeeLogsApi";
 import { MassDeleteButton } from "../Programmer/components/MassDeleteButton";
 import { getUserDisplayNameFromToken, getUserRoleFromToken } from "../../utils/auth";
@@ -23,9 +24,11 @@ import { getGroupQaProgressCounts, getQaProgressCounts } from "./utils/qaProgres
 import { getParentRowClassName } from "../Programmer/utils/priorityUtils";
 import type { JobEntry } from "../../types/job";
 import type { EmployeeLog } from "../../types/employeeLog";
+import type { MasterConfig } from "../../types/masterConfig";
 import type { FilterValues } from "../../components/FilterModal";
 import { formatDisplayDateTime, getDisplayDateTimeParts } from "../../utils/date";
 import { calculateTotals } from "../Programmer/programmerUtils";
+import { formatMachineLabel, MACHINE_OPTIONS, toMachineIndex } from "../../utils/jobFormatting";
 import "../RoleBoard.css";
 import "../Programmer/Programmer.css";
 import "./Operator.css";
@@ -58,6 +61,7 @@ const Operator = () => {
   const [operatorLogSearch, setOperatorLogSearch] = useState("");
   const [operatorLogStatus, setOperatorLogStatus] = useState<"" | "IN_PROGRESS" | "COMPLETED" | "REJECTED">("");
   const [operatorLogMachine, setOperatorLogMachine] = useState("");
+  const [masterConfig, setMasterConfig] = useState<MasterConfig | null>(null);
   const [toast, setToast] = useState<{ message: string; variant: "success" | "error" | "info"; visible: boolean }>({
     message: "",
     variant: "info",
@@ -341,6 +345,13 @@ const Operator = () => {
     });
   };
 
+  const configuredMachineOptions =
+    (masterConfig?.machineOptions || [])
+      .map((value) => toMachineIndex(value))
+      .filter(Boolean) || [];
+  const machineOptionsForDropdown =
+    configuredMachineOptions.length > 0 ? configuredMachineOptions : [...MACHINE_OPTIONS];
+
   const { tableData, expandableRows } = useOperatorTableData(
     jobs,
     sortField,
@@ -355,6 +366,7 @@ const Operator = () => {
       id: user._id,
       name: `${user.firstName} ${user.lastName}`.trim() || user.email || String(user._id),
     })),
+    machineOptionsForDropdown,
     isAdmin,
     isTaskTimerRunning,
     selectedEntryIds,
@@ -365,6 +377,7 @@ const Operator = () => {
     tableData,
     expandableRows,
     canAssign,
+    machineOptions: machineOptionsForDropdown,
     currentUserName,
     operatorUsers: operatorUsers.map((user) => ({
       id: user._id,
@@ -400,6 +413,18 @@ const Operator = () => {
   const handleRemoveFilterWithPageReset = (key: string, type: "inline" | "modal") => {
     handleRemoveFilter(key, type);
   };
+
+  useEffect(() => {
+    const fetchMasterConfig = async () => {
+      try {
+        const cfg = await getMasterConfig();
+        setMasterConfig(cfg);
+      } catch (error) {
+        console.error("Failed to fetch master config", error);
+      }
+    };
+    fetchMasterConfig();
+  }, []);
 
   useEffect(() => {
     if (activeTab !== "logs") return;
@@ -522,13 +547,15 @@ const Operator = () => {
 
   const getMachineNumberForLog = (log: EmployeeLog): string => {
     const machineFromMeta = String((log.metadata as any)?.machineNumber || "").trim();
-    if (machineFromMeta) return machineFromMeta;
+    if (machineFromMeta) return toMachineIndex(machineFromMeta);
     const groupId = Number(log.jobGroupId || 0);
     if (!groupId) return "-";
     const groupEntries = jobs.filter((entry) => Number(entry.groupId) === groupId);
     if (!groupEntries.length) return "-";
-    const firstMachine = String(groupEntries.find((entry) => String(entry.machineNumber || "").trim())?.machineNumber || "").trim();
-    return firstMachine || "-";
+    const firstMachine = String(
+      groupEntries.find((entry) => String(entry.machineNumber || "").trim())?.machineNumber || ""
+    ).trim();
+    return toMachineIndex(firstMachine) || "-";
   };
 
   const machineFilterOptions = useMemo(() => {
@@ -563,7 +590,7 @@ const Operator = () => {
         key: "machineNumber",
         label: "MACH #",
         sortable: false,
-        render: (row) => getMachineNumberForLog(row),
+        render: (row) => formatMachineLabel(getMachineNumberForLog(row)),
       },
       { key: "workItemTitle", label: "Work Item", sortable: false, render: (row) => row.workItemTitle || "-" },
       {
@@ -689,7 +716,7 @@ const Operator = () => {
       const designation = designationByUserName.get(name.toLowerCase()) || "Operator";
       return [
         name ? `${name} (${designation})` : designation,
-        getMachineNumberForLog(row),
+        formatMachineLabel(getMachineNumberForLog(row)),
         row.workItemTitle || "",
         row.workSummary || "",
         formatDisplayDateTime(row.startedAt),
@@ -861,7 +888,7 @@ const Operator = () => {
                   <option value="">All Machines</option>
                   {machineFilterOptions.map((machine) => (
                     <option key={machine} value={machine}>
-                      Machine {machine}
+                      {formatMachineLabel(machine)}
                     </option>
                   ))}
                 </select>

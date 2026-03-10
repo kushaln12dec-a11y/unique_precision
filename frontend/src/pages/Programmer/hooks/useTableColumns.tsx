@@ -78,20 +78,6 @@ export const useTableColumns = ({
         },
       },
       {
-        key: "description",
-        label: "Description",
-        sortable: false,
-        sortKey: "description",
-        render: (row) => {
-          const full = row.parent.description || "-";
-          return (
-            <div className="description-marquee" title={full}>
-              <span>{full}</span>
-            </div>
-          );
-        },
-      },
-      {
         key: "programRefFileName",
         label: (
           <>
@@ -108,6 +94,20 @@ export const useTableColumns = ({
           return (
             <div className="description-marquee" title={value}>
               <span>{value}</span>
+            </div>
+          );
+        },
+      },
+      {
+        key: "description",
+        label: "Description",
+        sortable: false,
+        sortKey: "description",
+        render: (row) => {
+          const full = row.parent.description || "-";
+          return (
+            <div className="description-marquee" title={full}>
+              <span>{full}</span>
             </div>
           );
         },

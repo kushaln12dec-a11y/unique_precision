@@ -7,7 +7,7 @@ import { getRowClassName } from "../utils/priorityUtils";
 import { getUserRoleFromToken } from "../../../utils/auth";
 import { MultiSelectOperators } from "../../Operator/components/MultiSelectOperators";
 import { getQaProgressCounts } from "../../Operator/utils/qaProgress";
-import { estimatedTimeFromAmount, toYN } from "../../../utils/jobFormatting";
+import { estimatedTimeFromAmount, formatMachineLabel, MACHINE_OPTIONS, toMachineIndex, toYN } from "../../../utils/jobFormatting";
 
 type ChildCutsTableProps = {
   entries: JobEntry[];
@@ -24,6 +24,7 @@ type ChildCutsTableProps = {
   selectedRows?: Set<string | number>;
   onRowSelect?: (rowKey: string | number, selected: boolean) => void;
   getRowKey?: (entry: JobEntry, index: number) => string | number;
+  machineOptions?: string[];
 };
 
 const ChildCutsTable: React.FC<ChildCutsTableProps> = ({
@@ -41,14 +42,22 @@ const ChildCutsTable: React.FC<ChildCutsTableProps> = ({
   selectedRows = new Set(),
   onRowSelect,
   getRowKey = (entry, index) => entry.id || index,
+  machineOptions = [...MACHINE_OPTIONS],
 }) => {
+  const machineDropdownOptions = useMemo(() => {
+    const normalized = machineOptions
+      .map((value) => toMachineIndex(value))
+      .filter(Boolean);
+    return normalized.length > 0 ? normalized : [...MACHINE_OPTIONS];
+  }, [machineOptions]);
+
   const getMachineNumber = (entry: JobEntry): string => {
     const direct = String((entry as any).machineNumber || "").trim();
-    if (direct) return direct;
+    if (direct) return toMachineIndex(direct);
     const captures = Array.isArray(entry.operatorCaptures) ? entry.operatorCaptures : [];
     const latest = captures[captures.length - 1];
     const captureMachine = String(latest?.machineNumber || "").trim();
-    return ["1", "2", "3", "4", "5", "6"].includes(captureMachine) ? captureMachine : "";
+    return toMachineIndex(captureMachine);
   };
 
   const [selectedCut, setSelectedCut] = useState<JobEntry | null>(null);
@@ -118,15 +127,15 @@ const ChildCutsTable: React.FC<ChildCutsTableProps> = ({
             <th className="customer-col">
               <span className="th-content">Customer</span>
             </th>
-            <th className="description-col">
-              <span className="th-content">Desc</span>
-            </th>
             <th className="program-ref-file-col">
               <span className="th-content">
                 Program Ref
                 <br />
                 File Name
               </span>
+            </th>
+            <th className="description-col">
+              <span className="th-content">Desc</span>
             </th>
             <th className="cut-col">
               <span className="th-content">Cut (MM)</span>
@@ -204,14 +213,14 @@ const ChildCutsTable: React.FC<ChildCutsTableProps> = ({
                 )}
                 <td className="setting-number-col">{index + 1}</td>
               <td className="customer-col">{entry.customer || "-"}</td>
-              <td className="description-col" title={entry.description || "-"}>
-                <div className="description-marquee">
-                  <span>{entry.description || "-"}</span>
-                </div>
-              </td>
               <td className="program-ref-file-col" title={(entry as any).programRefFile || (entry as any).programRefFileName || "-"}>
                 <div className="description-marquee">
                   <span>{String((entry as any).programRefFile || (entry as any).programRefFileName || "-")}</span>
+                </div>
+              </td>
+              <td className="description-col" title={entry.description || "-"}>
+                <div className="description-marquee">
+                  <span>{entry.description || "-"}</span>
                 </div>
               </td>
               <td className="cut-col">{Math.round(Number(entry.cut || 0))}</td>
@@ -278,7 +287,7 @@ const ChildCutsTable: React.FC<ChildCutsTableProps> = ({
                 <td className="mach-col">
                   <select
                     className="operator-machine-input"
-                    value={getMachineNumber(entry)}
+                    value={machineDropdownOptions.includes(getMachineNumber(entry)) ? getMachineNumber(entry) : ""}
                     onClick={(e) => e.stopPropagation()}
                     onChange={(event) => {
                       const nextValue = event.target.value;
@@ -286,12 +295,11 @@ const ChildCutsTable: React.FC<ChildCutsTableProps> = ({
                     }}
                   >
                     <option value="">Select</option>
-                    <option value="1">1</option>
-                    <option value="2">2</option>
-                    <option value="3">3</option>
-                    <option value="4">4</option>
-                    <option value="5">5</option>
-                    <option value="6">6</option>
+                    {machineDropdownOptions.map((machine) => (
+                      <option key={machine} value={machine}>
+                        {formatMachineLabel(machine)}
+                      </option>
+                    ))}
                   </select>
                 </td>
               )}

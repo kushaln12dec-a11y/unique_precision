@@ -58,7 +58,7 @@ const Sidebar = ({ currentPath = '/dashboard', onNavigate }: SidebarProps) => {
             />
             <span className="sidebar-company-name" aria-label="Unique Precision">
               <span className="sidebar-company-name-line">Unique</span>
-              <span className="sidebar-company-name-line">Precison</span>
+              <span className="sidebar-company-name-line">Precision</span>
             </span>
           </div>
         </div>
