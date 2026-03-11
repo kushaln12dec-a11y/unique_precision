@@ -5,6 +5,7 @@ import ArrowForwardIosSharpIcon from "@mui/icons-material/ArrowForwardIosSharp";
 import type { TableRow } from "../utils/jobDataTransform";
 import ActionButtons from "../components/ActionButtons";
 import { estimatedTimeFromAmount, getInitials, toYN } from "../../../utils/jobFormatting";
+import { calculateTotals } from "../programmerUtils";
 
 type UseTableColumnsProps = {
   expandableRows: Map<number, any>;
@@ -176,7 +177,10 @@ export const useTableColumns = ({
         sortable: false,
         className: "estimated-time-col",
         headerClassName: "estimated-time-col",
-        render: (row) => estimatedTimeFromAmount(row.groupTotalAmount || 0),
+        render: (row) => {
+          const wedmAmount = row.entries.reduce((sum, entry) => sum + calculateTotals(entry as any).wedmAmount, 0);
+          return estimatedTimeFromAmount(wedmAmount);
+        },
       },
       ...(isAdmin
         ? [

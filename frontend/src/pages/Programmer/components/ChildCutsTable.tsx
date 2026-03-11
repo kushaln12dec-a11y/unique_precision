@@ -8,6 +8,7 @@ import { getUserRoleFromToken } from "../../../utils/auth";
 import { MultiSelectOperators } from "../../Operator/components/MultiSelectOperators";
 import { getQaProgressCounts } from "../../Operator/utils/qaProgress";
 import { estimatedTimeFromAmount, formatMachineLabel, MACHINE_OPTIONS, toMachineIndex, toYN } from "../../../utils/jobFormatting";
+import { calculateTotals } from "../programmerUtils";
 
 type ChildCutsTableProps = {
   entries: JobEntry[];
@@ -306,11 +307,11 @@ const ChildCutsTable: React.FC<ChildCutsTableProps> = ({
               {!isOperator && (
                 <td className="total-hrs-col">
                   {entry.totalHrs
-                    ? formatHoursToHHMM((Number(entry.totalHrs || 0) || 0) * Math.max(1, Number(entry.qty || 1)))
+                    ? formatHoursToHHMM(Number(entry.totalHrs || 0) || 0)
                     : "-"}
                 </td>
               )}
-              <td className="estimated-time-col">{estimatedTimeFromAmount(entry.totalAmount || 0)}</td>
+              <td className="estimated-time-col">{estimatedTimeFromAmount(calculateTotals(entry as any).wedmAmount)}</td>
               {isAdmin && <td className="total-amount-col">{entry.totalAmount ? `Rs. ${Math.round(entry.totalAmount)}` : "-"}</td>}
               {isOperator && (
                 <td className="status-col">

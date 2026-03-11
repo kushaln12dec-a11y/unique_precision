@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import Modal from "../../../components/Modal";
 import type { CutForm } from "../programmerUtils";
-import { SEDM_PRICING, getEffectiveThickness } from "../programmerUtils";
+import { SEDM_PRICING, getEffectiveThickness, normalizeThicknessInput } from "../programmerUtils";
 import SelectDropdown from "./SelectDropdown";
 import "../../../components/Modal.css";
 import "../Programmer.css";
@@ -11,6 +11,17 @@ type SEDMEntry = {
   lengthValue: string;
   lengthType: "min" | "per";
   holes: string;
+};
+
+const splitThicknessParts = (value: string): string[] => {
+  const raw = String(value || "").trim();
+  if (!raw) return [];
+  if (!raw.includes("/")) return [raw];
+  const [leftRaw = "", rightRaw = ""] = raw.split("/", 2);
+  const left = leftRaw.trim();
+  const right = rightRaw.trim();
+  if (!left) return [];
+  return right ? [left, right] : [left];
 };
 
 type SEDMModalProps = {
@@ -37,16 +48,23 @@ const calculateSingleSedmAmount = (entry: SEDMEntry, qty: number): number => {
   
   if (!pricing) return 0;
   
-  const thickness = Number(entry.thickness) || 0;
-  const effectiveThk = getEffectiveThickness(thickness);
-  
-  let baseValue = pricing.min20;
-  if (effectiveThk > 20) {
-    baseValue += (effectiveThk - 20) * pricing.perMm;
-  }
+  const raw = String(entry.thickness || "").trim();
+  const [leftRaw = "", rightRaw = ""] = raw.includes("/") ? raw.split("/", 2) : [raw, ""];
+  const values: number[] = [];
+  const leftToken = leftRaw.trim();
+  const rightToken = rightRaw.trim();
+  const left = Number(leftToken);
+  const right = Number(rightToken);
+  if (leftToken !== "" && Number.isFinite(left)) values.push(left);
+  if (rightToken !== "" && Number.isFinite(right)) values.push(right);
+  if (values.length === 0) return 0;
   
   const holes = Number(entry.holes) || 1;
-  return baseValue * holes * qty;
+  return values.reduce((sum, thickness) => {
+    const effectiveThk = getEffectiveThickness(thickness);
+    const baseValue = effectiveThk > 20 ? thickness * pricing.perMm : pricing.min20;
+    return sum + (baseValue * holes * qty);
+  }, 0);
 };
 
 const SEDMModal: React.FC<SEDMModalProps> = ({
@@ -131,6 +149,27 @@ const SEDMModal: React.FC<SEDMModalProps> = ({
     }
   }, [isOpen, cut]);
 
+  // Safety net: if any row contains "A / B", auto-expand into two separate rows immediately.
+  useEffect(() => {
+    setSedmEntries((prev) => {
+      let changed = false;
+      const expanded: SEDMEntry[] = [];
+      prev.forEach((entry) => {
+        const parts = splitThicknessParts(entry.thickness);
+        if (parts.length === 2) {
+          changed = true;
+          expanded.push(
+            { ...entry, thickness: parts[0] },
+            { ...entry, thickness: parts[1] }
+          );
+          return;
+        }
+        expanded.push(entry);
+      });
+      return changed ? expanded : prev;
+    });
+  }, [sedmEntries]);
+
   const handleAddEntry = () => {
     setSedmEntries((prev) => [
       ...prev,
@@ -153,16 +192,53 @@ const SEDMModal: React.FC<SEDMModalProps> = ({
   const handleEntryChange = (index: number, field: keyof SEDMEntry, value: string) => {
     const updated = [...sedmEntries];
     updated[index] = { ...updated[index], [field]: value };
+
+    if (field === "thickness") {
+      const parts = splitThicknessParts(value);
+      if (parts.length === 2) {
+        const [left, right] = parts;
+        updated[index] = { ...updated[index], thickness: left };
+
+        const hasRightEntry = updated.some(
+          (entry, idx) =>
+            idx !== index &&
+            entry.thickness.trim() === right &&
+            entry.lengthValue === updated[index].lengthValue &&
+            entry.lengthType === updated[index].lengthType &&
+            entry.holes === updated[index].holes
+        );
+
+        if (!hasRightEntry) {
+          updated.splice(index + 1, 0, {
+            thickness: right,
+            lengthValue: updated[index].lengthValue,
+            lengthType: updated[index].lengthType,
+            holes: updated[index].holes,
+          });
+        }
+      }
+    }
+
     setSedmEntries(updated);
   };
 
   const handleApply = () => {
     if (sedmEntries.length > 0) {
-      const firstEntry = sedmEntries[0];
+      const expandedEntries = sedmEntries.flatMap((entry) => {
+        const parts = splitThicknessParts(entry.thickness);
+        if (parts.length === 0) return [];
+        return parts.map((thickness) => ({
+          thickness,
+          lengthValue: entry.lengthValue,
+          lengthType: entry.lengthType,
+          holes: entry.holes,
+        }));
+      });
+      const firstEntry = expandedEntries[0];
       
-      if (sedmEntries.length > 1) {
+      if (expandedEntries.length > 1) {
         const entriesJson = JSON.stringify(
-          sedmEntries.map(e => ({
+          expandedEntries.map(e => ({
             thickness: e.thickness,
             lengthValue: e.lengthValue,
             lengthType: e.lengthType,
@@ -171,18 +247,18 @@ const SEDMModal: React.FC<SEDMModalProps> = ({
         );
         onSedmEntriesJsonChange?.(entriesJson);
         
-        const totalHoles = sedmEntries.reduce((sum, entry) => {
+        const totalHoles = expandedEntries.reduce((sum, entry) => {
           return sum + (Number(entry.holes) || 1);
         }, 0);
         onHolesChange(String(totalHoles));
       } else {
         onSedmEntriesJsonChange?.("");
-        onHolesChange(firstEntry.holes);
+        onHolesChange(firstEntry?.holes || "1");
       }
       
-      onThicknessChange?.(firstEntry.thickness);
-      onLengthChange(firstEntry.lengthValue);
-      onLengthTypeChange(firstEntry.lengthType);
+      onThicknessChange?.(firstEntry?.thickness || "");
+      onLengthChange(firstEntry?.lengthValue || "");
+      onLengthTypeChange((firstEntry?.lengthType as "min" | "per") || "min");
     }
     
     if (onApply) {
@@ -196,7 +272,8 @@ const SEDMModal: React.FC<SEDMModalProps> = ({
   }, 0);
 
   const totalHoles = sedmEntries.reduce((sum, entry) => {
-    return sum + (Number(entry.holes) || 1) * (Number(cut.qty) || 1);
+    const thicknessCount = Math.max(1, splitThicknessParts(entry.thickness).length);
+    return sum + ((Number(entry.holes) || 1) * thicknessCount * (Number(cut.qty) || 1));
   }, 0);
 
   return (
@@ -234,11 +311,23 @@ const SEDMModal: React.FC<SEDMModalProps> = ({
             <div className="input-pair">
               <label>TH (mm)</label>
               <input
-                type="number"
-                min="0"
-                step="0.1"
+                type="text"
                 value={entry.thickness}
-                onChange={(event) => handleEntryChange(index, "thickness", event.target.value)}
+                inputMode="decimal"
+                onKeyDown={(e) => {
+                  if (e.key !== "Tab") return;
+                  const current = String(entry.thickness || "").trim();
+                  if (!current || current.includes("/")) return;
+                  e.preventDefault();
+                  handleEntryChange(index, "thickness", `${current} /`);
+                }}
+                onChange={(event) =>
+                  handleEntryChange(
+                    index,
+                    "thickness",
+                    normalizeThicknessInput(event.target.value, entry.thickness)
+                  )
+                }
                 placeholder={cut.thickness || "Enter thickness"}
               />
             </div>

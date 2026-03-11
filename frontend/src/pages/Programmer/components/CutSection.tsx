@@ -1,5 +1,5 @@
 import React from "react";
-import type { CutForm } from "../programmerUtils";
+import { normalizeThicknessInput, type CutForm, type CalculationResult } from "../programmerUtils";
 import { DustbinIcon } from "../../../utils/icons";
 import ImageUpload from "./ImageUpload";
 import { FormInput } from "./FormInput";
@@ -13,6 +13,11 @@ import type { CustomerRate } from "../../../types/masterConfig";
 type CutTotals = {
   totalHrs: number;
   totalAmount: number;
+  wedmAmount: number;
+  sedmAmount: number;
+  estimatedTime: number;
+  wedmBreakdown: CalculationResult["wedmBreakdown"];
+  sedmBreakdown: CalculationResult["sedmBreakdown"];
 };
 
 type CutSectionProps = {
@@ -71,9 +76,9 @@ const parseOperationRows = (cut: CutForm): OperationRow[] => {
       .map((row) => ({
         cut: String((row as any).cut ?? (row as any).cutLength ?? ""),
         thickness: String((row as any).thickness ?? (row as any).thk ?? ""),
-        passLevel: String((row as any).passLevel ?? (row as any).pass ?? "0"),
-        setting: String((row as any).setting ?? (row as any).settingHrs ?? "0"),
-        qty: String((row as any).qty ?? (row as any).quantity ?? "0"),
+        passLevel: String((row as any).passLevel ?? (row as any).pass ?? ""),
+        setting: String((row as any).setting ?? (row as any).settingHrs ?? ""),
+        qty: String((row as any).qty ?? (row as any).quantity ?? ""),
       }));
     return rows.length > 0 ? rows : [fallbackRow];
   } catch (error) {
@@ -141,8 +146,10 @@ export const CutSection: React.FC<CutSectionProps> = ({
 
   const passDropdownOptions = React.useMemo(() => {
     const source = passOptions.length > 0 ? passOptions : ["1", "2", "3", "4", "5", "6"];
-    const normalized = source.includes("0") ? source : ["0", ...source];
-    return normalized.map((value) => ({ value, label: value }));
+    return source
+      .map((value) => String(value || "").trim())
+      .filter((value) => value && value !== "0")
+      .map((value) => ({ value, label: value }));
   }, [passOptions]);
 
   const customerRateMap = React.useMemo(() => {
@@ -383,12 +390,25 @@ export const CutSection: React.FC<CutSectionProps> = ({
                   style={!isFirstRow ? { gridRow: gridRow, gridColumn: 2 } : undefined}
                 >
                   <input
-                    type="number"
+                    type="text"
                     value={row.thickness}
                     placeholder= "Thickness (mm)"
+                    inputMode="decimal"
+                    onKeyDown={(e) => {
+                      if (e.key !== "Tab") return;
+                      const current = String(row.thickness || "").trim();
+                      if (!current || current.includes("/")) return;
+                      e.preventDefault();
+                      const updated = [...operationRows];
+                      updated[rowIndex].thickness = `${current} /`;
+                      setOperationRows(updated);
+                    }}
                     onChange={(e) => {
                       const updated = [...operationRows];
-                      updated[rowIndex].thickness = e.target.value;
+                      updated[rowIndex].thickness = normalizeThicknessInput(
+                        e.target.value,
+                        updated[rowIndex].thickness
+                      );
                       setOperationRows(updated);
                     }}
                   />
@@ -403,6 +423,7 @@ export const CutSection: React.FC<CutSectionProps> = ({
                   <SelectDropdown
                     value={row.passLevel}
                     options={passDropdownOptions}
+                    placeholder="Select"
                     onChange={(nextValue) => {
                       const updated = [...operationRows];
                       updated[rowIndex].passLevel = nextValue;
@@ -458,9 +479,9 @@ export const CutSection: React.FC<CutSectionProps> = ({
                           updated.splice(rowIndex + 1, 0, {
                             cut: "",
                             thickness: "",
-                            passLevel: "0",
-                            setting: "0",
-                            qty: "0",
+                            passLevel: "",
+                            setting: "",
+                            qty: "",
                           });
                           setOperationRows(updated);
                         }}
@@ -539,7 +560,7 @@ export const CutSection: React.FC<CutSectionProps> = ({
           >
             <input
               type="text"
-              value={(cutTotals.totalAmount / 625).toFixed(2)}
+              value={cutTotals.estimatedTime.toFixed(2)}
               readOnly
             />
           </FormInput>
@@ -557,6 +578,36 @@ export const CutSection: React.FC<CutSectionProps> = ({
               />
             </FormInput>
           )}
+
+          <div
+            className="calculation-formula-panel"
+            style={{ gridRow: 3 + operationRows.length, gridColumn: "1 / -1" }}
+          >
+            <h5>Calculation Formula</h5>
+            <div className="formula-block">
+              {cutTotals.wedmBreakdown.rows.map((row) => (
+                <p key={`wedm-row-${row.rowIndex}`}>
+                  {`Row ${row.rowIndex}: base = (${row.cutLength.toFixed(2)} x ${row.thicknessUsed.toFixed(2)}) / ${row.divisor} = ${row.base.toFixed(4)}; pass = ${row.base.toFixed(4)} + (${row.base.toFixed(4)} x ${row.passPercent.toFixed(0)}%) = ${row.cutAfterPassRaw.toFixed(4)}; min rule => ${row.cutAfterPass.toFixed(4)}; setting(${row.settingInput}) => ${row.settingHours.toFixed(2)}; extras(per unit) => ${row.extraHoursPerUnit.toFixed(2)}; row hrs = (${row.cutAfterPass.toFixed(4)} + ${row.settingHours.toFixed(2)} + ${row.extraHoursPerUnit.toFixed(2)}) x ${row.qty} = ${row.rowHours.toFixed(4)}`}
+                </p>
+              ))}
+              <p>{`WEDM Cost = ${cutTotals.totalHrs.toFixed(4)} x rate(${cutTotals.wedmBreakdown.rate.toFixed(2)}) = ${cutTotals.wedmAmount.toFixed(2)}`}</p>
+              {cutTotals.sedmBreakdown.entries.length > 0 ? (
+                cutTotals.sedmBreakdown.entries.map((entry) => (
+                  <p key={`sedm-entry-${entry.entryIndex}`}>
+                    {`SEDM ${entry.entryIndex}: baseCost = ${
+                      entry.thicknessUsed > 20
+                        ? `${entry.thicknessInput} x ${entry.perMm.toFixed(2)}`
+                        : `${entry.min20.toFixed(2)} (Min20)`
+                    } = ${entry.baseCost.toFixed(2)}; entry = ${entry.baseCost.toFixed(2)} x holes(${entry.holes}) x qty(${entry.qty}) = ${entry.entryCost.toFixed(2)}`}
+                  </p>
+                ))
+              ) : (
+                <p>SEDM Cost = 0.00</p>
+              )}
+              <p>{`Total Amount = WEDM(${cutTotals.wedmAmount.toFixed(2)}) + SEDM(${cutTotals.sedmAmount.toFixed(2)}) = ${cutTotals.totalAmount.toFixed(2)}`}</p>
+              <p>{`Estimated Time = WEDM / 625 = ${cutTotals.wedmAmount.toFixed(2)} / 625 = ${cutTotals.estimatedTime.toFixed(2)}`}</p>
+            </div>
+          </div>
         </div>
 
         <div className="cut-section-actions">

@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
-import type { CutForm } from "./programmerUtils";
+import type { CalculationResult, CutForm } from "./programmerUtils";
 import SEDMModalWrapper from "./components/SEDMModalWrapper";
 import { CutSection } from "./components/CutSection";
 import { JobFormHeader } from "./components/JobFormHeader";
@@ -11,12 +11,7 @@ import { useJobFormValidation } from "./hooks/useJobFormValidation";
 import type { MasterConfig } from "../../types/masterConfig";
 import "./components/CustomerAutocomplete.css";
 
-type CutTotals = {
-  totalHrs: number;
-  totalAmount: number;
-  wedmAmount: number;
-  sedmAmount: number;
-};
+type CutTotals = CalculationResult;
 
 type ProgrammerJobFormProps = {
   cuts: CutForm[];
@@ -106,7 +101,23 @@ const ProgrammerJobForm = ({
 
         {cuts.map((cut, index) => {
           const isCollapsed = index === 0 ? false : collapsedCuts.has(index);
-          const cutTotals = totals[index] ?? { totalHrs: 0, totalAmount: 0, wedmAmount: 0, sedmAmount: 0 };
+          const cutTotals = totals[index] ?? {
+            totalHrs: 0,
+            totalAmount: 0,
+            wedmAmount: 0,
+            sedmAmount: 0,
+            estimatedTime: 0,
+            wedmBreakdown: {
+              rows: [],
+              subtotalBeforeExtras: 0,
+              extraHours: 0,
+              finalHours: 0,
+              rate: 0,
+            },
+            sedmBreakdown: {
+              entries: [],
+            },
+          };
           const isSaved = savedCuts.has(index);
           const fieldErrors = cutValidationErrors[index] ?? {};
 

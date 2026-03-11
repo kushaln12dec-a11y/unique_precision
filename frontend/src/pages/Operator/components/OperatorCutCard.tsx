@@ -8,6 +8,7 @@ import "../OperatorViewPage.css";
 
 import type { QuantityInputData } from "../types/cutInput";
 import type { QuantityProgressStatus } from "../utils/qaProgress";
+import { calculateTotals } from "../../Programmer/programmerUtils";
 
 type OperatorCutCardProps = {
   cutItem: JobEntry;
@@ -76,7 +77,7 @@ export const OperatorCutCard: React.FC<OperatorCutCardProps> = ({
   isAdmin,
 }) => {
   const quantity = Number(cutItem.qty || 1);
-  const cutEstimatedHrs = Number((((Number(cutItem.totalAmount || 0) || 0) / 625).toFixed(2)));
+  const cutEstimatedHrs = Number(((calculateTotals(cutItem as any).wedmAmount / 625).toFixed(2)));
   const expectedHoursPerQuantity = cutEstimatedHrs / Math.max(1, quantity);
   return (
     <div className="operator-cut-card">

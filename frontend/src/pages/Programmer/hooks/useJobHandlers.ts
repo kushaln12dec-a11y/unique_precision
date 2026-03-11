@@ -4,7 +4,7 @@ import { getUserDisplayNameFromToken } from "../../../utils/auth";
 import { formatDateLabel } from "../../../utils/date";
 import { createJobs, updateJobsByGroupId, deleteJobsByGroupId } from "../../../services/jobApi";
 import { completeProgrammerJobLog } from "../../../services/employeeLogsApi";
-import { calculateTotals, DEFAULT_CUT, type CutForm } from "../programmerUtils";
+import { calculateTotals, DEFAULT_CUT, type CalculationResult, type CutForm } from "../programmerUtils";
 import type { JobEntry } from "../../../types/job";
 
 type UseJobHandlersProps = {
@@ -19,7 +19,7 @@ type UseJobHandlersProps = {
   setToast: React.Dispatch<
     React.SetStateAction<{ message: string; variant: "success" | "error" | "info"; visible: boolean }>
   >;
-  totals: Array<{ totalHrs: number; totalAmount: number }>;
+  totals: CalculationResult[];
 };
 
 export const useJobHandlers = ({

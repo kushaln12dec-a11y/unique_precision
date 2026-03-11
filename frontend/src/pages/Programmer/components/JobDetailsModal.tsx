@@ -181,7 +181,7 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
                   {
                     label: isOperator ? "Estimated Time" : "Cut Length Hrs",
                     value: isOperator
-                      ? formatDecimalHoursToHHMMhrs(Number((((Number(cutItem.totalAmount || 0) || 0) / 625).toFixed(2))))
+                      ? formatDecimalHoursToHHMMhrs(Number((((amounts.perCut[index]?.wedmAmount || 0) / 625).toFixed(2))))
                       : (cutItem.totalHrs ? formatDecimalHoursToHHMMhrs(cutItem.totalHrs) : "00:00hrs"),
                   },
                 ];
@@ -310,10 +310,7 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
               <span>
                 {isOperator
                   ? formatDecimalHoursToHHMMhrs(
-                      displayEntries.reduce(
-                        (sum, cutItem) => sum + Number((((Number(cutItem.totalAmount || 0) || 0) / 625).toFixed(2))),
-                        0
-                      )
+                      Number(((amounts.totalWedmAmount || 0) / 625).toFixed(2))
                     )
                   : (displayGroupTotalHrs ? formatDecimalHoursToHHMMhrs(displayGroupTotalHrs) : "00:00hrs")}
               </span>

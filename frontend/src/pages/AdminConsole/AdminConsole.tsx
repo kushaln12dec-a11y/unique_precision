@@ -111,7 +111,7 @@ const AdminConsole = () => {
         sedmElectrodeOptions: sanitizeOptions(electrodeOptions),
         machineOptions: sanitizeMachineOptions(machineOptions),
         sedmThOptions: config.sedmThOptions || [],
-        settingHoursPerSetting: Number(config.settingHoursPerSetting) || 0.5,
+        settingHoursPerSetting: Number(config.settingHoursPerSetting) === 0.25 ? 0.25 : 0.5,
         complexExtraHours: Number(config.complexExtraHours) || 1,
         pipExtraHours: Number(config.pipExtraHours) || 1,
       };
@@ -450,16 +450,17 @@ const AdminConsole = () => {
         <div className="admin-hours-grid">
           <label>
             Setting Hrs
-            <input
-              type="number"
-              step="0.1"
-              value={config?.settingHoursPerSetting ?? 0.5}
+            <select
+              value={Number(config?.settingHoursPerSetting) === 0.25 ? "0.25" : "0.5"}
               onChange={(e) =>
                 setConfig((prev) =>
-                  prev ? { ...prev, settingHoursPerSetting: Number(e.target.value) || 0 } : prev
+                  prev ? { ...prev, settingHoursPerSetting: e.target.value === "0.25" ? 0.25 : 0.5 } : prev
                 )
               }
-            />
+            >
+              <option value="0.5">0.5</option>
+              <option value="0.25">0.25</option>
+            </select>
           </label>
           <label>
             Complex Extra Hrs

@@ -32,6 +32,56 @@ export type CalculationConfig = {
   pipExtraHours?: number;
 };
 
+export type WedmRowBreakdown = {
+  rowIndex: number;
+  cutLength: number;
+  thicknessInput: string;
+  thicknessUsed: number;
+  divisor: number;
+  base: number;
+  passLevel: string;
+  passMultiplier: number;
+  passPercent: number;
+  cutAfterPassRaw: number;
+  cutAfterPass: number;
+  settingInput: number;
+  settingHours: number;
+  extraHoursPerUnit: number;
+  qty: number;
+  rowHours: number;
+};
+
+export type SedmEntryBreakdown = {
+  entryIndex: number;
+  thicknessInput: string;
+  thicknessUsed: number;
+  electrodeSize: number;
+  min20: number;
+  perMm: number;
+  baseCost: number;
+  holes: number;
+  qty: number;
+  entryCost: number;
+};
+
+export type CalculationResult = {
+  totalHrs: number;
+  totalAmount: number;
+  wedmAmount: number;
+  sedmAmount: number;
+  estimatedTime: number;
+  wedmBreakdown: {
+    rows: WedmRowBreakdown[];
+    subtotalBeforeExtras: number;
+    extraHours: number;
+    finalHours: number;
+    rate: number;
+  };
+  sedmBreakdown: {
+    entries: SedmEntryBreakdown[];
+  };
+};
+
 export const SEDM_PRICING = [
   { key: "0.3-0.4", label: "0.3 - 0.4", min: 0.3, max: 0.4, min20: 60, perMm: 6 },
   { key: "0.5-0.6", label: "0.5 - 0.6", min: 0.5, max: 0.6, min20: 50, perMm: 4 },
@@ -52,14 +102,23 @@ const PASS_MAP: Record<string, number> = {
   "6": 2.75,
 };
 
+const PASS_PERCENT_MAP: Record<string, number> = {
+  "1": 0,
+  "2": 50,
+  "3": 75,
+  "4": 100,
+  "5": 150,
+  "6": 175,
+};
+
 export const DEFAULT_CUT: CutForm = {
   customer: "",
   rate: "",
   cut: "",
   thickness: "",
-  passLevel: "0",
-  setting: "0",
-  qty: "0",
+  passLevel: "",
+  setting: "",
+  qty: "",
   sedm: "No",
   sedmSelectionType: "range",
   sedmRangeKey: "0.3-0.4",
@@ -79,8 +138,66 @@ export const DEFAULT_CUT: CutForm = {
   pipFinish: false,
 };
 
-export const getEffectiveThickness = (thickness: number): number => {
-  return thickness < 20 ? 20 : thickness;
+export const normalizeThicknessInput = (rawValue: string, previousValue = ""): string => {
+  const cleaned = String(rawValue || "")
+    .replace(/[^\d./\s]/g, "")
+    .replace(/\s+/g, " ");
+
+  const trimmed = cleaned.trim();
+  if (!trimmed) return "";
+  if (trimmed.startsWith("/")) return previousValue;
+
+  const slashIndex = trimmed.indexOf("/");
+  if (slashIndex === -1) {
+    return trimmed;
+  }
+
+  const left = trimmed.slice(0, slashIndex).trim();
+  const right = trimmed.slice(slashIndex + 1).replace(/\//g, "").trim();
+  if (!left) return previousValue;
+  return right ? `${left} / ${right}` : `${left} /`;
+};
+
+const parseThicknessValue = (value: unknown): number => {
+  const raw = String(value ?? "").trim();
+  if (!raw) return 0;
+  if (raw.includes("/")) {
+    const [leftRaw = "", rightRaw = ""] = raw.split("/", 2);
+    const leftToken = leftRaw.trim();
+    const rightToken = rightRaw.trim();
+    const left = Number(leftToken);
+    const right = Number(rightToken);
+    const hasLeft = leftToken !== "" && Number.isFinite(left);
+    const hasRight = rightToken !== "" && Number.isFinite(right);
+    if (hasLeft && hasRight) return (left + right) / 2;
+    if (hasLeft && !hasRight) return left;
+    return 0;
+  }
+  const direct = Number(raw);
+  return Number.isFinite(direct) ? direct : 0;
+};
+
+const parseSedmThicknessValues = (value: unknown): number[] => {
+  const raw = String(value ?? "").trim();
+  if (!raw) return [];
+  if (raw.includes("/")) {
+    const [leftRaw = "", rightRaw = ""] = raw.split("/", 2);
+    const leftToken = leftRaw.trim();
+    const rightToken = rightRaw.trim();
+    const left = Number(leftToken);
+    const right = Number(rightToken);
+    const hasLeft = leftToken !== "" && Number.isFinite(left);
+    const hasRight = rightToken !== "" && Number.isFinite(right);
+    if (hasLeft && hasRight) return [left, right];
+    if (hasLeft && !hasRight) return [left];
+    return [];
+  }
+  const direct = Number(raw);
+  return Number.isFinite(direct) ? [direct] : [];
+};
+
+export const getEffectiveThickness = (thickness: unknown): number => {
+  return Math.max(20, parseThicknessValue(thickness));
 };
 
 export const getElectrodeSize = (form: CutForm): number | null => {
@@ -100,70 +217,85 @@ export const getElectrodeSize = (form: CutForm): number | null => {
 };
 
 const calculateSingleSedmEntry = (
-  thickness: number,
+  thicknessInput: unknown,
   lengthValue: string,
   holes: number,
-  qty: number
-): number => {
+  qty: number,
+  entryIndex: number
+): SedmEntryBreakdown[] => {
   const electrodeSize = lengthValue ? Number(lengthValue) : null;
-  if (!electrodeSize) return 0;
+  if (!electrodeSize) return [];
   
   const pricing = SEDM_PRICING.find(
     p => electrodeSize >= p.min && electrodeSize <= p.max
   );
   
-  if (!pricing) return 0;
-  
-  const effectiveThk = getEffectiveThickness(thickness);
-  
-  let baseValue = pricing.min20;
-  if (effectiveThk > 20) {
-    baseValue += (effectiveThk - 20) * pricing.perMm;
-  }
-  
-  return baseValue * holes * qty;
+  if (!pricing) return [];
+
+  const thicknessValues = parseSedmThicknessValues(thicknessInput);
+  if (thicknessValues.length === 0) return [];
+
+  return thicknessValues.map((thickness, idx) => {
+    const effectiveThickness = Math.max(thickness, 20);
+    // Excel rule:
+    // - thickness <= 20 => Min20
+    // - thickness > 20  => thickness * PerMM
+    const baseCost = thickness > 20 ? thickness * pricing.perMm : pricing.min20;
+    const entryCost = baseCost * holes * qty;
+
+    return {
+      entryIndex: entryIndex + idx,
+      thicknessInput: String(thickness),
+      thicknessUsed: effectiveThickness,
+      electrodeSize,
+      min20: pricing.min20,
+      perMm: pricing.perMm,
+      baseCost,
+      holes,
+      qty,
+      entryCost,
+    };
+  });
 };
 
-export const calculateSedmAmount = (form: CutForm) => {
-  if (form.sedm !== "Yes") return 0;
+const calculateSedmBreakdown = (form: CutForm): SedmEntryBreakdown[] => {
+  if (form.sedm !== "Yes") return [];
   
   if (form.sedmEntriesJson && form.sedmEntriesJson.trim()) {
     try {
-      const entries: Array<{ thickness: string; lengthValue: string; lengthType?: string; holes: string }> = 
+      const entries: Array<{ thickness: string; lengthValue: string; lengthType?: string; holes: string }> =
         JSON.parse(form.sedmEntriesJson);
       const qty = Number(form.qty) || 1;
-      
-      return entries.reduce((sum, entry) => {
-        const thickness = Number(entry.thickness) || 0;
+      let serial = 1;
+      const expanded: SedmEntryBreakdown[] = [];
+      entries.forEach((entry) => {
         const holes = Number(entry.holes) || 1;
-        return sum + calculateSingleSedmEntry(thickness, entry.lengthValue, holes, qty);
-      }, 0);
+        const list = calculateSingleSedmEntry(entry.thickness, entry.lengthValue, holes, qty, serial);
+        expanded.push(...list);
+        serial += list.length || 1;
+      });
+      return expanded;
     } catch (e) {
       console.warn("Failed to parse SEDM entries JSON:", e);
     }
   }
   
   const electrodeSize = getElectrodeSize(form);
-  if (!electrodeSize) return 0;
+  if (!electrodeSize) return [];
   
   const pricing = SEDM_PRICING.find(
     p => electrodeSize >= p.min && electrodeSize <= p.max
   );
   
-  if (!pricing) return 0;
-  
-  const thickness = Number(form.thickness) || 0;
-  const effectiveThk = getEffectiveThickness(thickness);
-  
-  let baseValue = pricing.min20;
-  if (effectiveThk > 20) {
-    baseValue += (effectiveThk - 20) * pricing.perMm;
-  }
+  if (!pricing) return [];
   
   const holes = Number(form.sedmHoles) || 1;
   const qty = Number(form.qty) || 1;
-  
-  return baseValue * holes * qty;
+  return calculateSingleSedmEntry(form.thickness, String(electrodeSize), holes, qty, 1);
+};
+
+export const calculateSedmAmount = (form: CutForm) => {
+  return calculateSedmBreakdown(form).reduce((sum, entry) => sum + entry.entryCost, 0);
 };
 
 type OperationRow = {
@@ -178,9 +310,9 @@ const parseOperationRows = (form: CutForm): OperationRow[] => {
   const fallbackRow: OperationRow = {
     cut: form.cut || "0",
     thickness: form.thickness || "0",
-    passLevel: form.passLevel || "0",
-    setting: form.setting || "0",
-    qty: form.qty || "0",
+    passLevel: form.passLevel || "",
+    setting: form.setting || "",
+    qty: form.qty || "",
   };
 
   if (!form.operationRowsJson || !form.operationRowsJson.trim()) {
@@ -195,13 +327,13 @@ const parseOperationRows = (form: CutForm): OperationRow[] => {
       .map((row) => ({
         cut: String((row as any).cut ?? (row as any).cutLength ?? "0"),
         thickness: String((row as any).thickness ?? (row as any).thk ?? "0"),
-        passLevel: String((row as any).passLevel ?? (row as any).pass ?? "0"),
-        setting: String((row as any).setting ?? (row as any).settingHrs ?? "0"),
-        qty: String((row as any).qty ?? (row as any).quantity ?? "0"),
+        passLevel: String((row as any).passLevel ?? (row as any).pass ?? ""),
+        setting: String((row as any).setting ?? (row as any).settingHrs ?? ""),
+        qty: String((row as any).qty ?? (row as any).quantity ?? ""),
       }))
       .filter((row) => {
         const cutValue = Number(row.cut || 0);
-        const thkValue = Number(row.thickness || 0);
+        const thkValue = parseThicknessValue(row.thickness);
         const passValue = Number(row.passLevel || 0);
         const settingValue = Number(row.setting || 0);
         const qtyValue = Number(row.qty || 0);
@@ -213,48 +345,82 @@ const parseOperationRows = (form: CutForm): OperationRow[] => {
   }
 };
 
-const getSettingHours = (rawSetting: number): number => {
+const getSettingHours = (rawSetting: number, configuredSettingHours: number): number => {
   if (!Number.isFinite(rawSetting) || rawSetting <= 0) return 0;
-  // Business rule:
-  // - Integer levels use mapped values: 1->0.5, 2->1, 3->2, 4->3, ...
-  // - Decimal input (e.g. 1.25) is treated as direct hours.
-  if (Number.isInteger(rawSetting)) {
-    if (rawSetting === 1) return 0.5;
-    if (rawSetting === 2) return 1;
-    return rawSetting - 1;
-  }
-  return rawSetting;
+  return configuredSettingHours;
 };
 
-export const calculateTotals = (form: CutForm, config: CalculationConfig = {}) => {
+export const calculateTotals = (form: CutForm, config: CalculationConfig = {}): CalculationResult => {
   const customerRate = Number(form.rate) || 0;
   const operationRows = parseOperationRows(form);
-  
-  const sedmAmount = calculateSedmAmount(form);
-  const complexHours = Number(config.complexExtraHours ?? 1) || 1;
-  const pipHours = Number(config.pipExtraHours ?? 1) || 1;
-  const extraHours = (form.critical ? complexHours : 0) + (form.pipFinish ? pipHours : 0);
-  const totalHrs = operationRows.reduce((sum, row) => {
-    const cut = Number(row.cut) || 0;
-    // Business rule: treat thickness below 20 mm as 20 mm for calculation only.
-    const thickness = Math.max(20, Number(row.thickness) || 0);
-    const passMultiplier = PASS_MAP[row.passLevel] || 1;
-    const settingLevel = Number(row.setting) || 0;
-    const qty = Number(row.qty) || 0;
-    const thicknessDivisor = thickness > 100 ? 1200 : 1500;
-    const cutHoursPerPiece = (cut * thickness) / thicknessDivisor * passMultiplier;
-    const settingHours = getSettingHours(settingLevel);
+  const configuredSettingHours = Number(config.settingHoursPerSetting) === 0.25 ? 0.25 : 0.5;
 
-    // Quantity scales only machining cut-hours; setup/extra are added once per row.
-    return sum + (cutHoursPerPiece * qty) + settingHours + extraHours;
-  }, 0);
+  const rows: WedmRowBreakdown[] = operationRows.map((row, index) => {
+    const cutLength = Number(row.cut) || 0;
+    const thicknessInput = String(row.thickness ?? "");
+    const thicknessUsed = parseThicknessValue(row.thickness);
+    const divisor = thicknessUsed > 100 ? 1200 : 1500;
+    const base = (cutLength * thicknessUsed) / divisor;
+    const passMultiplier = PASS_MAP[row.passLevel] || 1;
+    const passPercent = PASS_PERCENT_MAP[row.passLevel] ?? Math.max(0, (passMultiplier - 1) * 100);
+    const cutAfterPassRaw = base + (base * passPercent) / 100;
+    const cutAfterPass = Math.max(1, cutAfterPassRaw);
+    const settingLevel = Number(row.setting) || 0;
+    const settingHours = getSettingHours(settingLevel, configuredSettingHours);
+    const qty = Number(row.qty) || 0;
+    const complexHours = Number(config.complexExtraHours ?? 1) || 1;
+    const pipHours = Number(config.pipExtraHours ?? 1) || 1;
+    const extraHoursPerUnit = (form.pipFinish ? pipHours : 0) + (form.critical ? complexHours : 0);
+
+    // Requested sequence:
+    // 1) base -> 2) pass -> 3) min 1 -> 4) setting -> 5) add setting
+    // 6) add pip/complex per-unit -> 7) * qty
+    const rowHours = (cutAfterPass + settingHours + extraHoursPerUnit) * qty;
+
+    return {
+      rowIndex: index + 1,
+      cutLength,
+      thicknessInput,
+      thicknessUsed,
+      divisor,
+      base,
+      passLevel: row.passLevel,
+      passMultiplier,
+      passPercent,
+      cutAfterPassRaw,
+      cutAfterPass,
+      settingInput: settingLevel,
+      settingHours,
+      extraHoursPerUnit,
+      qty,
+      rowHours,
+    };
+  });
+
+  const subtotalBeforeExtras = rows.reduce((sum, row) => sum + row.rowHours, 0);
+  const extraHours = rows.reduce((sum, row) => sum + (row.extraHoursPerUnit * row.qty), 0);
+  const totalHrs = subtotalBeforeExtras;
   const wedmAmount = totalHrs * customerRate;
+  const sedmEntries = calculateSedmBreakdown(form);
+  const sedmAmount = sedmEntries.reduce((sum, entry) => sum + entry.entryCost, 0);
   const totalAmount = wedmAmount + sedmAmount;
+  const estimatedTime = wedmAmount / 625;
 
   return {
     totalHrs,
     totalAmount,
     wedmAmount,
     sedmAmount,
+    estimatedTime,
+    wedmBreakdown: {
+      rows,
+      subtotalBeforeExtras,
+      extraHours,
+      finalHours: totalHrs,
+      rate: customerRate,
+    },
+    sedmBreakdown: {
+      entries: sedmEntries,
+    },
   };
 };

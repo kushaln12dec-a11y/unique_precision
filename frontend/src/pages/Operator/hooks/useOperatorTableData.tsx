@@ -88,7 +88,7 @@ export const useOperatorTableData = (
         if (sortField === "createdBy") return first.createdBy.toLowerCase();
         if (sortField === "totalHrs") {
           return group.entries.reduce(
-            (sum, entry) => sum + ((Number(entry.totalHrs || 0) || 0) * Math.max(1, Number(entry.qty || 1))),
+            (sum, entry) => sum + (Number(entry.totalHrs || 0) || 0),
             0
           );
         }
@@ -122,7 +122,7 @@ export const useOperatorTableData = (
           groupId: group.groupId,
           parent,
           groupTotalHrs: group.entries.reduce(
-            (sum, entry) => sum + ((Number(entry.totalHrs || 0) || 0) * Math.max(1, Number(entry.qty || 1))),
+            (sum, entry) => sum + (Number(entry.totalHrs || 0) || 0),
             0
           ),
           groupTotalAmount: group.entries.reduce(

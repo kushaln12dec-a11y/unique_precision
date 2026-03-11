@@ -26,7 +26,7 @@ export const JobFormActions: React.FC<JobFormActionsProps> = ({
         </div>
         <div>
           <span className="form-total-label">Estimated Time</span>
-          <span className="form-total-value">{(grandTotals.totalAmount / 625).toFixed(2)}</span>
+          <span className="form-total-value">{(grandTotals.wedmAmount / 625).toFixed(2)}</span>
         </div>
         <div>
           {isAdmin && (

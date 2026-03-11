@@ -12,6 +12,7 @@ import {
   toMachineIndex,
   toYN,
 } from "../../../utils/jobFormatting";
+import { calculateTotals } from "../../Programmer/programmerUtils";
 
 type TableRow = {
   groupId: number;
@@ -284,7 +285,10 @@ export const useOperatorTable = ({
           </>
         ),
         sortable: false,
-        render: (row) => estimatedTimeFromAmount(row.groupTotalAmount || 0),
+        render: (row) => {
+          const wedmAmount = row.entries.reduce((sum, entry) => sum + calculateTotals(entry as any).wedmAmount, 0);
+          return estimatedTimeFromAmount(wedmAmount);
+        },
       },
         ...(isAdmin
           ? [
