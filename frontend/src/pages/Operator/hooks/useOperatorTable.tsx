@@ -14,7 +14,8 @@ import {
 } from "../../../utils/jobFormatting";
 import { calculateTotals } from "../../Programmer/programmerUtils";
 import MarqueeCopyText from "../../../components/MarqueeCopyText";
-import SelectDropdown, { type SelectOption } from "../../Programmer/components/SelectDropdown";
+import SelectDropdown from "../../Programmer/components/SelectDropdown";
+import { MultiSelectOperators } from "../components/MultiSelectOperators";
 
 type TableRow = {
   groupId: number;
@@ -210,48 +211,36 @@ export const useOperatorTable = ({
           if (Array.isArray(assignedToValue)) {
             assignedOperators = [...new Set(assignedToValue.map((name) => name.trim()).filter(Boolean))];
           } else if (assignedToValue && assignedToValue !== "Unassigned") {
-            assignedOperators = [...new Set(assignedToValue.split(",").map((name) => name.trim()).filter(Boolean))];
-          }
-
-          const selectedOwner = assignedOperators[0] || "";
-          const normalizedCurrentUser = currentUserName.trim().toLowerCase();
-          const currentUserAlreadyInList = operatorUsers.some(
-            (user) => user.name.trim().toLowerCase() === normalizedCurrentUser
-          );
-          const ownerOptions: SelectOption[] = [];
-          const seenOwnerValues = new Set<string>();
-          const addOwnerOption = (label: string, optionValue: string) => {
-            if (seenOwnerValues.has(optionValue)) return;
-            seenOwnerValues.add(optionValue);
-            ownerOptions.push({ label, value: optionValue });
-          };
-
-          addOwnerOption("Select operator", "");
-          if (currentUserName && !currentUserAlreadyInList) {
-            addOwnerOption("Assign to me", currentUserName);
-          }
-          operatorUsers.forEach((user) => {
-            addOwnerOption(user.name, user.name);
-          });
-          if (selectedOwner && !seenOwnerValues.has(selectedOwner)) {
-            ownerOptions.unshift({ label: selectedOwner, value: selectedOwner });
+            assignedOperators = [...new Set(String(assignedToValue).split(",").map((name) => name.trim()).filter(Boolean))];
           }
 
           return canAssign ? (
-            <SelectDropdown
-              className="operator-assigned-dropdown-wrapper"
-              value={selectedOwner}
-              onChange={(nextValue) => {
-                const value = nextValue.trim();
-                handleAssignChange(row.parent.id, value || "Unassigned");
+            <MultiSelectOperators
+              selectedOperators={assignedOperators}
+              availableOperators={operatorUsers}
+              className="operator-assigned-dropdown"
+              onChange={(operators) => {
+                const uniqueOperators = [...new Set(operators.map((name) => name.trim()).filter(Boolean))];
+                const value = uniqueOperators.length > 0 ? uniqueOperators.join(", ") : "Unassigned";
+                handleAssignChange(row.parent.id, value);
               }}
-              options={ownerOptions}
-              placeholder="Select operator"
-              align="left"
+              assignToSelfName={currentUserName || undefined}
+              placeholder="Unassigned"
+              compact
             />
           ) : (
             <div className="assigned-operators-readonly">
-              {selectedOwner ? <span className="operator-badge-readonly">{selectedOwner}</span> : <span className="unassigned-text">Unassigned</span>}
+              {assignedOperators.length > 0 ? (
+                assignedOperators.length > 1 ? (
+                  <span className="compact-display-readonly" title={assignedOperators.join(", ")}>
+                    {assignedOperators[0]}+{assignedOperators.length - 1}
+                  </span>
+                ) : (
+                  <span className="operator-badge-readonly">{assignedOperators[0]}</span>
+                )
+              ) : (
+                <span className="unassigned-text">Unassigned</span>
+              )}
             </div>
           );
         },
@@ -317,11 +306,12 @@ export const useOperatorTable = ({
         headerClassName: "status-header",
         render: (row) => {
           const c = getGroupQaProgressCounts(row.entries);
-          const counts = { logged: c.saved + c.ready, sent: c.sent, empty: c.empty };
+          const counts = { logged: c.saved, inProgress: c.ready, sent: c.sent, empty: c.empty };
           return (
             <div className="child-stage-summary">
               <span className="qa-mini empty">Yet to Start {counts.empty}</span>
               <span className="qa-mini saved">Logged {counts.logged}</span>
+              <span className="qa-mini ready">In Progress {counts.inProgress}</span>
               <span className="qa-mini sent">QC {counts.sent}</span>
             </div>
           );

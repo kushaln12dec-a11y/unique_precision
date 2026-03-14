@@ -1,6 +1,5 @@
 import React, { useMemo, useState } from "react";
 import type { JobEntry } from "../../../types/job";
-import { formatHoursToHHMM } from "../../../utils/date";
 import ActionButtons from "./ActionButtons";
 import JobDetailsModal from "./JobDetailsModal";
 import { getRowClassName } from "../utils/priorityUtils";
@@ -8,12 +7,13 @@ import { getUserRoleFromToken } from "../../../utils/auth";
 import { MultiSelectOperators } from "../../Operator/components/MultiSelectOperators";
 import { getQaProgressCounts } from "../../Operator/utils/qaProgress";
 import { estimatedTimeFromAmount, formatMachineLabel, MACHINE_OPTIONS, toMachineIndex, toYN } from "../../../utils/jobFormatting";
-import { calculateTotals } from "../programmerUtils";
+import { calculateTotals, getThicknessDisplayValue } from "../programmerUtils";
 import MarqueeCopyText from "../../../components/MarqueeCopyText";
 
 type ChildCutsTableProps = {
   entries: JobEntry[];
   parentSetting?: string;
+  showSetNumberColumn?: boolean;
   onEdit?: (groupId: number) => void;
   onDelete?: (groupId: number, customer: string) => void;
   onImage?: (groupId: number, cutId?: number) => void;
@@ -33,6 +33,7 @@ type ChildCutsTableProps = {
 const ChildCutsTable: React.FC<ChildCutsTableProps> = ({
   entries,
   parentSetting = "",
+  showSetNumberColumn = false,
   onEdit,
   onDelete,
   onImage,
@@ -63,6 +64,12 @@ const ChildCutsTable: React.FC<ChildCutsTableProps> = ({
       n = Math.floor(n / 26) - 1;
     } while (n >= 0);
     return result;
+  };
+
+  const getParentSerialPrefix = (): string => {
+    const trimmed = String(parentSetting || "").trim();
+    const numericOnly = trimmed.match(/\d+/)?.[0] || "";
+    return numericOnly || "1";
   };
 
   const getMachineNumber = (entry: JobEntry): string => {
@@ -114,6 +121,16 @@ const ChildCutsTable: React.FC<ChildCutsTableProps> = ({
     if (onDelete) onDelete(entry.groupId, entry.customer || "entry");
   };
 
+  const selectedCutAsParentViewJob = selectedCut
+    ? {
+        groupId: selectedCut.groupId,
+        parent: selectedCut,
+        entries: [selectedCut],
+        groupTotalHrs: Number(selectedCut.totalHrs || calculateTotals(selectedCut as any).totalHrs || 0),
+        groupTotalAmount: Number(selectedCut.totalAmount || calculateTotals(selectedCut as any).totalAmount || 0),
+      }
+    : null;
+
   return (
     <>
       <table className="child-jobs-table">
@@ -135,9 +152,7 @@ const ChildCutsTable: React.FC<ChildCutsTableProps> = ({
               </th>
             )}
             {!showCheckboxes && <th className="child-table-spacer checkbox-spacer"></th>}
-            <th className="setting-number-col">
-              <span className="th-content">Set #</span>
-            </th>
+            {showSetNumberColumn && <th className="setting-number-col" aria-label="serial number"></th>}
             <th className="customer-col">
               <span className="th-content">Customer</span>
             </th>
@@ -210,7 +225,7 @@ const ChildCutsTable: React.FC<ChildCutsTableProps> = ({
               return "operator-stage-row-not-started";
             })();
             return (
-              <tr key={entry.id} className={`${childFlagClass} ${childStageClass}`.trim()}>
+              <tr key={rowKey} className={`${childFlagClass} ${childStageClass}`.trim()}>
                 {showCheckboxes ? (
                   <td className="checkbox-cell" onClick={(e) => e.stopPropagation()}>
                     <input
@@ -225,11 +240,11 @@ const ChildCutsTable: React.FC<ChildCutsTableProps> = ({
                 ) : (
                   <td className="child-table-spacer checkbox-spacer"></td>
                 )}
-                <td className="setting-number-col">
-                  {parentSetting
-                    ? `${parentSetting}${toAlphabetSuffix(index)}`
-                    : index + 1}
-                </td>
+                {showSetNumberColumn && (
+                  <td className="setting-number-col">
+                    {`${getParentSerialPrefix()}${toAlphabetSuffix(index)}`}
+                  </td>
+                )}
               <td className="customer-col">{entry.customer || "-"}</td>
               <td className="program-ref-file-col" title={(entry as any).programRefFile || (entry as any).programRefFileName || "-"}>
                 <MarqueeCopyText text={String((entry as any).programRefFile || (entry as any).programRefFileName || "-")} />
@@ -238,7 +253,7 @@ const ChildCutsTable: React.FC<ChildCutsTableProps> = ({
                 <MarqueeCopyText text={entry.description || "-"} />
               </td>
               <td className="cut-col">{Math.round(Number(entry.cut || 0))}</td>
-              <td className="th-col">{Math.round(Number(entry.thickness || 0))}</td>
+              <td className="th-col">{getThicknessDisplayValue(entry.thickness)}</td>
               <td className="pass-col">{entry.passLevel}</td>
               <td className="setting-col">{entry.setting}</td>
               <td className="qty-col">{Number(entry.qty || 0).toString()}</td>
@@ -321,11 +336,11 @@ const ChildCutsTable: React.FC<ChildCutsTableProps> = ({
                 <td className="total-hrs-col">
                   {(() => {
                     const totalHrs = calculateTotals(entry as any).totalHrs;
-                    return totalHrs ? formatHoursToHHMM(totalHrs) : "-";
+                    return totalHrs ? `${totalHrs.toFixed(2)}hrs` : "-";
                   })()}
                 </td>
               )}
-              <td className="estimated-time-col">{estimatedTimeFromAmount(calculateTotals(entry as any).wedmAmount)}</td>
+              <td className="estimated-time-col">{`${estimatedTimeFromAmount(calculateTotals(entry as any).wedmAmount)}hrs`}</td>
               {isAdmin && <td className="total-amount-col">{entry.totalAmount ? `Rs. ${Math.round(entry.totalAmount)}` : "-"}</td>}
               {isOperator && (
                 <td className="status-col">
@@ -335,7 +350,8 @@ const ChildCutsTable: React.FC<ChildCutsTableProps> = ({
                     return (
                       <div className="child-stage-summary">
                         <span className="qa-mini empty">Yet to Start {c.empty}</span>
-                        <span className="qa-mini saved">Logged {c.saved + c.ready}</span>
+                        <span className="qa-mini saved">Logged {c.saved}</span>
+                        <span className="qa-mini ready">In Progress {c.ready}</span>
                         <span className="qa-mini sent">QC {c.sent}</span>
                       </div>
                     );
@@ -364,9 +380,8 @@ const ChildCutsTable: React.FC<ChildCutsTableProps> = ({
       </table>
       {showCutModal && selectedCut && (
         <JobDetailsModal
-          job={null}
-          cut={selectedCut}
-          cutIndex={entries.findIndex((e) => e.id === selectedCut.id) + 1}
+          job={selectedCutAsParentViewJob}
+          userRole={getUserRoleFromToken()}
           onClose={() => {
             setShowCutModal(false);
             setSelectedCut(null);

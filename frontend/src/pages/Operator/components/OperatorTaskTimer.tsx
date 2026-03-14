@@ -93,6 +93,7 @@ export const OperatorTaskTimer: React.FC<OperatorTaskTimerProps> = ({
     persistedState.panelOpen,
   );
   const [savingTimer, setSavingTimer] = useState(false);
+  const [confirmStartOpen, setConfirmStartOpen] = useState(false);
   const [idleReason, setIdleReason] = useState<string>(persistedState.reason);
   const [otherIdleReason, setOtherIdleReason] = useState<string>(
     persistedState.otherReason,
@@ -215,14 +216,19 @@ export const OperatorTaskTimer: React.FC<OperatorTaskTimerProps> = ({
 
   const handleTimerButtonClick = () => {
     if (!timerRunning) {
-      const startedAt = Date.now();
-      setTimerRunning(true);
-      setTimerStartedAt(startedAt);
-      setElapsedSeconds(0);
-      setTimerPanelOpen(true);
+      setConfirmStartOpen(true);
       return;
     }
     setTimerPanelOpen((prev) => !prev);
+  };
+
+  const handleConfirmStartTimer = () => {
+    const startedAt = Date.now();
+    setTimerRunning(true);
+    setTimerStartedAt(startedAt);
+    setElapsedSeconds(0);
+    setTimerPanelOpen(true);
+    setConfirmStartOpen(false);
   };
 
   const handleSaveAndStopTimer = async () => {
@@ -375,6 +381,32 @@ export const OperatorTaskTimer: React.FC<OperatorTaskTimerProps> = ({
             >
               {savingTimer ? 'Saving...' : 'Save & Stop'}
             </button>
+          </div>
+        </div>
+      )}
+      {confirmStartOpen && (
+        <div className="operator-start-confirm-overlay">
+          <div className="operator-start-confirm-modal">
+            <div className="operator-start-confirm-head">
+              <h4>Start Task Timer?</h4>
+              <p>Timer will begin tracking your active operation time now.</p>
+            </div>
+            <div className="operator-start-confirm-actions">
+              <button
+                type="button"
+                className="operator-start-confirm-cancel"
+                onClick={() => setConfirmStartOpen(false)}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="operator-start-confirm-start"
+                onClick={handleConfirmStartTimer}
+              >
+                Start Timer
+              </button>
+            </div>
           </div>
         </div>
       )}

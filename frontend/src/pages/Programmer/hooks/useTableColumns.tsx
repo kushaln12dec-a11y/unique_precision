@@ -1,11 +1,11 @@
 import { useMemo } from "react";
 import type { Column } from "../../../components/DataTable";
-import { formatHoursToHHMM, getDisplayDateTimeParts } from "../../../utils/date";
+import { getDisplayDateTimeParts } from "../../../utils/date";
 import ArrowForwardIosSharpIcon from "@mui/icons-material/ArrowForwardIosSharp";
 import type { TableRow } from "../utils/jobDataTransform";
 import ActionButtons from "../components/ActionButtons";
 import { estimatedTimeFromAmount, getInitials, toYN } from "../../../utils/jobFormatting";
-import { calculateTotals } from "../programmerUtils";
+import { calculateTotals, getThicknessDisplayValue } from "../programmerUtils";
 import MarqueeCopyText from "../../../components/MarqueeCopyText";
 
 type UseTableColumnsProps = {
@@ -36,7 +36,7 @@ export const useTableColumns = ({
           const expandable = expandableRows?.get(row.groupId);
           const isExpanded = expandable?.isExpanded || false;
           return (
-            <div style={{ display: "flex", alignItems: "center", gap: "0.2rem" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "0.2rem" }}>
               {expandable && (
                 <button
                   type="button"
@@ -118,7 +118,7 @@ export const useTableColumns = ({
         label: "TH (MM)",
         sortable: false,
         sortKey: "thickness",
-        render: (row) => Math.round(Number(row.parent.thickness || 0)),
+        render: (row) => getThicknessDisplayValue(row.parent.thickness),
       },
       {
         key: "passLevel",
@@ -158,7 +158,7 @@ export const useTableColumns = ({
         sortKey: "totalHrs",
         render: (row) => {
           const totalHrs = calculateTotals(row.parent as any).totalHrs;
-          return totalHrs ? formatHoursToHHMM(totalHrs) : "-";
+          return totalHrs ? `${totalHrs.toFixed(2)}hrs` : "-";
         },
       },
       {
@@ -175,7 +175,7 @@ export const useTableColumns = ({
         headerClassName: "estimated-time-col",
         render: (row) => {
           const wedmAmount = row.entries.reduce((sum, entry) => sum + calculateTotals(entry as any).wedmAmount, 0);
-          return estimatedTimeFromAmount(wedmAmount);
+          return `${estimatedTimeFromAmount(wedmAmount)}hrs`;
         },
       },
       ...(isAdmin

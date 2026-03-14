@@ -28,6 +28,7 @@ const MaterialAutocomplete: React.FC<MaterialAutocompleteProps> = ({
   const [inputValue, setInputValue] = useState(value);
   const [isOpen, setIsOpen] = useState(false);
   const [filteredOptions, setFilteredOptions] = useState(sourceOptions);
+  const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -69,11 +70,13 @@ const MaterialAutocomplete: React.FC<MaterialAutocompleteProps> = ({
     }
     
     setIsOpen(true);
+    setHighlightedIndex(filteredOptions.length > 0 ? 0 : -1);
     onChange(newValue);
   };
 
   const handleInputFocus = () => {
     setIsOpen(true);
+    setHighlightedIndex(filteredOptions.length > 0 ? 0 : -1);
     if (inputValue.trim() === "") {
       setFilteredOptions(sourceOptions);
     }
@@ -90,11 +93,28 @@ const MaterialAutocomplete: React.FC<MaterialAutocompleteProps> = ({
     if (e.key === "Escape") {
       setIsOpen(false);
       inputRef.current?.blur();
+    } else if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+      if (!isOpen) {
+        setIsOpen(true);
+      }
+      if (filteredOptions.length === 0) return;
+      e.preventDefault();
+      const delta = e.key === "ArrowDown" ? 1 : -1;
+      const nextIndex =
+        highlightedIndex < 0
+          ? 0
+          : (highlightedIndex + delta + filteredOptions.length) % filteredOptions.length;
+      setHighlightedIndex(nextIndex);
+      const nextOption = filteredOptions[nextIndex];
+      if (nextOption) {
+        setInputValue(nextOption);
+        onChange(nextOption);
+      }
     } else if (e.key === "Tab") {
       setIsOpen(false);
     } else if (e.key === "Enter" && filteredOptions.length > 0 && isOpen) {
       e.preventDefault();
-      handleOptionSelect(filteredOptions[0]);
+      handleOptionSelect(filteredOptions[Math.max(0, highlightedIndex)] || filteredOptions[0]);
     }
   };
 
@@ -121,7 +141,7 @@ const MaterialAutocomplete: React.FC<MaterialAutocompleteProps> = ({
             <div
               key={option}
               className={`customer-autocomplete-option ${
-                option === value ? "selected" : ""
+                option === value || highlightedIndex === filteredOptions.indexOf(option) ? "selected" : ""
               }`}
               onClick={() => handleOptionSelect(option)}
               onMouseDown={(e) => e.preventDefault()}

@@ -185,6 +185,33 @@ const SelectDropdown: React.FC<SelectDropdownProps> = ({
           onKeyDown={(event) => {
             if (event.key === "Escape" || event.key === "Tab") {
               setIsOpen(false);
+              return;
+            }
+
+            if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+              event.preventDefault();
+              const currentIndex = options.findIndex((option) => option.value === value);
+              if (options.length === 0) return;
+
+              const nextIndex =
+                event.key === "ArrowDown"
+                  ? (currentIndex + 1 + options.length) % options.length
+                  : (currentIndex - 1 + options.length) % options.length;
+
+              onChange(options[nextIndex].value);
+              setIsOpen(true);
+              return;
+            }
+
+            if ((event.key === "Enter" || event.key === " ") && !disabled) {
+              event.preventDefault();
+              const nextOpen = !isOpen;
+              if (nextOpen) {
+                window.dispatchEvent(
+                  new CustomEvent("app-select-dropdown-opened", { detail: dropdownId })
+                );
+              }
+              setIsOpen(nextOpen);
             }
           }}
           disabled={disabled}

@@ -346,6 +346,68 @@ const Operator = () => {
     });
   };
 
+  const handleApplyBulkAssignment = async (payload: { operators: string[]; machineNumber: string }) => {
+    if (selectedEntryIds.size === 0) {
+      setToast({ message: "Select at least one row first.", variant: "error", visible: true });
+      setTimeout(() => setToast((prev) => ({ ...prev, visible: false })), 2500);
+      return;
+    }
+
+    const operators = [...new Set(payload.operators.map((name) => name.trim()).filter(Boolean))];
+    const machineNumber = String(payload.machineNumber || "").trim();
+
+    if (operators.length === 0 && !machineNumber) {
+      setToast({ message: "Choose operator or machine to apply.", variant: "error", visible: true });
+      setTimeout(() => setToast((prev) => ({ ...prev, visible: false })), 2500);
+      return;
+    }
+
+    const selectedIdSet = new Set(Array.from(selectedEntryIds, (id) => String(id)));
+    const targetEntries = tableData
+      .flatMap((row) => row.entries)
+      .filter((entry) => selectedIdSet.has(String(entry.id)));
+
+    if (targetEntries.length === 0) {
+      setToast({ message: "No valid selected rows found.", variant: "error", visible: true });
+      setTimeout(() => setToast((prev) => ({ ...prev, visible: false })), 2500);
+      return;
+    }
+
+    const assignedToValue = operators.length > 0 ? operators.join(", ") : null;
+
+    try {
+      await Promise.all(
+        targetEntries.map((entry) => {
+          const updatePayload: Record<string, string> = {};
+          if (assignedToValue !== null) updatePayload.assignedTo = assignedToValue;
+          if (machineNumber) updatePayload.machineNumber = machineNumber;
+          return updateOperatorJob(String(entry.id), updatePayload);
+        })
+      );
+
+      setJobs((prev) =>
+        prev.map((job) => {
+          if (!selectedIdSet.has(String(job.id))) return job;
+          return {
+            ...job,
+            ...(assignedToValue !== null ? { assignedTo: assignedToValue } : {}),
+            ...(machineNumber ? { machineNumber } : {}),
+          };
+        })
+      );
+
+      setToast({
+        message: `Updated ${targetEntries.length} selected row(s).`,
+        variant: "success",
+        visible: true,
+      });
+      setTimeout(() => setToast((prev) => ({ ...prev, visible: false })), 2500);
+    } catch (error) {
+      setToast({ message: "Failed to update selected rows.", variant: "error", visible: true });
+      setTimeout(() => setToast((prev) => ({ ...prev, visible: false })), 2500);
+    }
+  };
+
   const configuredMachineOptions =
     (masterConfig?.machineOptions || [])
       .map((value) => toMachineIndex(value))
@@ -799,6 +861,9 @@ const Operator = () => {
                 onDownloadCSV={handleDownloadCSV}
                 onSendSelectedRowsToQa={handleSendSelectedRowsToQa}
                 selectedRowsCount={selectedEntryIds.size}
+                machineOptions={machineOptionsForDropdown}
+                currentUserName={currentUserName}
+                onApplyBulkAssignment={handleApplyBulkAssignment}
               />
               <DataTable
                 columns={columns}

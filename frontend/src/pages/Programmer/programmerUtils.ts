@@ -46,10 +46,13 @@ export type WedmRowBreakdown = {
   cutAfterPass: number;
   passPlusSettingRaw: number;
   passPlusSettingWithMin: number;
+  passAfterMin: number;
+  minAppliedBeforeQty: boolean;
   settingInput: number;
   settingHours: number;
   extraHoursPerUnit: number;
   qty: number;
+  qtyFirstSettingRuleApplied: boolean;
   rowHours: number;
 };
 
@@ -114,7 +117,7 @@ const PASS_PERCENT_MAP: Record<string, number> = {
 };
 
 export const DEFAULT_CUT: CutForm = {
-  customer: "",
+  customer: "UPC",
   rate: "",
   cut: "",
   thickness: "",
@@ -138,6 +141,11 @@ export const DEFAULT_CUT: CutForm = {
   cutImage: [],
   critical: false,
   pipFinish: false,
+};
+
+export const getThicknessDisplayValue = (value: unknown): string => {
+  const raw = String(value ?? "").trim();
+  return raw || "-";
 };
 
 export const normalizeThicknessInput = (rawValue: string, previousValue = ""): string => {
@@ -368,17 +376,24 @@ export const calculateTotals = (form: CutForm, config: CalculationConfig = {}): 
     const cutAfterPassRaw = base + (base * passPercent) / 100;
     const cutAfterPass = cutAfterPassRaw;
     const settingLevel = Number(row.setting) || 0;
-    const settingHours = getSettingHours(settingLevel, configuredSettingHours);
-    const passPlusSettingRaw = cutAfterPass + settingHours;
-    const passPlusSettingWithMin = Math.max(1, passPlusSettingRaw);
     const qty = Number(row.qty) || 0;
+    const settingHours = getSettingHours(settingLevel, configuredSettingHours);
+    const qtyFirstSettingRuleApplied = settingLevel > 0 && qty > 0 && settingLevel !== qty;
+    const passAfterMin = Math.max(1, cutAfterPass);
+    const minAppliedBeforeQty = qtyFirstSettingRuleApplied;
+    const passPlusSettingRaw = qtyFirstSettingRuleApplied
+      ? (passAfterMin * qty) + settingHours
+      : cutAfterPass + settingHours;
+    const passPlusSettingWithMin = qtyFirstSettingRuleApplied
+      ? passPlusSettingRaw
+      : Math.max(1, passPlusSettingRaw);
     const complexHours = Number(config.complexExtraHours ?? 1) || 1;
     const pipHours = Number(config.pipExtraHours ?? 1) || 1;
     const extraHoursPerUnit = (form.pipFinish ? pipHours : 0) + (form.critical ? complexHours : 0);
 
-    // Requested sequence:
-    // 1) base -> 2) pass -> 3) setting -> 4) min 1 -> 5) extras -> 6) * qty
-    const rowHours = (passPlusSettingWithMin + extraHoursPerUnit) * qty;
+    const rowHours = qtyFirstSettingRuleApplied
+      ? passPlusSettingWithMin + (extraHoursPerUnit * qty)
+      : (passPlusSettingWithMin + extraHoursPerUnit) * qty;
 
     return {
       rowIndex: index + 1,
@@ -394,10 +409,13 @@ export const calculateTotals = (form: CutForm, config: CalculationConfig = {}): 
       cutAfterPass,
       passPlusSettingRaw,
       passPlusSettingWithMin,
+      passAfterMin,
+      minAppliedBeforeQty,
       settingInput: settingLevel,
       settingHours,
       extraHoursPerUnit,
       qty,
+      qtyFirstSettingRuleApplied,
       rowHours,
     };
   });

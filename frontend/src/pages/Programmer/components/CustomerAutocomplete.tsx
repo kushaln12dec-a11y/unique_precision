@@ -10,6 +10,7 @@ interface CustomerAutocompleteProps {
 }
 
 const CUSTOMER_OPTIONS = [
+  "UPC",
   "UPC001",
   "UPC002",
   "UPC003",
@@ -29,11 +30,12 @@ const CustomerAutocomplete: React.FC<CustomerAutocompleteProps> = ({
   const [inputValue, setInputValue] = useState(value);
   const [isOpen, setIsOpen] = useState(false);
   const [filteredOptions, setFilteredOptions] = useState(sourceOptions);
+  const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    setInputValue(value);
+    setInputValue(String(value || "").toUpperCase());
   }, [value]);
 
   useEffect(() => {
@@ -56,7 +58,7 @@ const CustomerAutocomplete: React.FC<CustomerAutocompleteProps> = ({
   }, [isOpen]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newValue = e.target.value;
+    const newValue = e.target.value.toUpperCase();
     setInputValue(newValue);
     
     if (newValue.trim() === "") {
@@ -70,19 +72,22 @@ const CustomerAutocomplete: React.FC<CustomerAutocompleteProps> = ({
     }
     
     setIsOpen(true);
+    setHighlightedIndex(filteredOptions.length > 0 ? 0 : -1);
     onChange(newValue);
   };
 
   const handleInputFocus = () => {
     setIsOpen(true);
+    setHighlightedIndex(filteredOptions.length > 0 ? 0 : -1);
     if (inputValue.trim() === "") {
       setFilteredOptions(sourceOptions);
     }
   };
 
   const handleOptionSelect = (option: string) => {
-    setInputValue(option);
-    onChange(option);
+    const normalized = option.toUpperCase();
+    setInputValue(normalized);
+    onChange(normalized);
     setIsOpen(false);
     inputRef.current?.blur();
   };
@@ -91,9 +96,27 @@ const CustomerAutocomplete: React.FC<CustomerAutocompleteProps> = ({
     if (e.key === "Escape") {
       setIsOpen(false);
       inputRef.current?.blur();
+    } else if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+      if (!isOpen) {
+        setIsOpen(true);
+      }
+      if (filteredOptions.length === 0) return;
+      e.preventDefault();
+      const delta = e.key === "ArrowDown" ? 1 : -1;
+      const nextIndex =
+        highlightedIndex < 0
+          ? 0
+          : (highlightedIndex + delta + filteredOptions.length) % filteredOptions.length;
+      setHighlightedIndex(nextIndex);
+      const nextOption = filteredOptions[nextIndex];
+      if (nextOption) {
+        const normalized = nextOption.toUpperCase();
+        setInputValue(normalized);
+        onChange(normalized);
+      }
     } else if (e.key === "Enter" && filteredOptions.length > 0 && isOpen) {
       e.preventDefault();
-      handleOptionSelect(filteredOptions[0]);
+      handleOptionSelect(filteredOptions[Math.max(0, highlightedIndex)] || filteredOptions[0]);
     } else if (e.key === "Tab" && filteredOptions.length > 0 && isOpen) {
       const exactMatch = filteredOptions.some(
         (option) => option.toLowerCase() === inputValue.trim().toLowerCase()
@@ -130,7 +153,7 @@ const CustomerAutocomplete: React.FC<CustomerAutocompleteProps> = ({
             <div
               key={option}
               className={`customer-autocomplete-option ${
-                option === value ? "selected" : ""
+                option.toUpperCase() === value.toUpperCase() || highlightedIndex === filteredOptions.indexOf(option) ? "selected" : ""
               }`}
               onClick={() => handleOptionSelect(option)}
               onMouseDown={(e) => e.preventDefault()}

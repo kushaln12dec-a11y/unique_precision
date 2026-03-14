@@ -1,4 +1,4 @@
-import { formatDisplayDateTime, formatHoursToHHMM } from "../../../utils/date";
+import { formatDisplayDateTime } from "../../../utils/date";
 import type { JobEntry } from "../../../types/job";
 
 export type TableRow = {
@@ -32,11 +32,11 @@ export const exportJobsToCSV = (tableData: TableRow[], isAdmin: boolean): void =
     `Rs. ${Number(row.parent.rate || 0).toFixed(2)}`,
     Number(row.parent.cut || 0).toFixed(2),
     row.parent.description || "",
-    Number(row.parent.thickness || 0).toFixed(2),
+    String(row.parent.thickness || ""),
     row.parent.passLevel || "",
     row.parent.setting || "",
     Number(row.parent.qty || 0).toString(),
-    row.groupTotalHrs ? formatHoursToHHMM(row.groupTotalHrs) : "",
+    row.groupTotalHrs ? `${row.groupTotalHrs.toFixed(2)}hrs` : "",
     ...(isAdmin ? [row.groupTotalAmount ? `Rs. ${row.groupTotalAmount.toFixed(2)}` : ""] : []),
     row.parent.createdBy || "",
     formatCreatedAt(row.parent.createdAt),

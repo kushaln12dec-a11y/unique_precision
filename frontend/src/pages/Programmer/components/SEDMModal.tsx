@@ -314,13 +314,6 @@ const SEDMModal: React.FC<SEDMModalProps> = ({
                 type="text"
                 value={entry.thickness}
                 inputMode="decimal"
-                onKeyDown={(e) => {
-                  if (e.key !== "Tab") return;
-                  const current = String(entry.thickness || "").trim();
-                  if (!current || current.includes("/")) return;
-                  e.preventDefault();
-                  handleEntryChange(index, "thickness", `${current} /`);
-                }}
                 onChange={(event) =>
                   handleEntryChange(
                     index,

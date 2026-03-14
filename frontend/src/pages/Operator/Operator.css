@@ -32,7 +32,8 @@
   min-width: 0;
   max-width: 100%;
   table-layout: auto;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
   background: #ffffff;
   box-sizing: border-box;
 }
@@ -122,8 +123,8 @@
   .checkbox-header-cell
   input[type='checkbox'],
 .operator-table-no-scroll .data-table .checkbox-cell input[type='checkbox'] {
-  width: 18px;
-  height: 18px;
+  width: 14px;
+  height: 14px;
   margin: 0 auto;
   display: block;
   cursor: pointer;
@@ -140,11 +141,13 @@
 /* Program Ref Column */
 .operator-table-no-scroll .data-table th:nth-child(3),
 .operator-table-no-scroll .data-table td:nth-child(3) {
-  width: 110px;
-  min-width: 110px;
+  width: 145px;
+  min-width: 145px;
   text-align: left;
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
+  word-break: normal;
 }
 
 /* Description Column */
@@ -223,16 +226,16 @@
 /* Assigned To Column */
 .operator-table-no-scroll .data-table th:nth-child(12),
 .operator-table-no-scroll .data-table td:nth-child(12) {
-  width: 108px;
-  min-width: 108px;
+  width: 96px;
+  min-width: 96px;
   text-align: left;
 }
 
 /* Mach # Column */
 .operator-table-no-scroll .data-table th:nth-child(13),
 .operator-table-no-scroll .data-table td:nth-child(13) {
-  width: 76px;
-  min-width: 76px;
+  width: 64px;
+  min-width: 64px;
   text-align: left;
 }
 
@@ -294,7 +297,7 @@
 
 /* ============================================
    CHILD TABLE STYLES
-   Column order: Spacer, Setting #, Customer, Desc, Program Ref File Name, Cut, TH, Pass, Set, Qty, SEDM, Operator, Mach #, Total Hrs, Estimated Time, Total Amount, Status, Action
+   Column order: Spacer, Customer, Desc, Program Ref File Name, Cut, TH, Pass, Set, Qty, SEDM, Operator, Mach #, Total Hrs, Estimated Time, Total Amount, Status, Action
    ============================================ */
 
 .operator-table-no-scroll .child-row-content {
@@ -396,8 +399,8 @@
   .child-jobs-table
   td.checkbox-cell
   input[type='checkbox'] {
-  width: 16px;
-  height: 16px;
+  width: 14px;
+  height: 14px;
   margin: 0;
   cursor: pointer;
 }
@@ -416,22 +419,6 @@
   max-width: 40px;
   padding: 0;
   border: none;
-}
-
-/* Setting # - Extra column in child table - Ensure th and td match */
-.operator-table-no-scroll
-  .child-row-content
-  .child-jobs-table
-  th.setting-number-col,
-.operator-table-no-scroll
-  .child-row-content
-  .child-jobs-table
-  td.setting-number-col {
-  width: 55px;
-  min-width: 55px;
-  text-align: left;
-  padding-left: 0.4rem;
-  padding-right: 0.4rem;
 }
 
 /* Customer - Align with parent Customer - Ensure th and td match */
@@ -924,6 +911,71 @@
   flex-wrap: nowrap;
 }
 
+.operator-bulk-assign-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-width: 0;
+  flex-wrap: nowrap;
+}
+
+.operator-bulk-assign-banner {
+  background: linear-gradient(135deg, #ecfeff 0%, #eff6ff 48%, #eef2ff 100%);
+  border: 1px solid #bfdbfe;
+  border-radius: 14px;
+  padding: 0.36rem 0.45rem;
+  box-shadow: 0 8px 16px rgba(30, 64, 175, 0.12);
+}
+
+.operator-bulk-selected-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 30px;
+  padding: 0 0.58rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #1d4ed8;
+  background: #dbeafe;
+  border: 1px solid #93c5fd;
+  white-space: nowrap;
+}
+
+.operator-bulk-assign-group .operator-bulk-operators {
+  min-width: 180px;
+  max-width: 220px;
+}
+
+.operator-bulk-assign-group .operator-bulk-machine {
+  min-width: 120px;
+  max-width: 130px;
+}
+
+.operator-bulk-assign-group .operator-bulk-machine .option-dropdown-trigger {
+  height: 36px;
+  border-radius: 10px;
+}
+
+.operator-bulk-apply-btn {
+  height: 36px;
+  border: 1px solid #2563eb;
+  border-radius: 10px;
+  padding: 0 0.8rem;
+  color: #ffffff;
+  font-size: 0.84rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, #2563eb 0%, #4f46e5 100%);
+  box-shadow: 0 8px 16px rgba(37, 99, 235, 0.24);
+  cursor: pointer;
+}
+
+.operator-bulk-apply-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
 .operator-timer-right-slot .operator-inline-timer-group {
   width: 190px;
   min-width: 190px;
@@ -970,6 +1022,69 @@
 .operator-inline-timer-btn:hover {
   transform: translateY(-1px);
   box-shadow: 0 10px 18px rgba(30, 64, 175, 0.2);
+}
+
+.operator-start-confirm-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(2px);
+  z-index: 1400;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.operator-start-confirm-modal {
+  width: min(420px, 92vw);
+  border-radius: 16px;
+  border: 1px solid #93c5fd;
+  background: linear-gradient(145deg, #eff6ff 0%, #eef2ff 45%, #f0fdf4 100%);
+  box-shadow: 0 20px 45px rgba(15, 23, 42, 0.28);
+  padding: 1rem 1rem 0.9rem;
+}
+
+.operator-start-confirm-head h4 {
+  margin: 0;
+  color: #1e3a8a;
+  font-size: 1.08rem;
+  font-weight: 800;
+}
+
+.operator-start-confirm-head p {
+  margin: 0.35rem 0 0;
+  color: #334155;
+  font-size: 0.86rem;
+}
+
+.operator-start-confirm-actions {
+  margin-top: 0.95rem;
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.55rem;
+}
+
+.operator-start-confirm-cancel,
+.operator-start-confirm-start {
+  height: 36px;
+  border-radius: 10px;
+  padding: 0 0.9rem;
+  font-size: 0.84rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.operator-start-confirm-cancel {
+  border: 1px solid #cbd5e1;
+  color: #334155;
+  background: #ffffff;
+}
+
+.operator-start-confirm-start {
+  border: 1px solid #2563eb;
+  color: #ffffff;
+  background: linear-gradient(135deg, #2563eb 0%, #4f46e5 100%);
+  box-shadow: 0 8px 16px rgba(37, 99, 235, 0.24);
 }
 
 .operator-inline-timer-btn.running {
@@ -1358,6 +1473,12 @@
   border-color: #7dd3fc;
 }
 
+.operator-stage-chip.ready {
+  color: #166534;
+  background: #ecfdf5;
+  border-color: #86efac;
+}
+
 .operator-stage-chip.sent {
   color: #4338ca;
   background: #eef2ff;
@@ -1499,7 +1620,7 @@
 .operator-table-no-scroll
   .data-table
   tr.operator-stage-row-dispatched.critical-row {
-  border-left: none;
+  border-left: 4px solid #dc2626;
 }
 
 .operator-table-no-scroll
@@ -1526,7 +1647,7 @@
 .operator-table-no-scroll
   .data-table
   tr.operator-stage-row-dispatched.priority-row.priority-high {
-  border-left: none;
+  border-left: 3px solid #ef4444;
 }
 
 .operator-table-no-scroll
@@ -1553,7 +1674,7 @@
 .operator-table-no-scroll
   .data-table
   tr.operator-stage-row-dispatched.priority-row.priority-medium {
-  border-left: none;
+  border-left: 3px solid #f59e0b;
 }
 
 .operator-table-no-scroll
@@ -1580,7 +1701,7 @@
 .operator-table-no-scroll
   .data-table
   tr.operator-stage-row-dispatched.priority-row.priority-low {
-  border-left: none;
+  border-left: 3px solid #10b981;
 }
 
 .operator-table-no-scroll
@@ -1596,6 +1717,46 @@
   tr.operator-stage-row-dispatched.priority-row.priority-low
   td:first-child {
   box-shadow: inset 3px 0 0 #10b981;
+}
+
+/* Fallback left indicator even when priority/critical is missing */
+.operator-table-no-scroll
+  .data-table
+  tr.operator-stage-row-not-started:not(.priority-row):not(.critical-row) {
+  border-left: 3px solid #f59e0b;
+}
+
+.operator-table-no-scroll
+  .data-table
+  tr.operator-stage-row-not-started:not(.priority-row):not(.critical-row)
+  td:first-child {
+  box-shadow: inset 3px 0 0 #f59e0b;
+}
+
+.operator-table-no-scroll
+  .data-table
+  tr.operator-stage-row-logged:not(.priority-row):not(.critical-row) {
+  border-left: 3px solid #38bdf8;
+}
+
+.operator-table-no-scroll
+  .data-table
+  tr.operator-stage-row-logged:not(.priority-row):not(.critical-row)
+  td:first-child {
+  box-shadow: inset 3px 0 0 #38bdf8;
+}
+
+.operator-table-no-scroll
+  .data-table
+  tr.operator-stage-row-dispatched:not(.priority-row):not(.critical-row) {
+  border-left: 3px solid #818cf8;
+}
+
+.operator-table-no-scroll
+  .data-table
+  tr.operator-stage-row-dispatched:not(.priority-row):not(.critical-row)
+  td:first-child {
+  box-shadow: inset 3px 0 0 #818cf8;
 }
 
 /* Child rows: Stage legend controls background, flag controls left strip */
@@ -1769,8 +1930,22 @@
 .operator-table-no-scroll
   .child-jobs-table
   tr.child-row.child-critical-row
+{
+  border-left: 4px solid #dc2626;
+}
+
+.operator-table-no-scroll
+  .child-jobs-table
+  tr.child-row.child-critical-row
   td:first-child {
   box-shadow: inset 4px 0 0 #dc2626;
+}
+
+.operator-table-no-scroll
+  .child-jobs-table
+  tr.child-row.child-priority-row.child-priority-high
+{
+  border-left: 3px solid #ef4444;
 }
 
 .operator-table-no-scroll
@@ -1783,6 +1958,13 @@
 .operator-table-no-scroll
   .child-jobs-table
   tr.child-row.child-priority-row.child-priority-medium
+{
+  border-left: 3px solid #f59e0b;
+}
+
+.operator-table-no-scroll
+  .child-jobs-table
+  tr.child-row.child-priority-row.child-priority-medium
   td:first-child {
   box-shadow: inset 3px 0 0 #f59e0b;
 }
@@ -1790,8 +1972,54 @@
 .operator-table-no-scroll
   .child-jobs-table
   tr.child-row.child-priority-row.child-priority-low
+{
+  border-left: 3px solid #10b981;
+}
+
+.operator-table-no-scroll
+  .child-jobs-table
+  tr.child-row.child-priority-row.child-priority-low
   td:first-child {
   box-shadow: inset 3px 0 0 #10b981;
+}
+
+.operator-table-no-scroll
+  .child-jobs-table
+  tr.child-row.operator-stage-row-not-started:not(.child-priority-row):not(.child-critical-row) {
+  border-left: 3px solid #f59e0b;
+}
+
+.operator-table-no-scroll
+  .child-jobs-table
+  tr.child-row.operator-stage-row-not-started:not(.child-priority-row):not(.child-critical-row)
+  td:first-child {
+  box-shadow: inset 3px 0 0 #f59e0b;
+}
+
+.operator-table-no-scroll
+  .child-jobs-table
+  tr.child-row.operator-stage-row-logged:not(.child-priority-row):not(.child-critical-row) {
+  border-left: 3px solid #38bdf8;
+}
+
+.operator-table-no-scroll
+  .child-jobs-table
+  tr.child-row.operator-stage-row-logged:not(.child-priority-row):not(.child-critical-row)
+  td:first-child {
+  box-shadow: inset 3px 0 0 #38bdf8;
+}
+
+.operator-table-no-scroll
+  .child-jobs-table
+  tr.child-row.operator-stage-row-dispatched:not(.child-priority-row):not(.child-critical-row) {
+  border-left: 3px solid #818cf8;
+}
+
+.operator-table-no-scroll
+  .child-jobs-table
+  tr.child-row.operator-stage-row-dispatched:not(.child-priority-row):not(.child-critical-row)
+  td:first-child {
+  box-shadow: inset 3px 0 0 #818cf8;
 }
 
 /* ============================================

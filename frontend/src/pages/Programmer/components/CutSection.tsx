@@ -394,15 +394,6 @@ export const CutSection: React.FC<CutSectionProps> = ({
                     value={row.thickness}
                     placeholder= "Thickness (mm)"
                     inputMode="decimal"
-                    onKeyDown={(e) => {
-                      if (e.key !== "Tab") return;
-                      const current = String(row.thickness || "").trim();
-                      if (!current || current.includes("/")) return;
-                      e.preventDefault();
-                      const updated = [...operationRows];
-                      updated[rowIndex].thickness = `${current} /`;
-                      setOperationRows(updated);
-                    }}
                     onChange={(e) => {
                       const updated = [...operationRows];
                       updated[rowIndex].thickness = normalizeThicknessInput(
@@ -587,7 +578,9 @@ export const CutSection: React.FC<CutSectionProps> = ({
             <div className="formula-block">
               {cutTotals.wedmBreakdown.rows.map((row) => (
                 <p key={`wedm-row-${row.rowIndex}`}>
-                  {`Row ${row.rowIndex}: base = (${row.cutLength.toFixed(2)} x ${row.thicknessUsed.toFixed(2)}) / ${row.divisor} = ${row.base.toFixed(4)}; pass = ${row.base.toFixed(4)} + (${row.base.toFixed(4)} x ${row.passPercent.toFixed(0)}%) = ${row.cutAfterPassRaw.toFixed(4)}; setting(${row.settingInput}) => ${row.settingHours.toFixed(2)}; pass+setting = ${row.passPlusSettingRaw.toFixed(4)}; min rule => ${row.passPlusSettingWithMin.toFixed(4)}; extras(per unit) => ${row.extraHoursPerUnit.toFixed(2)}; row hrs = (${row.passPlusSettingWithMin.toFixed(4)} + ${row.extraHoursPerUnit.toFixed(2)}) x ${row.qty} = ${row.rowHours.toFixed(4)}`}
+                  {row.qtyFirstSettingRuleApplied
+                    ? `Row ${row.rowIndex}: base = (${row.cutLength.toFixed(2)} x ${row.thicknessUsed.toFixed(2)}) / ${row.divisor} = ${row.base.toFixed(4)}; pass = ${row.base.toFixed(4)} + (${row.base.toFixed(4)} x ${row.passPercent.toFixed(0)}%) = ${row.cutAfterPassRaw.toFixed(4)}; min rule on pass => ${row.passAfterMin.toFixed(4)}; pass x qty = ${row.passAfterMin.toFixed(4)} x ${row.qty} = ${(row.passAfterMin * row.qty).toFixed(4)}; setting(${row.settingInput}) => ${row.settingHours.toFixed(2)}; pass*qty+setting = ${row.passPlusSettingWithMin.toFixed(4)}; extras(per unit) => ${row.extraHoursPerUnit.toFixed(2)}; row hrs = ${row.rowHours.toFixed(4)}`
+                    : `Row ${row.rowIndex}: base = (${row.cutLength.toFixed(2)} x ${row.thicknessUsed.toFixed(2)}) / ${row.divisor} = ${row.base.toFixed(4)}; pass = ${row.base.toFixed(4)} + (${row.base.toFixed(4)} x ${row.passPercent.toFixed(0)}%) = ${row.cutAfterPassRaw.toFixed(4)}; setting(${row.settingInput}) => ${row.settingHours.toFixed(2)}; pass+setting = ${row.passPlusSettingRaw.toFixed(4)}; min rule => ${row.passPlusSettingWithMin.toFixed(4)}; extras(per unit) => ${row.extraHoursPerUnit.toFixed(2)}; row hrs = ${row.rowHours.toFixed(4)}`}
                 </p>
               ))}
               <p>{`WEDM Cost = ${cutTotals.totalHrs.toFixed(4)} x rate(${cutTotals.wedmBreakdown.rate.toFixed(2)}) = ${cutTotals.wedmAmount.toFixed(2)}`}</p>

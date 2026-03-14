@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from "react";
 import ImageUpload from "./ImageUpload";
 import type { JobEntry } from "../../../types/job";
-import { calculateTotals, type CutForm } from "../programmerUtils";
+import { calculateTotals, getThicknessDisplayValue, type CutForm } from "../programmerUtils";
 import { formatDecimalHoursToHHMMhrs, formatDisplayDateTime } from "../../../utils/date";
 import { formatMachineLabel } from "../../../utils/jobFormatting";
 import "./JobDetailsModal.css";
@@ -72,8 +72,9 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
   const formatDate = (dateString: string) => formatDisplayDateTime(dateString || "");
 
   const location = useLocation();
-  const isOperator = location.pathname.includes("operator");
-  const canSeeOperatorFields = isOperator && (userRole === "OPERATOR" || userRole === "ADMIN");
+  const isOperatorRoute = location.pathname.includes("operator");
+  const canSeeOperatorFields = isOperatorRoute && (userRole === "OPERATOR" || userRole === "ADMIN");
+  const showOperatorSpecificLayout = canSeeOperatorFields;
 
   const jobInfoPairs: DetailPair[] = [
     { label: "Customer", value: displayCut?.customer || "-" },
@@ -161,30 +162,33 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
                     label: "Program Ref File Name",
                     value: (cutItem as any).programRefFile || (cutItem as any).programRefFileName || "-",
                   },
-                  { label: "TH (MM)", value: Number(cutItem.thickness || 0).toFixed(2) },
+                  { label: "TH (MM)", value: getThicknessDisplayValue(cutItem.thickness) },
                   { label: "Pass", value: cutItem.passLevel || "-" },
                   { label: "Setting", value: cutItem.setting || "-" },
                   { label: "Quantity", value: Number(cutItem.qty || 0) },
-                  {
-                    label: "QC Progress",
-                    value: (() => {
-                      const qty = Math.max(1, Number(cutItem.qty || 1));
-                      const c = getQaProgressCounts(cutItem, qty);
-                      return `Logged ${c.saved + c.ready} | QC Dispatched ${c.sent} | Pending ${c.empty}`;
-                    })(),
-                  },
                   { label: "SEDM", value: cutItem.sedm || "-" },
                   { label: "Material", value: cutItem.material || "-" },
                   { label: "PIP Finish", value: cutItem.pipFinish ? "Yes" : "No" },
                   { label: "Complex", value: cutItem.critical ? "Yes" : "No" },
                   { label: "Priority", value: cutItem.priority || "-" },
                   {
-                    label: isOperator ? "Estimated Time" : "Cut Length Hrs",
-                    value: isOperator
+                    label: showOperatorSpecificLayout ? "Estimated Time" : "Cut Length Hrs",
+                    value: showOperatorSpecificLayout
                       ? formatDecimalHoursToHHMMhrs(Number((((amounts.perCut[index]?.wedmAmount || 0) / 625).toFixed(2))))
                       : (cutItem.totalHrs ? formatDecimalHoursToHHMMhrs(cutItem.totalHrs) : "00:00hrs"),
                   },
                 ];
+
+                if (showOperatorSpecificLayout) {
+                  basePairs.push({
+                    label: "QC Progress",
+                    value: (() => {
+                      const qty = Math.max(1, Number(cutItem.qty || 1));
+                      const c = getQaProgressCounts(cutItem, qty);
+                      return `Logged ${c.saved + c.ready} | QC Dispatched ${c.sent} | Pending ${c.empty}`;
+                    })(),
+                  });
+                }
 
                 if (isSingleCut) {
                   basePairs.push(
@@ -306,9 +310,9 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
 
           <div className="job-details-totals">
             <div className="total-row">
-              <label>{isOperator ? "Estimated Time:" : "Cut Length Hrs:"}</label>
+              <label>{showOperatorSpecificLayout ? "Estimated Time:" : "Cut Length Hrs:"}</label>
               <span>
-                {isOperator
+                {showOperatorSpecificLayout
                   ? formatDecimalHoursToHHMMhrs(
                       Number(((amounts.totalWedmAmount || 0) / 625).toFixed(2))
                     )

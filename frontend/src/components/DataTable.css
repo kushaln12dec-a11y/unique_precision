@@ -142,62 +142,12 @@
   background: #f8fafc;
 }
 
-.data-table tbody tr td:first-child {
-  position: relative;
-}
-
 .data-table tbody tr td.checkbox-cell {
   overflow: visible;
 }
 
-.data-table tbody {
-  counter-reset: data-row-idx;
-}
-
-.data-table tbody tr:not(.child-row):not(.empty-state-row) {
-  counter-increment: data-row-idx;
-}
-
 .data-table tbody tr:hover td {
   background: #f8fafc;
-}
-
-.data-table tbody tr:hover td:first-child::after {
-  content: "";
-  position: absolute;
-  left: 0.2rem;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 0;
-  height: 0;
-  border-top: 6px solid transparent;
-  border-bottom: 6px solid transparent;
-  border-left: 7px solid #2563eb;
-  pointer-events: none;
-}
-
-.data-table tbody tr:hover td:first-child::before {
-  content:  counter(data-row-idx);
-  position: absolute;
-  left: 1rem;
-  top: 50%;
-  transform: translateY(-50%);
-  min-width: 24px;
-  height: 12px;
-  padding: 0 3px;
-  border-radius: 8px;
-  background: #2563eb;
-  color: #ffffff;
-  font-size: 7px;
-  line-height: 12px;
-  font-weight: 700;
-  text-align: center;
-  z-index: 2;
-  pointer-events: none;
-}
-
-.data-table tbody tr:hover td:first-child {
-  box-shadow: inset 3px 0 0 #2563eb;
 }
 
 .data-table tbody tr td.checkbox-cell input[type="checkbox"] {

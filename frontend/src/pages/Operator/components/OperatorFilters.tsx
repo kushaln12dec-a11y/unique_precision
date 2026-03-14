@@ -5,6 +5,7 @@ import FilterBadges from "../../../components/FilterBadges";
 import DownloadIcon from "@mui/icons-material/Download";
 import { OperatorTaskTimer } from "./OperatorTaskTimer";
 import SelectDropdown, { type SelectOption } from "../../Programmer/components/SelectDropdown";
+import { MultiSelectOperators } from "./MultiSelectOperators";
 import type { FilterField, FilterCategory, FilterValues } from "../../../components/FilterModal";
 
 type OperatorFiltersProps = {
@@ -40,6 +41,9 @@ type OperatorFiltersProps = {
   onDownloadCSV: () => void;
   onSendSelectedRowsToQa: () => void;
   selectedRowsCount: number;
+  machineOptions: string[];
+  currentUserName: string;
+  onApplyBulkAssignment: (payload: { operators: string[]; machineNumber: string }) => void;
 };
 
 export const OperatorFilters: React.FC<OperatorFiltersProps> = ({
@@ -69,7 +73,13 @@ export const OperatorFilters: React.FC<OperatorFiltersProps> = ({
   onDownloadCSV,
   onSendSelectedRowsToQa,
   selectedRowsCount,
+  machineOptions,
+  currentUserName,
+  onApplyBulkAssignment,
 }) => {
+  const [bulkOperators, setBulkOperators] = React.useState<string[]>([]);
+  const [bulkMachineNumber, setBulkMachineNumber] = React.useState("");
+
   const createdByOptions = useMemo<SelectOption[]>(
     () => [
       { label: "All Users", value: "" },
@@ -106,9 +116,18 @@ export const OperatorFilters: React.FC<OperatorFiltersProps> = ({
       { label: "All", value: "" },
       { label: "Yet to Start", value: "PENDING_INPUT" },
       { label: "Operation Logged", value: "OP_LOGGED" },
+      { label: "In Progress", value: "IN_PROGRESS" },
       { label: "QC Dispatched", value: "QA_DISPATCHED" },
     ],
     []
+  );
+
+  const bulkMachineOptions = useMemo<SelectOption[]>(
+    () => [
+      { label: "Any Machine", value: "" },
+      ...machineOptions.map((machine) => ({ label: machine, value: machine })),
+    ],
+    [machineOptions]
   );
 
   return (
@@ -166,6 +185,7 @@ export const OperatorFilters: React.FC<OperatorFiltersProps> = ({
           <div className="operator-stage-legend-inline">
             <span className="operator-stage-legend-title">Stage Legend:</span>
             <span className="operator-stage-chip saved">Operation Logged</span>
+            <span className="operator-stage-chip ready">In Progress</span>
             <span className="operator-stage-chip sent">QC Dispatched</span>
             <span className="operator-stage-chip empty">Yet to Start</span>
           </div>
@@ -182,6 +202,39 @@ export const OperatorFilters: React.FC<OperatorFiltersProps> = ({
             </div>
           )}
           <div className="operator-actions-row">
+            {selectedRowsCount > 0 && (
+              <div className="operator-bulk-assign-group operator-bulk-assign-banner">
+                <span className="operator-bulk-selected-pill">{selectedRowsCount} selected</span>
+                <MultiSelectOperators
+                  selectedOperators={bulkOperators}
+                  availableOperators={(operatorUsers.length > 0 ? operatorUsers : users).map((user) => ({
+                    id: user._id,
+                    name: `${user.firstName} ${user.lastName}`.trim() || user.email,
+                  }))}
+                  onChange={setBulkOperators}
+                  assignToSelfName={currentUserName || undefined}
+                  placeholder="Assign operators"
+                  className="operator-bulk-operators"
+                  compact
+                />
+                <SelectDropdown
+                  value={bulkMachineNumber}
+                  onChange={setBulkMachineNumber}
+                  options={bulkMachineOptions}
+                  placeholder="Any Machine"
+                  align="left"
+                  className="operator-bulk-machine"
+                />
+                <button
+                  className="operator-bulk-apply-btn"
+                  onClick={() => onApplyBulkAssignment({ operators: bulkOperators, machineNumber: bulkMachineNumber })}
+                  disabled={bulkOperators.length === 0 && !bulkMachineNumber}
+                  title="Apply selected operators/machine to selected rows"
+                >
+                  Apply Selected
+                </button>
+              </div>
+            )}
             <button className="btn-download-csv" onClick={onDownloadCSV} title="Download CSV">
               <DownloadIcon sx={{ fontSize: "1rem" }} />
               CSV

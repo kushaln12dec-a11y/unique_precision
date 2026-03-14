@@ -28,14 +28,6 @@ export const JobFormActions: React.FC<JobFormActionsProps> = ({
           <span className="form-total-label">Estimated Time</span>
           <span className="form-total-value">{(grandTotals.wedmAmount / 625).toFixed(2)}</span>
         </div>
-        <div>
-          {isAdmin && (
-            <>
-              <span className="form-total-label">Total Amount (Rs.)</span>
-              <span className="form-total-value">{grandTotals.totalAmount.toFixed(2)}</span>
-            </>
-          )}
-        </div>
         {isAdmin && (
           <>
             <div>
@@ -45,6 +37,10 @@ export const JobFormActions: React.FC<JobFormActionsProps> = ({
             <div>
               <span className="form-total-label">SEDM Cost (Rs.)</span>
               <span className="form-total-value">{grandTotals.sedmAmount.toFixed(2)}</span>
+            </div>
+            <div>
+              <span className="form-total-label">Total Amount (Rs.)</span>
+              <span className="form-total-value">{grandTotals.totalAmount.toFixed(2)}</span>
             </div>
           </>
         )}

@@ -65,6 +65,7 @@ export const useOperatorTableData = (
           const c = getGroupQaProgressCounts(group.entries);
           const counts = { logged: c.saved + c.ready, sent: c.sent, empty: c.empty };
           if (productionStageFilter === "OP_LOGGED") return counts.logged > 0;
+          if (productionStageFilter === "IN_PROGRESS") return c.ready > 0;
           if (productionStageFilter === "QA_DISPATCHED") return counts.sent > 0;
           if (productionStageFilter === "PENDING_INPUT") return counts.empty > 0;
           return true;
@@ -148,6 +149,7 @@ export const useOperatorTableData = (
             <ChildCutsTable
               entries={row.entries}
               parentSetting={String(row.parent.setting || "").trim()}
+              showSetNumberColumn={false}
               onEdit={undefined}
               onImage={(groupId: number, cutId?: number) => handleImageInput(groupId, cutId)}
               onAssignChange={handleAssignChange}
