@@ -235,6 +235,10 @@ const jobSchema = new mongoose.Schema({
     enum: ["PENDING", "APPROVED", "REJECTED"],
     default: "PENDING",
   },
+  qcReportClosed: {
+    type: Boolean,
+    default: false,
+  },
   updatedBy: {
     type: String,
     default: "",

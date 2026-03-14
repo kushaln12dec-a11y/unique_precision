@@ -172,6 +172,30 @@ router.put("/group/:groupId/qc-decision", async (req, res) => {
   }
 });
 
+// Mark QC inspection report queue item as closed/open for all jobs in a group
+router.put("/group/:groupId/qc-report-close", async (req, res) => {
+  try {
+    const { closed } = req.body as { closed?: boolean };
+    const shouldClose = closed !== undefined ? Boolean(closed) : true;
+    const groupId = Number(req.params.groupId);
+
+    const updateResult = await Job.updateMany(
+      { groupId },
+      { $set: { qcReportClosed: shouldClose } }
+    );
+
+    if (updateResult.matchedCount === 0) {
+      return res.status(404).json({ message: "No jobs found for group" });
+    }
+
+    const updatedJobs = await Job.find({ groupId }).sort({ createdAt: 1 });
+    return res.json(updatedJobs);
+  } catch (error: any) {
+    console.error("Error updating QC report closed state:", error);
+    return res.status(500).json({ message: "Error updating QC report closed state" });
+  }
+});
+
 // Delete job
 router.delete("/:id", async (req, res) => {
   try {
