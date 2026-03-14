@@ -1276,6 +1276,16 @@
   .operator-stage-legend-inline {
     margin-bottom: 0;
   }
+
+  .operator-timer-right-slot {
+    justify-content: flex-end;
+  }
+
+  .operator-actions-row {
+    width: auto;
+    margin-left: auto;
+    justify-content: flex-end;
+  }
 }
 
 @media only screen and (min-width: 768px) and (max-width: 1024px) and (orientation: portrait) {
@@ -1289,6 +1299,28 @@
     width: max-content;
     min-width: 1680px;
     max-width: none;
+  }
+
+  .roleboard-content .programmer-panel .panel-header {
+    flex-wrap: wrap;
+    align-items: flex-start;
+  }
+
+  .roleboard-content .programmer-panel .panel-header-actions {
+    width: 100%;
+    align-items: flex-end;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+  }
+
+  .operator-timer-right-slot {
+    justify-content: flex-end;
+  }
+
+  .operator-actions-row {
+    width: auto;
+    margin-left: auto;
+    justify-content: flex-end;
   }
 }
 

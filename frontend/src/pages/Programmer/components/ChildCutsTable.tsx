@@ -13,6 +13,7 @@ import MarqueeCopyText from "../../../components/MarqueeCopyText";
 
 type ChildCutsTableProps = {
   entries: JobEntry[];
+  parentSetting?: string;
   onEdit?: (groupId: number) => void;
   onDelete?: (groupId: number, customer: string) => void;
   onImage?: (groupId: number, cutId?: number) => void;
@@ -31,6 +32,7 @@ type ChildCutsTableProps = {
 
 const ChildCutsTable: React.FC<ChildCutsTableProps> = ({
   entries,
+  parentSetting = "",
   onEdit,
   onDelete,
   onImage,
@@ -52,6 +54,16 @@ const ChildCutsTable: React.FC<ChildCutsTableProps> = ({
       .filter(Boolean);
     return normalized.length > 0 ? normalized : [...MACHINE_OPTIONS];
   }, [machineOptions]);
+
+  const toAlphabetSuffix = (index: number): string => {
+    let n = Math.max(0, index);
+    let result = "";
+    do {
+      result = String.fromCharCode(97 + (n % 26)) + result;
+      n = Math.floor(n / 26) - 1;
+    } while (n >= 0);
+    return result;
+  };
 
   const getMachineNumber = (entry: JobEntry): string => {
     const direct = String((entry as any).machineNumber || "").trim();
@@ -213,7 +225,11 @@ const ChildCutsTable: React.FC<ChildCutsTableProps> = ({
                 ) : (
                   <td className="child-table-spacer checkbox-spacer"></td>
                 )}
-                <td className="setting-number-col">{index + 1}</td>
+                <td className="setting-number-col">
+                  {parentSetting
+                    ? `${parentSetting}${toAlphabetSuffix(index)}`
+                    : index + 1}
+                </td>
               <td className="customer-col">{entry.customer || "-"}</td>
               <td className="program-ref-file-col" title={(entry as any).programRefFile || (entry as any).programRefFileName || "-"}>
                 <MarqueeCopyText text={String((entry as any).programRefFile || (entry as any).programRefFileName || "-")} />

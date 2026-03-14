@@ -104,9 +104,9 @@ export const OperatorFilters: React.FC<OperatorFiltersProps> = ({
   const statusOptions = useMemo<SelectOption[]>(
     () => [
       { label: "All", value: "" },
+      { label: "Yet to Start", value: "PENDING_INPUT" },
       { label: "Operation Logged", value: "OP_LOGGED" },
       { label: "QC Dispatched", value: "QA_DISPATCHED" },
-      { label: "Yet to Start", value: "PENDING_INPUT" },
     ],
     []
   );

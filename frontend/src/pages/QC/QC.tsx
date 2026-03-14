@@ -184,12 +184,20 @@ const QC = () => {
       {
         key: "jobRef",
         label: "Job ref",
+        headerClassName: "qc-job-ref-col",
+        className: "qc-job-ref-cell",
         render: (row: QcRow) => {
           const value = String(row.parent.refNumber || "").trim();
           return value ? `#${value}` : "-";
         },
       },
-      { key: "qty", label: "Qty", render: (row: QcRow) => row.entries.reduce((sum, item) => sum + Number(item.qty || 0), 0).toString() },
+      {
+        key: "qty",
+        label: "Qty",
+        headerClassName: "qc-qty-col",
+        className: "qc-qty-cell",
+        render: (row: QcRow) => row.entries.reduce((sum, item) => sum + Number(item.qty || 0), 0).toString(),
+      },
       {
         key: "operator",
         label: "Operator",
@@ -219,6 +227,8 @@ const QC = () => {
       {
         key: "decision",
         label: "Decision",
+        headerClassName: "qc-decision-col",
+        className: "qc-decision-cell",
         render: (row: QcRow) => (
           <div className="qc-decision-actions">
             <button
@@ -265,6 +275,8 @@ const QC = () => {
       {
         key: "inspectionReport",
         label: "Inspection Report",
+        headerClassName: "qc-inspection-col",
+        className: "qc-inspection-cell",
         render: (row: QcRow) => (
           <div className="qc-inspection-report-actions">
             <button
@@ -427,4 +439,3 @@ const QC = () => {
 };
 
 export default QC;
-

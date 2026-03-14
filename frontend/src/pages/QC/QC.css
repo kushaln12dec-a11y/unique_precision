@@ -27,11 +27,43 @@
   min-width: 180px;
 }
 
+.jobs-table-wrapper .data-table th.qc-job-ref-col,
+.jobs-table-wrapper .data-table td.qc-job-ref-cell {
+  min-width: 132px;
+}
+
+.jobs-table-wrapper .data-table th.qc-qty-col,
+.jobs-table-wrapper .data-table td.qc-qty-cell {
+  min-width: 72px;
+}
+
+.jobs-table-wrapper .data-table td.qc-job-ref-cell,
+.jobs-table-wrapper .data-table td.qc-qty-cell {
+  white-space: nowrap;
+  word-break: normal;
+  text-align: center;
+}
+
+.jobs-table-wrapper .data-table th.qc-decision-col,
+.jobs-table-wrapper .data-table td.qc-decision-cell {
+  min-width: 150px;
+  text-align: center;
+}
+
+.jobs-table-wrapper .data-table th.qc-inspection-col,
+.jobs-table-wrapper .data-table td.qc-inspection-cell {
+  min-width: 240px;
+  text-align: center;
+}
+
 .qc-decision-actions {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 0.4rem;
+  width: 100%;
+  flex-wrap: nowrap;
+  white-space: nowrap;
 }
 
 .qc-inspection-report-actions {
@@ -39,6 +71,9 @@
   align-items: center;
   justify-content: center;
   gap: 0.35rem;
+  width: 100%;
+  flex-wrap: nowrap;
+  white-space: nowrap;
 }
 
 .qc-approve-btn,
@@ -186,4 +221,19 @@
 .jobs-table-wrapper .group-row.priority-row.priority-low td {
   background: transparent !important;
   color: #0f172a;
+}
+
+@media only screen and (min-width: 768px) and (max-width: 1024px) {
+  .qc-approve-btn,
+  .qc-reject-btn,
+  .qc-inspection-report-btn,
+  .qc-inspection-report-download-btn {
+    padding: 0 0.55rem;
+    font-size: 0.76rem;
+  }
+
+  .jobs-table-wrapper .data-table th.qc-inspection-col,
+  .jobs-table-wrapper .data-table td.qc-inspection-cell {
+    min-width: 220px;
+  }
 }

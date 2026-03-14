@@ -147,6 +147,7 @@ export const useOperatorTableData = (
           expandedContent: (
             <ChildCutsTable
               entries={row.entries}
+              parentSetting={String(row.parent.setting || "").trim()}
               onEdit={undefined}
               onImage={(groupId: number, cutId?: number) => handleImageInput(groupId, cutId)}
               onAssignChange={handleAssignChange}

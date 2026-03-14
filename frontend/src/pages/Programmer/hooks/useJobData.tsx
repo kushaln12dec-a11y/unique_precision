@@ -52,6 +52,7 @@ export const useJobData = ({
           expandedContent: (
             <ChildCutsTable 
               entries={row.entries} 
+              parentSetting={String(row.parent.setting || "").trim()}
               onEdit={onEdit} 
               onDelete={onDelete}
               isAdmin={isAdmin}
