@@ -29,6 +29,7 @@ import type { FilterValues } from "../../components/FilterModal";
 import { formatDisplayDateTime, getDisplayDateTimeParts } from "../../utils/date";
 import { calculateTotals } from "../Programmer/programmerUtils";
 import { formatMachineLabel, MACHINE_OPTIONS, toMachineIndex } from "../../utils/jobFormatting";
+import MarqueeCopyText from "../../components/MarqueeCopyText";
 import "../RoleBoard.css";
 import "../Programmer/Programmer.css";
 import "./Operator.css";
@@ -156,7 +157,7 @@ const Operator = () => {
   const handleMoveGroupToQa = async (row: TableRow) => {
     if (!canMoveGroupToQa(row.entries)) {
       setToast({
-        message: "All parent and child quantities must be ready for QA before moving to QC.",
+        message: "All parent and child quantities must be ready for QC before moving to QC.",
         variant: "error",
         visible: true,
       });
@@ -280,10 +281,10 @@ const Operator = () => {
       );
       setSelectedEntryIds(new Set());
       setSelectedJobIds(new Set());
-      setToast({ message: "Selected rows moved to QA.", variant: "success", visible: true });
+      setToast({ message: "Selected rows moved to QC.", variant: "success", visible: true });
       setTimeout(() => setToast((prev) => ({ ...prev, visible: false })), 2500);
     } catch (error) {
-      setToast({ message: "Failed to move selected rows to QA.", variant: "error", visible: true });
+      setToast({ message: "Failed to move selected rows to QC.", variant: "error", visible: true });
       setTimeout(() => setToast((prev) => ({ ...prev, visible: false })), 2500);
     }
   };
@@ -599,8 +600,7 @@ const Operator = () => {
         sortable: false,
         render: (row) => {
           const full = String(row.workSummary || "-");
-          const short = full.length > 44 ? `${full.slice(0, 44)}...` : full;
-          return <span title={full}>{short}</span>;
+          return <MarqueeCopyText text={full} />;
         },
       },
       {

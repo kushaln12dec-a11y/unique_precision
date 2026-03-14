@@ -191,8 +191,8 @@ export const OperatorInputSection: React.FC<OperatorInputSectionProps> = ({
         <div className="qa-stage-legend qa-title-legend">
           <span className="qa-legend-title">Stage Legend:</span>
           <span className="qa-legend-item saved">Operation Logged = input captured</span>
-          <span className="qa-legend-item sent">QA Dispatched = moved to QA queue</span>
-          <span className="qa-legend-item empty">Not Started = values not entered yet</span>
+          <span className="qa-legend-item sent">QC Dispatched = moved to QC queue</span>
+          <span className="qa-legend-item empty">Yet to Start = values not entered yet</span>
         </div>
       </div>
       {quantity > 1 && (
@@ -275,8 +275,8 @@ export const OperatorInputSection: React.FC<OperatorInputSectionProps> = ({
           <div className="qa-inline-status-block">
             <div className="qa-overall-summary qa-inline-summary">
               <span className="qa-summary-chip saved">Operation Logged: {qaCounts.logged}</span>
-              <span className="qa-summary-chip sent">QA Dispatched: {qaCounts.sent}</span>
-              <span className="qa-summary-chip empty">Not Started: {qaCounts.empty}</span>
+              <span className="qa-summary-chip sent">QC Dispatched: {qaCounts.sent}</span>
+              <span className="qa-summary-chip empty">Yet to Start: {qaCounts.empty}</span>
             </div>
           </div>
         </div>
@@ -309,7 +309,7 @@ export const OperatorInputSection: React.FC<OperatorInputSectionProps> = ({
                 if (onSendToQa) onSendToQa(cutId, sendEligible);
               }}
             >
-              Dispatch To QA
+              Dispatch To QC
             </button>
           </div>
         </div>

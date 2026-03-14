@@ -40,8 +40,22 @@ select,
 .employee-status-select,
 .qc-filter-select,
 .customer-autocomplete-input,
+.customer-autocomplete,
+.customer-autocomplete-dropdown,
 .option-dropdown-trigger,
+.option-dropdown-menu,
 .multi-select-operators,
-.operator-assigned-dropdown {
+.multi-select-trigger,
+.multi-select-dropdown,
+.operator-assigned-dropdown,
+.entries-selector,
+.assigned-to-select,
+.operator-machine-input,
+.child-assigned-to-select {
   border-radius: var(--dropdown-radius) !important;
+}
+
+select option,
+select optgroup {
+  border-radius: var(--dropdown-radius);
 }

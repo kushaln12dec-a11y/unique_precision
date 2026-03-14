@@ -286,3 +286,27 @@ export const updateQcDecisionByGroupId = async (
     assignedTo: job.assignedTo || "Unassigned",
   }));
 };
+
+export const setQcReportClosedByGroupId = async (
+  groupId: number,
+  closed: boolean = true
+): Promise<JobEntry[]> => {
+  const res = await fetch(`/api/jobs/group/${groupId}/qc-report-close`, {
+    method: "PUT",
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ closed }),
+  });
+
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({}));
+    throw new Error(error.message || "Failed to update QC report closed state");
+  }
+
+  const jobs = await res.json();
+  return jobs.map((job: any) => ({
+    ...job,
+    id: job._id || job.id,
+    groupId: job.groupId ?? job.id,
+    assignedTo: job.assignedTo || "Unassigned",
+  }));
+};

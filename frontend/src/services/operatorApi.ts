@@ -157,7 +157,7 @@ export const updateOperatorQaStatus = async (
 
   if (!res.ok) {
     const error = await res.json();
-    throw new Error(error.message || "Failed to update QA status");
+    throw new Error(error.message || "Failed to update QC status");
   }
 
   const job = await res.json();

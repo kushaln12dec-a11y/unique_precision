@@ -166,11 +166,11 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
                   { label: "Setting", value: cutItem.setting || "-" },
                   { label: "Quantity", value: Number(cutItem.qty || 0) },
                   {
-                    label: "QA Progress",
+                    label: "QC Progress",
                     value: (() => {
                       const qty = Math.max(1, Number(cutItem.qty || 1));
                       const c = getQaProgressCounts(cutItem, qty);
-                      return `Logged ${c.saved + c.ready} | QA Dispatched ${c.sent} | Pending ${c.empty}`;
+                      return `Logged ${c.saved + c.ready} | QC Dispatched ${c.sent} | Pending ${c.empty}`;
                     })(),
                   },
                   { label: "SEDM", value: cutItem.sedm || "-" },

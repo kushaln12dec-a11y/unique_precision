@@ -388,6 +388,9 @@
   padding: 1rem;
   border-radius: 8px;
   border: 1px solid #e2e8f0;
+  align-items: center;
+  justify-content: flex-start;
+  text-align: center;
 }
 
 .operator-cut-image-section label {
@@ -399,6 +402,28 @@
   text-align: center;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+}
+
+.operator-cut-image-section .job-form-image-container {
+  margin: 0 auto;
+  width: 100%;
+  max-width: 220px;
+  --image-upload-height: 190px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.operator-cut-image-section .image-slider-wrapper,
+.operator-cut-image-section .image-slider-display,
+.operator-cut-image-section .image-placeholder-empty {
+  align-items: center;
+  justify-content: center;
+}
+
+.operator-cut-image-section .slider-image {
+  object-fit: contain;
+  object-position: center;
 }
 
 /* Input Fields Section for Each Cut */

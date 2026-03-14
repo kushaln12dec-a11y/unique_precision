@@ -225,7 +225,7 @@
 /* Responsive */
 @media (max-width: 1024px) {
   .dashboard-content {
-    margin-left: 70px;
+    margin-left: 56px;
   }
 
   .dashboard-grid {
@@ -239,7 +239,7 @@
 
 @media (max-width: 768px) {
   .dashboard-content {
-    margin-left: 0;
+    margin-left: 56px;
     padding: 1rem;
   }
 

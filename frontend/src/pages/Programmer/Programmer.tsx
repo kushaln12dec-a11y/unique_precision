@@ -33,6 +33,7 @@ import type { TableRow } from "./utils/jobDataTransform";
 import { getParentRowClassName } from "./utils/priorityUtils";
 import { formatDisplayDateTime, getDisplayDateTimeParts } from "../../utils/date";
 import { useAppDispatch, useAppSelector } from "../../store/hooks";
+import MarqueeCopyText from "../../components/MarqueeCopyText";
 import {
   setProgrammerCreatedByFilter,
   setProgrammerCriticalFilter,
@@ -408,6 +409,8 @@ const Programmer = () => {
         key: "user",
         label: "User",
         sortable: false,
+        className: "programmer-log-user-col",
+        headerClassName: "programmer-log-user-col",
         render: (row) => {
           const designation = designationByUserId.get(String(row.userId)) || "Programmer";
           const name = String(row.userName || "").trim();
@@ -428,6 +431,17 @@ const Programmer = () => {
         render: (row) => {
           const ref = String(row.refNumber || "").trim().replace(/^#/, "");
           return ref ? `#${ref}` : "-";
+        },
+      },
+      {
+        key: "summary",
+        label: "Summary",
+        sortable: false,
+        className: "programmer-log-summary-col",
+        headerClassName: "programmer-log-summary-col",
+        render: (row) => {
+          const full = String((row as any).workSummary || "-");
+          return <MarqueeCopyText text={full} />;
         },
       },
       {
@@ -507,7 +521,7 @@ const Programmer = () => {
   );
 
   const handleExportProgrammerLogsCsv = () => {
-    const headers = ["User", "JOB #", "Started at", "Ended at", "Shift", "Duration", "Status"];
+    const headers = ["User", "JOB #", "Summary", "Started at", "Ended at", "Shift", "Duration", "Status"];
     const rows = filteredProgrammerLogs.map((row) => {
       const designation = designationByUserId.get(String(row.userId)) || "Programmer";
       const name = String(row.userName || "").trim();
@@ -516,6 +530,7 @@ const Programmer = () => {
       return [
         userValue,
         ref ? `#${ref}` : "-",
+        String((row as any).workSummary || "-"),
         formatDisplayDateTime(row.startedAt),
         formatDisplayDateTime(row.endedAt || null),
         getShiftLabel(row.startedAt),

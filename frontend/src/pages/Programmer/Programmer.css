@@ -138,9 +138,16 @@
   word-break: break-word;
 }
 
-.programmer-logs-table .data-table th:nth-child(1),
-.programmer-logs-table .data-table td:nth-child(1) {
+.programmer-logs-table .data-table th.programmer-log-user-col,
+.programmer-logs-table .data-table td.programmer-log-user-col {
+  min-width: 120px;
+  width: 120px;
+}
+
+.programmer-logs-table .data-table th.programmer-log-summary-col,
+.programmer-logs-table .data-table td.programmer-log-summary-col {
   min-width: 170px;
+  width: 170px;
 }
 
 .log-user-stack {
@@ -165,7 +172,7 @@
 }
 
 .log-user-badge-stack {
-  align-items: flex-start;
+  align-items: center;
 }
 
 .log-user-initial-badge {
@@ -186,8 +193,8 @@
 .created-at-split {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  justify-content: flex-start;
+  align-items: center;
+  justify-content: center;
   gap: 0.125rem;
   line-height: 1.2;
 }
@@ -2184,33 +2191,65 @@
   max-width: 100%;
   overflow: hidden;
   white-space: nowrap;
+  cursor: text;
 }
 
-.description-marquee > span {
+.description-marquee .marquee-animated {
   display: inline-block;
   min-width: 100%;
-  animation: description-marquee-scroll 8s linear infinite;
+  animation: description-marquee-scroll 2.8s linear infinite;
   will-change: transform;
+  user-select: none;
+  pointer-events: none;
 }
 
-/* Pause all marquee cells together when hovering the table area. */
-.jobs-table-wrapper .data-table:hover .description-marquee > span,
-.operator-table-no-scroll .data-table:hover .description-marquee > span,
-.child-jobs-table:hover .description-marquee > span {
-  animation-play-state: paused;
+.description-marquee .marquee-static {
+  position: absolute;
+  inset: 0;
+  display: none;
+  white-space: nowrap;
+  overflow-x: auto;
+  overflow-y: hidden;
+  user-select: text;
+  pointer-events: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.description-marquee .marquee-static::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+/* Show static selectable text only on hovered/focused cell while animation keeps running globally. */
+.jobs-table-wrapper .data-table tbody tr .description-marquee:hover .marquee-static,
+.jobs-table-wrapper .data-table tbody tr .description-marquee:focus-within .marquee-static,
+.operator-table-no-scroll .data-table tbody tr .description-marquee:hover .marquee-static,
+.operator-table-no-scroll .data-table tbody tr .description-marquee:focus-within .marquee-static,
+.child-jobs-table tbody tr .description-marquee:hover .marquee-static,
+.child-jobs-table tbody tr .description-marquee:focus-within .marquee-static,
+.programmer-logs-table .data-table tbody tr .description-marquee:hover .marquee-static,
+.programmer-logs-table .data-table tbody tr .description-marquee:focus-within .marquee-static {
+  display: block;
+}
+
+.jobs-table-wrapper .data-table tbody tr .description-marquee:hover .marquee-animated,
+.jobs-table-wrapper .data-table tbody tr .description-marquee:focus-within .marquee-animated,
+.operator-table-no-scroll .data-table tbody tr .description-marquee:hover .marquee-animated,
+.operator-table-no-scroll .data-table tbody tr .description-marquee:focus-within .marquee-animated,
+.child-jobs-table tbody tr .description-marquee:hover .marquee-animated,
+.child-jobs-table tbody tr .description-marquee:focus-within .marquee-animated,
+.programmer-logs-table .data-table tbody tr .description-marquee:hover .marquee-animated,
+.programmer-logs-table .data-table tbody tr .description-marquee:focus-within .marquee-animated {
+  visibility: hidden;
 }
 
 @keyframes description-marquee-scroll {
-  0%,
-  12% {
-    transform: translateX(0);
+  0% {
+    transform: translateX(100%);
   }
-  50% {
-    transform: translateX(-42px);
-  }
-  88%,
   100% {
-    transform: translateX(0);
+    transform: translateX(-100%);
   }
 }
 
@@ -2227,11 +2266,16 @@
 .child-jobs-table th .th-content {
   display: inline-flex;
   align-items: center;
-  justify-content: flex-start;
+  justify-content: center;
   gap: 0.375rem;
   width: 100%;
   flex-wrap: wrap;
   line-height: 1.2;
+}
+
+.child-jobs-table th,
+.child-jobs-table td {
+  text-align: center;
 }
 
 .child-jobs-table th .sort-icon {
@@ -2697,7 +2741,149 @@
 
 @media (max-width: 768px) {
   .programmer-container {
-    padding-left: 0;
+    padding-left: 56px;
+  }
+}
+
+@media (max-width: 1024px) {
+  .programmer-container {
+    padding-left: 56px;
+  }
+
+  .programmer-panel {
+    margin: 0.65rem 0.35rem;
+    width: calc(100% - 0.7rem);
+    max-width: calc(100% - 0.7rem);
+    padding: 0.75rem;
+    max-height: calc(100vh - 96px);
+  }
+
+  .panel-header {
+    flex-wrap: wrap;
+    align-items: flex-start;
+  }
+
+  .inline-filters {
+    flex-wrap: wrap;
+    gap: 0.55rem;
+    width: 100%;
+  }
+
+  .panel-header-actions {
+    width: 100%;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 1200px) {
+  .cut-section-body {
+    grid-template-columns: clamp(150px, 22vw, 190px) minmax(0, 1fr);
+    gap: 0.9rem;
+  }
+
+  .cut-section-body > .job-form-image-container {
+    justify-self: start;
+    width: 100%;
+    max-width: clamp(150px, 22vw, 190px);
+  }
+
+  .job-form-image {
+    width: 100%;
+    height: 140px;
+    min-height: 140px;
+  }
+
+  .job-form-image .job-form-image-container,
+  .job-form-image .image-slider-wrapper,
+  .job-form-image .image-slider-display,
+  .job-form-image .image-placeholder-empty,
+  .job-form-image .slider-image {
+    min-height: 140px;
+    height: 140px;
+  }
+
+  .cut-section-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-areas:
+      "customer rate"
+      "material programref"
+      "description description"
+      "cut thickness"
+      "pass setting"
+      "qty sedm"
+      "totalhrs estimated"
+      "totalamount totalamount";
+    gap: 0.7rem;
+  }
+
+  .operation-row-item,
+  .grid-sedm,
+  .grid-total-hrs,
+  .grid-estimated-time,
+  .grid-total-amount,
+  .calculation-formula-panel {
+    grid-column: auto !important;
+    grid-row: auto !important;
+  }
+
+  .calculation-formula-panel {
+    grid-column: 1 / -1 !important;
+  }
+
+  .cut-section-actions {
+    position: static;
+    justify-content: flex-end;
+    margin-top: 0.6rem;
+    padding-top: 0.2rem;
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 640px) {
+  .cut-section-body {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.75rem;
+  }
+
+  .cut-section-body > .job-form-image-container {
+    justify-self: start;
+    width: min(170px, 48vw);
+    max-width: 170px;
+  }
+
+  .cut-section-grid {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "customer"
+      "rate"
+      "material"
+      "programref"
+      "description"
+      "cut"
+      "thickness"
+      "pass"
+      "setting"
+      "qty"
+      "sedm"
+      "totalhrs"
+      "estimated"
+      "totalamount";
+    gap: 0.65rem;
+  }
+
+  .operation-row-item,
+  .grid-sedm,
+  .grid-total-hrs,
+  .grid-estimated-time,
+  .grid-total-amount,
+  .calculation-formula-panel {
+    grid-column: auto !important;
+    grid-row: auto !important;
+  }
+
+  .calculation-formula-panel {
+    grid-column: 1 / -1 !important;
   }
 }
 

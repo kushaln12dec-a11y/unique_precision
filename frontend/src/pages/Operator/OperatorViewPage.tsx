@@ -428,14 +428,14 @@ const OperatorViewPage = () => {
         next.set(cutId, existing);
         return next;
       });
-      const label = status === "SENT_TO_QA" ? "Sent to QA" : "Marked Ready for QA";
+      const label = status === "SENT_TO_QA" ? "Sent to QC" : "Marked Ready for QC";
       setActionToast({ message: `${label}: Qty ${quantityNumbers.join(", ")}`, variant: "success", visible: true });
       setTimeout(() => {
         setActionToast((prev) => ({ ...prev, visible: false }));
       }, 2500);
     } catch (error) {
-      console.error("Failed to update QA status", error);
-      setActionToast({ message: "Failed to update QA status.", variant: "error", visible: true });
+      console.error("Failed to update QC status", error);
+      setActionToast({ message: "Failed to update QC status.", variant: "error", visible: true });
       setTimeout(() => {
         setActionToast((prev) => ({ ...prev, visible: false }));
       }, 2500);
@@ -628,12 +628,12 @@ const OperatorViewPage = () => {
       {pendingDispatch && (
         <ConfirmDeleteModal
           title="Confirm Dispatch"
-          message="Are you sure you want to dispatch selected quantity to QA?"
+          message="Are you sure you want to dispatch selected quantity to QC?"
           details={[
             { label: "Setting", value: pendingDispatchJob ? String(jobs.findIndex((j) => String(j.id) === String(pendingDispatch.cutId)) + 1) : "N/A" },
             { label: "Quantities", value: pendingDispatch.quantityNumbers.join(", ") },
           ]}
-          confirmButtonText="Dispatch To QA"
+          confirmButtonText="Dispatch To QC"
           onConfirm={async () => {
             await handleUpdateQaStatus(pendingDispatch.cutId, pendingDispatch.quantityNumbers, "SENT_TO_QA");
             setPendingDispatch(null);

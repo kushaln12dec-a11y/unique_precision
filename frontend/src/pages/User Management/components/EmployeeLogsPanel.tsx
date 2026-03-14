@@ -4,6 +4,7 @@ import { getEmployeeLogs } from '../../../services/employeeLogsApi';
 import DownloadIcon from '@mui/icons-material/Download';
 import type { EmployeeLog } from '../../../types/employeeLog';
 import { getDisplayDateTimeParts } from '../../../utils/date';
+import MarqueeCopyText from '../../../components/MarqueeCopyText';
 
 type RoleTab = 'PROGRAMMER' | 'OPERATOR' | 'QC';
 
@@ -117,8 +118,7 @@ export const EmployeeLogsPanel = () => {
           sortable: false,
           render: (row) => {
             const full = String(row.workSummary || '-');
-            const short = full.length > 44 ? `${full.slice(0, 44)}...` : full;
-            return <span title={full}>{short}</span>;
+            return <MarqueeCopyText text={full} />;
           },
         },
         {
@@ -194,6 +194,8 @@ export const EmployeeLogsPanel = () => {
           key: 'status',
           label: 'Status',
           sortable: false,
+          className: 'employee-status-cell',
+          headerClassName: 'employee-status-col',
           render: (row) => (
             <span
               className={`employee-log-status status-${row.status.toLowerCase()}`}
@@ -237,7 +239,10 @@ export const EmployeeLogsPanel = () => {
         key: 'jobDescription',
         label: 'Description',
         sortable: false,
-        render: (row) => row.jobDescription || '-',
+        render: (row) => {
+          const full = String(row.jobDescription || '-');
+          return <MarqueeCopyText text={full} />;
+        },
       },
       {
         key: 'quantityCount',
@@ -291,6 +296,8 @@ export const EmployeeLogsPanel = () => {
         key: 'status',
         label: 'Status',
         sortable: false,
+        className: 'employee-status-cell',
+        headerClassName: 'employee-status-col',
         render: (row) => (
           <span
             className={`employee-log-status status-${row.status.toLowerCase()}`}
@@ -367,7 +374,7 @@ export const EmployeeLogsPanel = () => {
             setActiveRole('QC');
           }}
         >
-          QA
+          QC
         </button>
       </div>
 
@@ -406,9 +413,9 @@ export const EmployeeLogsPanel = () => {
 
       {activeRole === 'QC' ? (
         <div className="qa-placeholder-card">
-          <h3>QA Logs</h3>
+          <h3>QC Logs</h3>
           <p>
-            QA logging tab is ready. QA event capture wiring can be added in the
+            QC logging tab is ready. QC event capture wiring can be added in the
             next step.
           </p>
         </div>

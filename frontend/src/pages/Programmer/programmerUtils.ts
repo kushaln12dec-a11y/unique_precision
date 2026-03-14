@@ -44,6 +44,8 @@ export type WedmRowBreakdown = {
   passPercent: number;
   cutAfterPassRaw: number;
   cutAfterPass: number;
+  passPlusSettingRaw: number;
+  passPlusSettingWithMin: number;
   settingInput: number;
   settingHours: number;
   extraHoursPerUnit: number;
@@ -364,18 +366,19 @@ export const calculateTotals = (form: CutForm, config: CalculationConfig = {}): 
     const passMultiplier = PASS_MAP[row.passLevel] || 1;
     const passPercent = PASS_PERCENT_MAP[row.passLevel] ?? Math.max(0, (passMultiplier - 1) * 100);
     const cutAfterPassRaw = base + (base * passPercent) / 100;
-    const cutAfterPass = Math.max(1, cutAfterPassRaw);
+    const cutAfterPass = cutAfterPassRaw;
     const settingLevel = Number(row.setting) || 0;
     const settingHours = getSettingHours(settingLevel, configuredSettingHours);
+    const passPlusSettingRaw = cutAfterPass + settingHours;
+    const passPlusSettingWithMin = Math.max(1, passPlusSettingRaw);
     const qty = Number(row.qty) || 0;
     const complexHours = Number(config.complexExtraHours ?? 1) || 1;
     const pipHours = Number(config.pipExtraHours ?? 1) || 1;
     const extraHoursPerUnit = (form.pipFinish ? pipHours : 0) + (form.critical ? complexHours : 0);
 
     // Requested sequence:
-    // 1) base -> 2) pass -> 3) min 1 -> 4) setting -> 5) add setting
-    // 6) add pip/complex per-unit -> 7) * qty
-    const rowHours = (cutAfterPass + settingHours + extraHoursPerUnit) * qty;
+    // 1) base -> 2) pass -> 3) setting -> 4) min 1 -> 5) extras -> 6) * qty
+    const rowHours = (passPlusSettingWithMin + extraHoursPerUnit) * qty;
 
     return {
       rowIndex: index + 1,
@@ -389,6 +392,8 @@ export const calculateTotals = (form: CutForm, config: CalculationConfig = {}): 
       passPercent,
       cutAfterPassRaw,
       cutAfterPass,
+      passPlusSettingRaw,
+      passPlusSettingWithMin,
       settingInput: settingLevel,
       settingHours,
       extraHoursPerUnit,

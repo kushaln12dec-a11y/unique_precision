@@ -1,9 +1,10 @@
-import React from "react";
+import React, { useMemo } from "react";
 import FilterModal from "../../../components/FilterModal";
 import FilterButton from "../../../components/FilterButton";
 import FilterBadges from "../../../components/FilterBadges";
 import DownloadIcon from "@mui/icons-material/Download";
 import { OperatorTaskTimer } from "./OperatorTaskTimer";
+import SelectDropdown, { type SelectOption } from "../../Programmer/components/SelectDropdown";
 import type { FilterField, FilterCategory, FilterValues } from "../../../components/FilterModal";
 
 type OperatorFiltersProps = {
@@ -69,6 +70,47 @@ export const OperatorFilters: React.FC<OperatorFiltersProps> = ({
   onSendSelectedRowsToQa,
   selectedRowsCount,
 }) => {
+  const createdByOptions = useMemo<SelectOption[]>(
+    () => [
+      { label: "All Users", value: "" },
+      ...users.map((user) => {
+        const displayName = `${user.firstName} ${user.lastName}`.trim() || user.email;
+        return { label: displayName, value: displayName };
+      }),
+    ],
+    [users]
+  );
+
+  const assignedToOptions = useMemo<SelectOption[]>(() => {
+    const source = operatorUsers.length > 0 ? operatorUsers : users;
+    const seen = new Set<string>(["", "unassigned"]);
+    const options: SelectOption[] = [
+      { label: "All", value: "" },
+      { label: "Unassigned", value: "Unassigned" },
+    ];
+
+    source.forEach((user) => {
+      const displayName = `${user.firstName} ${user.lastName}`.trim() || user.email;
+      const key = displayName.toLowerCase();
+      if (!seen.has(key)) {
+        seen.add(key);
+        options.push({ label: displayName, value: displayName });
+      }
+    });
+
+    return options;
+  }, [operatorUsers, users]);
+
+  const statusOptions = useMemo<SelectOption[]>(
+    () => [
+      { label: "All", value: "" },
+      { label: "Operation Logged", value: "OP_LOGGED" },
+      { label: "QC Dispatched", value: "QA_DISPATCHED" },
+      { label: "Yet to Start", value: "PENDING_INPUT" },
+    ],
+    []
+  );
+
   return (
     <>
       <div className="panel-header">
@@ -86,75 +128,46 @@ export const OperatorFilters: React.FC<OperatorFiltersProps> = ({
               />
             </div>
             <div className="filter-group operator-filter-created-by">
-              <label htmlFor="created-by-select">Created By</label>
-              <select
-                id="created-by-select"
+              <label>Created By</label>
+              <SelectDropdown
                 value={createdByFilter}
-                onChange={(e) => onCreatedByFilterChange(e.target.value)}
-                className="filter-select"
-              >
-                <option value="">All Users</option>
-                {users.map((user) => {
-                  const displayName = `${user.firstName} ${user.lastName}`.trim() || user.email;
-                  return (
-                    <option key={user._id} value={displayName}>
-                      {displayName}
-                    </option>
-                  );
-                })}
-              </select>
+                onChange={onCreatedByFilterChange}
+                options={createdByOptions}
+                placeholder="All Users"
+                align="left"
+                className="operator-filter-dropdown"
+              />
             </div>
             <div className="filter-group operator-filter-assigned-to">
-              <label htmlFor="assigned-to-select">Assigned To</label>
-              <select
-                id="assigned-to-select"
+              <label>Assigned To</label>
+              <SelectDropdown
                 value={assignedToFilter}
-                onChange={(e) => onAssignedToFilterChange(e.target.value)}
-                className="filter-select assigned-to-filter-select"
-              >
-                <option value="">All</option>
-                <option value="Unassigned">Unassigned</option>
-                {operatorUsers.length > 0
-                  ? operatorUsers.map((user) => {
-                    const displayName = `${user.firstName} ${user.lastName}`.trim() || user.email;
-                    return (
-                      <option key={user._id} value={displayName}>
-                        {displayName}
-                      </option>
-                    );
-                  })
-                  : users.map((user) => {
-                    const displayName = `${user.firstName} ${user.lastName}`.trim() || user.email;
-                    return (
-                      <option key={user._id} value={displayName}>
-                        {displayName}
-                      </option>
-                    );
-                  })}
-              </select>
+                onChange={onAssignedToFilterChange}
+                options={assignedToOptions}
+                placeholder="All"
+                align="left"
+                className="operator-filter-dropdown"
+              />
             </div>
             <div className="operator-status-legend-group">
               <div className="filter-group operator-filter-status">
-                <label htmlFor="production-stage-select">Status</label>
-                <select
-                  id="production-stage-select"
+                <label>Status</label>
+                <SelectDropdown
                   value={productionStageFilter}
-                  onChange={(e) => onProductionStageFilterChange(e.target.value)}
-                  className="filter-select"
-                >
-                  <option value="">All</option>
-                  <option value="OP_LOGGED">Operation Logged</option>
-                  <option value="QA_DISPATCHED">QA Dispatched</option>
-                  <option value="PENDING_INPUT">Not Started</option>
-                </select>
+                  onChange={onProductionStageFilterChange}
+                  options={statusOptions}
+                  placeholder="All"
+                  align="left"
+                  className="operator-filter-dropdown"
+                />
               </div>
             </div>
           </div>
           <div className="operator-stage-legend-inline">
             <span className="operator-stage-legend-title">Stage Legend:</span>
             <span className="operator-stage-chip saved">Operation Logged</span>
-            <span className="operator-stage-chip sent">QA Dispatched</span>
-            <span className="operator-stage-chip empty">Not Started</span>
+            <span className="operator-stage-chip sent">QC Dispatched</span>
+            <span className="operator-stage-chip empty">Yet to Start</span>
           </div>
         </div>
 
@@ -177,9 +190,9 @@ export const OperatorFilters: React.FC<OperatorFiltersProps> = ({
               className="btn-download-csv"
               onClick={onSendSelectedRowsToQa}
               disabled={selectedRowsCount === 0}
-              title="Move selected rows to QA"
+              title="Move selected rows to QC"
             >
-              Send To QA{selectedRowsCount > 0 ? ` (${selectedRowsCount})` : ""}
+              Send To QC{selectedRowsCount > 0 ? ` (${selectedRowsCount})` : ""}
             </button>
             <FilterButton onClick={() => onShowFilterModal(true)} activeFilterCount={activeFilterCount} />
           </div>

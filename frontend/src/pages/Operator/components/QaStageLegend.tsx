@@ -12,8 +12,8 @@ const QaStageLegend: React.FC<QaStageLegendProps> = ({ className = "" }) => {
     <div className={classes}>
       <span className="qa-legend-title">Stage Legend:</span>
       <span className="qa-legend-item saved">Operation Logged = input captured</span>
-      <span className="qa-legend-item sent">QA Dispatched = moved to QA queue</span>
-      <span className="qa-legend-item empty">Not Started = values not entered yet</span>
+      <span className="qa-legend-item sent">QC Dispatched = moved to QC queue</span>
+      <span className="qa-legend-item empty">Yet to Start = values not entered yet</span>
     </div>
   );
 };

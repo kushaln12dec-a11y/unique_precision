@@ -12,8 +12,8 @@ export type QaProgressCounts = {
 export const QA_STAGE_LABELS = {
   SAVED: "Operation Logged",
   READY_FOR_QA: "Operation Logged",
-  SENT_TO_QA: "QA Dispatched",
-  EMPTY: "Not Started",
+  SENT_TO_QA: "QC Dispatched",
+  EMPTY: "Yet to Start",
 } as const;
 
 export const getQaStageLabel = (status: QuantityProgressStatus): string => {

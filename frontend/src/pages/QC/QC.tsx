@@ -1,21 +1,30 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Sidebar from "../../components/Sidebar";
 import Header from "../../components/Header";
 import DataTable from "../../components/DataTable";
-import { getJobs, updateQcDecisionByGroupId } from "../../services/jobApi";
+import Toast from "../../components/Toast";
+import ConfirmDeleteModal from "../../components/ConfirmDeleteModal";
+import CloseIcon from "@mui/icons-material/Close";
+import {
+  getJobs,
+  setQcReportClosedByGroupId,
+  updateQcDecisionByGroupId,
+} from "../../services/jobApi";
 import {
   generateInspectionReport,
   type InspectionReportPayload,
 } from "../../services/inspectionReportApi";
 import type { JobEntry } from "../../types/job";
-import { formatDisplayDateTime, parseDateValue } from "../../utils/date";
+import { getDisplayDateTimeParts, parseDateValue } from "../../utils/date";
 import { isGroupFullySentToQa } from "../Operator/utils/qaProgress";
 import { getParentRowClassName } from "../Programmer/utils/priorityUtils";
 import { useAppDispatch, useAppSelector } from "../../store/hooks";
+import MarqueeCopyText from "../../components/MarqueeCopyText";
 import {
   setQcCustomerFilter,
   setQcDescriptionFilter,
+  setQcOperatorFilter,
 } from "../../store/slices/filtersSlice";
 import "../RoleBoard.css";
 import "../Programmer/Programmer.css";
@@ -40,7 +49,48 @@ const QC = () => {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const [jobs, setJobs] = useState<JobEntry[]>([]);
-  const { customerFilter, descriptionFilter } = useAppSelector((state) => state.filters.qc);
+  const [reportCloseCandidate, setReportCloseCandidate] = useState<QcRow | null>(null);
+  const [isCloseConfirmOpen, setIsCloseConfirmOpen] = useState(false);
+
+  const [toast, setToast] = useState<{
+    message: string;
+    variant: "success" | "error" | "info";
+    visible: boolean;
+  }>({
+    message: "",
+    variant: "info",
+    visible: false,
+  });
+  const { customerFilter, descriptionFilter, operatorFilter } = useAppSelector((state) => state.filters.qc);
+
+  const showToast = useCallback((message: string, variant: "success" | "error" | "info" = "info") => {
+    setToast({ message, variant, visible: true });
+    window.setTimeout(() => {
+      setToast((prev) => ({ ...prev, visible: false }));
+    }, 2500);
+  }, []);
+
+  const closeReportWithConfirm = async () => {
+    if (!reportCloseCandidate) {
+      setIsCloseConfirmOpen(false);
+      return;
+    }
+
+    try {
+      const updated = await setQcReportClosedByGroupId(reportCloseCandidate.groupId, true);
+      setJobs((prev) => {
+        const keep = prev.filter((j) => j.groupId !== reportCloseCandidate.groupId);
+        return [...keep, ...updated];
+      });
+      showToast("Inspection report closed and removed from QC queue.", "success");
+    } catch (error) {
+      console.error("Failed to close QC report item", error);
+      showToast("Failed to close QC report.", "error");
+    } finally {
+      setIsCloseConfirmOpen(false);
+      setReportCloseCandidate(null);
+    }
+  };
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -56,10 +106,11 @@ const QC = () => {
         setJobs(data);
       } catch (error) {
         console.error("Failed to fetch QC jobs", error);
+        showToast("Failed to load QC queue.", "error");
       }
     };
     fetchJobs();
-  }, []);
+  }, [showToast]);
 
   const tableData = useMemo<QcRow[]>(() => {
     const groups = new Map<number, JobEntry[]>();
@@ -70,7 +121,11 @@ const QC = () => {
     });
 
     return Array.from(groups.entries())
-      .filter(([, entries]) => isGroupFullySentToQa(entries))
+      .filter(
+        ([, entries]) =>
+          isGroupFullySentToQa(entries) &&
+          !entries.every((item) => Boolean((item as any).qcReportClosed))
+      )
       .map(([groupId, entries]) => {
         const parent = entries[0];
         return {
@@ -92,14 +147,40 @@ const QC = () => {
       const descriptionMatch = descriptionFilter
         ? String(row.parent.description || "").toLowerCase().includes(descriptionFilter.toLowerCase())
         : true;
-      return customerMatch && descriptionMatch;
+      const rowOperator = String(row.parent.assignedTo || "")
+        .split(",")
+        .map((name) => name.trim())
+        .find((name) => name && name !== "Unassigned");
+      const operatorMatch = operatorFilter
+        ? String(rowOperator || "").toLowerCase() === operatorFilter.toLowerCase()
+        : true;
+      return customerMatch && descriptionMatch && operatorMatch;
     });
-  }, [tableData, customerFilter, descriptionFilter]);
+  }, [tableData, customerFilter, descriptionFilter, operatorFilter]);
+
+  const qcOperatorOptions = useMemo(() => {
+    const names = new Set<string>();
+    tableData.forEach((row) => {
+      String(row.parent.assignedTo || "")
+        .split(",")
+        .map((name) => name.trim())
+        .filter((name) => name && name !== "Unassigned")
+        .forEach((name) => names.add(name));
+    });
+    return Array.from(names).sort((a, b) => a.localeCompare(b));
+  }, [tableData]);
 
   const columns = useMemo(
     () => [
       { key: "customer", label: "Customer", render: (row: QcRow) => row.parent.customer || "-" },
-      { key: "description", label: "Description", render: (row: QcRow) => row.parent.description || "-" },
+      {
+        key: "description",
+        label: "Description",
+        render: (row: QcRow) => {
+          const full = row.parent.description || "-";
+          return <MarqueeCopyText text={full} />;
+        },
+      },
       {
         key: "jobRef",
         label: "Job ref",
@@ -125,7 +206,15 @@ const QC = () => {
       {
         key: "createdAt",
         label: "Created At",
-        render: (row: QcRow) => formatDisplayDateTime(row.parent.createdAt),
+        render: (row: QcRow) => {
+          const parts = getDisplayDateTimeParts(row.parent.createdAt);
+          return (
+            <div className="created-at-split">
+              <span>{parts.date}</span>
+              <span>{parts.time}</span>
+            </div>
+          );
+        },
       },
       {
         key: "decision",
@@ -136,11 +225,17 @@ const QC = () => {
               type="button"
               className="qc-approve-btn"
               onClick={async () => {
-                const updated = await updateQcDecisionByGroupId(row.groupId, "APPROVED");
-                setJobs((prev) => {
-                  const keep = prev.filter((j) => j.groupId !== row.groupId);
-                  return [...keep, ...updated];
-                });
+                try {
+                  const updated = await updateQcDecisionByGroupId(row.groupId, "APPROVED");
+                  setJobs((prev) => {
+                    const keep = prev.filter((j) => j.groupId !== row.groupId);
+                    return [...keep, ...updated];
+                  });
+                  showToast("QC decision updated: Approved.", "success");
+                } catch (error) {
+                  console.error("Failed to approve QC decision", error);
+                  showToast("Failed to update QC decision.", "error");
+                }
               }}
             >
               Approve
@@ -149,11 +244,17 @@ const QC = () => {
               type="button"
               className="qc-reject-btn"
               onClick={async () => {
-                const updated = await updateQcDecisionByGroupId(row.groupId, "REJECTED");
-                setJobs((prev) => {
-                  const keep = prev.filter((j) => j.groupId !== row.groupId);
-                  return [...keep, ...updated];
-                });
+                try {
+                  const updated = await updateQcDecisionByGroupId(row.groupId, "REJECTED");
+                  setJobs((prev) => {
+                    const keep = prev.filter((j) => j.groupId !== row.groupId);
+                    return [...keep, ...updated];
+                  });
+                  showToast("QC decision updated: Rejected.", "success");
+                } catch (error) {
+                  console.error("Failed to reject QC decision", error);
+                  showToast("Failed to update QC decision.", "error");
+                }
               }}
             >
               Reject
@@ -230,16 +331,29 @@ const QC = () => {
                   URL.revokeObjectURL(url);
                 } catch (error) {
                   console.error("Failed to download inspection report", error);
+                  showToast("Failed to download inspection report.", "error");
                 }
               }}
             >
               Download
             </button>
+            <button
+              type="button"
+              className="qc-inspection-report-close-btn"
+              aria-label="Close inspection report item"
+              title="Close and remove from QC queue"
+              onClick={() => {
+                setReportCloseCandidate(row);
+                setIsCloseConfirmOpen(true);
+              }}
+            >
+              <CloseIcon sx={{ fontSize: "0.9rem" }} />
+            </button>
           </div>
         ),
       },
     ],
-    [navigate]
+    [navigate, showToast]
   );
 
   return (
@@ -261,6 +375,18 @@ const QC = () => {
               placeholder="Search customer or description..."
               className="qc-filter-input"
             />
+            <select
+              className="qc-filter-select"
+              value={operatorFilter}
+              onChange={(e) => dispatch(setQcOperatorFilter(e.target.value))}
+            >
+              <option value="">All Operators</option>
+              {qcOperatorOptions.map((name) => (
+                <option key={name} value={name}>
+                  {name}
+                </option>
+              ))}
+            </select>
           </div>
           <DataTable
             columns={columns as any}
@@ -269,11 +395,33 @@ const QC = () => {
             getRowClassName={(row: QcRow) => {
               return getParentRowClassName(row.parent, row.entries, false);
             }}
-            emptyMessage="No rows dispatched to QA yet."
+            emptyMessage="No rows dispatched to QC yet."
             className="jobs-table-wrapper"
           />
         </div>
       </div>
+      {isCloseConfirmOpen && reportCloseCandidate && (
+        <ConfirmDeleteModal
+          title="Confirm Close Report"
+          message="Are you sure you want to close this inspection report?"
+          details={[
+            { label: "Job Ref", value: `#${reportCloseCandidate.parent.refNumber || reportCloseCandidate.groupId}` },
+            { label: "Customer", value: reportCloseCandidate.parent.customer || "-" },
+          ]}
+          confirmButtonText="Close Report"
+          onConfirm={closeReportWithConfirm}
+          onCancel={() => {
+            setIsCloseConfirmOpen(false);
+            setReportCloseCandidate(null);
+          }}
+        />
+      )}
+      <Toast
+        message={toast.message}
+        visible={toast.visible}
+        variant={toast.variant}
+        onClose={() => setToast((prev) => ({ ...prev, visible: false }))}
+      />
     </div>
   );
 };

@@ -9,6 +9,7 @@ import { MultiSelectOperators } from "../../Operator/components/MultiSelectOpera
 import { getQaProgressCounts } from "../../Operator/utils/qaProgress";
 import { estimatedTimeFromAmount, formatMachineLabel, MACHINE_OPTIONS, toMachineIndex, toYN } from "../../../utils/jobFormatting";
 import { calculateTotals } from "../programmerUtils";
+import MarqueeCopyText from "../../../components/MarqueeCopyText";
 
 type ChildCutsTableProps = {
   entries: JobEntry[];
@@ -215,14 +216,10 @@ const ChildCutsTable: React.FC<ChildCutsTableProps> = ({
                 <td className="setting-number-col">{index + 1}</td>
               <td className="customer-col">{entry.customer || "-"}</td>
               <td className="program-ref-file-col" title={(entry as any).programRefFile || (entry as any).programRefFileName || "-"}>
-                <div className="description-marquee">
-                  <span>{String((entry as any).programRefFile || (entry as any).programRefFileName || "-")}</span>
-                </div>
+                <MarqueeCopyText text={String((entry as any).programRefFile || (entry as any).programRefFileName || "-")} />
               </td>
               <td className="description-col" title={entry.description || "-"}>
-                <div className="description-marquee">
-                  <span>{entry.description || "-"}</span>
-                </div>
+                <MarqueeCopyText text={entry.description || "-"} />
               </td>
               <td className="cut-col">{Math.round(Number(entry.cut || 0))}</td>
               <td className="th-col">{Math.round(Number(entry.thickness || 0))}</td>
@@ -306,9 +303,10 @@ const ChildCutsTable: React.FC<ChildCutsTableProps> = ({
               )}
               {!isOperator && (
                 <td className="total-hrs-col">
-                  {entry.totalHrs
-                    ? formatHoursToHHMM(Number(entry.totalHrs || 0) || 0)
-                    : "-"}
+                  {(() => {
+                    const totalHrs = calculateTotals(entry as any).totalHrs;
+                    return totalHrs ? formatHoursToHHMM(totalHrs) : "-";
+                  })()}
                 </td>
               )}
               <td className="estimated-time-col">{estimatedTimeFromAmount(calculateTotals(entry as any).wedmAmount)}</td>
@@ -320,9 +318,9 @@ const ChildCutsTable: React.FC<ChildCutsTableProps> = ({
                     const c = getQaProgressCounts(entry, qty);
                     return (
                       <div className="child-stage-summary">
-                        <span className="qa-mini empty">Pending {c.empty}</span>
+                        <span className="qa-mini empty">Yet to Start {c.empty}</span>
                         <span className="qa-mini saved">Logged {c.saved + c.ready}</span>
-                        <span className="qa-mini sent">QA {c.sent}</span>
+                        <span className="qa-mini sent">QC {c.sent}</span>
                       </div>
                     );
                   })()}

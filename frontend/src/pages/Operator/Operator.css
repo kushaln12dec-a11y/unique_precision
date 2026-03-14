@@ -66,7 +66,7 @@
 .operator-table-no-scroll .data-table th .th-content {
   display: inline-flex;
   align-items: center;
-  justify-content: flex-start;
+  justify-content: center;
   gap: 0.375rem;
   width: 100%;
   flex-wrap: nowrap;
@@ -78,7 +78,7 @@
 .operator-table-no-scroll .data-table td {
   padding: 0.5rem 0.4rem;
   font-size: 0.9rem;
-  text-align: left;
+  text-align: center;
   vertical-align: middle;
   border-bottom: 1px solid #e5e7eb;
   overflow: hidden;
@@ -86,6 +86,12 @@
   white-space: normal;
   word-break: break-word;
   box-sizing: border-box;
+}
+
+.operator-table-no-scroll .data-table td.operator-assigned-cell,
+.operator-table-no-scroll .data-table td.operator-machine-cell {
+  overflow: visible;
+  position: relative;
 }
 
 .operator-table-no-scroll .data-table thead th {
@@ -147,6 +153,15 @@
   width: 110px;
   min-width: 110px;
   text-align: left;
+}
+
+.operator-table-no-scroll .child-row-content .child-jobs-table th,
+.operator-table-no-scroll .child-row-content .child-jobs-table td {
+  text-align: center;
+}
+
+.operator-table-no-scroll .child-row-content .child-jobs-table th .th-content {
+  justify-content: center;
 }
 
 /* Program Ref File Name Column */
@@ -216,8 +231,8 @@
 /* Mach # Column */
 .operator-table-no-scroll .data-table th:nth-child(13),
 .operator-table-no-scroll .data-table td:nth-child(13) {
-  width: 44px;
-  min-width: 44px;
+  width: 76px;
+  min-width: 76px;
   text-align: left;
 }
 
@@ -526,8 +541,8 @@
 
 .operator-table-no-scroll .child-row-content .child-jobs-table th.mach-col,
 .operator-table-no-scroll .child-row-content .child-jobs-table td.mach-col {
-  width: 62px;
-  min-width: 62px;
+  width: 76px;
+  min-width: 76px;
   text-align: left;
   padding-left: 0.4rem;
   padding-right: 0.4rem;
@@ -736,8 +751,8 @@
 .created-at-split {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  justify-content: flex-start;
+  align-items: center;
+  justify-content: center;
   gap: 0.125rem;
   line-height: 1.2;
 }
@@ -851,6 +866,24 @@
   min-width: 150px;
 }
 
+.operator-filter-dropdown {
+  width: 100%;
+}
+
+.operator-filter-dropdown .option-dropdown-trigger {
+  height: 36px;
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  background: #ffffff;
+  color: #0f172a;
+  font-size: 0.9rem;
+  padding: 0 0.7rem;
+}
+
+.operator-filter-dropdown .option-dropdown-value {
+  text-align: left;
+}
+
 .operator-status-legend-group {
   display: flex;
   align-items: flex-end;
@@ -886,7 +919,7 @@
   width: 100%;
   display: flex;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: center;
   gap: 0.6rem;
   flex-wrap: nowrap;
 }
@@ -1105,6 +1138,25 @@
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.18);
 }
 
+.operator-assigned-dropdown-wrapper {
+  width: 100%;
+  min-width: 0;
+}
+
+.operator-assigned-dropdown-wrapper .option-dropdown-trigger {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  height: 30px;
+  border: 1px solid #93c5fd;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #ffffff 0%, #eff6ff 100%);
+  color: #0f172a;
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 0 0.55rem;
+}
+
 .log-user-stack {
   display: flex;
   flex-direction: column;
@@ -1127,7 +1179,7 @@
 }
 
 .log-user-badge-stack {
-  align-items: flex-start;
+  align-items: center;
 }
 
 .log-user-initial-badge {
@@ -1301,6 +1353,28 @@
   font-size: 0.78rem;
   color: #0f172a;
   background: #ffffff;
+}
+
+.operator-machine-dropdown-wrapper {
+  width: 100%;
+  min-width: 0;
+}
+
+.operator-machine-dropdown-wrapper .option-dropdown-trigger {
+  width: 100%;
+  min-width: 0;
+  max-width: 76px;
+  height: 30px;
+  border: 1px solid #cbd5e1;
+  border-radius: 14px;
+  background: #ffffff;
+  color: #0f172a;
+  font-size: 0.82rem;
+  padding: 0 0.35rem;
+}
+
+.operator-machine-dropdown-wrapper .option-dropdown-value {
+  text-align: left;
 }
 
 @media only screen and (min-width: 1367px) {
@@ -1689,7 +1763,7 @@
 }
 
 /* ============================================
-   QA PROGRESS BADGES
+   QC PROGRESS BADGES
    ============================================ */
 
 .qa-progress-inline {
@@ -1819,4 +1893,10 @@
 .operator-table-no-scroll .child-row-content .child-jobs-table thead th .th-content,
 .operator-table-no-scroll .child-row-content .child-jobs-table thead th[class] .th-content {
   justify-content: center;
+}
+
+/* Keep all table body cells centered (parent + child). */
+.operator-table-no-scroll .data-table tbody td,
+.operator-table-no-scroll .child-row-content .child-jobs-table tbody td {
+  text-align: center !important;
 }

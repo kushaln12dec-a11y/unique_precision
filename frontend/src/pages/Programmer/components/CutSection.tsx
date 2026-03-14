@@ -587,7 +587,7 @@ export const CutSection: React.FC<CutSectionProps> = ({
             <div className="formula-block">
               {cutTotals.wedmBreakdown.rows.map((row) => (
                 <p key={`wedm-row-${row.rowIndex}`}>
-                  {`Row ${row.rowIndex}: base = (${row.cutLength.toFixed(2)} x ${row.thicknessUsed.toFixed(2)}) / ${row.divisor} = ${row.base.toFixed(4)}; pass = ${row.base.toFixed(4)} + (${row.base.toFixed(4)} x ${row.passPercent.toFixed(0)}%) = ${row.cutAfterPassRaw.toFixed(4)}; min rule => ${row.cutAfterPass.toFixed(4)}; setting(${row.settingInput}) => ${row.settingHours.toFixed(2)}; extras(per unit) => ${row.extraHoursPerUnit.toFixed(2)}; row hrs = (${row.cutAfterPass.toFixed(4)} + ${row.settingHours.toFixed(2)} + ${row.extraHoursPerUnit.toFixed(2)}) x ${row.qty} = ${row.rowHours.toFixed(4)}`}
+                  {`Row ${row.rowIndex}: base = (${row.cutLength.toFixed(2)} x ${row.thicknessUsed.toFixed(2)}) / ${row.divisor} = ${row.base.toFixed(4)}; pass = ${row.base.toFixed(4)} + (${row.base.toFixed(4)} x ${row.passPercent.toFixed(0)}%) = ${row.cutAfterPassRaw.toFixed(4)}; setting(${row.settingInput}) => ${row.settingHours.toFixed(2)}; pass+setting = ${row.passPlusSettingRaw.toFixed(4)}; min rule => ${row.passPlusSettingWithMin.toFixed(4)}; extras(per unit) => ${row.extraHoursPerUnit.toFixed(2)}; row hrs = (${row.passPlusSettingWithMin.toFixed(4)} + ${row.extraHoursPerUnit.toFixed(2)}) x ${row.qty} = ${row.rowHours.toFixed(4)}`}
                 </p>
               ))}
               <p>{`WEDM Cost = ${cutTotals.totalHrs.toFixed(4)} x rate(${cutTotals.wedmBreakdown.rate.toFixed(2)}) = ${cutTotals.wedmAmount.toFixed(2)}`}</p>

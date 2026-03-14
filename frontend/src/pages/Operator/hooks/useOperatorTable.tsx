@@ -13,6 +13,8 @@ import {
   toYN,
 } from "../../../utils/jobFormatting";
 import { calculateTotals } from "../../Programmer/programmerUtils";
+import MarqueeCopyText from "../../../components/MarqueeCopyText";
+import SelectDropdown, { type SelectOption } from "../../Programmer/components/SelectDropdown";
 
 type TableRow = {
   groupId: number;
@@ -71,14 +73,14 @@ export const useOperatorTable = ({
     return toMachineIndex(captureMachine);
   };
 
-  return useMemo(
+  return useMemo<Column<TableRow>[]>(
     () => [
       {
         key: "customer",
         label: "Customer",
         sortable: false,
         sortKey: "customer",
-        render: (row) => {
+        render: (row: TableRow) => {
           const expandable = expandableRows?.get(row.groupId);
           const isExpanded = expandable?.isExpanded || false;
 
@@ -138,11 +140,7 @@ export const useOperatorTable = ({
         sortable: false,
         render: (row) => {
           const value = String((row.parent as any).programRefFile || (row.parent as any).programRefFileName || "-");
-          return (
-            <div className="description-marquee" title={value}>
-              <span>{value}</span>
-            </div>
-          );
+          return <MarqueeCopyText text={value} />;
         },
       },
       {
@@ -152,11 +150,7 @@ export const useOperatorTable = ({
         sortKey: "description",
         render: (row) => {
           const full = row.parent.description || "-";
-          return (
-            <div className="description-marquee" title={full}>
-              <span>{full}</span>
-            </div>
-          );
+          return <MarqueeCopyText text={full} />;
         },
       },
       {
@@ -208,6 +202,7 @@ export const useOperatorTable = ({
         key: "assignedTo",
         label: "Operator",
         sortable: false,
+        className: "operator-assigned-cell",
         render: (row) => {
           const assignedToValue = row.parent.assignedTo || "";
           let assignedOperators: string[] = [];
@@ -223,27 +218,37 @@ export const useOperatorTable = ({
           const currentUserAlreadyInList = operatorUsers.some(
             (user) => user.name.trim().toLowerCase() === normalizedCurrentUser
           );
+          const ownerOptions: SelectOption[] = [];
+          const seenOwnerValues = new Set<string>();
+          const addOwnerOption = (label: string, optionValue: string) => {
+            if (seenOwnerValues.has(optionValue)) return;
+            seenOwnerValues.add(optionValue);
+            ownerOptions.push({ label, value: optionValue });
+          };
+
+          addOwnerOption("Select operator", "");
+          if (currentUserName && !currentUserAlreadyInList) {
+            addOwnerOption("Assign to me", currentUserName);
+          }
+          operatorUsers.forEach((user) => {
+            addOwnerOption(user.name, user.name);
+          });
+          if (selectedOwner && !seenOwnerValues.has(selectedOwner)) {
+            ownerOptions.unshift({ label: selectedOwner, value: selectedOwner });
+          }
 
           return canAssign ? (
-            <select
-              className="operator-assigned-dropdown"
+            <SelectDropdown
+              className="operator-assigned-dropdown-wrapper"
               value={selectedOwner}
-              onClick={(event) => event.stopPropagation()}
-              onChange={(event) => {
-                const value = event.target.value.trim();
+              onChange={(nextValue) => {
+                const value = nextValue.trim();
                 handleAssignChange(row.parent.id, value || "Unassigned");
               }}
-            >
-              <option value="">Select operator</option>
-              {currentUserName && !currentUserAlreadyInList ? (
-                <option value={currentUserName}>Assign to me</option>
-              ) : null}
-              {operatorUsers.map((user) => (
-                <option key={user.id} value={user.name}>
-                  {user.name}
-                </option>
-              ))}
-            </select>
+              options={ownerOptions}
+              placeholder="Select operator"
+              align="left"
+            />
           ) : (
             <div className="assigned-operators-readonly">
               {selectedOwner ? <span className="operator-badge-readonly">{selectedOwner}</span> : <span className="unassigned-text">Unassigned</span>}
@@ -255,23 +260,24 @@ export const useOperatorTable = ({
         key: "machineNumber",
         label: "Mach #",
         sortable: false,
+        className: "operator-machine-cell",
         render: (row) => (
-          <select
-            className="operator-machine-input"
+          <SelectDropdown
+            className="operator-machine-dropdown-wrapper"
             value={machineDropdownOptions.includes(getMachineNumber(row.parent)) ? getMachineNumber(row.parent) : ""}
-            onClick={(event) => event.stopPropagation()}
-            onChange={(event) => {
-              const nextValue = event.target.value;
+            onChange={(nextValue) => {
               handleMachineNumberChange(row.groupId, nextValue);
             }}
-          >
-            <option value="">Select</option>
-            {machineDropdownOptions.map((machine) => (
-              <option key={machine} value={machine}>
-                {formatMachineLabel(machine)}
-              </option>
-            ))}
-          </select>
+            options={[
+              { label: "Select", value: "" },
+              ...machineDropdownOptions.map((machine) => ({
+                label: formatMachineLabel(machine),
+                value: machine,
+              })),
+            ]}
+            placeholder="Select"
+            align="left"
+          />
         ),
       },
 
@@ -314,9 +320,9 @@ export const useOperatorTable = ({
           const counts = { logged: c.saved + c.ready, sent: c.sent, empty: c.empty };
           return (
             <div className="child-stage-summary">
-              <span className="qa-mini empty">Not Started {counts.empty}</span>
+              <span className="qa-mini empty">Yet to Start {counts.empty}</span>
               <span className="qa-mini saved">Logged {counts.logged}</span>
-              <span className="qa-mini sent">QA {counts.sent}</span>
+              <span className="qa-mini sent">QC {counts.sent}</span>
             </div>
           );
         },
@@ -378,4 +384,3 @@ export const useOperatorTable = ({
     ]
   );
 };
-

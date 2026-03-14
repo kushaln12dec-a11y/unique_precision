@@ -6,6 +6,7 @@ import type { TableRow } from "../utils/jobDataTransform";
 import ActionButtons from "../components/ActionButtons";
 import { estimatedTimeFromAmount, getInitials, toYN } from "../../../utils/jobFormatting";
 import { calculateTotals } from "../programmerUtils";
+import MarqueeCopyText from "../../../components/MarqueeCopyText";
 
 type UseTableColumnsProps = {
   expandableRows: Map<number, any>;
@@ -92,11 +93,7 @@ export const useTableColumns = ({
         headerClassName: "program-ref-file-col",
         render: (row) => {
           const value = String((row.parent as any).programRefFile || (row.parent as any).programRefFileName || "-");
-          return (
-            <div className="description-marquee" title={value}>
-              <span>{value}</span>
-            </div>
-          );
+          return <MarqueeCopyText text={value} />;
         },
       },
       {
@@ -106,11 +103,7 @@ export const useTableColumns = ({
         sortKey: "description",
         render: (row) => {
           const full = row.parent.description || "-";
-          return (
-            <div className="description-marquee" title={full}>
-              <span>{full}</span>
-            </div>
-          );
+          return <MarqueeCopyText text={full} />;
         },
       },
       {
@@ -163,7 +156,10 @@ export const useTableColumns = ({
         label: "Cut Length Hrs",
         sortable: false,
         sortKey: "totalHrs",
-        render: (row) => (row.groupTotalHrs ? formatHoursToHHMM(row.groupTotalHrs) : "-"),
+        render: (row) => {
+          const totalHrs = calculateTotals(row.parent as any).totalHrs;
+          return totalHrs ? formatHoursToHHMM(totalHrs) : "-";
+        },
       },
       {
         key: "estimatedTime",

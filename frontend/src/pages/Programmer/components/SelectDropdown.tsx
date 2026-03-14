@@ -1,4 +1,13 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+  type FocusEvent,
+} from "react";
+import { createPortal } from "react-dom";
 import "./SelectDropdown.css";
 
 export type SelectOption = {
@@ -13,6 +22,7 @@ type SelectDropdownProps = {
   placeholder?: string;
   disabled?: boolean;
   align?: "left" | "center";
+  className?: string;
 };
 
 const SelectDropdown: React.FC<SelectDropdownProps> = ({
@@ -22,60 +32,172 @@ const SelectDropdown: React.FC<SelectDropdownProps> = ({
   placeholder = "Select",
   disabled = false,
   align = "center",
+  className = "",
 }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [menuStyle, setMenuStyle] = useState<CSSProperties>({});
   const wrapperRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const dropdownId = useId();
 
   const selectedOption = useMemo(
     () => options.find((option) => option.value === value),
     [options, value]
   );
 
+  const updateMenuPosition = () => {
+    if (!wrapperRef.current) return;
+
+    const triggerRect = wrapperRef.current.getBoundingClientRect();
+    const viewportHeight = window.innerHeight;
+    const viewportWidth = window.innerWidth;
+    const viewportMargin = 8;
+    const desiredWidth = Math.max(triggerRect.width, 120);
+    const maxAllowedWidth = Math.max(120, viewportWidth - viewportMargin * 2);
+    const finalWidth = Math.min(desiredWidth, maxAllowedWidth);
+    const menuMaxHeight = Math.min(220, Math.max(120, viewportHeight - viewportMargin * 2));
+
+    const estimatedMenuHeight = Math.min((options.length || 1) * 40 + 12, menuMaxHeight);
+    const spaceBelow = viewportHeight - triggerRect.bottom - viewportMargin;
+    const showAbove = spaceBelow < estimatedMenuHeight && triggerRect.top > estimatedMenuHeight;
+
+    let left = triggerRect.left;
+    if (left + finalWidth > viewportWidth - viewportMargin) {
+      left = viewportWidth - finalWidth - viewportMargin;
+    }
+    if (left < viewportMargin) {
+      left = viewportMargin;
+    }
+
+    setMenuStyle({
+      position: "fixed",
+      left: `${left}px`,
+      width: `${finalWidth}px`,
+      maxHeight: `${menuMaxHeight}px`,
+      zIndex: 2147483000,
+      overflowY: "auto",
+      overflowX: "hidden",
+      ...(showAbove
+        ? { bottom: `${viewportHeight - triggerRect.top + 4}px`, top: "auto" }
+        : { top: `${triggerRect.bottom + 4}px`, bottom: "auto" }),
+    });
+  };
+
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
+    const handleOutsideDown = (event: MouseEvent) => {
+      const target = event.target as Node;
+      const insideTrigger = wrapperRef.current?.contains(target);
+      const insideMenu = menuRef.current?.contains(target);
+      if (!insideTrigger && !insideMenu) {
         setIsOpen(false);
       }
     };
+
+    const handleViewportChange = () => {
+      if (isOpen) updateMenuPosition();
+    };
+
     if (isOpen) {
-      document.addEventListener("mousedown", handleClickOutside);
-      return () => document.removeEventListener("mousedown", handleClickOutside);
+      updateMenuPosition();
+      document.addEventListener("mousedown", handleOutsideDown);
+      window.addEventListener("resize", handleViewportChange);
+      window.addEventListener("scroll", handleViewportChange, true);
     }
-  }, [isOpen]);
+
+    return () => {
+      document.removeEventListener("mousedown", handleOutsideDown);
+      window.removeEventListener("resize", handleViewportChange);
+      window.removeEventListener("scroll", handleViewportChange, true);
+    };
+  }, [isOpen, options.length]);
+
+  useEffect(() => {
+    const handleOtherDropdownOpened = (event: Event) => {
+      const customEvent = event as CustomEvent<string>;
+      if (customEvent.detail !== dropdownId) {
+        setIsOpen(false);
+      }
+    };
+
+    window.addEventListener("app-select-dropdown-opened", handleOtherDropdownOpened);
+    return () => window.removeEventListener("app-select-dropdown-opened", handleOtherDropdownOpened);
+  }, [dropdownId]);
 
   const handleSelect = (nextValue: string) => {
     onChange(nextValue);
     setIsOpen(false);
   };
 
-  return (
-    <div className={`option-dropdown-wrapper align-${align}`} ref={wrapperRef}>
-      <button
-        type="button"
-        className="option-dropdown-trigger"
-        onClick={() => setIsOpen((prev) => !prev)}
-        disabled={disabled}
-      >
-        <span className={`option-dropdown-value ${selectedOption ? "" : "placeholder"}`}>
-          {selectedOption?.label || placeholder}
-        </span>
-        <span className={`option-dropdown-arrow ${isOpen ? "open" : ""}`}>▾</span>
-      </button>
-      {isOpen && !disabled && (
-        <div className="option-dropdown-menu">
+  const handleWrapperBlur = (event: FocusEvent<HTMLDivElement>) => {
+    const nextFocused = event.relatedTarget as Node | null;
+    if (!nextFocused) {
+      return;
+    }
+    const insideTrigger = wrapperRef.current?.contains(nextFocused);
+    const insideMenu = menuRef.current?.contains(nextFocused);
+    if (!insideTrigger && !insideMenu) {
+      setIsOpen(false);
+    }
+  };
+
+  const menu = isOpen && !disabled
+    ? createPortal(
+        <div className="option-dropdown-menu" style={menuStyle} ref={menuRef}>
           {options.map((option) => (
             <button
               key={option.value}
               type="button"
               className={`option-dropdown-item ${option.value === value ? "selected" : ""}`}
-              onClick={() => handleSelect(option.value)}
+              onClick={(event) => {
+                event.stopPropagation();
+                handleSelect(option.value);
+              }}
             >
               {option.label}
             </button>
           ))}
-        </div>
-      )}
-    </div>
+        </div>,
+        document.body
+      )
+    : null;
+
+  return (
+    <>
+      <div
+        className={`option-dropdown-wrapper align-${align} ${className}`.trim()}
+        ref={wrapperRef}
+        onBlur={handleWrapperBlur}
+      >
+        <button
+          type="button"
+          className="option-dropdown-trigger"
+          onClick={(event) => {
+            event.stopPropagation();
+            if (disabled) return;
+            const nextOpen = !isOpen;
+            if (nextOpen) {
+              window.dispatchEvent(
+                new CustomEvent("app-select-dropdown-opened", { detail: dropdownId })
+              );
+            }
+            setIsOpen(nextOpen);
+          }}
+          onKeyDown={(event) => {
+            if (event.key === "Escape" || event.key === "Tab") {
+              setIsOpen(false);
+            }
+          }}
+          disabled={disabled}
+          aria-expanded={isOpen}
+        >
+          <span className={`option-dropdown-value ${selectedOption ? "" : "placeholder"}`}>
+            {selectedOption?.label || placeholder}
+          </span>
+          <span className={`option-dropdown-arrow ${isOpen ? "open" : ""}`}>v</span>
+        </button>
+      </div>
+      {menu}
+    </>
   );
 };
 

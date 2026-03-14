@@ -24,6 +24,7 @@ type QcFiltersState = {
   customerFilter: string;
   descriptionFilter: string;
   createdByFilter: string;
+  operatorFilter: string;
 };
 
 export type FiltersState = {
@@ -54,6 +55,7 @@ const initialState: FiltersState = {
     customerFilter: "",
     descriptionFilter: "",
     createdByFilter: "",
+    operatorFilter: "",
   },
 };
 
@@ -115,6 +117,9 @@ const filtersSlice = createSlice({
     setQcCreatedByFilter(state, action: PayloadAction<string>) {
       state.qc.createdByFilter = action.payload;
     },
+    setQcOperatorFilter(state, action: PayloadAction<string>) {
+      state.qc.operatorFilter = action.payload;
+    },
   },
 });
 
@@ -137,6 +142,7 @@ export const {
   setQcCustomerFilter,
   setQcDescriptionFilter,
   setQcCreatedByFilter,
+  setQcOperatorFilter,
 } = filtersSlice.actions;
 
 export default filtersSlice.reducer;

@@ -689,7 +689,7 @@
 
 @media only screen and (min-width: 1024px) and (max-width: 1366px) and (orientation: landscape) {
   .user-management-content {
-    margin-left: 70px;
+    margin-left: 56px;
   }
 
   .user-form-container,
@@ -710,7 +710,7 @@
 
 @media only screen and (min-width: 768px) and (max-width: 1024px) and (orientation: portrait) {
   .user-management-content {
-    margin-left: 70px;
+    margin-left: 56px;
   }
 
   .form-row {
@@ -720,7 +720,7 @@
 
 @media (max-width: 768px) {
   .user-management-content {
-    margin-left: 0;
+    margin-left: 56px;
     padding: 1rem;
   }
 

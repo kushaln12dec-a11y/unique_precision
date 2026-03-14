@@ -90,6 +90,8 @@ const MaterialAutocomplete: React.FC<MaterialAutocompleteProps> = ({
     if (e.key === "Escape") {
       setIsOpen(false);
       inputRef.current?.blur();
+    } else if (e.key === "Tab") {
+      setIsOpen(false);
     } else if (e.key === "Enter" && filteredOptions.length > 0 && isOpen) {
       e.preventDefault();
       handleOptionSelect(filteredOptions[0]);
