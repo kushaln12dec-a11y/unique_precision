@@ -7,6 +7,12 @@ import { resolveStoredFile } from "../utils/objectStorage";
 
 const router = Router();
 
+const getParamId = (value: unknown): string | undefined => {
+  if (Array.isArray(value)) return value[0];
+  if (typeof value === "string") return value;
+  return undefined;
+};
+
 // All routes require authentication
 router.use(authMiddleware);
 
@@ -20,8 +26,15 @@ router.get("/", async (req, res) => {
     
     // If roles query parameter is provided, filter by roles
     if (roles) {
-      const roleArray = Array.isArray(roles) ? roles : roles.toString().split(",");
-      query.role = { in: roleArray };
+      const roleArray = Array.isArray(roles)
+        ? roles.map((role) => String(role).trim()).filter(Boolean)
+        : String(roles)
+            .split(",")
+            .map((role) => role.trim())
+            .filter(Boolean);
+      if (roleArray.length > 0) {
+        query.role = { in: roleArray };
+      }
     }
     
     const users = await prisma.user.findMany({
@@ -36,7 +49,11 @@ router.get("/", async (req, res) => {
 // Get single user
 router.get("/:id", adminMiddleware, async (req, res) => {
   try {
-    const user = await prisma.user.findUnique({ where: { id: req.params.id } });
+    const id = getParamId(req.params.id);
+    if (!id) {
+      return res.status(400).json({ message: "Invalid user id" });
+    }
+    const user = await prisma.user.findUnique({ where: { id } });
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
@@ -110,8 +127,12 @@ router.put("/:id", adminMiddleware, async (req, res) => {
       updateData.passwordHash = await bcrypt.hash(password, 10);
     }
 
+    const id = getParamId(req.params.id);
+    if (!id) {
+      return res.status(400).json({ message: "Invalid user id" });
+    }
     const user = await prisma.user.update({
-      where: { id: req.params.id },
+      where: { id },
       data: updateData,
     });
     
@@ -131,7 +152,11 @@ router.put("/:id", adminMiddleware, async (req, res) => {
 router.delete("/:id", adminMiddleware, async (req, res) => {
   try {
     try {
-      const user = await prisma.user.delete({ where: { id: req.params.id } });
+      const id = getParamId(req.params.id);
+      if (!id) {
+        return res.status(400).json({ message: "Invalid user id" });
+      }
+      const user = await prisma.user.delete({ where: { id } });
       return res.json({ message: "User deleted successfully" });
     } catch (deleteError: any) {
       return res.status(404).json({ message: "User not found" });

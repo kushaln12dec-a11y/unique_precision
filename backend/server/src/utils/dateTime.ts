@@ -46,19 +46,27 @@ export const parseDisplayDateTime = (value?: string): Date | null => {
   // Format: "DD MMM YYYY HH:MM" or "DD MMM YYYY HH:MMam/pm" or "DD MMM YYYY"
   const parts = trimmed.split(" ");
   if (parts.length < 3) return null;
-  const day = Number(parts[0]);
-  const monthIndex = MONTHS.indexOf(parts[1]);
-  const year = Number(parts[2]);
+  const dayToken = parts[0];
+  const monthToken = parts[1];
+  const yearToken = parts[2];
+  if (!dayToken || !monthToken || !yearToken) return null;
+  const day = Number(dayToken);
+  const monthIndex = MONTHS.indexOf(monthToken);
+  const year = Number(yearToken);
   if (!day || monthIndex === -1 || !year) return null;
 
   let hours = 0;
   let minutes = 0;
   if (parts.length >= 4) {
-    const timeMatch = parts[3].match(/^(\d{1,2}):(\d{2})(?:\:(\d{2}))?([ap]m)?$/i);
+    const timeToken = parts[3];
+    const timeMatch = timeToken ? timeToken.match(/^(\d{1,2}):(\d{2})(?:\:(\d{2}))?([ap]m)?$/i) : null;
     if (timeMatch) {
-      hours = Number(timeMatch[1] || 0);
-      minutes = Number(timeMatch[2] || 0);
-      const meridiem = (timeMatch[4] || "").toLowerCase();
+      const hourToken = timeMatch[1];
+      const minuteToken = timeMatch[2];
+      const meridiemToken = timeMatch[4];
+      hours = Number(hourToken || 0);
+      minutes = Number(minuteToken || 0);
+      const meridiem = (meridiemToken || "").toLowerCase();
       if (meridiem === "pm" && hours < 12) hours += 12;
       if (meridiem === "am" && hours === 12) hours = 0;
     }

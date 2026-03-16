@@ -14,18 +14,22 @@ const toUuid = (value: unknown): string | undefined => {
   return str ? str : undefined;
 };
 
+const withUserId = (userId?: string) => (userId ? { userId } : {});
+const withJobId = (jobId?: string) => (jobId ? { jobId } : {});
+
 router.post("/programmer/start", async (req, res) => {
   try {
     const reqUser = req.user as any;
     const { refNumber } = req.body || {};
 
     const startedAt = new Date();
+    const userId = toUuid(reqUser?.userId);
     const log = await prisma.employeeLog.create({
       data: {
         role: "PROGRAMMER",
         activityType: "PROGRAMMER_JOB_CREATION",
         status: "IN_PROGRESS",
-        userId: toUuid(reqUser?.userId),
+        ...withUserId(userId),
         userEmail: String(reqUser?.email || ""),
         userName: String(reqUser?.fullName || "").trim(),
         refNumber: String(refNumber || ""),
@@ -46,6 +50,7 @@ router.post("/programmer/complete", async (req, res) => {
   try {
     const reqUser = req.user as any;
     const { logId, jobGroupId, refNumber, customer, description, settingsCount, quantityCount } = req.body || {};
+    const userId = toUuid(reqUser?.userId);
 
     let log = logId
       ? await prisma.employeeLog.findFirst({
@@ -54,7 +59,7 @@ router.post("/programmer/complete", async (req, res) => {
             role: "PROGRAMMER",
             activityType: "PROGRAMMER_JOB_CREATION",
             status: "IN_PROGRESS",
-            userId: toUuid(reqUser?.userId),
+            ...withUserId(userId),
           },
         })
       : null;
@@ -65,7 +70,7 @@ router.post("/programmer/complete", async (req, res) => {
           role: "PROGRAMMER",
           activityType: "PROGRAMMER_JOB_CREATION",
           status: "IN_PROGRESS",
-          userId: toUuid(reqUser?.userId),
+          ...withUserId(userId),
         },
         orderBy: { startedAt: "desc" },
       });
@@ -78,7 +83,7 @@ router.post("/programmer/complete", async (req, res) => {
           role: "PROGRAMMER",
           activityType: "PROGRAMMER_JOB_CREATION",
           status: "IN_PROGRESS",
-          userId: toUuid(reqUser?.userId),
+          ...withUserId(userId),
           userEmail: String(reqUser?.email || ""),
           userName: String(reqUser?.fullName || "").trim(),
           refNumber: String(refNumber || ""),
@@ -133,6 +138,7 @@ router.post("/programmer/reject", async (req, res) => {
   try {
     const reqUser = req.user as any;
     const { logId } = req.body || {};
+    const userId = toUuid(reqUser?.userId);
 
     let log = logId
       ? await prisma.employeeLog.findFirst({
@@ -141,7 +147,7 @@ router.post("/programmer/reject", async (req, res) => {
             role: "PROGRAMMER",
             activityType: "PROGRAMMER_JOB_CREATION",
             status: "IN_PROGRESS",
-            userId: toUuid(reqUser?.userId),
+            ...withUserId(userId),
           },
         })
       : null;
@@ -152,7 +158,7 @@ router.post("/programmer/reject", async (req, res) => {
           role: "PROGRAMMER",
           activityType: "PROGRAMMER_JOB_CREATION",
           status: "IN_PROGRESS",
-          userId: toUuid(reqUser?.userId),
+          ...withUserId(userId),
         },
         orderBy: { startedAt: "desc" },
       });
@@ -209,6 +215,9 @@ router.post("/operator/complete", async (req, res) => {
       idleTimeDuration,
     } = req.body || {};
 
+    const userId = toUuid(reqUser?.userId);
+    const resolvedJobId = toUuid(jobId);
+
     const parsedStart = parseOperatorDateTime(startTime);
     const parsedEnd = parseOperatorDateTime(endTime);
     if (!parsedStart || !parsedEnd) {
@@ -222,10 +231,10 @@ router.post("/operator/complete", async (req, res) => {
         role: "OPERATOR",
         activityType: "OPERATOR_PRODUCTION",
         status: "COMPLETED",
-        userId: toUuid(reqUser?.userId),
+        ...withUserId(userId),
         userEmail: String(reqUser?.email || ""),
         userName: String(reqUser?.fullName || "").trim(),
-        jobId: toUuid(jobId),
+        ...withJobId(resolvedJobId),
         jobGroupId: Number(jobGroupId || 0) || null,
         refNumber: String(refNumber || ""),
         settingLabel: String(settingLabel || ""),
@@ -274,6 +283,9 @@ router.post("/operator/start", async (req, res) => {
       startedAt,
     } = req.body || {};
 
+    const userId = toUuid(reqUser?.userId);
+    const resolvedJobId = toUuid(jobId);
+
     const parsedStartedAt = startedAt ? new Date(startedAt) : new Date();
     const safeStartedAt = Number.isNaN(parsedStartedAt.getTime()) ? new Date() : parsedStartedAt;
 
@@ -282,10 +294,10 @@ router.post("/operator/start", async (req, res) => {
         role: "OPERATOR",
         activityType: "OPERATOR_PRODUCTION",
         status: "IN_PROGRESS",
-        userId: toUuid(reqUser?.userId),
+        ...withUserId(userId),
         userEmail: String(reqUser?.email || ""),
         userName: String(reqUser?.fullName || "").trim(),
-        jobId: toUuid(jobId),
+        ...withJobId(resolvedJobId),
         jobGroupId: Number(jobGroupId || 0) || null,
         refNumber: String(refNumber || ""),
         settingLabel: String(settingLabel || ""),
@@ -344,7 +356,7 @@ router.post("/operator/task-switch", async (req, res) => {
         role: "OPERATOR",
         activityType: "OPERATOR_PRODUCTION",
         status: "COMPLETED",
-        userId: toUuid(reqUser?.userId),
+        ...withUserId(toUuid(reqUser?.userId)),
         userEmail: String(reqUser?.email || ""),
         userName: String(reqUser?.fullName || "").trim(),
         workItemTitle: "Operator Task Switch",

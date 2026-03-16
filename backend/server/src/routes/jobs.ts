@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { Prisma } from "@prisma/client";
 import { authMiddleware } from "../middleware/auth";
 import { prisma } from "../lib/prisma";
 import { parseDisplayDateTime } from "../utils/dateTime";
@@ -9,7 +10,10 @@ const router = Router();
 
 const JOB_REF_KEY = "jobRef";
 const JOB_REF_REGEX = /^JOB-\d{5}$/;
-const jobInclude = { operatorCaptures: { orderBy: { createdAt: "asc" } }, qaStates: true };
+const jobInclude: Prisma.JobInclude = {
+  operatorCaptures: { orderBy: { createdAt: "asc" } },
+  qaStates: true,
+};
 
 const formatJobRef = (seq: number) => `JOB-${String(seq).padStart(5, "0")}`;
 
@@ -38,6 +42,7 @@ const normalizeJobInput = async (job: any) => {
   const cutImage = Array.isArray(job.cutImage) ? (job.cutImage[0] || "") : job.cutImage;
   const cutImageUrl = await resolveStoredFile(cutImage, "jobs/cut-images");
   const lastImageUrl = await resolveStoredFile(job.lastImage, "jobs/last-images");
+  const parsedUpdatedAt = job.updatedAt ? parseDisplayDateTime(job.updatedAt) : null;
   return {
     groupId: Number(job.groupId),
     customer: job.customer ?? "",
@@ -81,7 +86,7 @@ const normalizeJobInput = async (job: any) => {
     qcDecision: job.qcDecision ?? "PENDING",
     qcReportClosed: Boolean(job.qcReportClosed),
     updatedBy: job.updatedBy ?? "",
-    updatedAt: job.updatedAt ? parseDisplayDateTime(job.updatedAt) ?? undefined : undefined,
+    ...(parsedUpdatedAt ? { updatedAt: parsedUpdatedAt } : {}),
   };
 };
 

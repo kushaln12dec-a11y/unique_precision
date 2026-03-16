@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { Prisma } from "@prisma/client";
 import { authMiddleware } from "../middleware/auth";
 import { prisma } from "../lib/prisma";
 import { formatDbDateTime, parseOperatorDateTime } from "../utils/dateTime";
@@ -6,7 +7,10 @@ import { mapJob } from "../utils/prismaMappers";
 import { resolveStoredFile } from "../utils/objectStorage";
 
 const router = Router();
-const jobInclude = { operatorCaptures: { orderBy: { createdAt: "asc" } }, qaStates: true };
+const jobInclude: Prisma.JobInclude = {
+  operatorCaptures: { orderBy: { createdAt: "asc" } },
+  qaStates: true,
+};
 
 router.use(authMiddleware);
 
@@ -22,6 +26,8 @@ const toUuid = (value: unknown): string | undefined => {
   const str = String(value).trim();
   return str ? str : undefined;
 };
+
+const withUserId = (userId?: string) => (userId ? { userId } : {});
 
 const toNumber = (value: unknown): number | null => {
   if (value === null || value === undefined || value === "") return null;
@@ -261,6 +267,7 @@ router.post("/jobs/:id/capture-input", async (req, res) => {
     const parsedEnd = parseOperatorDateTime(endTime);
     if (parsedStart && parsedEnd) {
       const reqUser = req.user as any;
+      const userId = toUuid(reqUser?.userId);
       const durationSeconds = Math.max(0, Math.floor((parsedEnd.getTime() - parsedStart.getTime()) / 1000));
       const settingNumber = (() => {
         const foundIndex = Array.isArray(refreshedJob.operatorCaptures)
@@ -286,7 +293,7 @@ router.post("/jobs/:id/capture-input", async (req, res) => {
         role: "OPERATOR",
         activityType: "OPERATOR_PRODUCTION",
         status: "COMPLETED",
-        userId: toUuid(reqUser?.userId),
+        ...withUserId(userId),
         userEmail: String(reqUser?.email || ""),
         userName: String(reqUser?.fullName || "").trim(),
         jobId: String(refreshedJob.id || ""),

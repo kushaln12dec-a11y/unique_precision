@@ -29,6 +29,7 @@ const parseDataUrl = (dataUrl: string): { mime: string; buffer: Buffer } | null 
   if (!match) return null;
   const mime = match[1];
   const base64 = match[2];
+  if (!mime || !base64) return null;
   try {
     const buffer = Buffer.from(base64, "base64");
     return { mime, buffer };
