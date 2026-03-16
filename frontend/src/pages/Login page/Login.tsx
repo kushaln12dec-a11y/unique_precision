@@ -169,17 +169,17 @@ const Login = () => {
           <form onSubmit={handleSubmit} className="login-form">
             <div className="form-group">
               <label htmlFor="email" className="form-label">
-                Email Address
+                Email or Employee ID
               </label>
               <input
                 id="email"
-                type="email"
+                type="text"
                 className="form-input"
-                placeholder="Enter your email"
+                placeholder="Enter your email or employee ID"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                autoComplete="email"
+                autoComplete="username"
               />
             </div>
 

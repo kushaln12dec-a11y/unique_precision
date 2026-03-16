@@ -5,6 +5,7 @@ import ImageUpload from "./ImageUpload";
 import { FormInput } from "./FormInput";
 import CustomerAutocomplete from "./CustomerAutocomplete";
 import MaterialAutocomplete from "./MaterialAutocomplete";
+import PassAutocomplete from "./PassAutocomplete";
 import SelectDropdown from "./SelectDropdown";
 import FlagIcon from "@mui/icons-material/Flag";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
@@ -144,12 +145,11 @@ export const CutSection: React.FC<CutSectionProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [operationRows]);
 
-  const passDropdownOptions = React.useMemo(() => {
+  const passOptionsList = React.useMemo(() => {
     const source = passOptions.length > 0 ? passOptions : ["1", "2", "3", "4", "5", "6"];
     return source
       .map((value) => String(value || "").trim())
-      .filter((value) => value && value !== "0")
-      .map((value) => ({ value, label: value }));
+      .filter((value) => value && value !== "0");
   }, [passOptions]);
 
   const customerRateMap = React.useMemo(() => {
@@ -411,16 +411,15 @@ export const CutSection: React.FC<CutSectionProps> = ({
                   error={isFirstRow ? fieldErrors.passLevel : undefined}
                   style={!isFirstRow ? { gridRow: gridRow, gridColumn: 3 } : undefined}
                 >
-                  <SelectDropdown
-                    value={row.passLevel}
-                    options={passDropdownOptions}
-                    placeholder="Select"
-                    onChange={(nextValue) => {
-                      const updated = [...operationRows];
-                      updated[rowIndex].passLevel = nextValue;
-                      setOperationRows(updated);
-                    }}
-                  />
+                <PassAutocomplete
+                  value={row.passLevel}
+                  options={passOptionsList}
+                  onChange={(nextValue) => {
+                    const updated = [...operationRows];
+                    updated[rowIndex].passLevel = nextValue;
+                    setOperationRows(updated);
+                  }}
+                />
                 </FormInput>
 
                 <FormInput 
