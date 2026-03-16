@@ -1,5 +1,6 @@
 import { Router } from "express";
 import EmployeeLog from "../models/EmployeeLog";
+import Job from "../models/Job";
 import { authMiddleware } from "../middleware/auth";
 
 const router = Router();
@@ -89,9 +90,20 @@ router.post("/programmer/complete", async (req, res) => {
     const startedAt = log.startedAt instanceof Date ? log.startedAt : endedAt;
     const durationSeconds = Math.max(0, Math.floor((endedAt.getTime() - startedAt.getTime()) / 1000));
 
+    const resolvedGroupId = Number(jobGroupId || log.jobGroupId || 0) || null;
+    let resolvedRefNumber = String(refNumber || log.refNumber || "");
+
+    if (resolvedGroupId) {
+      const groupJob = await Job.findOne({ groupId: resolvedGroupId });
+      const jobRef = String(groupJob?.refNumber || "").trim();
+      if (jobRef) {
+        resolvedRefNumber = jobRef;
+      }
+    }
+
     log.status = "COMPLETED";
-    log.jobGroupId = Number(jobGroupId || log.jobGroupId || 0) || null;
-    log.refNumber = String(refNumber || log.refNumber || "");
+    log.jobGroupId = resolvedGroupId;
+    log.refNumber = resolvedRefNumber;
     log.jobCustomer = String(customer || "");
     log.jobDescription = String(description || "");
     log.workItemTitle = log.refNumber ? `Job #${log.refNumber}` : `Job #-`;

@@ -11,7 +11,7 @@ router.post("/login", async (req, res) => {
     const { email, password } = req.body;
 
     if (!email || !password) {
-      return res.status(400).json({ message: "Email and password are required" });
+      return res.status(400).json({ message: "Email/Employee ID and password are required" });
     }
 
     // Check if JWT_SECRET is defined
@@ -19,7 +19,16 @@ router.post("/login", async (req, res) => {
       return res.status(500).json({ message: "Server configuration error" });
     }
 
-    const user = await User.findOne({ email });
+    const identifier = String(email).trim();
+    const identifierLower = identifier.toLowerCase();
+
+    const user = await User.findOne({
+      $or: [
+        { email: identifier },
+        { empId: identifier },
+        ...(identifierLower === "admin" ? [{ role: "ADMIN" }] : [])
+      ]
+    });
     if (!user) return res.status(401).json({ message: "Invalid credentials" });
 
     const isMatch = await bcrypt.compare(password, user.password);

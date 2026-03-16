@@ -1,9 +1,24 @@
 import { Router } from "express";
 import Job from "../models/Job";
+import Counter from "../models/Counter";
 import { authMiddleware } from "../middleware/auth";
 import { formatDateForQuery } from "../utils/dateTime";
 
 const router = Router();
+
+const JOB_REF_KEY = "jobRef";
+const JOB_REF_REGEX = /^JOB-\d{5}$/;
+
+const formatJobRef = (seq: number) => `JOB-${String(seq).padStart(5, "0")}`;
+
+const getNextJobRef = async (): Promise<string> => {
+  const counter = await Counter.findOneAndUpdate(
+    { key: JOB_REF_KEY },
+    { $inc: { seq: 1 } },
+    { new: true, upsert: true }
+  );
+  return formatJobRef(Number(counter?.seq || 1));
+};
 
 // All routes require authentication
 router.use(authMiddleware);
@@ -118,8 +133,18 @@ router.post("/", async (req, res) => {
       const { id, ...jobWithoutId } = job;
       return jobWithoutId;
     });
-    
-    const jobs = await Job.insertMany(cleanedJobsData);
+
+    let refNumber = String(cleanedJobsData[0]?.refNumber || "").trim().toUpperCase();
+    if (!JOB_REF_REGEX.test(refNumber)) {
+      refNumber = await getNextJobRef();
+    }
+
+    const normalizedJobsData = cleanedJobsData.map((job: any) => ({
+      ...job,
+      refNumber,
+    }));
+
+    const jobs = await Job.insertMany(normalizedJobsData);
     res.status(201).json(Array.isArray(req.body) ? jobs : jobs[0]);
   } catch (error: any) {
     console.error("Error creating job(s):", error);
