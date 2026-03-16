@@ -1,15 +1,14 @@
-import mongoose from "mongoose";
+import dotenv from "dotenv";
+import { prisma } from "../lib/prisma";
 
-const MONGO_URI =
-  process.env.MONGO_URI ??
-  "mongodb+srv://admin:ZAQzaq%40123@cluster0.dwpgvyr.mongodb.net/unique_precision?retryWrites=true&w=majority";
+dotenv.config();
 
 const ADMIN_EMAIL = "kushal12dec@gmail.com";
 const ADMIN_PASSWORD_HASH = "$2b$10$1Tt46NEctpQp3St5R5rmFuWM2ZwhY3rnf7p0v3cf.JcA5gSOA03BW";
 
 const ADMIN_PAYLOAD = {
   email: ADMIN_EMAIL,
-  password: ADMIN_PASSWORD_HASH,
+  passwordHash: ADMIN_PASSWORD_HASH,
   firstName: "Kushal",
   lastName: "N",
   phone: "9632998952",
@@ -19,35 +18,20 @@ const ADMIN_PAYLOAD = {
 };
 
 const seedAdmin = async () => {
-  if (!MONGO_URI) {
-    throw new Error("MONGO_URI is not provided");
-  }
+  const user = await prisma.user.upsert({
+    where: { email: ADMIN_EMAIL },
+    update: ADMIN_PAYLOAD,
+    create: ADMIN_PAYLOAD,
+  });
 
-  const connection = await mongoose.connect(MONGO_URI);
-  try {
-    const { upsertedCount, modifiedCount } = await connection.connection
-      .collection("users")
-      .updateOne(
-        { email: ADMIN_EMAIL },
-        { $set: ADMIN_PAYLOAD },
-        { upsert: true }
-      );
-
-    if (upsertedCount) {
-      console.log("Admin user created (upserted).");
-    } else if (modifiedCount) {
-      console.log("Admin user updated.");
-    } else {
-      console.log("Admin user already exists with the same data.");
-    }
-  } finally {
-    await connection.disconnect();
-  }
+  console.log("Admin user ensured:", user.email);
 };
 
 seedAdmin()
-  .then(() => process.exit(0))
+  .then(() => prisma.$disconnect().then(() => process.exit(0)))
   .catch((error) => {
     console.error("Failed to seed admin user:", error);
-    process.exit(1);
+    prisma
+      .$disconnect()
+      .finally(() => process.exit(1));
   });

@@ -1,23 +1,17 @@
 import { Router } from "express";
-import EmployeeLog from "../models/EmployeeLog";
-import Job from "../models/Job";
 import { authMiddleware } from "../middleware/auth";
+import { prisma } from "../lib/prisma";
+import { parseOperatorDateTime } from "../utils/dateTime";
+import { mapEmployeeLog } from "../utils/prismaMappers";
 
 const router = Router();
 
 router.use(authMiddleware);
 
-const parseOperatorDateTime = (value?: string): Date | null => {
-  if (!value || typeof value !== "string") return null;
-  const match = value.match(/^(\d{2})\/(\d{2})\/(\d{4})\s+(\d{2}):(\d{2})$/);
-  if (!match) return null;
-  const day = Number(match[1]);
-  const month = Number(match[2]);
-  const year = Number(match[3]);
-  const hour = Number(match[4]);
-  const minute = Number(match[5]);
-  const date = new Date(year, month - 1, day, hour, minute, 0, 0);
-  return Number.isNaN(date.getTime()) ? null : date;
+const toUuid = (value: unknown): string | undefined => {
+  if (value === null || value === undefined) return undefined;
+  const str = String(value).trim();
+  return str ? str : undefined;
 };
 
 router.post("/programmer/start", async (req, res) => {
@@ -26,20 +20,22 @@ router.post("/programmer/start", async (req, res) => {
     const { refNumber } = req.body || {};
 
     const startedAt = new Date();
-    const log = await EmployeeLog.create({
-      role: "PROGRAMMER",
-      activityType: "PROGRAMMER_JOB_CREATION",
-      status: "IN_PROGRESS",
-      userId: String(reqUser?.userId || ""),
-      userEmail: String(reqUser?.email || ""),
-      userName: String(reqUser?.fullName || "").trim(),
-      refNumber: String(refNumber || ""),
-      startedAt,
-      workItemTitle: refNumber ? `New Job Draft #${refNumber}` : "New Job Draft",
-      workSummary: "Programmer started creating a new job",
+    const log = await prisma.employeeLog.create({
+      data: {
+        role: "PROGRAMMER",
+        activityType: "PROGRAMMER_JOB_CREATION",
+        status: "IN_PROGRESS",
+        userId: toUuid(reqUser?.userId),
+        userEmail: String(reqUser?.email || ""),
+        userName: String(reqUser?.fullName || "").trim(),
+        refNumber: String(refNumber || ""),
+        startedAt,
+        workItemTitle: refNumber ? `New Job Draft #${refNumber}` : "New Job Draft",
+        workSummary: "Programmer started creating a new job",
+      },
     });
 
-    res.status(201).json(log);
+    res.status(201).json(mapEmployeeLog(log));
   } catch (error: any) {
     console.error("Error creating programmer start log:", error);
     res.status(500).json({ message: "Error creating programmer start log" });
@@ -51,38 +47,43 @@ router.post("/programmer/complete", async (req, res) => {
     const reqUser = req.user as any;
     const { logId, jobGroupId, refNumber, customer, description, settingsCount, quantityCount } = req.body || {};
 
-    let log: any = null;
+    let log = logId
+      ? await prisma.employeeLog.findFirst({
+          where: {
+            id: logId,
+            role: "PROGRAMMER",
+            activityType: "PROGRAMMER_JOB_CREATION",
+            status: "IN_PROGRESS",
+            userId: toUuid(reqUser?.userId),
+          },
+        })
+      : null;
 
-    if (logId) {
-      log = await EmployeeLog.findOne({
-        _id: logId,
-        role: "PROGRAMMER",
-        activityType: "PROGRAMMER_JOB_CREATION",
-        status: "IN_PROGRESS",
-        userId: String(reqUser?.userId || ""),
+    if (!log) {
+      log = await prisma.employeeLog.findFirst({
+        where: {
+          role: "PROGRAMMER",
+          activityType: "PROGRAMMER_JOB_CREATION",
+          status: "IN_PROGRESS",
+          userId: toUuid(reqUser?.userId),
+        },
+        orderBy: { startedAt: "desc" },
       });
     }
 
     if (!log) {
-      log = await EmployeeLog.findOne({
-        role: "PROGRAMMER",
-        activityType: "PROGRAMMER_JOB_CREATION",
-        status: "IN_PROGRESS",
-        userId: String(reqUser?.userId || ""),
-      }).sort({ startedAt: -1 });
-    }
-
-    if (!log) {
       const fallbackStartedAt = new Date();
-      log = new EmployeeLog({
-        role: "PROGRAMMER",
-        activityType: "PROGRAMMER_JOB_CREATION",
-        status: "IN_PROGRESS",
-        userId: String(reqUser?.userId || ""),
-        userEmail: String(reqUser?.email || ""),
-        userName: String(reqUser?.fullName || "").trim(),
-        refNumber: String(refNumber || ""),
-        startedAt: fallbackStartedAt,
+      log = await prisma.employeeLog.create({
+        data: {
+          role: "PROGRAMMER",
+          activityType: "PROGRAMMER_JOB_CREATION",
+          status: "IN_PROGRESS",
+          userId: toUuid(reqUser?.userId),
+          userEmail: String(reqUser?.email || ""),
+          userName: String(reqUser?.fullName || "").trim(),
+          refNumber: String(refNumber || ""),
+          startedAt: fallbackStartedAt,
+        },
       });
     }
 
@@ -94,30 +95,34 @@ router.post("/programmer/complete", async (req, res) => {
     let resolvedRefNumber = String(refNumber || log.refNumber || "");
 
     if (resolvedGroupId) {
-      const groupJob = await Job.findOne({ groupId: resolvedGroupId });
+      const groupJob = await prisma.job.findFirst({ where: { groupId: resolvedGroupId } });
       const jobRef = String(groupJob?.refNumber || "").trim();
       if (jobRef) {
         resolvedRefNumber = jobRef;
       }
     }
 
-    log.status = "COMPLETED";
-    log.jobGroupId = resolvedGroupId;
-    log.refNumber = resolvedRefNumber;
-    log.jobCustomer = String(customer || "");
-    log.jobDescription = String(description || "");
-    log.workItemTitle = log.refNumber ? `Job #${log.refNumber}` : `Job #-`;
-    log.workSummary = `Created ${Number(settingsCount || 0) || 1} setting(s)`;
-    log.quantityCount = Number(quantityCount || 0) || null;
-    log.endedAt = endedAt;
-    log.durationSeconds = durationSeconds;
-    log.metadata = {
-      ...(log.metadata || {}),
-      settingsCount: Number(settingsCount || 0) || 1,
-    };
+    const updatedLog = await prisma.employeeLog.update({
+      where: { id: log.id },
+      data: {
+        status: "COMPLETED",
+        jobGroupId: resolvedGroupId,
+        refNumber: resolvedRefNumber,
+        jobCustomer: String(customer || ""),
+        jobDescription: String(description || ""),
+        workItemTitle: resolvedRefNumber ? `Job #${resolvedRefNumber}` : `Job #-`,
+        workSummary: `Created ${Number(settingsCount || 0) || 1} setting(s)`,
+        quantityCount: Number(quantityCount || 0) || null,
+        endedAt,
+        durationSeconds,
+        metadata: {
+          ...((log.metadata as any) || {}),
+          settingsCount: Number(settingsCount || 0) || 1,
+        },
+      },
+    });
 
-    await log.save();
-    res.json(log);
+    res.json(mapEmployeeLog(updatedLog));
   } catch (error: any) {
     console.error("Error completing programmer log:", error);
     res.status(500).json({ message: "Error completing programmer log" });
@@ -129,25 +134,28 @@ router.post("/programmer/reject", async (req, res) => {
     const reqUser = req.user as any;
     const { logId } = req.body || {};
 
-    let log: any = null;
-
-    if (logId) {
-      log = await EmployeeLog.findOne({
-        _id: logId,
-        role: "PROGRAMMER",
-        activityType: "PROGRAMMER_JOB_CREATION",
-        status: "IN_PROGRESS",
-        userId: String(reqUser?.userId || ""),
-      });
-    }
+    let log = logId
+      ? await prisma.employeeLog.findFirst({
+          where: {
+            id: logId,
+            role: "PROGRAMMER",
+            activityType: "PROGRAMMER_JOB_CREATION",
+            status: "IN_PROGRESS",
+            userId: toUuid(reqUser?.userId),
+          },
+        })
+      : null;
 
     if (!log) {
-      log = await EmployeeLog.findOne({
-        role: "PROGRAMMER",
-        activityType: "PROGRAMMER_JOB_CREATION",
-        status: "IN_PROGRESS",
-        userId: String(reqUser?.userId || ""),
-      }).sort({ startedAt: -1 });
+      log = await prisma.employeeLog.findFirst({
+        where: {
+          role: "PROGRAMMER",
+          activityType: "PROGRAMMER_JOB_CREATION",
+          status: "IN_PROGRESS",
+          userId: toUuid(reqUser?.userId),
+        },
+        orderBy: { startedAt: "desc" },
+      });
     }
 
     if (!log) {
@@ -158,17 +166,21 @@ router.post("/programmer/reject", async (req, res) => {
     const startedAt = log.startedAt instanceof Date ? log.startedAt : endedAt;
     const durationSeconds = Math.max(0, Math.floor((endedAt.getTime() - startedAt.getTime()) / 1000));
 
-    log.status = "REJECTED";
-    log.endedAt = endedAt;
-    log.durationSeconds = durationSeconds;
-    log.workSummary = "Draft discarded before save";
-    log.metadata = {
-      ...(log.metadata || {}),
-      rejected: true,
-    };
+    const updatedLog = await prisma.employeeLog.update({
+      where: { id: log.id },
+      data: {
+        status: "REJECTED",
+        endedAt,
+        durationSeconds,
+        workSummary: "Draft discarded before save",
+        metadata: {
+          ...((log.metadata as any) || {}),
+          rejected: true,
+        },
+      },
+    });
 
-    await log.save();
-    res.json(log);
+    res.json(mapEmployeeLog(updatedLog));
   } catch (error: any) {
     console.error("Error rejecting programmer log:", error);
     res.status(500).json({ message: "Error rejecting programmer log" });
@@ -205,37 +217,41 @@ router.post("/operator/complete", async (req, res) => {
 
     const durationSeconds = Math.max(0, Math.floor((parsedEnd.getTime() - parsedStart.getTime()) / 1000));
 
-    const log = await EmployeeLog.create({
-      role: "OPERATOR",
-      activityType: "OPERATOR_PRODUCTION",
-      status: "COMPLETED",
-      userId: String(reqUser?.userId || ""),
-      userEmail: String(reqUser?.email || ""),
-      userName: String(reqUser?.fullName || "").trim(),
-      jobId: String(jobId || ""),
-      jobGroupId: Number(jobGroupId || 0) || null,
-      refNumber: String(refNumber || ""),
-      settingLabel: String(settingLabel || ""),
-      quantityFrom: Number(fromQty || 0) || null,
-      quantityTo: Number(toQty || 0) || null,
-      quantityCount: Number(quantityCount || 0) || (Number(toQty || 0) && Number(fromQty || 0) ? Number(toQty) - Number(fromQty) + 1 : null),
-      jobCustomer: String(customer || ""),
-      jobDescription: String(description || ""),
-      workItemTitle: `Job #${String(refNumber || "-")}`,
-      workSummary: `Machine ${machineNumber || "-"} | Ops ${opsName || "-"} | Hrs ${machineHrs || "-"}`,
-      startedAt: parsedStart,
-      endedAt: parsedEnd,
-      durationSeconds,
-      metadata: {
-        machineNumber: String(machineNumber || ""),
-        opsName: String(opsName || ""),
-        machineHrs: String(machineHrs || ""),
-        idleTime: String(idleTime || ""),
-        idleTimeDuration: String(idleTimeDuration || ""),
+    const log = await prisma.employeeLog.create({
+      data: {
+        role: "OPERATOR",
+        activityType: "OPERATOR_PRODUCTION",
+        status: "COMPLETED",
+        userId: toUuid(reqUser?.userId),
+        userEmail: String(reqUser?.email || ""),
+        userName: String(reqUser?.fullName || "").trim(),
+        jobId: toUuid(jobId),
+        jobGroupId: Number(jobGroupId || 0) || null,
+        refNumber: String(refNumber || ""),
+        settingLabel: String(settingLabel || ""),
+        quantityFrom: Number(fromQty || 0) || null,
+        quantityTo: Number(toQty || 0) || null,
+        quantityCount:
+          Number(quantityCount || 0) ||
+          (Number(toQty || 0) && Number(fromQty || 0) ? Number(toQty) - Number(fromQty) + 1 : null),
+        jobCustomer: String(customer || ""),
+        jobDescription: String(description || ""),
+        workItemTitle: `Job #${String(refNumber || "-")}`,
+        workSummary: `Machine ${machineNumber || "-"} | Ops ${opsName || "-"} | Hrs ${machineHrs || "-"}`,
+        startedAt: parsedStart,
+        endedAt: parsedEnd,
+        durationSeconds,
+        metadata: {
+          machineNumber: String(machineNumber || ""),
+          opsName: String(opsName || ""),
+          machineHrs: String(machineHrs || ""),
+          idleTime: String(idleTime || ""),
+          idleTimeDuration: String(idleTimeDuration || ""),
+        },
       },
     });
 
-    res.status(201).json(log);
+    res.status(201).json(mapEmployeeLog(log));
   } catch (error: any) {
     console.error("Error creating operator log:", error);
     res.status(500).json({ message: "Error creating operator log" });
@@ -261,30 +277,32 @@ router.post("/operator/start", async (req, res) => {
     const parsedStartedAt = startedAt ? new Date(startedAt) : new Date();
     const safeStartedAt = Number.isNaN(parsedStartedAt.getTime()) ? new Date() : parsedStartedAt;
 
-    const log = await EmployeeLog.create({
-      role: "OPERATOR",
-      activityType: "OPERATOR_PRODUCTION",
-      status: "IN_PROGRESS",
-      userId: String(reqUser?.userId || ""),
-      userEmail: String(reqUser?.email || ""),
-      userName: String(reqUser?.fullName || "").trim(),
-      jobId: String(jobId || ""),
-      jobGroupId: Number(jobGroupId || 0) || null,
-      refNumber: String(refNumber || ""),
-      settingLabel: String(settingLabel || ""),
-      quantityFrom: Number(fromQty || 0) || null,
-      quantityTo: Number(toQty || 0) || null,
-      quantityCount:
-        Number(quantityCount || 0) ||
-        (Number(toQty || 0) && Number(fromQty || 0) ? Number(toQty) - Number(fromQty) + 1 : null),
-      jobCustomer: String(customer || ""),
-      jobDescription: String(description || ""),
-      workItemTitle: `Job #${String(refNumber || "-")}`,
-      workSummary: "Operator started production input",
-      startedAt: safeStartedAt,
+    const log = await prisma.employeeLog.create({
+      data: {
+        role: "OPERATOR",
+        activityType: "OPERATOR_PRODUCTION",
+        status: "IN_PROGRESS",
+        userId: toUuid(reqUser?.userId),
+        userEmail: String(reqUser?.email || ""),
+        userName: String(reqUser?.fullName || "").trim(),
+        jobId: toUuid(jobId),
+        jobGroupId: Number(jobGroupId || 0) || null,
+        refNumber: String(refNumber || ""),
+        settingLabel: String(settingLabel || ""),
+        quantityFrom: Number(fromQty || 0) || null,
+        quantityTo: Number(toQty || 0) || null,
+        quantityCount:
+          Number(quantityCount || 0) ||
+          (Number(toQty || 0) && Number(fromQty || 0) ? Number(toQty) - Number(fromQty) + 1 : null),
+        jobCustomer: String(customer || ""),
+        jobDescription: String(description || ""),
+        workItemTitle: `Job #${String(refNumber || "-")}`,
+        workSummary: "Operator started production input",
+        startedAt: safeStartedAt,
+      },
     });
 
-    res.status(201).json(log);
+    res.status(201).json(mapEmployeeLog(log));
   } catch (error: any) {
     console.error("Error creating operator start log:", error);
     res.status(500).json({ message: "Error creating operator start log" });
@@ -321,26 +339,28 @@ router.post("/operator/task-switch", async (req, res) => {
         : Math.floor((safeEnd.getTime() - safeStart.getTime()) / 1000)
     );
 
-    const log = await EmployeeLog.create({
-      role: "OPERATOR",
-      activityType: "OPERATOR_PRODUCTION",
-      status: "COMPLETED",
-      userId: String(reqUser?.userId || ""),
-      userEmail: String(reqUser?.email || ""),
-      userName: String(reqUser?.fullName || "").trim(),
-      workItemTitle: "Operator Task Switch",
-      workSummary: `Task switch idle: ${reason}`,
-      startedAt: safeStart,
-      endedAt: safeEnd,
-      durationSeconds: computedDuration,
-      metadata: {
-        taskSwitch: true,
-        idleTime: reason,
-        remark: note,
+    const log = await prisma.employeeLog.create({
+      data: {
+        role: "OPERATOR",
+        activityType: "OPERATOR_PRODUCTION",
+        status: "COMPLETED",
+        userId: toUuid(reqUser?.userId),
+        userEmail: String(reqUser?.email || ""),
+        userName: String(reqUser?.fullName || "").trim(),
+        workItemTitle: "Operator Task Switch",
+        workSummary: `Task switch idle: ${reason}`,
+        startedAt: safeStart,
+        endedAt: safeEnd,
+        durationSeconds: computedDuration,
+        metadata: {
+          taskSwitch: true,
+          idleTime: reason,
+          remark: note,
+        },
       },
     });
 
-    res.status(201).json(log);
+    res.status(201).json(mapEmployeeLog(log));
   } catch (error: any) {
     console.error("Error creating operator task switch log:", error);
     res.status(500).json({ message: "Error creating operator task switch log" });
@@ -355,7 +375,7 @@ router.get("/", async (req, res) => {
       return res.status(403).json({ message: "Only operators and admins can view logs." });
     }
 
-    const query: any = {};
+    const where: any = {};
 
     const role = String(req.query.role || "").trim().toUpperCase();
     const status = String(req.query.status || "").trim().toUpperCase();
@@ -363,58 +383,60 @@ router.get("/", async (req, res) => {
     const machine = String(req.query.machine || "").trim();
 
     if (role && ["PROGRAMMER", "OPERATOR", "QC"].includes(role)) {
-      query.role = role;
+      where.role = role;
     }
-    if (!query.role && reqRole === "OPERATOR") {
-      query.role = "OPERATOR";
+    if (!where.role && reqRole === "OPERATOR") {
+      where.role = "OPERATOR";
     }
     if (status && ["IN_PROGRESS", "COMPLETED", "REJECTED"].includes(status)) {
-      query.status = status;
+      where.status = status;
     }
 
     if (req.query.startDate || req.query.endDate) {
-      query.startedAt = {};
+      const range: any = {};
       if (req.query.startDate) {
         const start = new Date(String(req.query.startDate));
-        if (!Number.isNaN(start.getTime())) query.startedAt.$gte = start;
+        if (!Number.isNaN(start.getTime())) range.gte = start;
       }
       if (req.query.endDate) {
         const end = new Date(String(req.query.endDate));
-        if (!Number.isNaN(end.getTime())) query.startedAt.$lte = end;
+        if (!Number.isNaN(end.getTime())) range.lte = end;
       }
-      if (Object.keys(query.startedAt).length === 0) {
-        delete query.startedAt;
+      if (Object.keys(range).length > 0) {
+        where.startedAt = range;
       }
     }
 
     if (search) {
-      const regex = { $regex: search, $options: "i" };
-      query.$or = [
-        { userName: regex },
-        { userEmail: regex },
-        { workItemTitle: regex },
-        { workSummary: regex },
-        { jobCustomer: regex },
-        { jobDescription: regex },
-        { refNumber: regex },
+      where.OR = [
+        { userName: { contains: search, mode: "insensitive" } },
+        { userEmail: { contains: search, mode: "insensitive" } },
+        { workItemTitle: { contains: search, mode: "insensitive" } },
+        { workSummary: { contains: search, mode: "insensitive" } },
+        { jobCustomer: { contains: search, mode: "insensitive" } },
+        { jobDescription: { contains: search, mode: "insensitive" } },
+        { refNumber: { contains: search, mode: "insensitive" } },
       ];
     }
 
     if (machine) {
-      const machineRegex = { $regex: machine, $options: "i" };
-      query["$and"] = [
-        ...(Array.isArray(query["$and"]) ? query["$and"] : []),
+      const machineSearch = { contains: machine, mode: "insensitive" };
+      where.AND = [
+        ...(Array.isArray(where.AND) ? where.AND : []),
         {
-          $or: [
-            { "metadata.machineNumber": machineRegex },
-            { workSummary: machineRegex },
+          OR: [
+            { workSummary: machineSearch },
           ],
         },
       ];
     }
 
-    const logs = await EmployeeLog.find(query).sort({ startedAt: -1 }).limit(1000);
-    res.json(logs);
+    const logs = await prisma.employeeLog.findMany({
+      where,
+      orderBy: { startedAt: "desc" },
+      take: 1000,
+    });
+    res.json(logs.map(mapEmployeeLog));
   } catch (error: any) {
     console.error("Error fetching employee logs:", error);
     res.status(500).json({ message: "Error fetching employee logs" });

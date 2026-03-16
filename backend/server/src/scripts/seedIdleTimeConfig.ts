@@ -1,14 +1,10 @@
-import mongoose from "mongoose";
 import dotenv from "dotenv";
-import IdleTimeConfig from "../models/IdleTimeConfig";
-import { connectDB } from "../config/database";
+import { prisma } from "../lib/prisma";
 
 dotenv.config();
 
 const seedIdleTimeConfigs = async () => {
   try {
-    await connectDB();
-
     const configs = [
       { idleTimeType: "Power Break", durationMinutes: 0 },
       { idleTimeType: "Machine Breakdown", durationMinutes: 0 },
@@ -18,18 +14,22 @@ const seedIdleTimeConfigs = async () => {
     ];
 
     for (const config of configs) {
-      await IdleTimeConfig.findOneAndUpdate(
-        { idleTimeType: config.idleTimeType },
-        config,
-        { upsert: true, new: true }
+      await prisma.idleTimeConfig.upsert({
+        where: { idleTimeType: config.idleTimeType },
+        update: { durationMinutes: config.durationMinutes },
+        create: config,
+      });
+      console.log(
+        `✓ Seeded/Updated idle time config: ${config.idleTimeType} = ${config.durationMinutes} minutes`
       );
-      console.log(`✓ Seeded/Updated idle time config: ${config.idleTimeType} = ${config.durationMinutes} minutes`);
     }
 
     console.log("\n✓ All idle time configurations seeded successfully!");
+    await prisma.$disconnect();
     process.exit(0);
   } catch (error) {
     console.error("Error seeding idle time configs:", error);
+    await prisma.$disconnect();
     process.exit(1);
   }
 };

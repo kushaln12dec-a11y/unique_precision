@@ -29,3 +29,41 @@ export const parseOperatorDateTime = (value?: string): Date | null => {
   const date = new Date(year, month - 1, day, hour, minute, 0, 0);
   return Number.isNaN(date.getTime()) ? null : date;
 };
+
+export const parseDisplayDateTime = (value?: string): Date | null => {
+  if (!value || typeof value !== "string") return null;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+
+  // Try native parsing first (handles ISO strings)
+  const native = new Date(trimmed);
+  if (!Number.isNaN(native.getTime())) return native;
+
+  // Try legacy DD/MM/YYYY HH:MM
+  const legacy = parseOperatorDateTime(trimmed);
+  if (legacy) return legacy;
+
+  // Format: "DD MMM YYYY HH:MM" or "DD MMM YYYY HH:MMam/pm" or "DD MMM YYYY"
+  const parts = trimmed.split(" ");
+  if (parts.length < 3) return null;
+  const day = Number(parts[0]);
+  const monthIndex = MONTHS.indexOf(parts[1]);
+  const year = Number(parts[2]);
+  if (!day || monthIndex === -1 || !year) return null;
+
+  let hours = 0;
+  let minutes = 0;
+  if (parts.length >= 4) {
+    const timeMatch = parts[3].match(/^(\d{1,2}):(\d{2})(?:\:(\d{2}))?([ap]m)?$/i);
+    if (timeMatch) {
+      hours = Number(timeMatch[1] || 0);
+      minutes = Number(timeMatch[2] || 0);
+      const meridiem = (timeMatch[4] || "").toLowerCase();
+      if (meridiem === "pm" && hours < 12) hours += 12;
+      if (meridiem === "am" && hours === 12) hours = 0;
+    }
+  }
+
+  const date = new Date(year, monthIndex, day, hours, minutes, 0, 0);
+  return Number.isNaN(date.getTime()) ? null : date;
+};

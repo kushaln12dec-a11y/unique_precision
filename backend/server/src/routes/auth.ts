@@ -1,7 +1,7 @@
 import { Router } from "express";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-import User from "../models/User";
+import { prisma } from "../lib/prisma";
 
 const router = Router();
 
@@ -22,23 +22,25 @@ router.post("/login", async (req, res) => {
     const identifier = String(email).trim();
     const identifierLower = identifier.toLowerCase();
 
-    const user = await User.findOne({
-      $or: [
-        { email: identifier },
-        { empId: identifier },
-        ...(identifierLower === "admin" ? [{ role: "ADMIN" }] : [])
-      ]
+    const user = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { email: identifier },
+          { empId: identifier },
+          ...(identifierLower === "admin" ? [{ role: "ADMIN" }] : []),
+        ],
+      },
     });
     if (!user) return res.status(401).json({ message: "Invalid credentials" });
 
-    const isMatch = await bcrypt.compare(password, user.password);
+    const isMatch = await bcrypt.compare(password, user.passwordHash);
     if (!isMatch) return res.status(401).json({ message: "Invalid credentials" });
 
     const fullName = `${user.firstName || ""} ${user.lastName || ""}`.trim() || null;
     
     const token = jwt.sign(
       { 
-        userId: user._id, 
+        userId: user.id, 
         email: user.email, 
         role: user.role || "OPERATOR",
         firstName: user.firstName || null,
@@ -52,7 +54,7 @@ router.post("/login", async (req, res) => {
     res.json({ 
       token, 
       user: { 
-        id: user._id, 
+        id: user.id, 
         email: user.email, 
         role: user.role || "OPERATOR",
         firstName: user.firstName,

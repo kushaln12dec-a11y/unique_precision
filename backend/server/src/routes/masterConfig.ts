@@ -1,5 +1,5 @@
 import { Router } from "express";
-import MasterConfig from "../models/MasterConfig";
+import { prisma } from "../lib/prisma";
 import { authMiddleware, adminMiddleware } from "../middleware/auth";
 
 const router = Router();
@@ -59,11 +59,73 @@ const normalizeThOptions = (values: unknown): Array<{ value: string; label: stri
 };
 
 const getMasterConfig = async () => {
-  let config = await MasterConfig.findOne({ key: "global" });
+  let config = await prisma.masterConfig.findUnique({
+    where: { key: "global" },
+    include: {
+      customers: true,
+      materials: true,
+      passOptions: true,
+      sedmElectrodeOptions: true,
+      machineOptions: true,
+      sedmThOptions: true,
+    },
+  });
+
   if (!config) {
-    config = await MasterConfig.create(DEFAULT_MASTER_CONFIG);
+    config = await prisma.masterConfig.create({
+      data: {
+        key: "global",
+        settingHoursPerSetting: DEFAULT_MASTER_CONFIG.settingHoursPerSetting,
+        complexExtraHours: DEFAULT_MASTER_CONFIG.complexExtraHours,
+        pipExtraHours: DEFAULT_MASTER_CONFIG.pipExtraHours,
+        customers: {
+          create: DEFAULT_MASTER_CONFIG.customers.map((c) => ({
+            customer: c.customer,
+            rate: c.rate ? c.rate : null,
+          })),
+        },
+        materials: { create: DEFAULT_MASTER_CONFIG.materials.map((value) => ({ value })) },
+        passOptions: { create: DEFAULT_MASTER_CONFIG.passOptions.map((value) => ({ value })) },
+        sedmElectrodeOptions: {
+          create: DEFAULT_MASTER_CONFIG.sedmElectrodeOptions.map((value) => ({ value })),
+        },
+        machineOptions: { create: DEFAULT_MASTER_CONFIG.machineOptions.map((value) => ({ value })) },
+        sedmThOptions: {
+          create: DEFAULT_MASTER_CONFIG.sedmThOptions.map((opt) => ({
+            value: opt.value,
+            label: opt.label,
+          })),
+        },
+      },
+      include: {
+        customers: true,
+        materials: true,
+        passOptions: true,
+        sedmElectrodeOptions: true,
+        machineOptions: true,
+        sedmThOptions: true,
+      },
+    });
   }
-  return config;
+
+  return {
+    _id: config.id,
+    key: config.key,
+    customers: config.customers.map((c) => ({
+      customer: c.customer,
+      rate: c.rate ? String(c.rate) : "",
+    })),
+    materials: config.materials.map((m) => m.value),
+    passOptions: config.passOptions.map((p) => p.value),
+    sedmElectrodeOptions: config.sedmElectrodeOptions.map((s) => s.value),
+    machineOptions: config.machineOptions.map((m) => m.value),
+    sedmThOptions: config.sedmThOptions.map((s) => ({ value: s.value, label: s.label })),
+    settingHoursPerSetting: Number(config.settingHoursPerSetting ?? 0.5) || 0.5,
+    complexExtraHours: Number(config.complexExtraHours ?? 1) || 1,
+    pipExtraHours: Number(config.pipExtraHours ?? 1) || 1,
+    createdAt: config.createdAt,
+    updatedAt: config.updatedAt,
+  };
 };
 
 router.use(authMiddleware);
@@ -93,13 +155,94 @@ router.put("/", adminMiddleware, async (req, res) => {
       pipExtraHours: Number(payload.pipExtraHours) || 1,
     };
 
-    const config = await MasterConfig.findOneAndUpdate(
-      { key: "global" },
-      { $set: nextData, $setOnInsert: { key: "global" } },
-      { new: true, upsert: true }
-    );
+    const config = await prisma.$transaction(async (tx) => {
+      const base = await tx.masterConfig.upsert({
+        where: { key: "global" },
+        update: {
+          settingHoursPerSetting: nextData.settingHoursPerSetting,
+          complexExtraHours: nextData.complexExtraHours,
+          pipExtraHours: nextData.pipExtraHours,
+        },
+        create: {
+          key: "global",
+          settingHoursPerSetting: nextData.settingHoursPerSetting,
+          complexExtraHours: nextData.complexExtraHours,
+          pipExtraHours: nextData.pipExtraHours,
+        },
+      });
 
-    return res.json(config);
+      const masterConfigId = base.id;
+
+      await Promise.all([
+        tx.masterConfigCustomer.deleteMany({ where: { masterConfigId } }),
+        tx.masterConfigMaterial.deleteMany({ where: { masterConfigId } }),
+        tx.masterConfigPassOption.deleteMany({ where: { masterConfigId } }),
+        tx.masterConfigSedmElectrodeOption.deleteMany({ where: { masterConfigId } }),
+        tx.masterConfigMachineOption.deleteMany({ where: { masterConfigId } }),
+        tx.masterConfigSedmThOption.deleteMany({ where: { masterConfigId } }),
+      ]);
+
+      await Promise.all([
+        tx.masterConfigCustomer.createMany({
+          data: nextData.customers.map((c) => ({
+            masterConfigId,
+            customer: c.customer,
+            rate: c.rate ? c.rate : null,
+          })),
+        }),
+        tx.masterConfigMaterial.createMany({
+          data: nextData.materials.map((value) => ({ masterConfigId, value })),
+        }),
+        tx.masterConfigPassOption.createMany({
+          data: nextData.passOptions.map((value) => ({ masterConfigId, value })),
+        }),
+        tx.masterConfigSedmElectrodeOption.createMany({
+          data: nextData.sedmElectrodeOptions.map((value) => ({ masterConfigId, value })),
+        }),
+        tx.masterConfigMachineOption.createMany({
+          data: nextData.machineOptions.map((value) => ({ masterConfigId, value })),
+        }),
+        tx.masterConfigSedmThOption.createMany({
+          data: nextData.sedmThOptions.map((option) => ({
+            masterConfigId,
+            value: option.value,
+            label: option.label,
+          })),
+        }),
+      ]);
+
+      return await tx.masterConfig.findUnique({
+        where: { id: masterConfigId },
+        include: {
+          customers: true,
+          materials: true,
+          passOptions: true,
+          sedmElectrodeOptions: true,
+          machineOptions: true,
+          sedmThOptions: true,
+        },
+      });
+    });
+
+    if (!config) {
+      return res.status(500).json({ message: "Failed to update master config" });
+    }
+
+    return res.json({
+      _id: config.id,
+      key: config.key,
+      customers: config.customers.map((c) => ({ customer: c.customer, rate: c.rate ? String(c.rate) : "" })),
+      materials: config.materials.map((m) => m.value),
+      passOptions: config.passOptions.map((p) => p.value),
+      sedmElectrodeOptions: config.sedmElectrodeOptions.map((s) => s.value),
+      machineOptions: config.machineOptions.map((m) => m.value),
+      sedmThOptions: config.sedmThOptions.map((s) => ({ value: s.value, label: s.label })),
+      settingHoursPerSetting: Number(config.settingHoursPerSetting ?? 0.5) || 0.5,
+      complexExtraHours: Number(config.complexExtraHours ?? 1) || 1,
+      pipExtraHours: Number(config.pipExtraHours ?? 1) || 1,
+      createdAt: config.createdAt,
+      updatedAt: config.updatedAt,
+    });
   } catch (error: any) {
     console.error("Failed to update master config:", error);
     return res.status(500).json({ message: "Failed to update master config" });

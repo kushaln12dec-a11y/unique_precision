@@ -1,5 +1,5 @@
 import { Router } from "express";
-import IdleTimeConfig from "../models/IdleTimeConfig";
+import { prisma } from "../lib/prisma";
 import { authMiddleware } from "../middleware/auth";
 
 const router = Router();
@@ -10,8 +10,10 @@ router.use(authMiddleware);
 // Get all idle time configurations
 router.get("/", async (req, res) => {
   try {
-    const configs = await IdleTimeConfig.find().sort({ idleTimeType: 1 });
-    res.json(configs);
+    const configs = await prisma.idleTimeConfig.findMany({
+      orderBy: { idleTimeType: "asc" },
+    });
+    res.json(configs.map((c) => ({ ...c, _id: c.id })));
   } catch (error: any) {
     console.error("Error fetching idle time configs:", error);
     res.status(500).json({ message: "Error fetching idle time configurations" });
@@ -21,11 +23,13 @@ router.get("/", async (req, res) => {
 // Get single idle time configuration
 router.get("/:type", async (req, res) => {
   try {
-    const config = await IdleTimeConfig.findOne({ idleTimeType: req.params.type });
+    const config = await prisma.idleTimeConfig.findUnique({
+      where: { idleTimeType: req.params.type },
+    });
     if (!config) {
       return res.status(404).json({ message: "Idle time configuration not found" });
     }
-    res.json(config);
+    res.json({ ...config, _id: config.id });
   } catch (error: any) {
     res.status(500).json({ message: "Error fetching idle time configuration" });
   }
@@ -40,13 +44,13 @@ router.post("/", async (req, res) => {
       return res.status(400).json({ message: "idleTimeType and durationMinutes are required" });
     }
 
-    const config = await IdleTimeConfig.findOneAndUpdate(
-      { idleTimeType },
-      { idleTimeType, durationMinutes },
-      { upsert: true, new: true }
-    );
+    const config = await prisma.idleTimeConfig.upsert({
+      where: { idleTimeType },
+      update: { durationMinutes },
+      create: { idleTimeType, durationMinutes },
+    });
 
-    res.status(201).json(config);
+    res.status(201).json({ ...config, _id: config.id });
   } catch (error: any) {
     console.error("Error creating/updating idle time config:", error);
     res.status(500).json({ message: "Error creating/updating idle time configuration" });
@@ -62,18 +66,16 @@ router.put("/:type", async (req, res) => {
       return res.status(400).json({ message: "durationMinutes is required" });
     }
 
-    const config = await IdleTimeConfig.findOneAndUpdate(
-      { idleTimeType: req.params.type },
-      { durationMinutes },
-      { new: true }
-    );
+    const config = await prisma.idleTimeConfig.update({
+      where: { idleTimeType: req.params.type },
+      data: { durationMinutes },
+    });
 
-    if (!config) {
+    res.json({ ...config, _id: config.id });
+  } catch (error: any) {
+    if (error.code === "P2025") {
       return res.status(404).json({ message: "Idle time configuration not found" });
     }
-
-    res.json(config);
-  } catch (error: any) {
     console.error("Error updating idle time config:", error);
     res.status(500).json({ message: "Error updating idle time configuration" });
   }
@@ -82,13 +84,12 @@ router.put("/:type", async (req, res) => {
 // Delete idle time configuration
 router.delete("/:type", async (req, res) => {
   try {
-    const config = await IdleTimeConfig.findOneAndDelete({ idleTimeType: req.params.type });
-    
-    if (!config) {
+    try {
+      await prisma.idleTimeConfig.delete({ where: { idleTimeType: req.params.type } });
+      res.json({ message: "Idle time configuration deleted successfully" });
+    } catch (deleteError) {
       return res.status(404).json({ message: "Idle time configuration not found" });
     }
-
-    res.json({ message: "Idle time configuration deleted successfully" });
   } catch (error: any) {
     res.status(500).json({ message: "Error deleting idle time configuration" });
   }

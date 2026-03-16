@@ -1,7 +1,9 @@
 import { Router } from "express";
 import bcrypt from "bcrypt";
-import User from "../models/User";
+import { prisma } from "../lib/prisma";
 import { authMiddleware, adminMiddleware } from "../middleware/auth";
+import { mapUser } from "../utils/prismaMappers";
+import { resolveStoredFile } from "../utils/objectStorage";
 
 const router = Router();
 
@@ -19,11 +21,13 @@ router.get("/", async (req, res) => {
     // If roles query parameter is provided, filter by roles
     if (roles) {
       const roleArray = Array.isArray(roles) ? roles : roles.toString().split(",");
-      query.role = { $in: roleArray };
+      query.role = { in: roleArray };
     }
     
-    const users = await User.find(query).select("-password");
-    res.json(users);
+    const users = await prisma.user.findMany({
+      where: Object.keys(query).length ? query : undefined,
+    });
+    res.json(users.map(mapUser));
   } catch (error: any) {
     res.status(500).json({ message: "Error fetching users" });
   }
@@ -32,11 +36,11 @@ router.get("/", async (req, res) => {
 // Get single user
 router.get("/:id", adminMiddleware, async (req, res) => {
   try {
-    const user = await User.findById(req.params.id).select("-password");
+    const user = await prisma.user.findUnique({ where: { id: req.params.id } });
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
-    res.json(user);
+    res.json(mapUser(user));
   } catch (error: any) {
     res.status(500).json({ message: "Error fetching user" });
   }
@@ -52,30 +56,34 @@ router.post("/", adminMiddleware, async (req, res) => {
     }
 
     // Check if user already exists
-    const existingUser = await User.findOne({ $or: [{ email }, { empId }] });
+    const existingUser = await prisma.user.findFirst({
+      where: {
+        OR: [{ email }, { empId }],
+      },
+    });
     if (existingUser) {
       return res.status(400).json({ message: "User with this email or Emp ID already exists" });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const user = await User.create({
-      email,
-      password: hashedPassword,
-      firstName,
-      lastName,
-      phone,
-      empId,
-      image: image || "",
-      role: role || "OPERATOR"
+    const imageUrl = await resolveStoredFile(image, "users");
+    const user = await prisma.user.create({
+      data: {
+        email,
+        passwordHash: hashedPassword,
+        firstName,
+        lastName,
+        phone,
+        empId,
+        image: imageUrl || "",
+        role: role || "OPERATOR",
+      },
     });
 
-    const userObj = user.toObject() as Record<string, any>;
-    const { password: _, ...userResponse } = userObj;
-
-    res.status(201).json(userResponse as Omit<typeof userObj, "password">);
+    res.status(201).json(mapUser(user));
   } catch (error: any) {
-    if (error.code === 11000) {
+    if (error.code === "P2002") {
       return res.status(400).json({ message: "User with this email or Emp ID already exists" });
     }
     res.status(500).json({ message: "Error creating user" });
@@ -92,23 +100,27 @@ router.put("/:id", adminMiddleware, async (req, res) => {
     if (lastName) updateData.lastName = lastName;
     if (phone) updateData.phone = phone;
     if (empId) updateData.empId = empId;
-    if (image !== undefined) updateData.image = image;
+    if (image !== undefined) {
+      updateData.image = await resolveStoredFile(image, "users");
+    }
     if (role) updateData.role = role;
     if (email) updateData.email = email;
 
     if (password) {
-      updateData.password = await bcrypt.hash(password, 10);
+      updateData.passwordHash = await bcrypt.hash(password, 10);
     }
 
-    const user = await User.findByIdAndUpdate(req.params.id, updateData, { new: true }).select("-password");
+    const user = await prisma.user.update({
+      where: { id: req.params.id },
+      data: updateData,
+    });
     
-    if (!user) {
+    res.json(mapUser(user));
+  } catch (error: any) {
+    if (error.code === "P2025") {
       return res.status(404).json({ message: "User not found" });
     }
-
-    res.json(user);
-  } catch (error: any) {
-    if (error.code === 11000) {
+    if (error.code === "P2002") {
       return res.status(400).json({ message: "User with this email or Emp ID already exists" });
     }
     res.status(500).json({ message: "Error updating user" });
@@ -118,13 +130,12 @@ router.put("/:id", adminMiddleware, async (req, res) => {
 // Delete user
 router.delete("/:id", adminMiddleware, async (req, res) => {
   try {
-    const user = await User.findByIdAndDelete(req.params.id);
-    
-    if (!user) {
+    try {
+      const user = await prisma.user.delete({ where: { id: req.params.id } });
+      return res.json({ message: "User deleted successfully" });
+    } catch (deleteError: any) {
       return res.status(404).json({ message: "User not found" });
     }
-
-    res.json({ message: "User deleted successfully" });
   } catch (error: any) {
     res.status(500).json({ message: "Error deleting user" });
   }

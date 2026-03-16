@@ -5,9 +5,11 @@
   "main": "dist/index.js",
   "scripts": {
     "dev": "ts-node-dev server/src/index.ts",
-    "build": "tsc",
+    "build": "prisma generate && tsc",
     "start": "node dist/index.js",
+    "test": "jest",
     "seed-admin": "ts-node-dev --transpile-only server/src/scripts/seedAdminUser.ts",
+    "migrate-mongo": "ts-node-dev --transpile-only server/src/scripts/migrateMongoToPostgres.ts",
     "update-user-role": "ts-node-dev --transpile-only server/src/scripts/updateUserRole.ts",
     "seed-idle-time-config": "ts-node-dev --transpile-only server/src/scripts/seedIdleTimeConfig.ts"
   },
@@ -24,16 +26,23 @@
     "express": "^5.2.1",
     "express-rate-limit": "^8.2.1",
     "helmet": "^8.1.0",
+    "@prisma/client": "^7.5.0",
+    "@aws-sdk/client-s3": "^3.744.0",
     "jsonwebtoken": "^9.0.3",
-    "mongodb": "^7.0.0",
-    "mongoose": "^9.1.2",
+    "prisma": "^7.5.0",
     "puppeteer-core": "^24.38.0"
   },
   "devDependencies": {
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/node": "^25.0.6",
+    "mongodb": "^7.0.0",
     "nodemon": "^3.1.11",
+    "@types/jest": "^29.5.14",
+    "@types/supertest": "^6.0.3",
+    "jest": "^29.7.0",
+    "supertest": "^7.0.0",
+    "ts-jest": "^29.2.6",
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.9.3"
   }

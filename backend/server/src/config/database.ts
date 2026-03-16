@@ -1,16 +1,16 @@
-import mongoose from "mongoose";
+import { prisma } from "../lib/prisma";
 
 export const connectDB = async () => {
-  const mongoUri = process.env.MONGO_URI;
-  if (!mongoUri) {
-    console.error("MONGO_URI is not set. Configure it in your environment variables.");
+  const databaseUrl = process.env.DATABASE_URL;
+  if (!databaseUrl) {
+    console.error("DATABASE_URL is not set. Configure it in your environment variables.");
     process.exit(1);
   }
   try {
-    await mongoose.connect(mongoUri);
-    console.log("MongoDB connected");
+    await prisma.$connect();
+    console.log("PostgreSQL connected");
   } catch (error) {
-    console.error("MongoDB connection error:", error);
+    console.error("PostgreSQL connection error:", error);
     process.exit(1);
   }
 };

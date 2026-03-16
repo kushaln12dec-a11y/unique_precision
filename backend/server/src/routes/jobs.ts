@@ -1,23 +1,216 @@
 import { Router } from "express";
-import Job from "../models/Job";
-import Counter from "../models/Counter";
 import { authMiddleware } from "../middleware/auth";
-import { formatDateForQuery } from "../utils/dateTime";
+import { prisma } from "../lib/prisma";
+import { parseDisplayDateTime } from "../utils/dateTime";
+import { mapJob } from "../utils/prismaMappers";
+import { resolveStoredFile } from "../utils/objectStorage";
 
 const router = Router();
 
 const JOB_REF_KEY = "jobRef";
 const JOB_REF_REGEX = /^JOB-\d{5}$/;
+const jobInclude = { operatorCaptures: { orderBy: { createdAt: "asc" } }, qaStates: true };
 
 const formatJobRef = (seq: number) => `JOB-${String(seq).padStart(5, "0")}`;
 
 const getNextJobRef = async (): Promise<string> => {
-  const counter = await Counter.findOneAndUpdate(
-    { key: JOB_REF_KEY },
-    { $inc: { seq: 1 } },
-    { new: true, upsert: true }
-  );
-  return formatJobRef(Number(counter?.seq || 1));
+  const counter = await prisma.counter.upsert({
+    where: { key: JOB_REF_KEY },
+    update: { seq: { increment: 1 } },
+    create: { key: JOB_REF_KEY, seq: 1 },
+  });
+  return formatJobRef(Number(counter.seq || 1));
+};
+
+const toNumber = (value: unknown): number | null => {
+  if (value === null || value === undefined || value === "") return null;
+  const n = Number(value);
+  return Number.isFinite(n) ? n : null;
+};
+
+const toInt = (value: unknown): number | null => {
+  const n = toNumber(value);
+  return n === null ? null : Math.trunc(n);
+};
+
+const normalizeJobInput = async (job: any) => {
+  const createdAt = parseDisplayDateTime(job.createdAt) ?? new Date();
+  const cutImage = Array.isArray(job.cutImage) ? (job.cutImage[0] || "") : job.cutImage;
+  const cutImageUrl = await resolveStoredFile(cutImage, "jobs/cut-images");
+  const lastImageUrl = await resolveStoredFile(job.lastImage, "jobs/last-images");
+  return {
+    groupId: Number(job.groupId),
+    customer: job.customer ?? "",
+    rate: toNumber(job.rate),
+    cut: toNumber(job.cut),
+    thickness: toNumber(job.thickness),
+    passLevel: job.passLevel !== undefined && job.passLevel !== null ? String(job.passLevel) : "1",
+    setting: job.setting !== undefined && job.setting !== null ? String(job.setting) : "0",
+    qty: toInt(job.qty) ?? 1,
+    sedm: job.sedm ?? "No",
+    sedmSelectionType: job.sedmSelectionType ?? "range",
+    sedmRangeKey: job.sedmRangeKey ?? "0.3-0.4",
+    sedmStandardValue: job.sedmStandardValue ?? "",
+    sedmLengthType: job.sedmLengthType ?? "min",
+    sedmOver20Length: toNumber(job.sedmOver20Length),
+    sedmLengthValue: toNumber(job.sedmLengthValue),
+    sedmHoles: toInt(job.sedmHoles) ?? 1,
+    sedmEntriesJson: job.sedmEntriesJson ?? "",
+    operationRowsJson: job.operationRowsJson ?? "",
+    material: job.material ?? "",
+    priority: job.priority ?? "Low",
+    description: job.description ?? "",
+    programRefFile: job.programRefFile ?? "",
+    cutImage: cutImageUrl ?? null,
+    critical: Boolean(job.critical),
+    pipFinish: Boolean(job.pipFinish),
+    totalHrs: toNumber(job.totalHrs) ?? 0,
+    totalAmount: toNumber(job.totalAmount) ?? 0,
+    createdAt,
+    createdBy: job.createdBy ?? "Unknown User",
+    assignedTo: job.assignedTo ?? "Unassigned",
+    refNumber: job.refNumber ?? "",
+    startTime: job.startTime ?? "",
+    endTime: job.endTime ?? "",
+    machineHrs: job.machineHrs ?? "",
+    machineNumber: job.machineNumber ?? "",
+    opsName: job.opsName ?? "",
+    idleTime: job.idleTime ?? "",
+    idleTimeDuration: job.idleTimeDuration ?? "",
+    lastImage: lastImageUrl ?? null,
+    qcDecision: job.qcDecision ?? "PENDING",
+    qcReportClosed: Boolean(job.qcReportClosed),
+    updatedBy: job.updatedBy ?? "",
+    updatedAt: job.updatedAt ? parseDisplayDateTime(job.updatedAt) ?? undefined : undefined,
+  };
+};
+
+const normalizeJobUpdate = async (job: any) => {
+  const data: any = {};
+  if (job.groupId !== undefined) data.groupId = Number(job.groupId);
+  if (job.customer !== undefined) data.customer = job.customer ?? "";
+  if (job.rate !== undefined) data.rate = toNumber(job.rate);
+  if (job.cut !== undefined) data.cut = toNumber(job.cut);
+  if (job.thickness !== undefined) data.thickness = toNumber(job.thickness);
+  if (job.passLevel !== undefined) data.passLevel = job.passLevel !== null ? String(job.passLevel) : "";
+  if (job.setting !== undefined) data.setting = job.setting !== null ? String(job.setting) : "";
+  if (job.qty !== undefined) data.qty = toInt(job.qty);
+  if (job.sedm !== undefined) data.sedm = job.sedm ?? "No";
+  if (job.sedmSelectionType !== undefined) data.sedmSelectionType = job.sedmSelectionType ?? "range";
+  if (job.sedmRangeKey !== undefined) data.sedmRangeKey = job.sedmRangeKey ?? "0.3-0.4";
+  if (job.sedmStandardValue !== undefined) data.sedmStandardValue = job.sedmStandardValue ?? "";
+  if (job.sedmLengthType !== undefined) data.sedmLengthType = job.sedmLengthType ?? "min";
+  if (job.sedmOver20Length !== undefined) data.sedmOver20Length = toNumber(job.sedmOver20Length);
+  if (job.sedmLengthValue !== undefined) data.sedmLengthValue = toNumber(job.sedmLengthValue);
+  if (job.sedmHoles !== undefined) data.sedmHoles = toInt(job.sedmHoles);
+  if (job.sedmEntriesJson !== undefined) data.sedmEntriesJson = job.sedmEntriesJson ?? "";
+  if (job.operationRowsJson !== undefined) data.operationRowsJson = job.operationRowsJson ?? "";
+  if (job.material !== undefined) data.material = job.material ?? "";
+  if (job.priority !== undefined) data.priority = job.priority ?? "Low";
+  if (job.description !== undefined) data.description = job.description ?? "";
+  if (job.programRefFile !== undefined) data.programRefFile = job.programRefFile ?? "";
+  if (job.cutImage !== undefined) {
+    const cutImage = Array.isArray(job.cutImage) ? (job.cutImage[0] || "") : job.cutImage;
+    data.cutImage = await resolveStoredFile(cutImage, "jobs/cut-images");
+  }
+  if (job.critical !== undefined) data.critical = Boolean(job.critical);
+  if (job.pipFinish !== undefined) data.pipFinish = Boolean(job.pipFinish);
+  if (job.totalHrs !== undefined) data.totalHrs = toNumber(job.totalHrs) ?? 0;
+  if (job.totalAmount !== undefined) data.totalAmount = toNumber(job.totalAmount) ?? 0;
+  if (job.createdAt !== undefined) data.createdAt = parseDisplayDateTime(job.createdAt) ?? new Date();
+  if (job.createdBy !== undefined) data.createdBy = job.createdBy ?? "Unknown User";
+  if (job.assignedTo !== undefined) data.assignedTo = job.assignedTo ?? "Unassigned";
+  if (job.refNumber !== undefined) data.refNumber = job.refNumber ?? "";
+  if (job.startTime !== undefined) data.startTime = job.startTime ?? "";
+  if (job.endTime !== undefined) data.endTime = job.endTime ?? "";
+  if (job.machineHrs !== undefined) data.machineHrs = job.machineHrs ?? "";
+  if (job.machineNumber !== undefined) data.machineNumber = job.machineNumber ?? "";
+  if (job.opsName !== undefined) data.opsName = job.opsName ?? "";
+  if (job.idleTime !== undefined) data.idleTime = job.idleTime ?? "";
+  if (job.idleTimeDuration !== undefined) data.idleTimeDuration = job.idleTimeDuration ?? "";
+  if (job.lastImage !== undefined) {
+    data.lastImage = await resolveStoredFile(job.lastImage, "jobs/last-images");
+  }
+  if (job.qcDecision !== undefined) data.qcDecision = job.qcDecision ?? "PENDING";
+  if (job.qcReportClosed !== undefined) data.qcReportClosed = Boolean(job.qcReportClosed);
+  if (job.updatedBy !== undefined) data.updatedBy = job.updatedBy ?? "";
+  if (job.updatedAt !== undefined) data.updatedAt = parseDisplayDateTime(job.updatedAt) ?? new Date();
+  return data;
+};
+
+const buildJobWhere = (req: any) => {
+  const where: any = {};
+
+  if (req.query.customer) {
+    where.customer = { contains: String(req.query.customer), mode: "insensitive" };
+  }
+  if (req.query.description) {
+    where.description = { contains: String(req.query.description), mode: "insensitive" };
+  }
+  if (req.query.createdBy) {
+    where.createdBy = String(req.query.createdBy);
+  }
+  if (req.query.assignedTo) {
+    where.assignedTo = String(req.query.assignedTo);
+  }
+
+  const numberRangeFields = ["cut", "thickness", "qty", "rate", "totalHrs", "totalAmount"];
+  numberRangeFields.forEach((field) => {
+    const minKey = `${field}_min`;
+    const maxKey = `${field}_max`;
+    if (req.query[minKey] !== undefined || req.query[maxKey] !== undefined) {
+      const range: any = {};
+      const minValue = toNumber(req.query[minKey]);
+      const maxValue = toNumber(req.query[maxKey]);
+      if (minValue !== null) range.gte = minValue;
+      if (maxValue !== null) range.lte = maxValue;
+      if (Object.keys(range).length > 0) {
+        where[field] = range;
+      }
+    }
+  });
+
+  if (req.query.passLevel) {
+    where.passLevel = String(req.query.passLevel);
+  }
+  if (req.query.setting) {
+    where.setting = { contains: String(req.query.setting), mode: "insensitive" };
+  }
+  if (req.query.priority) {
+    where.priority = String(req.query.priority);
+  }
+  if (req.query.critical !== undefined) {
+    where.critical = req.query.critical === "true";
+  }
+  if (req.query.pipFinish !== undefined) {
+    where.pipFinish = req.query.pipFinish === "true";
+  }
+  if (req.query.sedm) {
+    where.sedm = String(req.query.sedm);
+  }
+
+  if (req.query.createdAt_min || req.query.createdAt_max) {
+    const range: any = {};
+    if (req.query.createdAt_min) {
+      const start = new Date(String(req.query.createdAt_min));
+      if (!Number.isNaN(start.getTime())) {
+        start.setHours(0, 0, 0, 0);
+        range.gte = start;
+      }
+    }
+    if (req.query.createdAt_max) {
+      const end = new Date(String(req.query.createdAt_max));
+      if (!Number.isNaN(end.getTime())) {
+        end.setHours(23, 59, 59, 999);
+        range.lte = end;
+      }
+    }
+    if (Object.keys(range).length > 0) {
+      where.createdAt = range;
+    }
+  }
+
+  return where;
 };
 
 // All routes require authentication
@@ -26,73 +219,13 @@ router.use(authMiddleware);
 // Get all jobs with optional filters
 router.get("/", async (req, res) => {
   try {
-    const query: any = {};
-
-    // Inline filters
-    if (req.query.customer) {
-      query.customer = { $regex: req.query.customer, $options: "i" };
-    }
-    if (req.query.description) {
-      query.description = { $regex: req.query.description, $options: "i" };
-    }
-    if (req.query.createdBy) {
-      query.createdBy = req.query.createdBy;
-    }
-    if (req.query.assignedTo) {
-      query.assignedTo = req.query.assignedTo;
-    }
-
-    // Number range filters
-    const numberRangeFields = ["cut", "thickness", "qty", "rate", "totalHrs", "totalAmount"];
-    numberRangeFields.forEach((field) => {
-      if (req.query[`${field}_min`] !== undefined || req.query[`${field}_max`] !== undefined) {
-        query[field] = {};
-        if (req.query[`${field}_min`] !== undefined) {
-          query[field].$gte = Number(req.query[`${field}_min`]);
-        }
-        if (req.query[`${field}_max`] !== undefined) {
-          query[field].$lte = Number(req.query[`${field}_max`]);
-        }
-      }
+    const where = buildJobWhere(req);
+    const jobs = await prisma.job.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+      include: jobInclude,
     });
-
-    // Exact match filters
-    if (req.query.passLevel) {
-      query.passLevel = req.query.passLevel;
-    }
-    if (req.query.setting) {
-      query.setting = { $regex: req.query.setting, $options: "i" };
-    }
-    if (req.query.priority) {
-      query.priority = req.query.priority;
-    }
-    if (req.query.critical !== undefined) {
-      query.critical = req.query.critical === "true";
-    }
-    if (req.query.pipFinish !== undefined) {
-      query.pipFinish = req.query.pipFinish === "true";
-    }
-    if (req.query.sedm) {
-      query.sedm = req.query.sedm;
-    }
-
-    // Date range filter for createdAt
-    if (req.query.createdAt_min || req.query.createdAt_max) {
-      query.createdAt = {};
-      if (req.query.createdAt_min) {
-        // Convert ISO date (YYYY-MM-DD) to database format (DD MMM YYYY)
-        const minDate = formatDateForQuery(req.query.createdAt_min as string);
-        query.createdAt.$gte = minDate;
-      }
-      if (req.query.createdAt_max) {
-        const maxDate = formatDateForQuery(req.query.createdAt_max as string);
-        query.createdAt.$lte = maxDate;
-      }
-    }
-
-    // Sort by createdAt string (format: "DD MMM YYYY") - descending (newest first)
-    const jobs = await Job.find(query).sort({ createdAt: -1 });
-    res.json(jobs);
+    res.json(jobs.map(mapJob));
   } catch (error: any) {
     console.error("Error fetching jobs:", error);
     res.status(500).json({ message: "Error fetching jobs" });
@@ -102,22 +235,29 @@ router.get("/", async (req, res) => {
 // Get jobs by groupId
 router.get("/group/:groupId", async (req, res) => {
   try {
-    const jobs = await Job.find({ groupId: Number(req.params.groupId) }).sort({ createdAt: 1 });
-    res.json(jobs);
+    const jobs = await prisma.job.findMany({
+      where: { groupId: Number(req.params.groupId) },
+      orderBy: { createdAt: "asc" },
+      include: jobInclude,
+    });
+    res.json(jobs.map(mapJob));
   } catch (error: any) {
     console.error("Error fetching jobs by groupId:", error);
-    res.status(500).json({ message: "Error fetching jobs" });
+    res.status(500).json({ message: "Error fetching jobs by groupId" });
   }
 });
 
 // Get single job
 router.get("/:id", async (req, res) => {
   try {
-    const job = await Job.findById(req.params.id);
+    const job = await prisma.job.findUnique({
+      where: { id: req.params.id },
+      include: jobInclude,
+    });
     if (!job) {
       return res.status(404).json({ message: "Job not found" });
     }
-    res.json(job);
+    res.json(mapJob(job));
   } catch (error: any) {
     res.status(500).json({ message: "Error fetching job" });
   }
@@ -127,10 +267,10 @@ router.get("/:id", async (req, res) => {
 router.post("/", async (req, res) => {
   try {
     const jobsData = Array.isArray(req.body) ? req.body : [req.body];
-    
-    // Remove id field from each job (MongoDB will generate _id automatically)
+
+    // Remove id field from each job
     const cleanedJobsData = jobsData.map((job: any) => {
-      const { id, ...jobWithoutId } = job;
+      const { id, _id, ...jobWithoutId } = job;
       return jobWithoutId;
     });
 
@@ -139,18 +279,29 @@ router.post("/", async (req, res) => {
       refNumber = await getNextJobRef();
     }
 
-    const normalizedJobsData = cleanedJobsData.map((job: any) => ({
-      ...job,
-      refNumber,
-    }));
+    const normalizedJobsData = await Promise.all(
+      cleanedJobsData.map(async (job: any) => ({
+        ...(await normalizeJobInput(job)),
+        refNumber,
+      }))
+    );
 
-    const jobs = await Job.insertMany(normalizedJobsData);
-    res.status(201).json(Array.isArray(req.body) ? jobs : jobs[0]);
+    const createdJobs = await prisma.$transaction(
+      normalizedJobsData.map((data) =>
+        prisma.job.create({
+          data,
+          include: jobInclude,
+        })
+      )
+    );
+
+    const payload = createdJobs.map(mapJob);
+    res.status(201).json(Array.isArray(req.body) ? payload : payload[0]);
   } catch (error: any) {
     console.error("Error creating job(s):", error);
-    res.status(500).json({ 
+    res.status(500).json({
       message: "Error creating job(s)",
-      error: error.message || String(error)
+      error: error.message || String(error),
     });
   }
 });
@@ -158,17 +309,20 @@ router.post("/", async (req, res) => {
 // Update job
 router.put("/:id", async (req, res) => {
   try {
-    // Remove id field if present (shouldn't update MongoDB _id)
-    const { id, ...updateData } = req.body;
-    
-    const job = await Job.findByIdAndUpdate(req.params.id, updateData, { new: true });
-    
-    if (!job) {
+    const { id, _id, operatorCaptures, quantityQaStates, qaStates, ...updateData } = req.body;
+    const normalized = await normalizeJobUpdate(updateData);
+
+    const job = await prisma.job.update({
+      where: { id: req.params.id },
+      data: normalized,
+      include: jobInclude,
+    });
+
+    res.json(mapJob(job));
+  } catch (error: any) {
+    if (error.code === "P2025") {
       return res.status(404).json({ message: "Job not found" });
     }
-
-    res.json(job);
-  } catch (error: any) {
     console.error("Error updating job:", error);
     res.status(500).json({ message: "Error updating job" });
   }
@@ -183,14 +337,21 @@ router.put("/group/:groupId/qc-decision", async (req, res) => {
     }
 
     const groupId = Number(req.params.groupId);
-    const updateResult = await Job.updateMany({ groupId }, { $set: { qcDecision: decision } });
+    const updateResult = await prisma.job.updateMany({
+      where: { groupId },
+      data: { qcDecision: decision },
+    });
 
-    if (updateResult.matchedCount === 0) {
+    if (updateResult.count === 0) {
       return res.status(404).json({ message: "No jobs found for group" });
     }
 
-    const updatedJobs = await Job.find({ groupId }).sort({ createdAt: 1 });
-    return res.json(updatedJobs);
+    const updatedJobs = await prisma.job.findMany({
+      where: { groupId },
+      orderBy: { createdAt: "asc" },
+      include: jobInclude,
+    });
+    return res.json(updatedJobs.map(mapJob));
   } catch (error: any) {
     console.error("Error updating QC decision:", error);
     return res.status(500).json({ message: "Error updating QC decision" });
@@ -204,17 +365,21 @@ router.put("/group/:groupId/qc-report-close", async (req, res) => {
     const shouldClose = closed !== undefined ? Boolean(closed) : true;
     const groupId = Number(req.params.groupId);
 
-    const updateResult = await Job.updateMany(
-      { groupId },
-      { $set: { qcReportClosed: shouldClose } }
-    );
+    const updateResult = await prisma.job.updateMany({
+      where: { groupId },
+      data: { qcReportClosed: shouldClose },
+    });
 
-    if (updateResult.matchedCount === 0) {
+    if (updateResult.count === 0) {
       return res.status(404).json({ message: "No jobs found for group" });
     }
 
-    const updatedJobs = await Job.find({ groupId }).sort({ createdAt: 1 });
-    return res.json(updatedJobs);
+    const updatedJobs = await prisma.job.findMany({
+      where: { groupId },
+      orderBy: { createdAt: "asc" },
+      include: jobInclude,
+    });
+    return res.json(updatedJobs.map(mapJob));
   } catch (error: any) {
     console.error("Error updating QC report closed state:", error);
     return res.status(500).json({ message: "Error updating QC report closed state" });
@@ -224,14 +389,12 @@ router.put("/group/:groupId/qc-report-close", async (req, res) => {
 // Delete job
 router.delete("/:id", async (req, res) => {
   try {
-    const job = await Job.findByIdAndDelete(req.params.id);
-    
-    if (!job) {
-      return res.status(404).json({ message: "Job not found" });
-    }
-
+    await prisma.job.delete({ where: { id: req.params.id } });
     res.json({ message: "Job deleted successfully" });
   } catch (error: any) {
+    if (error.code === "P2025") {
+      return res.status(404).json({ message: "Job not found" });
+    }
     res.status(500).json({ message: "Error deleting job" });
   }
 });
@@ -239,11 +402,11 @@ router.delete("/:id", async (req, res) => {
 // Delete all jobs by groupId
 router.delete("/group/:groupId", async (req, res) => {
   try {
-    const result = await Job.deleteMany({ groupId: Number(req.params.groupId) });
-    
-    res.json({ 
+    const result = await prisma.job.deleteMany({ where: { groupId: Number(req.params.groupId) } });
+
+    res.json({
       message: "Jobs deleted successfully",
-      deletedCount: result.deletedCount 
+      deletedCount: result.count,
     });
   } catch (error: any) {
     res.status(500).json({ message: "Error deleting jobs" });

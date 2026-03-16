@@ -1,49 +1,36 @@
-import mongoose from "mongoose";
 import dotenv from "dotenv";
-import Job from "../models/Job";
-import EmployeeLog from "../models/EmployeeLog";
-import MasterConfig from "../models/MasterConfig";
-import IdleTimeConfig from "../models/IdleTimeConfig";
-import Counter from "../models/Counter";
+import { prisma } from "../lib/prisma";
 
 dotenv.config();
 
-const DEFAULT_URI =
-  "mongodb+srv://admin:ZAQzaq%40123@cluster0.dwpgvyr.mongodb.net/unique_precision?retryWrites=true&w=majority";
-
-const MONGO_URI = process.env.MONGO_URI || DEFAULT_URI;
-
 const resetData = async () => {
-  if (!MONGO_URI) {
-    throw new Error("MONGO_URI is not provided");
-  }
+  const [jobs, logs, masters, idle, counters, captures, qaStates] = await Promise.all([
+    prisma.job.deleteMany(),
+    prisma.employeeLog.deleteMany(),
+    prisma.masterConfig.deleteMany(),
+    prisma.idleTimeConfig.deleteMany(),
+    prisma.counter.deleteMany(),
+    prisma.jobOperatorCapture.deleteMany(),
+    prisma.jobQuantityQaState.deleteMany(),
+  ]);
 
-  await mongoose.connect(MONGO_URI);
-  try {
-    const [jobs, logs, masters, idle, counters] = await Promise.all([
-      Job.deleteMany({}),
-      EmployeeLog.deleteMany({}),
-      MasterConfig.deleteMany({}),
-      IdleTimeConfig.deleteMany({}),
-      Counter.deleteMany({}),
-    ]);
-
-    console.log("Reset complete:");
-    console.log(`- jobs deleted: ${jobs.deletedCount ?? 0}`);
-    console.log(`- employee logs deleted: ${logs.deletedCount ?? 0}`);
-    console.log(`- master configs deleted: ${masters.deletedCount ?? 0}`);
-    console.log(`- idle time configs deleted: ${idle.deletedCount ?? 0}`);
-    console.log(`- counters deleted: ${counters.deletedCount ?? 0}`);
-  } finally {
-    await mongoose.disconnect();
-  }
+  console.log("Reset complete:");
+  console.log(`- jobs deleted: ${jobs.count ?? 0}`);
+  console.log(`- employee logs deleted: ${logs.count ?? 0}`);
+  console.log(`- master configs deleted: ${masters.count ?? 0}`);
+  console.log(`- idle time configs deleted: ${idle.count ?? 0}`);
+  console.log(`- counters deleted: ${counters.count ?? 0}`);
+  console.log(`- operator captures deleted: ${captures.count ?? 0}`);
+  console.log(`- qa states deleted: ${qaStates.count ?? 0}`);
 };
 
 resetData()
   .then(() => {
-    process.exit(0);
+    return prisma.$disconnect().then(() => process.exit(0));
   })
   .catch((error) => {
     console.error("Failed to reset data:", error);
-    process.exit(1);
+    prisma
+      .$disconnect()
+      .finally(() => process.exit(1));
   });
