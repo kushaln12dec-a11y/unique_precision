@@ -27,6 +27,14 @@ app.use((req, res, next) => {
   next();
 });
 
+// Optional request logging to debug routing issues
+if (process.env.LOG_REQUESTS === "true") {
+  app.use((req, _res, next) => {
+    console.log(`Incoming ${req.method} ${req.originalUrl}`);
+    next();
+  });
+}
+
 // Security headers
 app.use(helmet());
 
