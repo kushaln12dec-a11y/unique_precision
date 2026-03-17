@@ -1,8 +1,6 @@
 import express from "express";
 import path from "path";
 import fs from "fs";
-import helmet from "helmet";
-import rateLimit from "express-rate-limit";
 import cors from "cors";
 import authRoutes from "./routes/auth";
 import userRoutes from "./routes/users";
@@ -16,47 +14,9 @@ import { authMiddleware } from "./middleware/auth";
 
 const app = express();
 
-// Request logger (top of stack)
-app.use((req, _res, next) => {
-  console.log("🔥", req.method, req.url);
-  next();
-});
-
-// Force preflight to succeed (Express 5 compatible)
-app.use((req, res, next) => {
-  if (req.method === "OPTIONS") {
-    res.header("Access-Control-Allow-Origin", "*");
-    res.header("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
-    res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
-    return res.sendStatus(200);
-  }
-  next();
-});
-
-// CORS (use official middleware)
-app.use(
-  cors({
-    origin: "*",
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-  })
-);
-
-// Security headers
-app.use(helmet());
-
-// Rate limiting - 100 requests per 15 minutes per IP
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100,
-  skip: (req) => req.method === "OPTIONS",
-});
-
-// Body parser with payload limit
+// Minimal middleware for debugging connectivity
+app.use(cors());
 app.use(express.json({ limit: "10mb" }));
-
-// Rate limiting (after CORS + body parser)
-app.use("/api", limiter);
 
 // Error handling middleware for JSON parsing errors
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
