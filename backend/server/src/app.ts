@@ -40,18 +40,14 @@ app.use(helmet());
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 100,
+  skip: (req) => req.method === "OPTIONS",
 });
 
 // Body parser with payload limit
 app.use(express.json({ limit: "10mb" }));
 
-// Rate limiting (skip OPTIONS preflight)
-app.use("/api", (req, res, next) => {
-  if (req.method === "OPTIONS") {
-    return next();
-  }
-  return limiter(req, res, next);
-});
+// Rate limiting (after CORS + body parser)
+app.use("/api", limiter);
 
 // Error handling middleware for JSON parsing errors
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
