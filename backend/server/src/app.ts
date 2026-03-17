@@ -61,6 +61,11 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
   next();
 });
 
+// Health check (always available)
+app.get("/api/health", (_req, res) => {
+  res.status(200).json({ status: "ok" });
+});
+
 // Auth routes
 app.use("/api/auth", authRoutes);
 
