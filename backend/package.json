@@ -5,7 +5,7 @@
   "main": "dist/index.js",
   "scripts": {
     "dev": "ts-node-dev server/src/index.ts",
-    "build": "prisma generate && tsc",
+    "build": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\" && prisma generate && tsc",
     "start": "node dist/index.js",
     "test": "jest",
     "seed-admin": "ts-node-dev --transpile-only server/src/scripts/seedAdminUser.ts",
