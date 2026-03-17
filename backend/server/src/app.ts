@@ -16,6 +16,23 @@ import { authMiddleware } from "./middleware/auth";
 
 const app = express();
 
+// Request logger (top of stack)
+app.use((req, _res, next) => {
+  console.log("🔥", req.method, req.url);
+  next();
+});
+
+// Force preflight to succeed (Express 5 compatible)
+app.use((req, res, next) => {
+  if (req.method === "OPTIONS") {
+    res.header("Access-Control-Allow-Origin", "*");
+    res.header("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
+    res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
+    return res.sendStatus(200);
+  }
+  next();
+});
+
 // CORS (use official middleware)
 app.use(
   cors({
@@ -24,14 +41,6 @@ app.use(
     allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
-
-// Optional request logging to debug routing issues
-if (process.env.LOG_REQUESTS === "true") {
-  app.use((req, _res, next) => {
-    console.log(`Incoming ${req.method} ${req.originalUrl}`);
-    next();
-  });
-}
 
 // Security headers
 app.use(helmet());
