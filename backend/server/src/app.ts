@@ -1,5 +1,6 @@
 import express from "express";
 import path from "path";
+import fs from "fs";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import authRoutes from "./routes/auth";
@@ -64,18 +65,30 @@ app.get("/api/protected", authMiddleware, (_req, res) => {
   res.json({ message: "Protected data" });
 });
 
-// Serve frontend
+// Serve frontend if built assets exist
 const clientPath = path.join(__dirname, "../../frontend/dist");
-app.use(express.static(clientPath));
+const indexPath = path.join(clientPath, "index.html");
+const hasFrontend = fs.existsSync(indexPath);
 
-// Catch-all for React Router (non-API routes only)
-app.use((req, res, next) => {
-  if (!req.path.startsWith("/api")) {
-    res.sendFile(path.join(clientPath, "index.html"));
-  } else {
-    next();
-  }
-});
+if (hasFrontend) {
+  app.use(express.static(clientPath));
+
+  // Catch-all for React Router (non-API routes only)
+  app.use((req, res, next) => {
+    if (!req.path.startsWith("/api")) {
+      res.sendFile(indexPath);
+    } else {
+      next();
+    }
+  });
+} else {
+  app.get("/", (_req, res) => {
+    res.send("API running");
+  });
+  app.get("/health", (_req, res) => {
+    res.status(200).json({ status: "ok" });
+  });
+}
 
 // Global error handler
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
