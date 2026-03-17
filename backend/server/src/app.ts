@@ -25,6 +25,14 @@ app.use(
   })
 );
 
+// Explicitly handle preflight requests
+app.use((req, res, next) => {
+  if (req.method === "OPTIONS") {
+    return res.sendStatus(200);
+  }
+  next();
+});
+
 // Security headers
 app.use(helmet());
 
