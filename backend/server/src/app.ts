@@ -3,6 +3,7 @@ import path from "path";
 import fs from "fs";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
+import cors from "cors";
 import authRoutes from "./routes/auth";
 import userRoutes from "./routes/users";
 import jobRoutes from "./routes/jobs";
@@ -14,6 +15,9 @@ import inspectionReportsRoutes from "./routes/inspectionReports";
 import { authMiddleware } from "./middleware/auth";
 
 const app = express();
+
+// CORS (allow all origins for now; tighten in production if needed)
+app.use(cors());
 
 // Security headers
 app.use(helmet());
