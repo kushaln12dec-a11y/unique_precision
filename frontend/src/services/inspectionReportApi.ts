@@ -1,3 +1,5 @@
+import { apiUrl } from "./apiClient";
+
 export type InstrumentSelection = {
   hm: boolean;
   sg: boolean;
@@ -40,7 +42,7 @@ const getAuthHeaders = () => {
 };
 
 export const generateInspectionReport = async (payload: InspectionReportPayload): Promise<Blob> => {
-  const res = await fetch("/api/inspection-reports/generate", {
+  const res = await fetch(apiUrl("/api/inspection-reports/generate"), {
     method: "POST",
     headers: getAuthHeaders(),
     body: JSON.stringify(payload),
@@ -55,7 +57,7 @@ export const generateInspectionReport = async (payload: InspectionReportPayload)
 };
 
 export const getInspectionReportPreviewHtml = async (payload: InspectionReportPayload): Promise<string> => {
-  const res = await fetch("/api/inspection-reports/preview-html", {
+  const res = await fetch(apiUrl("/api/inspection-reports/preview-html"), {
     method: "POST",
     headers: getAuthHeaders(),
     body: JSON.stringify(payload),

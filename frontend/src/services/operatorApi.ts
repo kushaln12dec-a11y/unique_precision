@@ -1,4 +1,5 @@
 import type { JobEntry } from "../types/job";
+import { apiUrl } from "./apiClient";
 
 export type CaptureOperatorInputPayload = {
   startTime: string;
@@ -43,7 +44,7 @@ export const getOperatorJobs = async (
 
   const url = params.toString() ? `/api/operator/jobs?${params.toString()}` : "/api/operator/jobs";
 
-  const res = await fetch(url, {
+  const res = await fetch(apiUrl(url), {
     method: "GET",
     headers: getAuthHeaders(),
   });
@@ -63,7 +64,7 @@ export const getOperatorJobs = async (
 
 // Get operator job by ID
 export const getOperatorJobById = async (id: string): Promise<JobEntry> => {
-  const res = await fetch(`/api/operator/jobs/${id}`, {
+  const res = await fetch(apiUrl(`/api/operator/jobs/${id}`), {
     method: "GET",
     headers: getAuthHeaders(),
   });
@@ -83,7 +84,7 @@ export const getOperatorJobById = async (id: string): Promise<JobEntry> => {
 
 // Get operator jobs by groupId
 export const getOperatorJobsByGroupId = async (groupId: number): Promise<JobEntry[]> => {
-  const res = await fetch(`/api/operator/jobs/group/${groupId}`, {
+  const res = await fetch(apiUrl(`/api/operator/jobs/group/${groupId}`), {
     method: "GET",
     headers: getAuthHeaders(),
   });
@@ -103,7 +104,7 @@ export const getOperatorJobsByGroupId = async (groupId: number): Promise<JobEntr
 
 // Update operator job
 export const updateOperatorJob = async (id: string, jobData: Partial<JobEntry>): Promise<JobEntry> => {
-  const res = await fetch(`/api/operator/jobs/${id}`, {
+  const res = await fetch(apiUrl(`/api/operator/jobs/${id}`), {
     method: "PUT",
     headers: getAuthHeaders(),
     body: JSON.stringify(jobData),
@@ -125,7 +126,7 @@ export const updateOperatorJob = async (id: string, jobData: Partial<JobEntry>):
 
 // Capture operator input (POST)
 export const captureOperatorInput = async (id: string, inputData: CaptureOperatorInputPayload): Promise<JobEntry> => {
-  const res = await fetch(`/api/operator/jobs/${id}/capture-input`, {
+  const res = await fetch(apiUrl(`/api/operator/jobs/${id}/capture-input`), {
     method: "POST",
     headers: getAuthHeaders(),
     body: JSON.stringify(inputData),
@@ -149,7 +150,7 @@ export const updateOperatorQaStatus = async (
   id: string,
   payload: UpdateQaStatusPayload
 ): Promise<JobEntry> => {
-  const res = await fetch(`/api/operator/jobs/${id}/qa-status`, {
+  const res = await fetch(apiUrl(`/api/operator/jobs/${id}/qa-status`), {
     method: "POST",
     headers: getAuthHeaders(),
     body: JSON.stringify(payload),
@@ -174,7 +175,7 @@ export const bulkUpdateOperatorJobs = async (
   jobIds: (string | number)[],
   updateData: Partial<JobEntry>
 ): Promise<{ message: string; modifiedCount: number }> => {
-  const res = await fetch("/api/operator/jobs/bulk", {
+  const res = await fetch(apiUrl("/api/operator/jobs/bulk"), {
     method: "PUT",
     headers: getAuthHeaders(),
     body: JSON.stringify({ jobIds, updateData }),

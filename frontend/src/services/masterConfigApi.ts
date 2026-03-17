@@ -1,4 +1,5 @@
 import type { MasterConfig } from "../types/masterConfig";
+import { apiUrl } from "./apiClient";
 
 const getAuthHeaders = () => {
   const token = localStorage.getItem("token");
@@ -9,7 +10,7 @@ const getAuthHeaders = () => {
 };
 
 export const getMasterConfig = async (): Promise<MasterConfig> => {
-  const res = await fetch("/api/master-config", {
+  const res = await fetch(apiUrl("/api/master-config"), {
     method: "GET",
     headers: getAuthHeaders(),
   });
@@ -33,7 +34,7 @@ export const getMasterConfig = async (): Promise<MasterConfig> => {
 };
 
 export const updateMasterConfig = async (payload: MasterConfig): Promise<MasterConfig> => {
-  const res = await fetch("/api/master-config", {
+  const res = await fetch(apiUrl("/api/master-config"), {
     method: "PUT",
     headers: getAuthHeaders(),
     body: JSON.stringify(payload),

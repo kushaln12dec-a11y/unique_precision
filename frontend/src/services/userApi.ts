@@ -1,4 +1,5 @@
 import type { User, CreateUserData, UpdateUserData } from "../types/user";
+import { apiUrl } from "./apiClient";
 
 const getAuthHeaders = () => {
   const token = localStorage.getItem("token");
@@ -17,7 +18,7 @@ export const getUsers = async (roles?: string[]): Promise<User[]> => {
     url += `?roles=${encodeURIComponent(rolesParam)}`;
   }
   
-  const res = await fetch(url, {
+  const res = await fetch(apiUrl(url), {
     method: "GET",
     headers: getAuthHeaders(),
   });
@@ -30,7 +31,7 @@ export const getUsers = async (roles?: string[]): Promise<User[]> => {
 };
 
 export const getUserById = async (id: string): Promise<User> => {
-  const res = await fetch(`/api/users/${id}`, {
+  const res = await fetch(apiUrl(`/api/users/${id}`), {
     method: "GET",
     headers: getAuthHeaders(),
   });
@@ -43,7 +44,7 @@ export const getUserById = async (id: string): Promise<User> => {
 };
 
 export const createUser = async (userData: CreateUserData): Promise<User> => {
-  const res = await fetch("/api/users", {
+  const res = await fetch(apiUrl("/api/users"), {
     method: "POST",
     headers: getAuthHeaders(),
     body: JSON.stringify(userData),
@@ -58,7 +59,7 @@ export const createUser = async (userData: CreateUserData): Promise<User> => {
 };
 
 export const updateUser = async (id: string, userData: UpdateUserData): Promise<User> => {
-  const res = await fetch(`/api/users/${id}`, {
+  const res = await fetch(apiUrl(`/api/users/${id}`), {
     method: "PUT",
     headers: getAuthHeaders(),
     body: JSON.stringify(userData),
@@ -73,7 +74,7 @@ export const updateUser = async (id: string, userData: UpdateUserData): Promise<
 };
 
 export const deleteUser = async (id: string): Promise<void> => {
-  const res = await fetch(`/api/users/${id}`, {
+  const res = await fetch(apiUrl(`/api/users/${id}`), {
     method: "DELETE",
     headers: getAuthHeaders(),
   });

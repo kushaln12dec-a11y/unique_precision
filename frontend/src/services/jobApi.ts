@@ -1,5 +1,6 @@
 import type { JobEntry } from "../types/job";
 import type { FilterValues } from "../components/FilterModal";
+import { apiUrl } from "./apiClient";
 
 const getAuthHeaders = () => {
   const token = localStorage.getItem("token");
@@ -89,7 +90,7 @@ export const getJobs = async (
   const queryString = buildQueryParams(filters, customerFilter, createdByFilter, assignedToFilter, criticalFilter, descriptionFilter);
   const url = queryString ? `/api/jobs?${queryString}` : "/api/jobs";
 
-  const res = await fetch(url, {
+  const res = await fetch(apiUrl(url), {
     method: "GET",
     headers: getAuthHeaders(),
   });
@@ -109,7 +110,7 @@ export const getJobs = async (
 };
 
 export const getJobById = async (id: string): Promise<JobEntry> => {
-  const res = await fetch(`/api/jobs/${id}`, {
+  const res = await fetch(apiUrl(`/api/jobs/${id}`), {
     method: "GET",
     headers: getAuthHeaders(),
   });
@@ -128,7 +129,7 @@ export const getJobById = async (id: string): Promise<JobEntry> => {
 };
 
 export const getJobsByGroupId = async (groupId: number): Promise<JobEntry[]> => {
-  const res = await fetch(`/api/jobs/group/${groupId}`, {
+  const res = await fetch(apiUrl(`/api/jobs/group/${groupId}`), {
     method: "GET",
     headers: getAuthHeaders(),
   });
@@ -147,7 +148,7 @@ export const getJobsByGroupId = async (groupId: number): Promise<JobEntry[]> => 
 };
 
 export const createJobs = async (jobs: JobEntry[]): Promise<JobEntry[]> => {
-  const res = await fetch("/api/jobs", {
+  const res = await fetch(apiUrl("/api/jobs"), {
     method: "POST",
     headers: getAuthHeaders(),
     body: JSON.stringify(jobs),
@@ -186,7 +187,7 @@ export const createJobs = async (jobs: JobEntry[]): Promise<JobEntry[]> => {
 };
 
 export const updateJob = async (id: string, jobData: Partial<JobEntry>): Promise<JobEntry> => {
-  const res = await fetch(`/api/jobs/${id}`, {
+  const res = await fetch(apiUrl(`/api/jobs/${id}`), {
     method: "PUT",
     headers: getAuthHeaders(),
     body: JSON.stringify(jobData),
@@ -242,7 +243,7 @@ export const updateJobsByGroupId = async (groupId: number, jobs: JobEntry[]): Pr
 };
 
 export const deleteJob = async (id: string): Promise<void> => {
-  const res = await fetch(`/api/jobs/${id}`, {
+  const res = await fetch(apiUrl(`/api/jobs/${id}`), {
     method: "DELETE",
     headers: getAuthHeaders(),
   });
@@ -253,7 +254,7 @@ export const deleteJob = async (id: string): Promise<void> => {
 };
 
 export const deleteJobsByGroupId = async (groupId: number): Promise<void> => {
-  const res = await fetch(`/api/jobs/group/${groupId}`, {
+  const res = await fetch(apiUrl(`/api/jobs/group/${groupId}`), {
     method: "DELETE",
     headers: getAuthHeaders(),
   });
@@ -267,7 +268,7 @@ export const updateQcDecisionByGroupId = async (
   groupId: number,
   decision: "PENDING" | "APPROVED" | "REJECTED"
 ): Promise<JobEntry[]> => {
-  const res = await fetch(`/api/jobs/group/${groupId}/qc-decision`, {
+  const res = await fetch(apiUrl(`/api/jobs/group/${groupId}/qc-decision`), {
     method: "PUT",
     headers: getAuthHeaders(),
     body: JSON.stringify({ decision }),
@@ -291,7 +292,7 @@ export const setQcReportClosedByGroupId = async (
   groupId: number,
   closed: boolean = true
 ): Promise<JobEntry[]> => {
-  const res = await fetch(`/api/jobs/group/${groupId}/qc-report-close`, {
+  const res = await fetch(apiUrl(`/api/jobs/group/${groupId}/qc-report-close`), {
     method: "PUT",
     headers: getAuthHeaders(),
     body: JSON.stringify({ closed }),

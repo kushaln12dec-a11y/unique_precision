@@ -1,3 +1,5 @@
+import { apiUrl } from "./apiClient";
+
 export type IdleTimeConfig = {
   _id?: string;
   idleTimeType: "Power Break" | "Machine Breakdown" | "Vertical Dial" | "Cleaning" | "Consumables Change";
@@ -14,7 +16,7 @@ const getAuthHeaders = () => {
 
 // Get all idle time configurations
 export const getIdleTimeConfigs = async (): Promise<IdleTimeConfig[]> => {
-  const res = await fetch("/api/idle-time-config", {
+  const res = await fetch(apiUrl("/api/idle-time-config"), {
     method: "GET",
     headers: getAuthHeaders(),
   });
@@ -28,7 +30,7 @@ export const getIdleTimeConfigs = async (): Promise<IdleTimeConfig[]> => {
 
 // Get single idle time configuration
 export const getIdleTimeConfig = async (type: string): Promise<IdleTimeConfig> => {
-  const res = await fetch(`/api/idle-time-config/${type}`, {
+  const res = await fetch(apiUrl(`/api/idle-time-config/${type}`), {
     method: "GET",
     headers: getAuthHeaders(),
   });
@@ -45,7 +47,7 @@ export const upsertIdleTimeConfig = async (
   idleTimeType: string,
   durationMinutes: number
 ): Promise<IdleTimeConfig> => {
-  const res = await fetch("/api/idle-time-config", {
+  const res = await fetch(apiUrl("/api/idle-time-config"), {
     method: "POST",
     headers: getAuthHeaders(),
     body: JSON.stringify({ idleTimeType, durationMinutes }),
@@ -64,7 +66,7 @@ export const updateIdleTimeConfig = async (
   type: string,
   durationMinutes: number
 ): Promise<IdleTimeConfig> => {
-  const res = await fetch(`/api/idle-time-config/${type}`, {
+  const res = await fetch(apiUrl(`/api/idle-time-config/${type}`), {
     method: "PUT",
     headers: getAuthHeaders(),
     body: JSON.stringify({ durationMinutes }),
@@ -80,7 +82,7 @@ export const updateIdleTimeConfig = async (
 
 // Delete idle time configuration
 export const deleteIdleTimeConfig = async (type: string): Promise<void> => {
-  const res = await fetch(`/api/idle-time-config/${type}`, {
+  const res = await fetch(apiUrl(`/api/idle-time-config/${type}`), {
     method: "DELETE",
     headers: getAuthHeaders(),
   });

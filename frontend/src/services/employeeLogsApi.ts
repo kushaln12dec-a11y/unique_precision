@@ -1,4 +1,5 @@
 import type { EmployeeLog, EmployeeLogQueryStatus } from "../types/employeeLog";
+import { apiUrl } from "./apiClient";
 
 const getAuthHeaders = () => {
   const token = localStorage.getItem("token");
@@ -27,7 +28,7 @@ export const getEmployeeLogs = async (params: GetEmployeeLogsParams = {}): Promi
   if (params.endDate) query.append("endDate", params.endDate);
 
   const url = query.toString() ? `/api/employee-logs?${query.toString()}` : "/api/employee-logs";
-  const res = await fetch(url, {
+  const res = await fetch(apiUrl(url), {
     method: "GET",
     headers: getAuthHeaders(),
   });
@@ -40,7 +41,7 @@ export const getEmployeeLogs = async (params: GetEmployeeLogsParams = {}): Promi
 };
 
 export const startProgrammerJobLog = async (payload: { refNumber?: string } = {}): Promise<EmployeeLog> => {
-  const res = await fetch("/api/employee-logs/programmer/start", {
+  const res = await fetch(apiUrl("/api/employee-logs/programmer/start"), {
     method: "POST",
     headers: getAuthHeaders(),
     body: JSON.stringify(payload),
@@ -62,7 +63,7 @@ export const completeProgrammerJobLog = async (payload: {
   settingsCount?: number;
   quantityCount?: number;
 }): Promise<EmployeeLog> => {
-  const res = await fetch("/api/employee-logs/programmer/complete", {
+  const res = await fetch(apiUrl("/api/employee-logs/programmer/complete"), {
     method: "POST",
     headers: getAuthHeaders(),
     body: JSON.stringify(payload),
@@ -78,7 +79,7 @@ export const completeProgrammerJobLog = async (payload: {
 export const rejectProgrammerJobLog = async (payload: {
   logId?: string;
 }): Promise<EmployeeLog> => {
-  const res = await fetch("/api/employee-logs/programmer/reject", {
+  const res = await fetch(apiUrl("/api/employee-logs/programmer/reject"), {
     method: "POST",
     headers: getAuthHeaders(),
     body: JSON.stringify(payload),
@@ -103,7 +104,7 @@ export const startOperatorProductionLog = async (payload: {
   quantityCount?: number;
   startedAt?: string;
 }): Promise<EmployeeLog> => {
-  const res = await fetch("/api/employee-logs/operator/start", {
+  const res = await fetch(apiUrl("/api/employee-logs/operator/start"), {
     method: "POST",
     headers: getAuthHeaders(),
     body: JSON.stringify(payload),
@@ -123,7 +124,7 @@ export const createOperatorTaskSwitchLog = async (payload: {
   endedAt: string;
   durationSeconds: number;
 }): Promise<EmployeeLog> => {
-  const res = await fetch("/api/employee-logs/operator/task-switch", {
+  const res = await fetch(apiUrl("/api/employee-logs/operator/task-switch"), {
     method: "POST",
     headers: getAuthHeaders(),
     body: JSON.stringify(payload),
