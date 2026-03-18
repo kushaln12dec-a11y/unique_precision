@@ -15,6 +15,9 @@ import { authMiddleware } from "./middleware/auth";
 const app = express();
 
 // Minimal middleware for debugging connectivity
+app.set("json replacer", (_key: string, value: any) =>
+  typeof value === "bigint" ? value.toString() : value
+);
 app.use(cors());
 app.use(express.json({ limit: "10mb" }));
 

@@ -2,6 +2,7 @@ import { Router } from "express";
 import { authMiddleware } from "../middleware/auth";
 import { prisma } from "../lib/prisma";
 import { parseOperatorDateTime } from "../utils/dateTime";
+import { toBigInt } from "../utils/bigint";
 import { mapEmployeeLog } from "../utils/prismaMappers";
 
 const router = Router();
@@ -96,7 +97,7 @@ router.post("/programmer/complete", async (req, res) => {
     const startedAt = log.startedAt instanceof Date ? log.startedAt : endedAt;
     const durationSeconds = Math.max(0, Math.floor((endedAt.getTime() - startedAt.getTime()) / 1000));
 
-    const resolvedGroupId = Number(jobGroupId || log.jobGroupId || 0) || null;
+    const resolvedGroupId = toBigInt(jobGroupId ?? log.jobGroupId) ?? null;
     let resolvedRefNumber = String(refNumber || log.refNumber || "");
 
     if (resolvedGroupId) {
@@ -235,7 +236,7 @@ router.post("/operator/complete", async (req, res) => {
         userEmail: String(reqUser?.email || ""),
         userName: String(reqUser?.fullName || "").trim(),
         ...withJobId(resolvedJobId),
-        jobGroupId: Number(jobGroupId || 0) || null,
+        jobGroupId: toBigInt(jobGroupId) ?? null,
         refNumber: String(refNumber || ""),
         settingLabel: String(settingLabel || ""),
         quantityFrom: Number(fromQty || 0) || null,
@@ -298,7 +299,7 @@ router.post("/operator/start", async (req, res) => {
         userEmail: String(reqUser?.email || ""),
         userName: String(reqUser?.fullName || "").trim(),
         ...withJobId(resolvedJobId),
-        jobGroupId: Number(jobGroupId || 0) || null,
+        jobGroupId: toBigInt(jobGroupId) ?? null,
         refNumber: String(refNumber || ""),
         settingLabel: String(settingLabel || ""),
         quantityFrom: Number(fromQty || 0) || null,

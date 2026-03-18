@@ -15,7 +15,7 @@ export type InspectionRowPayload = {
 };
 
 export type GenerateInspectionReportPayload = {
-  groupId?: number;
+  groupId?: bigint | number | string;
   customerId?: string;
   date?: string;
   drawingName?: string;

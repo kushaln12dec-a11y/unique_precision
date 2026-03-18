@@ -20,7 +20,7 @@ const schemaStatements: string[] = [
 
   `CREATE TABLE IF NOT EXISTS "Job" (
     "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    "groupId" INTEGER NOT NULL,
+    "groupId" BIGINT NOT NULL,
     "customer" TEXT,
     "rate" NUMERIC(12, 2),
     "cut" NUMERIC(12, 4),
@@ -110,7 +110,7 @@ const schemaStatements: string[] = [
     "userEmail" TEXT,
     "userName" TEXT,
     "jobId" UUID,
-    "jobGroupId" INTEGER,
+    "jobGroupId" BIGINT,
     "refNumber" TEXT,
     "settingLabel" TEXT,
     "quantityFrom" INTEGER,

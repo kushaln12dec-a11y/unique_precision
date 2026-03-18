@@ -26,7 +26,7 @@ model User {
 
 model Job {
   id               String   @id @default(uuid()) @db.Uuid
-  groupId          Int
+  groupId          BigInt  @db.BigInt
   customer         String?
   rate             Decimal? @db.Decimal(12, 2)
   cut              Decimal? @db.Decimal(12, 4)
@@ -134,7 +134,7 @@ model EmployeeLog {
   userEmail      String?
   userName       String?
   jobId          String?  @db.Uuid
-  jobGroupId     Int?
+  jobGroupId     BigInt? @db.BigInt
   refNumber      String?
   settingLabel   String?
   quantityFrom   Int?

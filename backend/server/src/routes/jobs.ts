@@ -3,6 +3,7 @@ import { Prisma } from "@prisma/client";
 import { authMiddleware } from "../middleware/auth";
 import { prisma } from "../lib/prisma";
 import { parseDisplayDateTime } from "../utils/dateTime";
+import { requireBigInt, toBigInt } from "../utils/bigint";
 import { mapJob } from "../utils/prismaMappers";
 import { resolveStoredFile } from "../utils/objectStorage";
 
@@ -37,6 +38,11 @@ const toInt = (value: unknown): number | null => {
   return n === null ? null : Math.trunc(n);
 };
 
+const parseGroupIdParam = (value: unknown): bigint | null => {
+  const parsed = toBigInt(value);
+  return parsed ?? null;
+};
+
 const normalizeJobInput = async (job: any) => {
   const createdAt = parseDisplayDateTime(job.createdAt) ?? new Date();
   const cutImage = Array.isArray(job.cutImage) ? (job.cutImage[0] || "") : job.cutImage;
@@ -44,7 +50,7 @@ const normalizeJobInput = async (job: any) => {
   const lastImageUrl = await resolveStoredFile(job.lastImage, "jobs/last-images");
   const parsedUpdatedAt = job.updatedAt ? parseDisplayDateTime(job.updatedAt) : null;
   return {
-    groupId: Number(job.groupId),
+    groupId: requireBigInt(job.groupId, "groupId"),
     customer: job.customer ?? "",
     rate: toNumber(job.rate),
     cut: toNumber(job.cut),
@@ -92,7 +98,7 @@ const normalizeJobInput = async (job: any) => {
 
 const normalizeJobUpdate = async (job: any) => {
   const data: any = {};
-  if (job.groupId !== undefined) data.groupId = Number(job.groupId);
+  if (job.groupId !== undefined) data.groupId = requireBigInt(job.groupId, "groupId");
   if (job.customer !== undefined) data.customer = job.customer ?? "";
   if (job.rate !== undefined) data.rate = toNumber(job.rate);
   if (job.cut !== undefined) data.cut = toNumber(job.cut);
@@ -240,8 +246,12 @@ router.get("/", async (req, res) => {
 // Get jobs by groupId
 router.get("/group/:groupId", async (req, res) => {
   try {
+    const groupId = parseGroupIdParam(req.params.groupId);
+    if (groupId === null) {
+      return res.status(400).json({ message: "Invalid groupId" });
+    }
     const jobs = await prisma.job.findMany({
-      where: { groupId: Number(req.params.groupId) },
+      where: { groupId },
       orderBy: { createdAt: "asc" },
       include: jobInclude,
     });
@@ -341,7 +351,10 @@ router.put("/group/:groupId/qc-decision", async (req, res) => {
       return res.status(400).json({ message: "Invalid decision value" });
     }
 
-    const groupId = Number(req.params.groupId);
+    const groupId = parseGroupIdParam(req.params.groupId);
+    if (groupId === null) {
+      return res.status(400).json({ message: "Invalid groupId" });
+    }
     const updateResult = await prisma.job.updateMany({
       where: { groupId },
       data: { qcDecision: decision },
@@ -368,7 +381,10 @@ router.put("/group/:groupId/qc-report-close", async (req, res) => {
   try {
     const { closed } = req.body as { closed?: boolean };
     const shouldClose = closed !== undefined ? Boolean(closed) : true;
-    const groupId = Number(req.params.groupId);
+    const groupId = parseGroupIdParam(req.params.groupId);
+    if (groupId === null) {
+      return res.status(400).json({ message: "Invalid groupId" });
+    }
 
     const updateResult = await prisma.job.updateMany({
       where: { groupId },
@@ -407,7 +423,11 @@ router.delete("/:id", async (req, res) => {
 // Delete all jobs by groupId
 router.delete("/group/:groupId", async (req, res) => {
   try {
-    const result = await prisma.job.deleteMany({ where: { groupId: Number(req.params.groupId) } });
+    const groupId = parseGroupIdParam(req.params.groupId);
+    if (groupId === null) {
+      return res.status(400).json({ message: "Invalid groupId" });
+    }
+    const result = await prisma.job.deleteMany({ where: { groupId } });
 
     res.json({
       message: "Jobs deleted successfully",

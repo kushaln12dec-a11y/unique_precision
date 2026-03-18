@@ -3,6 +3,7 @@ import { Prisma } from "@prisma/client";
 import { authMiddleware } from "../middleware/auth";
 import { prisma } from "../lib/prisma";
 import { formatDbDateTime, parseOperatorDateTime } from "../utils/dateTime";
+import { toBigInt } from "../utils/bigint";
 import { mapJob } from "../utils/prismaMappers";
 import { resolveStoredFile } from "../utils/objectStorage";
 
@@ -81,8 +82,12 @@ router.get("/jobs/:id", async (req, res) => {
 // Get jobs by groupId
 router.get("/jobs/group/:groupId", async (req, res) => {
   try {
+    const groupId = toBigInt(req.params.groupId);
+    if (groupId === null) {
+      return res.status(400).json({ message: "Invalid groupId" });
+    }
     const jobs = await prisma.job.findMany({
-      where: { groupId: Number(req.params.groupId) },
+      where: { groupId },
       orderBy: { createdAt: "asc" },
       include: jobInclude,
     });
@@ -297,7 +302,7 @@ router.post("/jobs/:id/capture-input", async (req, res) => {
         userEmail: String(reqUser?.email || ""),
         userName: String(reqUser?.fullName || "").trim(),
         jobId: String(refreshedJob.id || ""),
-        jobGroupId: Number(refreshedJob.groupId || 0) || null,
+        jobGroupId: toBigInt(refreshedJob.groupId) ?? null,
         refNumber: String(refreshedJob.refNumber || ""),
         settingLabel: settingNumber ? String(settingNumber) : String((refreshedJob as any).setting || ""),
         quantityFrom: resolvedFromQty,
