@@ -122,8 +122,7 @@ const InspectionReportPage = () => {
           ...createEmptyRow(),
           actualDimension: String(job.cut || ""),
         }));
-        if (seededRows.length === 0) seededRows.push(createEmptyRow());
-        setRows(seededRows);
+        setRows(seededRows.length > 0 ? seededRows : [createEmptyRow()]);
       } catch (error) {
         setToast({
           message: "Failed to load group details for inspection report.",
@@ -169,6 +168,7 @@ const InspectionReportPage = () => {
   };
 
   const activeRowCount = useMemo(() => rows.filter(hasRowValue).length, [rows]);
+  const measurementRowCount = rows.length;
   const previewRequestRef = useRef(0);
 
   const addMeasurementRow = () => {
@@ -350,6 +350,7 @@ const InspectionReportPage = () => {
         <div className="roleboard-body qc-report-panel">
           <div className="qc-report-toolbar">
             <div className="qc-report-toolbar-meta">
+              <span>Rows Added: {measurementRowCount}</span>
               <span>Filled Rows: {activeRowCount}</span>
             </div>
           </div>

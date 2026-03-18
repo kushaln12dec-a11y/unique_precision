@@ -11,7 +11,7 @@ import ConfirmDeleteModal from "../../components/ConfirmDeleteModal";
 import { getUserRoleFromToken } from "../../utils/auth";
 import "../../utils/tokenDebug";
 import { getUsers } from "../../services/userApi";
-import { getEmployeeLogs, rejectProgrammerJobLog, startProgrammerJobLog } from "../../services/employeeLogsApi";
+import { getEmployeeLogs } from "../../services/employeeLogsApi";
 import { getMasterConfig } from "../../services/masterConfigApi";
 import { getJobsByGroupId } from "../../services/jobApi";
 import type { User } from "../../types/user";
@@ -46,7 +46,6 @@ import {
 import { getDisplayName, getInitials, getLogUserDisplayName } from "../../utils/jobFormatting";
 
 const Programmer = () => {
-  const PROGRAMMER_ACTIVE_LOG_KEY = "programmer_active_job_log_id";
   const navigate = useNavigate();
   const params = useParams<{ groupId?: string }>();
   const dispatch = useAppDispatch();
@@ -265,56 +264,6 @@ const Programmer = () => {
     fetchUsers();
   }, []);
 
-  const rejectActiveProgrammerDraftLog = useCallback(async () => {
-    const activeLogId = localStorage.getItem(PROGRAMMER_ACTIVE_LOG_KEY);
-    if (!activeLogId) return;
-    try {
-      await rejectProgrammerJobLog({ logId: activeLogId });
-    } catch (error) {
-      console.error("Failed to reject programmer draft log", error);
-    } finally {
-      localStorage.removeItem(PROGRAMMER_ACTIVE_LOG_KEY);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (!(isNewJobRoute || isEditRoute)) return;
-    const customerValue = String(cuts[0]?.customer || "").trim();
-    if (!customerValue) return;
-    const activeLogId = localStorage.getItem(PROGRAMMER_ACTIVE_LOG_KEY);
-    if (activeLogId) return;
-
-    const startLogOnCustomerInput = async () => {
-      try {
-        const startedLog = await startProgrammerJobLog({
-          refNumber: String(refNumber || "").trim() || undefined,
-        });
-        if (startedLog?._id) {
-          localStorage.setItem(PROGRAMMER_ACTIVE_LOG_KEY, startedLog._id);
-        }
-      } catch (error) {
-        console.error("Failed to start programmer log on customer input", error);
-      }
-    };
-
-    startLogOnCustomerInput();
-  }, [cuts, isEditRoute, isNewJobRoute, refNumber]);
-
-  useEffect(() => {
-    if (!(isNewJobRoute || isEditRoute)) return;
-    return () => {
-      const activeLogId = localStorage.getItem(PROGRAMMER_ACTIVE_LOG_KEY);
-      if (!activeLogId) return;
-      void rejectProgrammerJobLog({ logId: activeLogId })
-        .catch((error) => {
-          console.error("Failed to reject programmer log on leave", error);
-        })
-        .finally(() => {
-          localStorage.removeItem(PROGRAMMER_ACTIVE_LOG_KEY);
-        });
-    };
-  }, [isNewJobRoute, isEditRoute]);
-
   useEffect(() => {
     if (isNewJobRoute || isEditRoute) {
       setActiveTab("jobs");
@@ -328,7 +277,6 @@ const Programmer = () => {
 
   const handleCancel = async () => {
     handleCancelState();
-    await rejectActiveProgrammerDraftLog();
     if (isNewJobRoute || isEditRoute) {
       navigate("/programmer");
     }

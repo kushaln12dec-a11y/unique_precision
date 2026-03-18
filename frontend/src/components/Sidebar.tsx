@@ -70,6 +70,7 @@ const Sidebar = ({ currentPath = '/dashboard', onNavigate }: SidebarProps) => {
           const isActive = currentPath === item.path;
           return (
             <button
+              type="button"
               key={index}
               className={`nav-item ${isActive ? 'active' : ''}`}
               onClick={() => onNavigate && onNavigate(item.path)}
@@ -84,6 +85,7 @@ const Sidebar = ({ currentPath = '/dashboard', onNavigate }: SidebarProps) => {
 
       <div className="sidebar-footer">
         <button
+          type="button"
           className="nav-item logout-item"
           onClick={handleLogout}
           title="Logout"
