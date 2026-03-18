@@ -20,6 +20,7 @@ import { validateQuantityInputs, validateRangeSelection } from "./utils/validati
 import { getQuantityProgressStatuses } from "./utils/qaProgress";
 import type { QuantityQaStatus } from "../../types/job";
 import { getUserRoleFromToken } from "../../utils/auth";
+import { getFirstNameDisplay } from "../../utils/jobFormatting";
 import "../RoleBoard.css";
 import "../Programmer/Programmer.css";
 import "../Programmer/components/JobDetailsModal.css";
@@ -59,7 +60,7 @@ const OperatorViewPage = () => {
           .filter((user) => user.role === "OPERATOR" || user.role === "ADMIN")
           .map((user) => ({
             id: user._id,
-            name: `${user.firstName} ${user.lastName}`.trim() || user.email,
+            name: getFirstNameDisplay(user.firstName, user.email, String(user._id)).toUpperCase(),
           }));
         setOperatorUsers(operators);
       } catch (error) {
@@ -218,7 +219,10 @@ const OperatorViewPage = () => {
         await captureOperatorInput(String(cutId), payload);
       } catch (error: any) {
         if (error?.message?.includes("overlaps")) {
-          await updateOperatorJob(String(cutId), { assignedTo: assignedToValue });
+          await updateOperatorJob(String(cutId), {
+            assignedTo: assignedToValue,
+            machineNumber: String(qtyData.machineNumber || "").trim(),
+          });
           setSavedQuantities((prev) => {
             const newMap = new Map(prev);
             const saved = newMap.get(cutId) || new Set<number>();
@@ -238,7 +242,10 @@ const OperatorViewPage = () => {
         throw error;
       }
 
-      await updateOperatorJob(String(cutId), { assignedTo: assignedToValue });
+      await updateOperatorJob(String(cutId), {
+        assignedTo: assignedToValue,
+        machineNumber: String(qtyData.machineNumber || "").trim(),
+      });
 
       // Mark this quantity as saved
       setSavedQuantities((prev) => {
@@ -375,7 +382,10 @@ const OperatorViewPage = () => {
         throw error;
       }
 
-      await updateOperatorJob(String(cutId), { assignedTo: assignedToValue });
+      await updateOperatorJob(String(cutId), {
+        assignedTo: assignedToValue,
+        machineNumber: String(qtyData.machineNumber || "").trim(),
+      });
 
       setSavedRanges((prev) => {
         const newMap = new Map(prev);
@@ -457,7 +467,7 @@ const OperatorViewPage = () => {
   const parentJob = jobs.length > 0 ? jobs[0] : null;
   const totalGroupQuantity = jobs.reduce((sum, job) => sum + Math.max(1, Number(job.qty || 1)), 0);
   const groupTotalAmount = jobs.reduce((sum, job) => sum + (job.totalAmount || 0), 0);
-  const groupEstimatedHrs = Number(((amounts.totalWedmAmount || 0) / 625).toFixed(2));
+  const groupEstimatedHrs = Number(((amounts.totalWedmAmount || 0) / 625 / 24).toFixed(2));
 
   const getCutInputData = (cutId: number | string, quantity: number = 1): CutInputData => {
     return cutInputs.get(cutId) || createEmptyCutInputData(quantity);

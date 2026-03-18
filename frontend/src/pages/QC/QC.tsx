@@ -15,9 +15,8 @@ import {
   generateInspectionReport,
   type InspectionReportPayload,
 } from "../../services/inspectionReportApi";
-import type { JobEntry } from "../../types/job";
+import type { JobEntry, QuantityQaStatus } from "../../types/job";
 import { getDisplayDateTimeParts, parseDateValue } from "../../utils/date";
-import { isGroupFullySentToQa } from "../Operator/utils/qaProgress";
 import { getParentRowClassName } from "../Programmer/utils/priorityUtils";
 import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import MarqueeCopyText from "../../components/MarqueeCopyText";
@@ -31,11 +30,14 @@ import "../Programmer/Programmer.css";
 import "./QC.css";
 
 type QcRow = {
+  qcItemId: string;
+  quantityLabel: string;
   groupId: string;
+  jobId: string;
+  quantityNumber: number;
   parent: JobEntry;
+  entry: JobEntry;
   entries: JobEntry[];
-  totalHrs: number;
-  totalAmount: number;
 };
 
 const formatDateForTemplate = (date: Date) => {
@@ -43,6 +45,27 @@ const formatDateForTemplate = (date: Date) => {
   const month = String(date.getMonth() + 1).padStart(2, "0");
   const year = String(date.getFullYear());
   return `${day}/${month}/${year}`;
+};
+
+const getQuantityQaStates = (
+  entry: JobEntry
+): Record<string, QuantityQaStatus> => {
+  const rawStates: any = entry.quantityQaStates || {};
+  if (rawStates instanceof Map) {
+    return Object.fromEntries(rawStates.entries());
+  }
+  return rawStates;
+};
+
+const getPrimaryOperatorName = (value: unknown): string => {
+  return String(value || "")
+    .split(",")
+    .map((name) => name.trim())
+    .find((name) => name && name !== "Unassigned") || "-";
+};
+
+const getDrawingNo = (entry: JobEntry) => {
+  return String((entry as any).programRefFile || entry.refNumber || "").trim();
 };
 
 const QC = () => {
@@ -120,39 +143,57 @@ const QC = () => {
       groups.get(key)!.push(job);
     });
 
-    return Array.from(groups.entries())
-      .filter(
-        ([, entries]) =>
-          isGroupFullySentToQa(entries) &&
-          !entries.every((item) => Boolean((item as any).qcReportClosed))
-      )
-      .map(([groupId, entries]) => {
-        const parent = entries[0];
-        return {
-          groupId,
-          parent,
-          entries,
-          totalHrs: entries.reduce((sum, item) => sum + Number(item.totalHrs || 0), 0),
-          totalAmount: entries.reduce((sum, item) => sum + Number(item.totalAmount || 0), 0),
-        };
-      })
-      .sort((a, b) => parseDateValue(b.parent.createdAt) - parseDateValue(a.parent.createdAt));
+    const rows: QcRow[] = [];
+
+    Array.from(groups.entries()).forEach(([groupId, entries]) => {
+      if (entries.length === 0) return;
+      if (entries.every((item) => Boolean((item as any).qcReportClosed))) return;
+
+      const parent = entries[0];
+      entries.forEach((entry, entryIndex) => {
+        const qaStates = getQuantityQaStates(entry);
+        const totalQty = Math.max(1, Number(entry.qty || 1));
+        const settingNumber = Math.max(1, Number(entry.setting || entryIndex + 1));
+
+        for (let quantityNumber = 1; quantityNumber <= totalQty; quantityNumber += 1) {
+          if (qaStates[String(quantityNumber)] !== "SENT_TO_QA") continue;
+
+          rows.push({
+            qcItemId: `${String(entry.id)}:${quantityNumber}`,
+            quantityLabel: `S${settingNumber}-Q${quantityNumber}`,
+            groupId,
+            jobId: String(entry.id),
+            quantityNumber,
+            parent,
+            entry,
+            entries,
+          });
+        }
+      });
+    });
+
+    return rows.sort(
+      (a, b) =>
+        parseDateValue(b.entry.createdAt || b.parent.createdAt) -
+        parseDateValue(a.entry.createdAt || a.parent.createdAt)
+    );
   }, [jobs]);
 
   const filteredTableData = useMemo(() => {
     return tableData.filter((row) => {
       const customerMatch = customerFilter
-        ? String(row.parent.customer || "").toLowerCase().includes(customerFilter.toLowerCase())
+        ? String(row.entry.customer || row.parent.customer || "")
+            .toLowerCase()
+            .includes(customerFilter.toLowerCase())
         : true;
       const descriptionMatch = descriptionFilter
-        ? String(row.parent.description || "").toLowerCase().includes(descriptionFilter.toLowerCase())
+        ? String(row.entry.description || row.parent.description || "")
+            .toLowerCase()
+            .includes(descriptionFilter.toLowerCase())
         : true;
-      const rowOperator = String(row.parent.assignedTo || "")
-        .split(",")
-        .map((name) => name.trim())
-        .find((name) => name && name !== "Unassigned");
       const operatorMatch = operatorFilter
-        ? String(rowOperator || "").toLowerCase() === operatorFilter.toLowerCase()
+        ? getPrimaryOperatorName(row.entry.assignedTo || row.parent.assignedTo).toLowerCase() ===
+          operatorFilter.toLowerCase()
         : true;
       return customerMatch && descriptionMatch && operatorMatch;
     });
@@ -161,23 +202,29 @@ const QC = () => {
   const qcOperatorOptions = useMemo(() => {
     const names = new Set<string>();
     tableData.forEach((row) => {
-      String(row.parent.assignedTo || "")
-        .split(",")
-        .map((name) => name.trim())
-        .filter((name) => name && name !== "Unassigned")
-        .forEach((name) => names.add(name));
+      const name = getPrimaryOperatorName(row.entry.assignedTo || row.parent.assignedTo);
+      if (name && name !== "-") names.add(name);
     });
     return Array.from(names).sort((a, b) => a.localeCompare(b));
   }, [tableData]);
 
   const columns = useMemo(
     () => [
-      { key: "customer", label: "Customer", render: (row: QcRow) => row.parent.customer || "-" },
+      {
+        key: "quantityLabel",
+        label: "QC Item",
+        render: (row: QcRow) => row.quantityLabel,
+      },
+      {
+        key: "customer",
+        label: "Customer",
+        render: (row: QcRow) => row.entry.customer || row.parent.customer || "-",
+      },
       {
         key: "description",
         label: "Description",
         render: (row: QcRow) => {
-          const full = row.parent.description || "-";
+          const full = row.entry.description || row.parent.description || "-";
           return <MarqueeCopyText text={full} />;
         },
       },
@@ -187,7 +234,7 @@ const QC = () => {
         headerClassName: "qc-job-ref-col",
         className: "qc-job-ref-cell",
         render: (row: QcRow) => {
-          const value = String(row.parent.refNumber || "").trim();
+          const value = String(row.entry.refNumber || row.parent.refNumber || "").trim();
           return value ? `#${value}` : "-";
         },
       },
@@ -196,26 +243,18 @@ const QC = () => {
         label: "Qty",
         headerClassName: "qc-qty-col",
         className: "qc-qty-cell",
-        render: (row: QcRow) => row.entries.reduce((sum, item) => sum + Number(item.qty || 0), 0).toString(),
+        render: () => "1",
       },
       {
         key: "operator",
         label: "Operator",
-        render: (row: QcRow) => {
-          const raw = String(row.parent.assignedTo || "").trim();
-          if (!raw) return "-";
-          const owner = raw
-            .split(",")
-            .map((name) => name.trim())
-            .find((name) => name && name !== "Unassigned");
-          return owner || "-";
-        },
+        render: (row: QcRow) => getPrimaryOperatorName(row.entry.assignedTo || row.parent.assignedTo),
       },
       {
         key: "createdAt",
         label: "Created At",
         render: (row: QcRow) => {
-          const parts = getDisplayDateTimeParts(row.parent.createdAt);
+          const parts = getDisplayDateTimeParts(row.entry.createdAt || row.parent.createdAt);
           return (
             <div className="created-at-split">
               <span>{parts.date}</span>
@@ -282,7 +321,11 @@ const QC = () => {
             <button
               type="button"
               className="qc-inspection-report-btn"
-              onClick={() => navigate(`/qc/inspection-report?groupId=${row.groupId}`)}
+              onClick={() =>
+                navigate(
+                  `/qc/inspection-report?groupId=${row.groupId}&jobId=${row.jobId}&quantityNumber=${row.quantityNumber}`
+                )
+              }
             >
               Open
             </button>
@@ -290,23 +333,6 @@ const QC = () => {
               type="button"
               className="qc-inspection-report-download-btn"
               onClick={async () => {
-                const quantityTotal = row.entries.reduce(
-                  (sum, item) => sum + Number(item.qty || 0),
-                  0
-                );
-                const seededRows = row.entries.slice(0, 17).map((entry) => ({
-                  actualDimension: String(entry.cut ?? ""),
-                  tolerance: "",
-                  measuringDimension: "",
-                  deviation: "",
-                  instruments: {
-                    hm: false,
-                    sg: false,
-                    pg: false,
-                    vc: false,
-                    dm: false,
-                  },
-                }));
                 const decision =
                   row.parent.qcDecision === "APPROVED"
                     ? "ACCEPTED"
@@ -316,13 +342,29 @@ const QC = () => {
 
                 const payload: InspectionReportPayload = {
                   groupId: row.groupId,
-                  customerId: String(row.parent.customer || ""),
+                  jobId: row.jobId,
+                  quantityNumber: row.quantityNumber,
+                  customerId: String(row.entry.customer || row.parent.customer || ""),
                   date: formatDateForTemplate(new Date()),
-                  drawingName: String(row.parent.description || ""),
-                  drawingNo: String((row.parent as any).programRefFile || row.parent.refNumber || ""),
-                  quantity: quantityTotal > 0 ? String(quantityTotal) : "",
+                  drawingName: String(row.entry.description || row.parent.description || ""),
+                  drawingNo: getDrawingNo(row.entry) || getDrawingNo(row.parent),
+                  quantity: "1",
                   decision,
-                  rows: seededRows.length > 0 ? seededRows : [],
+                  rows: [
+                    {
+                      actualDimension: String(row.entry.cut ?? ""),
+                      tolerance: "",
+                      measuringDimension: "",
+                      deviation: "",
+                      instruments: {
+                        hm: false,
+                        sg: false,
+                        pg: false,
+                        vc: false,
+                        dm: false,
+                      },
+                    },
+                  ],
                   remarks: "",
                   workPieceDamage: "",
                   rightAngleProblem: "",
@@ -336,7 +378,7 @@ const QC = () => {
                   const link = document.createElement("a");
                   const url = URL.createObjectURL(blob);
                   link.href = url;
-                  link.download = `inspection-report-${row.groupId}.pdf`;
+                  link.download = `inspection-report-${row.quantityLabel}.pdf`;
                   document.body.appendChild(link);
                   link.click();
                   document.body.removeChild(link);
@@ -403,7 +445,7 @@ const QC = () => {
           <DataTable
             columns={columns as any}
             data={filteredTableData as any}
-            getRowKey={(row: QcRow) => row.groupId}
+            getRowKey={(row: QcRow) => row.qcItemId}
             getRowClassName={(row: QcRow) => {
               return getParentRowClassName(row.parent, row.entries, false);
             }}
@@ -417,8 +459,9 @@ const QC = () => {
           title="Confirm Close Report"
           message="Are you sure you want to close this inspection report?"
           details={[
-            { label: "Job Ref", value: `#${reportCloseCandidate.parent.refNumber || reportCloseCandidate.groupId}` },
-            { label: "Customer", value: reportCloseCandidate.parent.customer || "-" },
+            { label: "QC Item", value: reportCloseCandidate.quantityLabel },
+            { label: "Job Ref", value: `#${reportCloseCandidate.entry.refNumber || reportCloseCandidate.groupId}` },
+            { label: "Customer", value: reportCloseCandidate.entry.customer || reportCloseCandidate.parent.customer || "-" },
           ]}
           confirmButtonText="Close Report"
           onConfirm={closeReportWithConfirm}

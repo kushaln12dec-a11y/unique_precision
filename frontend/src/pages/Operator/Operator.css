@@ -1356,6 +1356,17 @@
   cursor: default;
 }
 
+.created-by-text {
+  display: inline-block;
+  max-width: 100%;
+  color: #1e293b;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
 @media (max-width: 1400px) {
   .operator-filters-top-row {
     flex-wrap: wrap;
@@ -2159,4 +2170,5 @@
 .operator-table-no-scroll .data-table tbody td,
 .operator-table-no-scroll .child-row-content .child-jobs-table tbody td {
   text-align: center !important;
+  vertical-align: middle;
 }

@@ -597,7 +597,7 @@ export const CutSection: React.FC<CutSectionProps> = ({
                 <p>SEDM Cost = 0.00</p>
               )}
               <p>{`Total Amount = WEDM(${cutTotals.wedmAmount.toFixed(2)}) + SEDM(${cutTotals.sedmAmount.toFixed(2)}) = ${cutTotals.totalAmount.toFixed(2)}`}</p>
-              <p>{`Estimated Time = WEDM / 625 = ${cutTotals.wedmAmount.toFixed(2)} / 625 = ${cutTotals.estimatedTime.toFixed(2)}`}</p>
+              <p>{`Estimated Time = WEDM / 625 / 24 = ${cutTotals.wedmAmount.toFixed(2)} / 625 / 24 = ${cutTotals.estimatedTime.toFixed(2)}`}</p>
             </div>
           </div>
         </div>

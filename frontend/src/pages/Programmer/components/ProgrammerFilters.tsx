@@ -5,6 +5,7 @@ import FilterBadges from "../../../components/FilterBadges";
 import DownloadIcon from "@mui/icons-material/Download";
 import type { FilterValues } from "../../../components/FilterModal";
 import { filterFields, filterCategories } from "../config/filterConfig";
+import { getDisplayName } from "../../../utils/jobFormatting";
 
 type ProgrammerFiltersProps = {
   filters: FilterValues;
@@ -68,7 +69,7 @@ export const ProgrammerFilters: React.FC<ProgrammerFiltersProps> = ({
             >
               <option value="">All Users</option>
               {users.map((user) => {
-                const displayName = `${user.firstName} ${user.lastName}`.trim() || user.email;
+                const displayName = getDisplayName(user.firstName, user.lastName, user.email);
                 return (
                   <option key={user._id} value={displayName}>
                     {displayName.toUpperCase()}

@@ -7,6 +7,7 @@ import { OperatorTaskTimer } from "./OperatorTaskTimer";
 import SelectDropdown, { type SelectOption } from "../../Programmer/components/SelectDropdown";
 import { MultiSelectOperators } from "./MultiSelectOperators";
 import type { FilterField, FilterCategory, FilterValues } from "../../../components/FilterModal";
+import { getDisplayName, getFirstNameDisplay } from "../../../utils/jobFormatting";
 
 type OperatorFiltersProps = {
   filters: FilterValues;
@@ -84,7 +85,7 @@ export const OperatorFilters: React.FC<OperatorFiltersProps> = ({
     () => [
       { label: "All Users", value: "" },
       ...users.map((user) => {
-        const displayName = `${user.firstName} ${user.lastName}`.trim() || user.email;
+        const displayName = getDisplayName(user.firstName, user.lastName, user.email);
         return { label: displayName, value: displayName };
       }),
     ],
@@ -100,7 +101,7 @@ export const OperatorFilters: React.FC<OperatorFiltersProps> = ({
     ];
 
     source.forEach((user) => {
-      const displayName = `${user.firstName} ${user.lastName}`.trim() || user.email;
+      const displayName = getFirstNameDisplay(user.firstName, user.email);
       const key = displayName.toLowerCase();
       if (!seen.has(key)) {
         seen.add(key);
@@ -209,7 +210,7 @@ export const OperatorFilters: React.FC<OperatorFiltersProps> = ({
                   selectedOperators={bulkOperators}
                   availableOperators={(operatorUsers.length > 0 ? operatorUsers : users).map((user) => ({
                     id: user._id,
-                    name: `${user.firstName} ${user.lastName}`.trim() || user.email,
+                    name: getFirstNameDisplay(user.firstName, user.email, String(user._id)).toUpperCase(),
                   }))}
                   onChange={setBulkOperators}
                   assignToSelfName={currentUserName || undefined}
