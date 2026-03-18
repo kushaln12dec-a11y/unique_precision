@@ -43,6 +43,7 @@ router.post("/login", async (req, res) => {
         userId: user.id, 
         email: user.email, 
         role: user.role || "OPERATOR",
+        empId: user.empId || null,
         firstName: user.firstName || null,
         lastName: user.lastName || null,
         fullName: fullName
@@ -57,6 +58,7 @@ router.post("/login", async (req, res) => {
         id: user.id, 
         email: user.email, 
         role: user.role || "OPERATOR",
+        empId: user.empId || null,
         firstName: user.firstName,
         lastName: user.lastName,
         fullName: fullName
