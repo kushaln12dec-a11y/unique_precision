@@ -231,7 +231,7 @@ export const EmployeeLogsPanel = () => {
         className: 'employee-work-item-cell',
         render: (row) => (
           <div className="employee-work-item">
-            <span className="ref-badge">Job #{row.refNumber || '-'}</span>
+            <span className="ref-badge">Job #{row.refNumber || ""}</span>
           </div>
         ),
       },

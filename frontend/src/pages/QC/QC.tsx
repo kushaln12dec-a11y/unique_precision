@@ -17,6 +17,7 @@ import {
 } from "../../services/inspectionReportApi";
 import type { JobEntry, QuantityQaStatus } from "../../types/job";
 import { getDisplayDateTimeParts, parseDateValue } from "../../utils/date";
+import { formatJobRefDisplay } from "../../utils/jobFormatting";
 import { getParentRowClassName } from "../Programmer/utils/priorityUtils";
 import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import MarqueeCopyText from "../../components/MarqueeCopyText";
@@ -211,14 +212,14 @@ const QC = () => {
   const columns = useMemo(
     () => [
       {
-        key: "quantityLabel",
-        label: "QC Item",
-        render: (row: QcRow) => row.quantityLabel,
-      },
-      {
         key: "customer",
         label: "Customer",
-        render: (row: QcRow) => row.entry.customer || row.parent.customer || "-",
+        render: (row: QcRow) => (
+          <div className="qc-customer-cell">
+            <span className="qc-customer-name">{row.entry.customer || row.parent.customer || "-"}</span>
+            <span className="qc-quantity-tag">{row.quantityLabel}</span>
+          </div>
+        ),
       },
       {
         key: "description",
@@ -235,7 +236,14 @@ const QC = () => {
         className: "qc-job-ref-cell",
         render: (row: QcRow) => {
           const value = String(row.entry.refNumber || row.parent.refNumber || "").trim();
-          return value ? `#${value}` : "-";
+          return (
+            <div className="qc-job-ref-stack">
+              <span className="qc-job-ref-value">{formatJobRefDisplay(value)}</span>
+              <span className="qc-job-ref-subline">
+                {row.entry.customer || row.parent.customer || "-"} / Qty {row.quantityNumber}
+              </span>
+            </div>
+          );
         },
       },
       {
@@ -460,7 +468,7 @@ const QC = () => {
           message="Are you sure you want to close this inspection report?"
           details={[
             { label: "QC Item", value: reportCloseCandidate.quantityLabel },
-            { label: "Job Ref", value: `#${reportCloseCandidate.entry.refNumber || reportCloseCandidate.groupId}` },
+            { label: "Job Ref", value: formatJobRefDisplay(reportCloseCandidate.entry.refNumber || reportCloseCandidate.groupId) },
             { label: "Customer", value: reportCloseCandidate.entry.customer || reportCloseCandidate.parent.customer || "-" },
           ]}
           confirmButtonText="Close Report"

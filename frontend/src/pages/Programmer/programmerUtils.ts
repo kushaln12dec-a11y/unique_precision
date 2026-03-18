@@ -24,6 +24,7 @@ export type CutForm = {
   critical: boolean;
   pipFinish: boolean;
   refNumber?: string;
+  manualTotalHrs?: string;
 };
 
 export type CalculationConfig = {
@@ -132,6 +133,7 @@ export const DEFAULT_CUT: CutForm = {
   sedmOver20Length: "",
   sedmLengthValue: "",
   refNumber: "",
+  manualTotalHrs: "",
   sedmHoles: "1", // Default to 1 hole per piece
   sedmEntriesJson: "",
   operationRowsJson: "",
@@ -422,7 +424,12 @@ export const calculateTotals = (form: CutForm, config: CalculationConfig = {}): 
 
   const subtotalBeforeExtras = rows.reduce((sum, row) => sum + row.rowHours, 0);
   const extraHours = rows.reduce((sum, row) => sum + (row.extraHoursPerUnit * row.qty), 0);
-  const totalHrs = subtotalBeforeExtras;
+  const manualTotalHrsRaw = String(form.manualTotalHrs ?? "").trim();
+  const manualTotalHrs = Number(manualTotalHrsRaw);
+  const totalHrs =
+    manualTotalHrsRaw !== "" && Number.isFinite(manualTotalHrs)
+      ? Math.max(0, manualTotalHrs)
+      : subtotalBeforeExtras;
   const wedmAmount = totalHrs * customerRate;
   const sedmEntries = calculateSedmBreakdown(form);
   const sedmAmount = sedmEntries.reduce((sum, entry) => sum + entry.entryCost, 0);

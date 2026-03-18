@@ -6,6 +6,7 @@ import { getGroupQaProgressCounts } from "../utils/qaProgress";
 import type { Column } from "../../../components/DataTable";
 import {
   estimatedTimeFromAmount,
+  formatJobRefDisplay,
   formatMachineLabel,
   getInitials,
   MACHINE_OPTIONS,
@@ -126,7 +127,7 @@ export const useOperatorTable = ({
         sortable: false,
         render: (row) => {
           const ref = row.parent.refNumber || "";
-          return ref ? `#${ref}` : "-";
+          return formatJobRefDisplay(ref);
         },
       },
       {
@@ -306,13 +307,26 @@ export const useOperatorTable = ({
         headerClassName: "status-header",
         render: (row) => {
           const c = getGroupQaProgressCounts(row.entries);
-          const counts = { logged: c.saved, inProgress: c.ready, sent: c.sent, empty: c.empty };
+          const badges = [
+            { className: "empty", label: `Yet to Start ${c.empty}` },
+            { className: "saved", label: `Logged ${c.saved}` },
+            { className: "ready", label: `In Progress ${c.ready}` },
+            { className: "sent", label: `QC ${c.sent}` },
+          ];
           return (
             <div className="child-stage-summary">
-              <span className="qa-mini empty">Yet to Start {counts.empty}</span>
-              <span className="qa-mini saved">Logged {counts.logged}</span>
-              <span className="qa-mini ready">In Progress {counts.inProgress}</span>
-              <span className="qa-mini sent">QC {counts.sent}</span>
+              <div
+                className="qa-badge-ticker"
+                title={badges.map((badge) => badge.label).join(" | ")}
+              >
+                <div className="qa-badge-track">
+                  {[...badges, ...badges].map((badge, index) => (
+                    <span key={`${badge.className}-${index}`} className={`qa-mini ${badge.className}`}>
+                      {badge.label}
+                    </span>
+                  ))}
+                </div>
+              </div>
             </div>
           );
         },

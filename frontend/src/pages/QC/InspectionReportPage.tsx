@@ -20,7 +20,7 @@ type Decision = "ACCEPTED" | "REJECTED";
 type YesNo = "YES" | "NO" | "";
 type DamageField = "workPieceDamage" | "rightAngleProblem" | "materialProblem";
 
-const MAX_ROWS = 17;
+const MAX_ROWS = 30;
 
 const createEmptyInstruments = (): InstrumentSelection => ({
   hm: false,
@@ -350,7 +350,6 @@ const InspectionReportPage = () => {
         <div className="roleboard-body qc-report-panel">
           <div className="qc-report-toolbar">
             <div className="qc-report-toolbar-meta">
-              <span>Group: {groupId ?? "N/A"}</span>
               <span>Filled Rows: {activeRowCount}</span>
             </div>
           </div>
@@ -385,7 +384,7 @@ const InspectionReportPage = () => {
               </label>
 
               <div className="qc-report-table-title-row">
-                <h3>Measurement Inputs (Max 17 Rows)</h3>
+                <h3>Measurement Inputs (Max 30 Rows)</h3>
                 <button
                   type="button"
                   className="qc-report-add-row-btn"
