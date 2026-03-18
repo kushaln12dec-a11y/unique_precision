@@ -71,7 +71,7 @@ describe("Jobs API", () => {
 
     expect(res.status).toBe(201);
     expect(res.body).toHaveProperty("_id");
-    expect(res.body.groupId).toBe(12345);
+    expect(res.body.groupId).toBe("12345");
     expect(res.body.cutImage).toBe("https://example.com/mock-image.png");
     expect(res.body.refNumber).toMatch(/^JOB-\d{5}$/);
     expect(typeof res.body.createdAt).toBe("string");
