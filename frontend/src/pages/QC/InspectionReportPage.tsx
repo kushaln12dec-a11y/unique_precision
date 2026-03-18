@@ -5,6 +5,7 @@ import CleaningServicesIcon from "@mui/icons-material/CleaningServices";
 import Sidebar from "../../components/Sidebar";
 import Header from "../../components/Header";
 import Toast from "../../components/Toast";
+import AppLoader from "../../components/AppLoader";
 import { getJobsByGroupId } from "../../services/jobApi";
 import {
   generateInspectionReport,
@@ -358,7 +359,7 @@ const InspectionReportPage = () => {
           <div className="qc-report-layout">
             <section className="qc-report-left">
               <h3>Report Details</h3>
-              {loading && <p className="qc-report-loading">Loading group details...</p>}
+              {loading && <AppLoader variant="inline" message="Loading group details..." />}
 
               <div className="qc-report-inline-fields">
                 <label>

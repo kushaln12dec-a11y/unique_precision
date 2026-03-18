@@ -4,6 +4,7 @@ import Sidebar from "../../components/Sidebar";
 import Header from "../../components/Header";
 import DataTable from "../../components/DataTable";
 import ConfirmDeleteModal from "../../components/ConfirmDeleteModal";
+import AppLoader from "../../components/AppLoader";
 import { UserForm } from "./components/UserForm";
 import { UserTableControls } from "./components/UserTableControls";
 import { useUserManagement } from "./hooks/useUserManagement";
@@ -117,7 +118,7 @@ const UserManagement = () => {
         )}
 
         {!showForm && (loading ? (
-          <div className="loading">Loading users...</div>
+          <AppLoader message="Loading users..." />
         ) : (
           <div className="users-table-container">
             <UserTableControls

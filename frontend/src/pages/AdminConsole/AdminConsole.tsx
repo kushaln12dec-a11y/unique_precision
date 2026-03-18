@@ -5,6 +5,7 @@ import Sidebar from "../../components/Sidebar";
 import Header from "../../components/Header";
 import Modal from "../../components/Modal";
 import Toast from "../../components/Toast";
+import AppLoader from "../../components/AppLoader";
 import { getUserRoleFromToken } from "../../utils/auth";
 import { getMasterConfig, updateMasterConfig } from "../../services/masterConfigApi";
 import type { MasterConfig } from "../../types/masterConfig";
@@ -171,7 +172,7 @@ const AdminConsole = () => {
         <Header title="Admin Console" />
         <div className="roleboard-body admin-console-panel">
           {loading ? (
-            <p>Loading...</p>
+            <AppLoader message="Loading admin console..." />
           ) : (
             <>
               <div className="admin-mini-card-grid">

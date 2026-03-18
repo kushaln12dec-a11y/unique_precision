@@ -21,6 +21,7 @@ export const useOperatorData = (
 ) => {
   const navigate = useNavigate();
   const [jobs, setJobs] = useState<JobEntry[]>([]);
+  const [loadingJobs, setLoadingJobs] = useState(true);
   const [operatorUsers, setOperatorUsers] = useState<User[]>([]);
   const [users, setUsers] = useState<User[]>([]);
 
@@ -37,6 +38,7 @@ export const useOperatorData = (
   useEffect(() => {
     const fetchJobs = async () => {
       try {
+        setLoadingJobs(true);
         const fetchedJobs = await getOperatorJobs(
           filters,
           customerFilter,
@@ -64,6 +66,8 @@ export const useOperatorData = (
             console.error("Failed to parse jobs from storage", parseError);
           }
         }
+      } finally {
+        setLoadingJobs(false);
       }
     };
     fetchJobs();
@@ -97,6 +101,7 @@ export const useOperatorData = (
 
   return {
     jobs,
+    loadingJobs,
     setJobs,
     operatorUsers,
     users,
