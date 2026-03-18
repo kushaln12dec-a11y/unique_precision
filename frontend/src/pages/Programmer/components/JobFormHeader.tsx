@@ -7,6 +7,8 @@ type JobFormHeaderProps = {
 };
 
 export const JobFormHeader: React.FC<JobFormHeaderProps> = ({ refNumber, onAddCut }) => {
+  const displayValue = formatJobRefDisplay(refNumber) || "Will be created on save";
+
   return (
     <div
       className="cut-actions"
@@ -22,10 +24,10 @@ export const JobFormHeader: React.FC<JobFormHeaderProps> = ({ refNumber, onAddCu
           Job Number:
         </span>
         <span style={{ fontSize: "1rem", color: "rgb(255, 255, 255)", fontWeight: 500 }}>
-          {formatJobRefDisplay(refNumber)}
+          {displayValue}
         </span>
       </div>
-      <button className="btn-new-job btn-add-cut" onClick={onAddCut}>
+      <button type="button" className="btn-new-job btn-add-cut" onClick={onAddCut}>
         Add New Setting
       </button>
     </div>

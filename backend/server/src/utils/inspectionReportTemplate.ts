@@ -61,20 +61,6 @@ const toYesNo = (value: unknown): YesNo => {
   return "";
 };
 
-const hasRowValue = (row: InspectionRowPayload) => {
-  const hasText = Boolean(
-    normalizeText(row.actualDimension) ||
-      normalizeText(row.tolerance) ||
-      normalizeText(row.measuringDimension) ||
-      normalizeText(row.deviation)
-  );
-  const instrument = row.instruments;
-  const hasInstrument = Array.isArray(instrument)
-    ? instrument.length > 0
-    : Boolean(instrument && Object.values(instrument).some(Boolean));
-  return hasText || hasInstrument;
-};
-
 const instrumentChecked = (source: InstrumentSelection | undefined, key: InstrumentKey): boolean => {
   if (!source) return false;
   if (Array.isArray(source)) return source.includes(key);
@@ -127,9 +113,13 @@ const instrumentPack = (source: InstrumentSelection | undefined) => `
 
 export const buildInspectionReportHtml = (payload: GenerateInspectionReportPayload): string => {
   const logoDataUri = getLogoDataUri();
-  const filledRows = Array.isArray(payload.rows) ? payload.rows : [];
-  const rows = filledRows.slice(0, MAX_ROWS);
-  const rowsToRender = rows.length > 0 ? rows : [{} as InspectionRowPayload];
+  const inputRows = Array.isArray(payload.rows) ? payload.rows.slice(0, MAX_ROWS) : [];
+  const rowsToRender: InspectionRowPayload[] = Array.from(
+    { length: Math.max(1, inputRows.length) },
+    (_, index) => {
+      return inputRows[index] ?? ({} as InspectionRowPayload);
+    }
+  );
 
   const tableRowsHtml = rowsToRender
     .map((row, index) => {

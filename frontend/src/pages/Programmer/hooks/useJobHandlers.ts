@@ -35,7 +35,6 @@ export const useJobHandlers = ({
   totals,
 }: UseJobHandlersProps) => {
   const navigate = useNavigate();
-  const PROGRAMMER_ACTIVE_LOG_KEY = "programmer_active_job_log_id";
 
   const handleSaveJob = useCallback(async () => {
     try {
@@ -52,7 +51,7 @@ export const useJobHandlers = ({
         return {
           ...cut,
           cutImage: normalizedCutImage as any,
-          refNumber: refNumber || String(groupId) || cut.refNumber || "",
+          refNumber: editingGroupId ? refNumber || cut.refNumber || "" : "",
           id: `${groupId}-${index}`,
           groupId,
           totalHrs: cutTotals.totalHrs,
@@ -81,24 +80,17 @@ export const useJobHandlers = ({
         const createdJobs = await createJobs(entries);
         setJobs((prev) => [...createdJobs, ...prev]);
 
-        // Complete active programmer productivity log for "new job" flow
-        const activeLogId = localStorage.getItem(PROGRAMMER_ACTIVE_LOG_KEY) || "";
-        if (activeLogId) {
-          try {
-            await completeProgrammerJobLog({
-              logId: activeLogId,
-              jobGroupId: groupId,
-              refNumber: entries[0]?.refNumber || String(groupId),
-              customer: entries[0]?.customer || "",
-              description: entries[0]?.description || "",
-              settingsCount: entries.length,
-              quantityCount: entries.reduce((sum, entry) => sum + Math.max(0, Number(entry.qty || 0)), 0),
-            });
-          } catch (logError) {
-            console.error("Failed to complete programmer job log", logError);
-          } finally {
-            localStorage.removeItem(PROGRAMMER_ACTIVE_LOG_KEY);
-          }
+        try {
+          await completeProgrammerJobLog({
+            jobGroupId: groupId,
+            refNumber: createdJobs[0]?.refNumber || "",
+            customer: createdJobs[0]?.customer || "",
+            description: createdJobs[0]?.description || "",
+            settingsCount: createdJobs.length,
+            quantityCount: createdJobs.reduce((sum, entry) => sum + Math.max(0, Number(entry.qty || 0)), 0),
+          });
+        } catch (logError) {
+          console.error("Failed to complete programmer job log", logError);
         }
 
         setToast({ message: "Job created successfully!", variant: "success", visible: true });

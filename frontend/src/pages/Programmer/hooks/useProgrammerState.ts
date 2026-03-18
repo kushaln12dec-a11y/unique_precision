@@ -6,19 +6,6 @@ import type { FilterValues } from "../../../components/FilterModal";
 import { calculateTotals, DEFAULT_CUT, type CutForm } from "../programmerUtils";
 
 const STORAGE_KEY = "programmerJobs";
-const JOB_REF_REGEX = /^JOB-(\d{5})$/;
-
-const getNextDisplayRefNumber = (jobs: JobEntry[]): string => {
-  const maxSequence = jobs.reduce((max, job) => {
-    const ref = String((job as any).refNumber || "").trim().toUpperCase();
-    const match = ref.match(JOB_REF_REGEX);
-    if (!match) return max;
-    return Math.max(max, Number(match[1] || 0));
-  }, 0);
-
-  return `JOB-${String(maxSequence + 1).padStart(5, "0")}`;
-};
-
 /**
  * Hook for managing programmer page state
  */
@@ -170,9 +157,7 @@ export const useProgrammerState = (
       if (cuts.length === 0 || (cuts.length === 1 && !cuts[0].customer)) {
         setCuts([DEFAULT_CUT]);
       }
-      if (!refNumber) {
-        setRefNumber(getNextDisplayRefNumber(jobs));
-      }
+      if (refNumber) setRefNumber("");
       setShowForm(true);
     } else {
       loadedEditGroupRef.current = null;
@@ -184,12 +169,12 @@ export const useProgrammerState = (
         setCuts([DEFAULT_CUT]);
       }
     }
-  }, [location.pathname, isEditRoute, params.groupId, isNewJobRoute, jobs]);
+  }, [location.pathname, isEditRoute, params.groupId, isNewJobRoute, jobs, refNumber]);
 
   const handleNewJob = () => {
     setEditingGroupId(null);
     setCuts([DEFAULT_CUT]);
-    setRefNumber(getNextDisplayRefNumber(jobs));
+    setRefNumber("");
   };
 
   const handleCancel = () => {
