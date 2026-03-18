@@ -10,6 +10,50 @@ const decimalToString = (value: any): string => {
   return String(value);
 };
 
+const mapJobCore = (job: any) => {
+  const createdAt = job.createdAt ? formatDbDateTime(new Date(job.createdAt)) : "";
+  const updatedAt = job.updatedAt ? formatDbDateTime(new Date(job.updatedAt)) : "";
+
+  return {
+    ...job,
+    _id: job.id,
+    createdAt,
+    updatedAt: updatedAt || job.updatedAt || "",
+    rate: decimalToString(job.rate),
+    cut: decimalToString(job.cut),
+    thickness: decimalToString(job.thickness),
+    passLevel: job.passLevel !== null && job.passLevel !== undefined ? String(job.passLevel) : "",
+    setting: job.setting !== null && job.setting !== undefined ? String(job.setting) : "",
+    qty: job.qty !== null && job.qty !== undefined ? String(job.qty) : "",
+    sedmOver20Length: decimalToString(job.sedmOver20Length),
+    sedmLengthValue: decimalToString(job.sedmLengthValue),
+    sedmHoles: job.sedmHoles !== null && job.sedmHoles !== undefined ? String(job.sedmHoles) : "",
+    totalHrs: job.totalHrs !== null && job.totalHrs !== undefined ? Number(job.totalHrs) : 0,
+    totalAmount: job.totalAmount !== null && job.totalAmount !== undefined ? Number(job.totalAmount) : 0,
+  };
+};
+
+const mapQaStates = (job: any) => {
+  const qaStates: Record<string, string> = {};
+  if (Array.isArray(job.qaStates)) {
+    job.qaStates.forEach((entry: any) => {
+      if (entry && entry.quantityNumber !== undefined && entry.status) {
+        qaStates[String(entry.quantityNumber)] = entry.status;
+      }
+    });
+  }
+  return qaStates;
+};
+
+const mapOperatorCaptures = (job: any) => {
+  return Array.isArray(job.operatorCaptures)
+    ? job.operatorCaptures.map((capture: any) => {
+        const { jobId, job: _job, ...rest } = capture;
+        return { ...rest, _id: capture.id };
+      })
+    : [];
+};
+
 export const mapUser = (user: any) => {
   if (!user) return user;
   const { passwordHash, ...rest } = user;
@@ -32,44 +76,31 @@ export const mapEmployeeLog = (log: any) => {
 
 export const mapJob = (job: any) => {
   if (!job) return job;
-
-  const qaStates: Record<string, string> = {};
-  if (Array.isArray(job.qaStates)) {
-    job.qaStates.forEach((entry: any) => {
-      if (entry && entry.quantityNumber !== undefined && entry.status) {
-        qaStates[String(entry.quantityNumber)] = entry.status;
-      }
-    });
-  }
-
-  const operatorCaptures = Array.isArray(job.operatorCaptures)
-    ? job.operatorCaptures.map((capture: any) => {
-        const { jobId, job: _job, ...rest } = capture;
-        return { ...rest, _id: capture.id };
-      })
-    : [];
-
-  const { operatorCaptures: _captures, qaStates: _qaStates, ...base } = job;
-  const createdAt = base.createdAt ? formatDbDateTime(new Date(base.createdAt)) : "";
-  const updatedAt = base.updatedAt ? formatDbDateTime(new Date(base.updatedAt)) : "";
-
   return {
-    ...base,
-    _id: base.id,
-    createdAt,
-    updatedAt: updatedAt || base.updatedAt || "",
-    operatorCaptures,
-    quantityQaStates: qaStates,
-    rate: decimalToString(base.rate),
-    cut: decimalToString(base.cut),
-    thickness: decimalToString(base.thickness),
-    passLevel: base.passLevel !== null && base.passLevel !== undefined ? String(base.passLevel) : "",
-    setting: base.setting !== null && base.setting !== undefined ? String(base.setting) : "",
-    qty: base.qty !== null && base.qty !== undefined ? String(base.qty) : "",
-    sedmOver20Length: decimalToString(base.sedmOver20Length),
-    sedmLengthValue: decimalToString(base.sedmLengthValue),
-    sedmHoles: base.sedmHoles !== null && base.sedmHoles !== undefined ? String(base.sedmHoles) : "",
-    totalHrs: base.totalHrs !== null && base.totalHrs !== undefined ? Number(base.totalHrs) : 0,
-    totalAmount: base.totalAmount !== null && base.totalAmount !== undefined ? Number(base.totalAmount) : 0,
+    ...mapJobCore(job),
+    operatorCaptures: mapOperatorCaptures(job),
+    quantityQaStates: mapQaStates(job),
+  };
+};
+
+export const mapJobList = (job: any) => {
+  if (!job) return job;
+  return mapJobCore(job);
+};
+
+export const mapOperatorJobList = (job: any) => {
+  if (!job) return job;
+  return {
+    ...mapJobCore(job),
+    operatorCaptures: mapOperatorCaptures(job),
+    quantityQaStates: mapQaStates(job),
+  };
+};
+
+export const mapQcJobList = (job: any) => {
+  if (!job) return job;
+  return {
+    ...mapJobCore(job),
+    quantityQaStates: mapQaStates(job),
   };
 };
