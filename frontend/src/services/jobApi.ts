@@ -89,6 +89,49 @@ export const getJobs = async (
 ): Promise<JobEntry[]> => {
   const queryString = buildQueryParams(filters, customerFilter, createdByFilter, assignedToFilter, criticalFilter, descriptionFilter);
   const url = queryString ? `/api/jobs?${queryString}` : "/api/jobs";
+  return fetchJobList(url);
+};
+
+const normalizeJobListItem = (job: any): JobEntry => ({
+  ...job,
+  id: job._id || job.id,
+  groupId: String(job.groupId ?? job.id),
+  assignedTo: job.assignedTo || "Unassigned",
+  customer: String(job.customer ?? ""),
+  rate: String(job.rate ?? ""),
+  cut: String(job.cut ?? ""),
+  thickness: String(job.thickness ?? ""),
+  passLevel: String(job.passLevel ?? ""),
+  setting: String(job.setting ?? ""),
+  qty: String(job.qty ?? ""),
+  sedm: job.sedm ?? "No",
+  sedmSelectionType: job.sedmSelectionType ?? "range",
+  sedmRangeKey: job.sedmRangeKey ?? "0.3-0.4",
+  sedmStandardValue: job.sedmStandardValue ?? "",
+  sedmLengthType: job.sedmLengthType ?? "min",
+  sedmOver20Length: String(job.sedmOver20Length ?? ""),
+  sedmLengthValue: String(job.sedmLengthValue ?? ""),
+  sedmHoles: String(job.sedmHoles ?? "1"),
+  sedmEntriesJson: String(job.sedmEntriesJson ?? ""),
+  operationRowsJson: String(job.operationRowsJson ?? ""),
+  material: String(job.material ?? ""),
+  priority: job.priority ?? "Medium",
+  description: String(job.description ?? ""),
+  programRefFile: String(job.programRefFile ?? ""),
+  cutImage: Array.isArray(job.cutImage) ? job.cutImage : job.cutImage ? [job.cutImage] : [],
+  critical: Boolean(job.critical),
+  pipFinish: Boolean(job.pipFinish),
+  refNumber: String(job.refNumber ?? ""),
+  totalHrs: Number(job.totalHrs ?? 0),
+  totalAmount: Number(job.totalAmount ?? 0),
+  createdAt: String(job.createdAt ?? ""),
+  createdBy: String(job.createdBy ?? ""),
+  machineNumber: String(job.machineNumber ?? ""),
+  quantityQaStates: job.quantityQaStates ?? {},
+  operatorCaptures: Array.isArray(job.operatorCaptures) ? job.operatorCaptures : [],
+});
+
+const fetchJobList = async (url: string): Promise<JobEntry[]> => {
 
   const res = await fetch(apiUrl(url), {
     method: "GET",
@@ -100,13 +143,49 @@ export const getJobs = async (
   }
 
   const jobs = await res.json();
-  // Convert MongoDB _id to id and ensure groupId exists
-  return jobs.map((job: any) => ({
-    ...job,
-    id: job._id || job.id,
-    groupId: String(job.groupId ?? job.id),
-    assignedTo: job.assignedTo || "Unassigned",
-  }));
+  return jobs.map(normalizeJobListItem);
+};
+
+export const getProgrammerJobs = async (
+  filters?: FilterValues,
+  customerFilter?: string,
+  createdByFilter?: string,
+  criticalFilter?: boolean,
+  descriptionFilter?: string
+): Promise<JobEntry[]> => {
+  const queryString = buildQueryParams(
+    filters,
+    customerFilter,
+    createdByFilter,
+    undefined,
+    criticalFilter,
+    descriptionFilter
+  );
+  const url = queryString ? `/api/jobs/programmer?${queryString}` : "/api/jobs/programmer";
+  return fetchJobList(url);
+};
+
+export const getOperatorJobs = async (
+  filters?: FilterValues,
+  customerFilter?: string,
+  createdByFilter?: string,
+  assignedToFilter?: string,
+  descriptionFilter?: string
+): Promise<JobEntry[]> => {
+  const queryString = buildQueryParams(
+    filters,
+    customerFilter,
+    createdByFilter,
+    assignedToFilter,
+    false,
+    descriptionFilter
+  );
+  const url = queryString ? `/api/jobs/operator?${queryString}` : "/api/jobs/operator";
+  return fetchJobList(url);
+};
+
+export const getQcJobs = async (): Promise<JobEntry[]> => {
+  return fetchJobList("/api/jobs/qc");
 };
 
 export const getJobById = async (id: string): Promise<JobEntry> => {

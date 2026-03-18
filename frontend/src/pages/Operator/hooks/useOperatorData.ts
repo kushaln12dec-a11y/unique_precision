@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getUsers } from "../../../services/userApi";
-import { getJobs } from "../../../services/jobApi";
+import { getOperatorJobs } from "../../../services/jobApi";
 import type { User } from "../../../types/user";
 import type { JobEntry } from "../../../types/job";
 import { getUserRoleFromToken } from "../../../utils/auth";
@@ -37,7 +37,13 @@ export const useOperatorData = (
   useEffect(() => {
     const fetchJobs = async () => {
       try {
-        const fetchedJobs = await getJobs(filters, customerFilter, createdByFilter, assignedToFilter, false, descriptionFilter);
+        const fetchedJobs = await getOperatorJobs(
+          filters,
+          customerFilter,
+          createdByFilter,
+          assignedToFilter,
+          descriptionFilter
+        );
         setJobs(fetchedJobs);
       } catch (error) {
         console.error("Failed to fetch jobs", error);

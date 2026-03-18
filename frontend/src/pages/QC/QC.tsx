@@ -7,7 +7,7 @@ import Toast from "../../components/Toast";
 import ConfirmDeleteModal from "../../components/ConfirmDeleteModal";
 import CloseIcon from "@mui/icons-material/Close";
 import {
-  getJobs,
+  getQcJobs,
   setQcReportClosedByGroupId,
   updateQcDecisionByGroupId,
 } from "../../services/jobApi";
@@ -39,6 +39,15 @@ type QcRow = {
   parent: JobEntry;
   entry: JobEntry;
   entries: JobEntry[];
+};
+
+const formatOrdinal = (value: number) => {
+  const mod10 = value % 10;
+  const mod100 = value % 100;
+  if (mod10 === 1 && mod100 !== 11) return `${value}st`;
+  if (mod10 === 2 && mod100 !== 12) return `${value}nd`;
+  if (mod10 === 3 && mod100 !== 13) return `${value}rd`;
+  return `${value}th`;
 };
 
 const formatDateForTemplate = (date: Date) => {
@@ -126,7 +135,7 @@ const QC = () => {
   useEffect(() => {
     const fetchJobs = async () => {
       try {
-        const data = await getJobs();
+        const data = await getQcJobs();
         setJobs(data);
       } catch (error) {
         console.error("Failed to fetch QC jobs", error);
@@ -161,7 +170,7 @@ const QC = () => {
 
           rows.push({
             qcItemId: `${String(entry.id)}:${quantityNumber}`,
-            quantityLabel: `S${settingNumber}-Q${quantityNumber}`,
+            quantityLabel: `${formatOrdinal(quantityNumber)} Qty`,
             groupId,
             jobId: String(entry.id),
             quantityNumber,
@@ -217,7 +226,6 @@ const QC = () => {
         render: (row: QcRow) => (
           <div className="qc-customer-cell">
             <span className="qc-customer-name">{row.entry.customer || row.parent.customer || "-"}</span>
-            <span className="qc-quantity-tag">{row.quantityLabel}</span>
           </div>
         ),
       },
@@ -236,14 +244,7 @@ const QC = () => {
         className: "qc-job-ref-cell",
         render: (row: QcRow) => {
           const value = String(row.entry.refNumber || row.parent.refNumber || "").trim();
-          return (
-            <div className="qc-job-ref-stack">
-              <span className="qc-job-ref-value">{formatJobRefDisplay(value)}</span>
-              <span className="qc-job-ref-subline">
-                {row.entry.customer || row.parent.customer || "-"} / Qty {row.quantityNumber}
-              </span>
-            </div>
-          );
+          return <span className="qc-job-ref-value">{formatJobRefDisplay(value)}</span>;
         },
       },
       {
@@ -251,7 +252,7 @@ const QC = () => {
         label: "Qty",
         headerClassName: "qc-qty-col",
         className: "qc-qty-cell",
-        render: () => "1",
+        render: (row: QcRow) => row.quantityLabel,
       },
       {
         key: "operator",

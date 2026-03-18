@@ -28,6 +28,7 @@ type ChildCutsTableProps = {
   onRowSelect?: (rowKey: string | number, selected: boolean) => void;
   getRowKey?: (entry: JobEntry, index: number) => string | number;
   machineOptions?: string[];
+  onViewJob?: (entry: JobEntry) => void;
 };
 
 const ChildCutsTable: React.FC<ChildCutsTableProps> = ({
@@ -48,6 +49,7 @@ const ChildCutsTable: React.FC<ChildCutsTableProps> = ({
   onRowSelect,
   getRowKey = (entry, index) => entry.id || index,
   machineOptions = [...MACHINE_OPTIONS],
+  onViewJob,
 }) => {
   const machineDropdownOptions = useMemo(() => {
     const normalized = machineOptions
@@ -109,6 +111,10 @@ const ChildCutsTable: React.FC<ChildCutsTableProps> = ({
   };
 
   const handleViewCut = (entry: JobEntry) => {
+    if (onViewJob) {
+      onViewJob(entry);
+      return;
+    }
     setSelectedCut(entry);
     setShowCutModal(true);
   };
@@ -335,12 +341,14 @@ const ChildCutsTable: React.FC<ChildCutsTableProps> = ({
               {!isOperator && (
                 <td className="total-hrs-col">
                   {(() => {
-                    const totalHrs = calculateTotals(entry as any).totalHrs;
+                    const totalHrs = Number(entry.totalHrs || 0);
                     return totalHrs ? `${totalHrs.toFixed(2)}hrs` : "-";
                   })()}
                 </td>
               )}
-              <td className="estimated-time-col">{estimatedTimeFromAmount(calculateTotals(entry as any).wedmAmount)}</td>
+              <td className="estimated-time-col">
+                {estimatedTimeFromAmount(Number(entry.totalHrs || 0) * Number(entry.rate || 0))}
+              </td>
               {isAdmin && <td className="total-amount-col">{entry.totalAmount ? `Rs. ${Math.round(entry.totalAmount)}` : "-"}</td>}
               {isOperator && (
                 <td className="status-col">

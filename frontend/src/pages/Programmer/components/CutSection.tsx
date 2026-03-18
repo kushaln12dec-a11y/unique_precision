@@ -554,6 +554,11 @@ export const CutSection: React.FC<CutSectionProps> = ({
               step="0.01"
               min="0"
               value={String(cut.manualTotalHrs ?? "").trim() !== "" ? String(cut.manualTotalHrs) : cutTotals.totalHrs.toFixed(2)}
+              onFocus={() => {
+                if (String(cut.manualTotalHrs ?? "").trim() === "") {
+                  onCutChange("manualTotalHrs")(cutTotals.totalHrs.toFixed(2));
+                }
+              }}
               onChange={(e) => onCutChange("manualTotalHrs")(normalizeNonNegativeNumberInput(e.target.value))}
             />
           </FormInput>

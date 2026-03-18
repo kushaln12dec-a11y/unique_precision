@@ -32,7 +32,7 @@ export type GenerateInspectionReportPayload = {
 };
 
 const CHECK_MARK = "&#10003;";
-const MAX_ROWS = 17;
+const MAX_ROWS = 30;
 
 const htmlEscape = (value: unknown): string =>
   String(value ?? "")
@@ -181,7 +181,7 @@ export const buildInspectionReportHtml = (payload: GenerateInspectionReportPaylo
       min-height: 1065px;
       background: #fff;
       border: 1.6px solid #3c55b4;
-      padding: 30px 8px 10px;
+      padding: 24px 8px 8px;
       color: #2848a7;
     }
     .title-badge {
@@ -192,18 +192,18 @@ export const buildInspectionReportHtml = (payload: GenerateInspectionReportPaylo
       background: #2f4ba8;
       color: #fff;
       border: 1px solid #2f4ba8;
-      font-size: 16px;
+      font-size: 14px;
       font-weight: 700;
       letter-spacing: 0.3px;
       text-transform: uppercase;
-      padding: 4px 16px 3px;
+      padding: 3px 14px 2px;
       line-height: 1.1;
     }
     .header-row {
       display: flex;
       justify-content: space-between;
       align-items: flex-start;
-      padding: 0 6px 6px;
+      padding: 0 6px 4px;
     }
     .brand-wrap {
       display: flex;
@@ -211,14 +211,14 @@ export const buildInspectionReportHtml = (payload: GenerateInspectionReportPaylo
       gap: 8px;
     }
     .brand-icon {
-      width: 52px;
-      height: 52px;
+      width: 46px;
+      height: 46px;
       object-fit: contain;
       display: ${logoDataUri ? "block" : "none"};
     }
     .brand-name {
       font-family: "Lucida Calligraphy", "Lucida Handwriting", cursive;
-      font-size: 26px;
+      font-size: 22px;
       line-height: 0.95;
       font-weight: 700;
       color: #2749ac;
@@ -226,17 +226,17 @@ export const buildInspectionReportHtml = (payload: GenerateInspectionReportPaylo
       margin-top: 2px;
     }
     .brand-city {
-      font-size: 11px;
+      font-size: 10px;
       margin-left: 4px;
       color: #2749ac;
       font-weight: 700;
       margin-top: 2px;
     }
     .contact {
-      font-size: 10px;
+      font-size: 9px;
       font-weight: 700;
       color: #2f4ba8;
-      line-height: 1.55;
+      line-height: 1.35;
       margin-top: 2px;
       min-width: 290px;
     }
@@ -277,17 +277,17 @@ export const buildInspectionReportHtml = (payload: GenerateInspectionReportPaylo
       margin-top: 2px;
       color: #2b47a2;
       font-weight: 700;
-      font-size: 13px;
+      font-size: 11px;
     }
     .meta-table td {
-      padding: 2px 5px;
+      padding: 1px 4px;
       vertical-align: middle;
     }
     .meta-label { width: 138px; white-space: nowrap; }
     .meta-colon { width: 12px; text-align: center; }
     .meta-value {
       border-bottom: 1.6px dotted #2947a3;
-      min-height: 19px;
+      min-height: 15px;
       color: #111;
       font-weight: 600;
       padding-left: 4px;
@@ -302,50 +302,45 @@ export const buildInspectionReportHtml = (payload: GenerateInspectionReportPaylo
       display: flex;
       align-items: center;
       gap: 34px;
-      font-size: 12px;
+      font-size: 10px;
       font-weight: 700;
       color: #2a47a2;
     }
     .decision-rejected { color: #e53935; }
     .decision-box {
-      width: 17px;
-      height: 17px;
+      width: 14px;
+      height: 14px;
       border: 1.6px solid #3d56b6;
       display: inline-flex;
       align-items: center;
       justify-content: center;
       margin-left: 6px;
       color: #111;
-      font-size: 13px;
+      font-size: 11px;
       line-height: 1;
     }
-    .meta-divider {
-      height: 0;
-      border-top: 1.4px solid #3d56b6;
-      margin: 3px 0 6px;
-    }
     .report-table {
-    margin-top: 6px;
+      margin-top: 4px;
       width: 100%;
       border-collapse: collapse;
       table-layout: fixed;
       color: #2c49a6;
-      font-size: 11px;
+      font-size: 9px;
     }
     .report-table th,
     .report-table td {
       border: 1.4px solid #3d56b6;
-      padding: 2px 3px;
+      padding: 1px 2px;
       vertical-align: middle;
-      line-height: 1.12;
-      height: 22px;
+      line-height: 1.02;
+      height: 14px;
     }
     .report-table thead th {
       background: #efedcf;
-      font-size: 11px;
+      font-size: 9px;
       text-align: center;
       font-weight: 700;
-      height: 28px;
+      height: 18px;
     }
     .sl-col { width: 8%; text-align: center; }
     .actual-col { width: 21%; }
@@ -362,19 +357,19 @@ export const buildInspectionReportHtml = (payload: GenerateInspectionReportPaylo
       white-space: nowrap;
     }
     .inst-code {
-      font-size: 10px;
+      font-size: 8px;
       font-weight: 700;
       color: #2e4ba8;
       line-height: 1;
     }
     .inst-box {
-      width: 13px;
-      height: 13px;
+      width: 10px;
+      height: 10px;
       border: 1.4px solid #3d56b6;
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      font-size: 11px;
+      font-size: 8px;
       color: #111;
       line-height: 1;
       font-weight: 700;
@@ -382,11 +377,11 @@ export const buildInspectionReportHtml = (payload: GenerateInspectionReportPaylo
     }
     .remarks {
       margin-top: 2px;
-      padding: 4px 4px 2px;
-      font-size: 12px;
+      padding: 3px 4px 1px;
+      font-size: 10px;
       color: #2e4ba8;
       font-weight: 700;
-      min-height: 28px;
+      min-height: 18px;
       display: grid;
       grid-template-columns: auto 1fr;
       gap: 8px;
@@ -394,7 +389,7 @@ export const buildInspectionReportHtml = (payload: GenerateInspectionReportPaylo
     }
     .remarks-value {
       color: #111;
-      min-height: 16px;
+      min-height: 12px;
       font-weight: 500;
       padding-left: 3px;
       white-space: nowrap;
@@ -402,18 +397,18 @@ export const buildInspectionReportHtml = (payload: GenerateInspectionReportPaylo
       text-overflow: ellipsis;
     }
     .bottom-grid {
-      margin-top: 8px;
+      margin-top: 4px;
       display: grid;
       grid-template-columns: 1fr 1.2fr 1fr;
-      gap: 10px;
+      gap: 8px;
       align-items: start;
     }
     .legend-wrap {
       padding-left: 4px;
       color: #2d4aa9;
-      font-size: 11px;
+      font-size: 9px;
       font-weight: 700;
-      line-height: 1.35;
+      line-height: 1.18;
     }
     .legend-red { color: #e53935; display: inline-block; width: 22px; }
     .damage-wrap {
@@ -421,9 +416,9 @@ export const buildInspectionReportHtml = (payload: GenerateInspectionReportPaylo
       display: grid;
       grid-template-columns: 1fr 24px 24px;
       column-gap: 6px;
-      row-gap: 4px;
+      row-gap: 3px;
       align-items: center;
-      font-size: 9px;
+      font-size: 8px;
       color: #2f4ba8;
       font-weight: 700;
     }
@@ -434,7 +429,7 @@ export const buildInspectionReportHtml = (payload: GenerateInspectionReportPaylo
       text-align: center;
       color: #3048a6;
       font-weight: 700;
-      font-size: 11px;
+      font-size: 9px;
     }
     .damage-label {
       white-space: nowrap;
@@ -442,30 +437,30 @@ export const buildInspectionReportHtml = (payload: GenerateInspectionReportPaylo
       font-size: 9px;
     }
     .damage-box {
-      width: 18px;
-      height: 18px;
+      width: 14px;
+      height: 14px;
       border: 1.5px solid #ef5350;
       display: inline-flex;
       align-items: center;
       justify-content: center;
       color: #111;
-      font-size: 11px;
+      font-size: 9px;
       font-weight: 700;
     }
     .signatures {
       margin-top: 4px;
       display: grid;
-      gap: 16px;
+      gap: 10px;
       color: #ef5350;
-      font-size: 12px;
+      font-size: 10px;
       font-weight: 700;
       padding-right: 6px;
     }
     .sign-line {
       border-bottom: 1.5px solid #ef5350;
-      min-height: 16px;
+      min-height: 12px;
       color: #111;
-      font-size: 10px;
+      font-size: 8px;
       font-weight: 600;
       display: flex;
       align-items: flex-end;

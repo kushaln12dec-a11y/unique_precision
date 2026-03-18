@@ -4,7 +4,7 @@ import { authMiddleware } from "../middleware/auth";
 import { prisma } from "../lib/prisma";
 import { parseDisplayDateTime } from "../utils/dateTime";
 import { requireBigInt, toBigInt } from "../utils/bigint";
-import { mapJob } from "../utils/prismaMappers";
+import { mapJob, mapJobList, mapOperatorJobList, mapQcJobList } from "../utils/prismaMappers";
 import { resolveStoredFile } from "../utils/objectStorage";
 
 const router = Router();
@@ -15,6 +15,78 @@ const jobInclude: Prisma.JobInclude = {
   operatorCaptures: { orderBy: { createdAt: "asc" } },
   qaStates: true,
 };
+
+const programmerListSelect = {
+  id: true,
+  groupId: true,
+  customer: true,
+  rate: true,
+  cut: true,
+  thickness: true,
+  passLevel: true,
+  setting: true,
+  qty: true,
+  sedm: true,
+  material: true,
+  priority: true,
+  description: true,
+  programRefFile: true,
+  critical: true,
+  pipFinish: true,
+  totalHrs: true,
+  totalAmount: true,
+  createdAt: true,
+  createdBy: true,
+  assignedTo: true,
+  refNumber: true,
+  updatedBy: true,
+  updatedAt: true,
+} satisfies Prisma.JobSelect;
+
+const operatorListSelect = {
+  ...programmerListSelect,
+  machineNumber: true,
+  qcDecision: true,
+  qcReportClosed: true,
+  qaStates: {
+    select: {
+      quantityNumber: true,
+      status: true,
+    },
+  },
+  operatorCaptures: {
+    orderBy: { createdAt: "asc" },
+    select: {
+      id: true,
+      machineNumber: true,
+      createdAt: true,
+    },
+  },
+} satisfies Prisma.JobSelect;
+
+const qcListSelect = {
+  id: true,
+  groupId: true,
+  customer: true,
+  description: true,
+  refNumber: true,
+  programRefFile: true,
+  qty: true,
+  setting: true,
+  cut: true,
+  assignedTo: true,
+  createdAt: true,
+  qcDecision: true,
+  qcReportClosed: true,
+  priority: true,
+  critical: true,
+  qaStates: {
+    select: {
+      quantityNumber: true,
+      status: true,
+    },
+  },
+} satisfies Prisma.JobSelect;
 
 const formatJobRef = (seq: number) => `JOB-${String(seq).padStart(5, "0")}`;
 
@@ -240,6 +312,49 @@ router.get("/", async (req, res) => {
   } catch (error: any) {
     console.error("Error fetching jobs:", error);
     res.status(500).json({ message: "Error fetching jobs" });
+  }
+});
+
+router.get("/programmer", async (req, res) => {
+  try {
+    const where = buildJobWhere(req);
+    const jobs = await prisma.job.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+      select: programmerListSelect,
+    });
+    res.json(jobs.map(mapJobList));
+  } catch (error: any) {
+    console.error("Error fetching programmer jobs:", error);
+    res.status(500).json({ message: "Error fetching programmer jobs" });
+  }
+});
+
+router.get("/operator", async (req, res) => {
+  try {
+    const where = buildJobWhere(req);
+    const jobs = await prisma.job.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+      select: operatorListSelect,
+    });
+    res.json(jobs.map(mapOperatorJobList));
+  } catch (error: any) {
+    console.error("Error fetching operator jobs:", error);
+    res.status(500).json({ message: "Error fetching operator jobs" });
+  }
+});
+
+router.get("/qc", async (_req, res) => {
+  try {
+    const jobs = await prisma.job.findMany({
+      orderBy: { createdAt: "desc" },
+      select: qcListSelect,
+    });
+    res.json(jobs.map(mapQcJobList));
+  } catch (error: any) {
+    console.error("Error fetching QC jobs:", error);
+    res.status(500).json({ message: "Error fetching QC jobs" });
   }
 });
 

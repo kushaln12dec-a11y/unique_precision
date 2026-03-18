@@ -13,7 +13,6 @@ import {
   toMachineIndex,
   toYN,
 } from "../../../utils/jobFormatting";
-import { calculateTotals } from "../../Programmer/programmerUtils";
 import MarqueeCopyText from "../../../components/MarqueeCopyText";
 import SelectDropdown from "../../Programmer/components/SelectDropdown";
 import { MultiSelectOperators } from "../components/MultiSelectOperators";
@@ -282,7 +281,10 @@ export const useOperatorTable = ({
         ),
         sortable: false,
         render: (row) => {
-          const wedmAmount = row.entries.reduce((sum, entry) => sum + calculateTotals(entry as any).wedmAmount, 0);
+          const wedmAmount = row.entries.reduce(
+            (sum, entry) => sum + (Number(entry.totalHrs || 0) * Number(entry.rate || 0)),
+            0
+          );
           return estimatedTimeFromAmount(wedmAmount);
         },
       },
