@@ -10,7 +10,7 @@ import { getQaProgressCounts } from "../../Operator/utils/qaProgress";
 
 interface JobDetailsModalProps {
   job: {
-    groupId: string;
+    groupId: string | number;
     parent: JobEntry;
     entries: JobEntry[];
     groupTotalHrs: number;

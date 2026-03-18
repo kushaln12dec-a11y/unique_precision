@@ -114,11 +114,11 @@ const ChildCutsTable: React.FC<ChildCutsTableProps> = ({
   };
 
   const handleEdit = (entry: JobEntry) => {
-    if (onEdit) onEdit(entry.groupId);
+    if (onEdit) onEdit(String(entry.groupId));
   };
 
   const handleDelete = (entry: JobEntry) => {
-    if (onDelete) onDelete(entry.groupId, entry.customer || "entry");
+    if (onDelete) onDelete(String(entry.groupId), entry.customer || "entry");
   };
 
   const selectedCutAsParentViewJob = selectedCut
@@ -362,7 +362,7 @@ const ChildCutsTable: React.FC<ChildCutsTableProps> = ({
                 <ActionButtons
                   onView={() => handleViewCut(entry)}
                   onEdit={!isOperator && onEdit ? () => handleEdit(entry) : undefined}
-                  onImage={isOperator && onImage ? () => onImage(entry.groupId, entry.id as number) : undefined}
+                  onImage={isOperator && onImage ? () => onImage(String(entry.groupId), entry.id as number) : undefined}
                   onDelete={onDelete ? () => handleDelete(entry) : undefined}
                   viewLabel={`View cut ${index + 1} details`}
                   editLabel={`Edit cut ${index + 1}`}
