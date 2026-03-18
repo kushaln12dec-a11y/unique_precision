@@ -64,7 +64,7 @@ router.post("/programmer/complete", async (req, res) => {
     const { logId, jobGroupId, refNumber, customer, description, settingsCount, quantityCount } = req.body || {};
     const userId = toUuid(reqUser?.userId);
 
-    let log = logId
+    const matchingLog = logId
       ? await prisma.employeeLog.findFirst({
           where: {
             id: logId,
@@ -76,8 +76,9 @@ router.post("/programmer/complete", async (req, res) => {
         })
       : null;
 
-    if (!log) {
-      log = await prisma.employeeLog.findFirst({
+    const latestInProgressLog = matchingLog
+      ? null
+      : await prisma.employeeLog.findFirst({
         where: {
           role: "PROGRAMMER",
           activityType: "PROGRAMMER_JOB_CREATION",
@@ -86,30 +87,14 @@ router.post("/programmer/complete", async (req, res) => {
         },
         orderBy: { startedAt: "desc" },
       });
-    }
-
-    if (!log) {
-      const fallbackStartedAt = new Date();
-      log = await prisma.employeeLog.create({
-        data: {
-          role: "PROGRAMMER",
-          activityType: "PROGRAMMER_JOB_CREATION",
-          status: "IN_PROGRESS",
-          ...withUserId(userId),
-          userEmail: String(reqUser?.email || ""),
-          userName: resolveReqUserName(reqUser),
-          refNumber: String(refNumber || ""),
-          startedAt: fallbackStartedAt,
-        },
-      });
-    }
 
     const endedAt = new Date();
-    const startedAt = log.startedAt instanceof Date ? log.startedAt : endedAt;
+    const existingLog = matchingLog || latestInProgressLog;
+    const startedAt = existingLog?.startedAt instanceof Date ? existingLog.startedAt : endedAt;
     const durationSeconds = Math.max(0, Math.floor((endedAt.getTime() - startedAt.getTime()) / 1000));
 
-    const resolvedGroupId = toBigInt(jobGroupId ?? log.jobGroupId) ?? null;
-    let resolvedRefNumber = String(refNumber || log.refNumber || "");
+    const resolvedGroupId = toBigInt(jobGroupId ?? existingLog?.jobGroupId) ?? null;
+    let resolvedRefNumber = String(refNumber || existingLog?.refNumber || "");
 
     if (resolvedGroupId) {
       const groupJob = await prisma.job.findFirst({ where: { groupId: resolvedGroupId } });
@@ -119,27 +104,39 @@ router.post("/programmer/complete", async (req, res) => {
       }
     }
 
-    const updatedLog = await prisma.employeeLog.update({
-      where: { id: log.id },
-      data: {
-        status: "COMPLETED",
-        jobGroupId: resolvedGroupId,
-        refNumber: resolvedRefNumber,
-        jobCustomer: String(customer || ""),
-        jobDescription: String(description || ""),
-        workItemTitle: resolvedRefNumber ? `Job #${resolvedRefNumber}` : `Job #-`,
-        workSummary: `Created ${Number(settingsCount || 0) || 1} setting(s)`,
-        quantityCount: Number(quantityCount || 0) || null,
-        endedAt,
-        durationSeconds,
-        metadata: {
-          ...((log.metadata as any) || {}),
-          settingsCount: Number(settingsCount || 0) || 1,
-        },
+    const completeData = {
+      role: "PROGRAMMER" as const,
+      activityType: "PROGRAMMER_JOB_CREATION" as const,
+      status: "COMPLETED" as const,
+      ...withUserId(userId),
+      userEmail: String(reqUser?.email || ""),
+      userName: resolveReqUserName(reqUser),
+      startedAt,
+      jobGroupId: resolvedGroupId,
+      refNumber: resolvedRefNumber,
+      jobCustomer: String(customer || ""),
+      jobDescription: String(description || ""),
+      workItemTitle: resolvedRefNumber ? `Job #${resolvedRefNumber}` : `Job #-`,
+      workSummary: `Created ${Number(settingsCount || 0) || 1} setting(s)`,
+      quantityCount: Number(quantityCount || 0) || null,
+      endedAt,
+      durationSeconds,
+      metadata: {
+        ...((existingLog?.metadata as any) || {}),
+        settingsCount: Number(settingsCount || 0) || 1,
       },
-    });
+    };
 
-    res.json(mapEmployeeLog(updatedLog));
+    const completedLog = existingLog
+      ? await prisma.employeeLog.update({
+          where: { id: existingLog.id },
+          data: completeData,
+        })
+      : await prisma.employeeLog.create({
+          data: completeData,
+        });
+
+    res.json(mapEmployeeLog(completedLog));
   } catch (error: any) {
     console.error("Error completing programmer log:", error);
     res.status(500).json({ message: "Error completing programmer log" });
