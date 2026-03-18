@@ -5,6 +5,7 @@ import DownloadIcon from '@mui/icons-material/Download';
 import type { EmployeeLog } from '../../../types/employeeLog';
 import { getDisplayDateTimeParts } from '../../../utils/date';
 import MarqueeCopyText from '../../../components/MarqueeCopyText';
+import AppLoader from '../../../components/AppLoader';
 
 type RoleTab = 'PROGRAMMER' | 'OPERATOR' | 'QC';
 
@@ -420,7 +421,7 @@ export const EmployeeLogsPanel = () => {
           </p>
         </div>
       ) : loading ? (
-        <div className="loading">Loading employee logs...</div>
+        <AppLoader message="Loading employee logs..." />
       ) : error ? (
         <div className="error-message">{error}</div>
       ) : (

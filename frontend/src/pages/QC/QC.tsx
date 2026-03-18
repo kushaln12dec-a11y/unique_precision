@@ -4,6 +4,7 @@ import Sidebar from "../../components/Sidebar";
 import Header from "../../components/Header";
 import DataTable from "../../components/DataTable";
 import Toast from "../../components/Toast";
+import AppLoader from "../../components/AppLoader";
 import ConfirmDeleteModal from "../../components/ConfirmDeleteModal";
 import CloseIcon from "@mui/icons-material/Close";
 import {
@@ -82,6 +83,7 @@ const QC = () => {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const [jobs, setJobs] = useState<JobEntry[]>([]);
+  const [loading, setLoading] = useState(true);
   const [reportCloseCandidate, setReportCloseCandidate] = useState<QcRow | null>(null);
   const [isCloseConfirmOpen, setIsCloseConfirmOpen] = useState(false);
 
@@ -135,11 +137,14 @@ const QC = () => {
   useEffect(() => {
     const fetchJobs = async () => {
       try {
+        setLoading(true);
         const data = await getQcJobs();
         setJobs(data);
       } catch (error) {
         console.error("Failed to fetch QC jobs", error);
         showToast("Failed to load QC queue.", "error");
+      } finally {
+        setLoading(false);
       }
     };
     fetchJobs();
@@ -160,10 +165,9 @@ const QC = () => {
       if (entries.every((item) => Boolean((item as any).qcReportClosed))) return;
 
       const parent = entries[0];
-      entries.forEach((entry, entryIndex) => {
+      entries.forEach((entry) => {
         const qaStates = getQuantityQaStates(entry);
         const totalQty = Math.max(1, Number(entry.qty || 1));
-        const settingNumber = Math.max(1, Number(entry.setting || entryIndex + 1));
 
         for (let quantityNumber = 1; quantityNumber <= totalQty; quantityNumber += 1) {
           if (qaStates[String(quantityNumber)] !== "SENT_TO_QA") continue;
@@ -426,41 +430,47 @@ const QC = () => {
         <Header title="QC" />
         <div className="roleboard-body qc-table-panel">
           <h3>QC Queue</h3>
-          <div className="qc-filters">
-            <input
-              type="text"
-              value={customerFilter || descriptionFilter}
-              onChange={(e) => {
-                const value = e.target.value;
-                dispatch(setQcCustomerFilter(value));
-                dispatch(setQcDescriptionFilter(value));
-              }}
-              placeholder="Search customer or description..."
-              className="qc-filter-input"
-            />
-            <select
-              className="qc-filter-select"
-              value={operatorFilter}
-              onChange={(e) => dispatch(setQcOperatorFilter(e.target.value))}
-            >
-              <option value="">All Operators</option>
-              {qcOperatorOptions.map((name) => (
-                <option key={name} value={name}>
-                  {name}
-                </option>
-              ))}
-            </select>
-          </div>
-          <DataTable
-            columns={columns as any}
-            data={filteredTableData as any}
-            getRowKey={(row: QcRow) => row.qcItemId}
-            getRowClassName={(row: QcRow) => {
-              return getParentRowClassName(row.parent, row.entries, false);
-            }}
-            emptyMessage="No rows dispatched to QC yet."
-            className="jobs-table-wrapper"
-          />
+          {loading ? (
+            <AppLoader message="Loading QC queue..." />
+          ) : (
+            <>
+              <div className="qc-filters">
+                <input
+                  type="text"
+                  value={customerFilter || descriptionFilter}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    dispatch(setQcCustomerFilter(value));
+                    dispatch(setQcDescriptionFilter(value));
+                  }}
+                  placeholder="Search customer or description..."
+                  className="qc-filter-input"
+                />
+                <select
+                  className="qc-filter-select"
+                  value={operatorFilter}
+                  onChange={(e) => dispatch(setQcOperatorFilter(e.target.value))}
+                >
+                  <option value="">All Operators</option>
+                  {qcOperatorOptions.map((name) => (
+                    <option key={name} value={name}>
+                      {name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <DataTable
+                columns={columns as any}
+                data={filteredTableData as any}
+                getRowKey={(row: QcRow) => row.qcItemId}
+                getRowClassName={(row: QcRow) => {
+                  return getParentRowClassName(row.parent, row.entries, false);
+                }}
+                emptyMessage="No rows dispatched to QC yet."
+                className="jobs-table-wrapper"
+              />
+            </>
+          )}
         </div>
       </div>
       {isCloseConfirmOpen && reportCloseCandidate && (

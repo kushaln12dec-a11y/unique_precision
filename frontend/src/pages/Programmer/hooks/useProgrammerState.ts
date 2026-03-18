@@ -19,6 +19,8 @@ export const useProgrammerState = (
   const location = useLocation();
   const params = useParams<{ groupId?: string }>();
   const [jobs, setJobs] = useState<JobEntry[]>([]);
+  const [loadingJobs, setLoadingJobs] = useState(true);
+  const [loadingEditGroup, setLoadingEditGroup] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [cuts, setCuts] = useState<CutForm[]>([DEFAULT_CUT]);
   const [editingGroupId, setEditingGroupId] = useState<string | null>(null);
@@ -31,6 +33,7 @@ export const useProgrammerState = (
   useEffect(() => {
     const fetchJobs = async () => {
       try {
+        setLoadingJobs(true);
         const fetchedJobs = await getProgrammerJobs(
           filters, 
           customerFilter, 
@@ -63,6 +66,9 @@ export const useProgrammerState = (
           }
         }
       }
+      finally {
+        setLoadingJobs(false);
+      }
     };
     fetchJobs();
   }, [filters, customerFilter, descriptionFilter, createdByFilter, criticalFilter]);
@@ -81,6 +87,7 @@ export const useProgrammerState = (
       const loadEditGroup = async () => {
         if (!groupId) return;
         try {
+          setLoadingEditGroup(true);
           const groupCuts = (await getJobsByGroupId(groupId)).sort((a, b) => {
             const idA = typeof a.id === "number" ? a.id : Number(a.id) || 0;
             const idB = typeof b.id === "number" ? b.id : Number(b.id) || 0;
@@ -142,6 +149,8 @@ export const useProgrammerState = (
           setShowForm(true);
         } catch (error) {
           console.error("Failed to fetch edit group", error);
+        } finally {
+          if (mounted) setLoadingEditGroup(false);
         }
       };
 
@@ -185,6 +194,8 @@ export const useProgrammerState = (
 
   return {
     jobs,
+    loadingJobs,
+    loadingEditGroup,
     setJobs,
     showForm,
     setShowForm,

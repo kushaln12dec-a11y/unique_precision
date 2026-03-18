@@ -71,6 +71,7 @@ const loadFromLocalStorage = (groupId: string | null): Map<number | string, CutI
 
 export const useOperatorViewData = (groupId: string | null, cutIdParam: string | null) => {
   const [jobs, setJobs] = useState<JobEntry[]>([]);
+  const [loadingJobs, setLoadingJobs] = useState(true);
   const [idleTimeConfigs, setIdleTimeConfigs] = useState<Map<string, number>>(new Map());
   const [cutInputs, setCutInputs] = useState<Map<number | string, CutInputData>>(new Map());
   const [expandedCuts, setExpandedCuts] = useState<Set<number | string>>(new Set());
@@ -108,8 +109,12 @@ export const useOperatorViewData = (groupId: string | null, cutIdParam: string |
   // Fetch jobs and initialize inputs
   useEffect(() => {
     const fetchJobs = async () => {
-      if (!groupId) return;
+      if (!groupId) {
+        setLoadingJobs(false);
+        return;
+      }
       try {
+        setLoadingJobs(true);
         const fetchedJobs = await getOperatorJobsByGroupId(groupId);
         
         // Filter to specific cut if cutId is provided
@@ -263,6 +268,8 @@ export const useOperatorViewData = (groupId: string | null, cutIdParam: string |
         }
       } catch (error) {
         console.error("Failed to fetch jobs", error);
+      } finally {
+        setLoadingJobs(false);
       }
     };
     fetchJobs();
@@ -289,6 +296,7 @@ export const useOperatorViewData = (groupId: string | null, cutIdParam: string |
 
   return {
     jobs,
+    loadingJobs,
     idleTimeConfigs,
     cutInputs,
     setCutInputs,

@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import Sidebar from "../../components/Sidebar";
 import Header from "../../components/Header";
 import Toast from "../../components/Toast";
+import AppLoader from "../../components/AppLoader";
 import ConfirmDeleteModal from "../../components/ConfirmDeleteModal";
 import { useOperatorViewData } from "./hooks/useOperatorViewData";
 import { useOperatorInputs } from "./hooks/useOperatorInputs";
@@ -43,6 +44,7 @@ const OperatorViewPage = () => {
 
   const {
     jobs,
+    loadingJobs,
     idleTimeConfigs,
     cutInputs,
     setCutInputs,
@@ -517,7 +519,9 @@ const OperatorViewPage = () => {
       <div className="roleboard-content operator-viewpage-content">
         <Header title="Operator View" />
         <div className="programmer-panel operator-viewpage-panel">
-          {jobs.length > 0 && parentJob && (
+          {loadingJobs ? (
+            <AppLoader message="Loading operator details..." />
+          ) : jobs.length > 0 && parentJob ? (
             <>
               {/* Page Heading */}
               <div className="operator-page-heading">
@@ -614,6 +618,10 @@ const OperatorViewPage = () => {
                 </button>
               </div>
             </>
+          ) : (
+            <div className="roleboard-body">
+              <AppLoader variant="inline" message="No operator job data found for this view." />
+            </div>
           )}
         </div>
       </div>

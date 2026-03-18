@@ -4,6 +4,7 @@ import Sidebar from "../../components/Sidebar";
 import Header from "../../components/Header";
 import DataTable, { type Column } from "../../components/DataTable";
 import Toast from "../../components/Toast";
+import AppLoader from "../../components/AppLoader";
 import DownloadIcon from "@mui/icons-material/Download";
 import WbSunnyOutlinedIcon from "@mui/icons-material/WbSunnyOutlined";
 import DarkModeOutlinedIcon from "@mui/icons-material/DarkModeOutlined";
@@ -101,6 +102,7 @@ const Operator = () => {
 
   const {
     jobs,
+    loadingJobs,
     setJobs,
     operatorUsers,
     users,
@@ -834,99 +836,105 @@ const Operator = () => {
 
           {activeTab === "jobs" ? (
             <>
-              <OperatorFilters
-                filters={filters}
-                filterFields={filterFields}
-                filterCategories={filterCategories}
-                jobSearchFilter={customerFilter}
-                createdByFilter={createdByFilter}
-                assignedToFilter={assignedToFilter}
-                productionStageFilter={productionStageFilter}
-                showFilterModal={showFilterModal}
-                activeFilterCount={activeFilterCount}
-                users={users}
-                operatorUsers={operatorUsers}
-                onShowFilterModal={setShowFilterModal}
-                onApplyFilters={handleApplyFiltersWithPageReset}
-                onClearFilters={handleClearFiltersWithPageReset}
-                onRemoveFilter={handleRemoveFilterWithPageReset}
-                onJobSearchFilterChange={(value) => {
-                  setCustomerFilter(value);
-                  setDescriptionFilter(value);
-                }}
-                onCreatedByFilterChange={setCreatedByFilter}
-                onAssignedToFilterChange={setAssignedToFilter}
-                onProductionStageFilterChange={setProductionStageFilter}
-                canUseTaskSwitchTimer={canUseTaskSwitchTimer}
-                onSaveTaskSwitch={handleSaveTaskSwitch}
-                onTimerRunningChange={setIsTaskTimerRunning}
-                onShowToast={(message, variant = "info") => {
-                  setToast({ message, variant, visible: true });
-                  setTimeout(() => setToast((prev) => ({ ...prev, visible: false })), 2500);
-                }}
-                onDownloadCSV={handleDownloadCSV}
-                onSendSelectedRowsToQa={handleSendSelectedRowsToQa}
-                selectedRowsCount={selectedEntryIds.size}
-                machineOptions={machineOptionsForDropdown}
-                currentUserName={currentUserShortName}
-                onApplyBulkAssignment={handleApplyBulkAssignment}
-              />
-              <DataTable
-                columns={columns}
-                data={tableData}
-                sortField={sortField}
-                sortDirection={sortDirection}
-                onSort={(field) => handleSort(field as keyof JobEntry)}
-                emptyMessage='No entries added yet.'
-                expandableRows={expandableRows}
-                showAccordion={false}
-                getRowKey={(row) => row.groupId}
-                getRowClassName={(row) =>
-                  (() => {
-                    const flagClass = getParentRowClassName(
-                      row.parent,
-                      row.entries,
-                      expandedGroups.has(row.groupId)
-                    );
-                    const c = getGroupQaProgressCounts(row.entries);
-                    const logged = c.saved + c.ready;
-                    const maxCount = Math.max(logged, c.sent, c.empty);
-                    let stageClass = "operator-stage-row-not-started";
-                    if (c.sent === maxCount) stageClass = "operator-stage-row-dispatched";
-                    else if (logged === maxCount) stageClass = "operator-stage-row-logged";
-                    return `${flagClass} ${stageClass}`;
-                  })()
-                }
-                className="jobs-table-wrapper operator-table-no-scroll"
-                showCheckboxes={true}
-                selectedRows={selectedJobIds}
-                onRowSelect={(rowKey, selected) => {
-                  const groupId = String(rowKey);
-                  const row = tableData.find((r) => r.groupId === groupId);
-                  if (!row) return;
-
-                  setSelectedEntryIds((prev) => {
-                    const next = new Set(prev);
-                    row.entries.forEach((entry) => {
-                      if (entry.id === undefined || entry.id === null) return;
-                      const key = String(entry.id);
-                      if (selected) next.add(key);
-                      else next.delete(key);
-                    });
-                    return next;
-                  });
-
-                  setSelectedJobIds((prev) => {
-                    const next = new Set(prev);
-                    if (selected) {
-                      next.add(groupId);
-                    } else {
-                      next.delete(groupId);
+              {loadingJobs ? (
+                <AppLoader message="Loading operator jobs..." />
+              ) : (
+                <>
+                  <OperatorFilters
+                    filters={filters}
+                    filterFields={filterFields}
+                    filterCategories={filterCategories}
+                    jobSearchFilter={customerFilter}
+                    createdByFilter={createdByFilter}
+                    assignedToFilter={assignedToFilter}
+                    productionStageFilter={productionStageFilter}
+                    showFilterModal={showFilterModal}
+                    activeFilterCount={activeFilterCount}
+                    users={users}
+                    operatorUsers={operatorUsers}
+                    onShowFilterModal={setShowFilterModal}
+                    onApplyFilters={handleApplyFiltersWithPageReset}
+                    onClearFilters={handleClearFiltersWithPageReset}
+                    onRemoveFilter={handleRemoveFilterWithPageReset}
+                    onJobSearchFilterChange={(value) => {
+                      setCustomerFilter(value);
+                      setDescriptionFilter(value);
+                    }}
+                    onCreatedByFilterChange={setCreatedByFilter}
+                    onAssignedToFilterChange={setAssignedToFilter}
+                    onProductionStageFilterChange={setProductionStageFilter}
+                    canUseTaskSwitchTimer={canUseTaskSwitchTimer}
+                    onSaveTaskSwitch={handleSaveTaskSwitch}
+                    onTimerRunningChange={setIsTaskTimerRunning}
+                    onShowToast={(message, variant = "info") => {
+                      setToast({ message, variant, visible: true });
+                      setTimeout(() => setToast((prev) => ({ ...prev, visible: false })), 2500);
+                    }}
+                    onDownloadCSV={handleDownloadCSV}
+                    onSendSelectedRowsToQa={handleSendSelectedRowsToQa}
+                    selectedRowsCount={selectedEntryIds.size}
+                    machineOptions={machineOptionsForDropdown}
+                    currentUserName={currentUserShortName}
+                    onApplyBulkAssignment={handleApplyBulkAssignment}
+                  />
+                  <DataTable
+                    columns={columns}
+                    data={tableData}
+                    sortField={sortField}
+                    sortDirection={sortDirection}
+                    onSort={(field) => handleSort(field as keyof JobEntry)}
+                    emptyMessage='No entries added yet.'
+                    expandableRows={expandableRows}
+                    showAccordion={false}
+                    getRowKey={(row) => row.groupId}
+                    getRowClassName={(row) =>
+                      (() => {
+                        const flagClass = getParentRowClassName(
+                          row.parent,
+                          row.entries,
+                          expandedGroups.has(row.groupId)
+                        );
+                        const c = getGroupQaProgressCounts(row.entries);
+                        const logged = c.saved + c.ready;
+                        const maxCount = Math.max(logged, c.sent, c.empty);
+                        let stageClass = "operator-stage-row-not-started";
+                        if (c.sent === maxCount) stageClass = "operator-stage-row-dispatched";
+                        else if (logged === maxCount) stageClass = "operator-stage-row-logged";
+                        return `${flagClass} ${stageClass}`;
+                      })()
                     }
-                    return next;
-                  });
-                }}
-              />
+                    className="jobs-table-wrapper operator-table-no-scroll"
+                    showCheckboxes={true}
+                    selectedRows={selectedJobIds}
+                    onRowSelect={(rowKey, selected) => {
+                      const groupId = String(rowKey);
+                      const row = tableData.find((r) => r.groupId === groupId);
+                      if (!row) return;
+
+                      setSelectedEntryIds((prev) => {
+                        const next = new Set(prev);
+                        row.entries.forEach((entry) => {
+                          if (entry.id === undefined || entry.id === null) return;
+                          const key = String(entry.id);
+                          if (selected) next.add(key);
+                          else next.delete(key);
+                        });
+                        return next;
+                      });
+
+                      setSelectedJobIds((prev) => {
+                        const next = new Set(prev);
+                        if (selected) {
+                          next.add(groupId);
+                        } else {
+                          next.delete(groupId);
+                        }
+                        return next;
+                      });
+                    }}
+                  />
+                </>
+              )}
             </>
           ) : (
             <>

@@ -4,6 +4,7 @@ import Sidebar from "../../components/Sidebar";
 import Header from "../../components/Header";
 import DataTable, { type Column } from "../../components/DataTable";
 import Toast from "../../components/Toast";
+import AppLoader from "../../components/AppLoader";
 import DownloadIcon from "@mui/icons-material/Download";
 import WbSunnyOutlinedIcon from "@mui/icons-material/WbSunnyOutlined";
 import DarkModeOutlinedIcon from "@mui/icons-material/DarkModeOutlined";
@@ -96,6 +97,8 @@ const Programmer = () => {
 
   const {
     jobs,
+    loadingJobs,
+    loadingEditGroup,
     setJobs,
     showForm,
     setShowForm,
@@ -566,63 +569,73 @@ const Programmer = () => {
           )}
 
           {shouldRenderJobForm && (
-            <ProgrammerJobForm
-              cuts={cuts}
-              setCuts={setCuts}
-              onSave={handleSaveJob}
-              onCancel={handleCancel}
-              totals={totals}
-              isAdmin={isAdmin}
-              refNumber={refNumber}
-              masterConfig={masterConfig}
-            />
+            loadingEditGroup ? (
+              <AppLoader message="Loading job details..." />
+            ) : (
+              <ProgrammerJobForm
+                cuts={cuts}
+                setCuts={setCuts}
+                onSave={handleSaveJob}
+                onCancel={handleCancel}
+                totals={totals}
+                isAdmin={isAdmin}
+                refNumber={refNumber}
+                masterConfig={masterConfig}
+              />
+            )
           )}
 
           {!isNewJobRoute && !isEditRoute && activeTab === "jobs" && (
             <>
-              <ProgrammerFilters
-                filters={filters}
-                jobSearchFilter={customerFilter}
-                createdByFilter={createdByFilter}
-                criticalFilter={criticalFilter}
-                showFilterModal={showFilterModal}
-                activeFilterCount={activeFilterCount}
-                users={users}
-                onShowFilterModal={(show) => dispatch(setProgrammerShowFilterModal(show))}
-                onApplyFilters={handleApplyFilters}
-                onClearFilters={handleClearFilters}
-                onRemoveFilter={handleRemoveFilter}
-                onJobSearchFilterChange={(value) => {
-                  dispatch(setProgrammerCustomerFilter(value));
-                  dispatch(setProgrammerDescriptionFilter(value));
-                }}
-                onCreatedByFilterChange={(value) => dispatch(setProgrammerCreatedByFilter(value))}
-                onCriticalFilterChange={(value) => dispatch(setProgrammerCriticalFilter(value))}
-                onDownloadCSV={handleDownloadCSV}
-                onNewJob={handleNewJob}
-              />
-              <DataTable
-                columns={columns}
-                data={tableData}
-                sortField={sortField}
-                sortDirection={sortDirection}
-                onSort={(field) => handleSort(field as keyof JobEntry)}
-                emptyMessage='No entries added yet. Use "New" to add an entry.'
-                expandableRows={expandableRows}
-                showAccordion={false}
-                getRowKey={(row) => row.groupId}
-                getRowClassName={(row) =>
-                  getParentRowClassName(
-                    row.parent,
-                    row.entries,
-                    expandedGroups.has(row.groupId)
-                  )
-                }
-                className="jobs-table-wrapper"
-                showCheckboxes={true}
-                selectedRows={selectedJobIds}
-                onRowSelect={handleRowSelect}
-              />
+              {loadingJobs ? (
+                <AppLoader message="Loading programmer jobs..." />
+              ) : (
+                <>
+                  <ProgrammerFilters
+                    filters={filters}
+                    jobSearchFilter={customerFilter}
+                    createdByFilter={createdByFilter}
+                    criticalFilter={criticalFilter}
+                    showFilterModal={showFilterModal}
+                    activeFilterCount={activeFilterCount}
+                    users={users}
+                    onShowFilterModal={(show) => dispatch(setProgrammerShowFilterModal(show))}
+                    onApplyFilters={handleApplyFilters}
+                    onClearFilters={handleClearFilters}
+                    onRemoveFilter={handleRemoveFilter}
+                    onJobSearchFilterChange={(value) => {
+                      dispatch(setProgrammerCustomerFilter(value));
+                      dispatch(setProgrammerDescriptionFilter(value));
+                    }}
+                    onCreatedByFilterChange={(value) => dispatch(setProgrammerCreatedByFilter(value))}
+                    onCriticalFilterChange={(value) => dispatch(setProgrammerCriticalFilter(value))}
+                    onDownloadCSV={handleDownloadCSV}
+                    onNewJob={handleNewJob}
+                  />
+                  <DataTable
+                    columns={columns}
+                    data={tableData}
+                    sortField={sortField}
+                    sortDirection={sortDirection}
+                    onSort={(field) => handleSort(field as keyof JobEntry)}
+                    emptyMessage='No entries added yet. Use "New" to add an entry.'
+                    expandableRows={expandableRows}
+                    showAccordion={false}
+                    getRowKey={(row) => row.groupId}
+                    getRowClassName={(row) =>
+                      getParentRowClassName(
+                        row.parent,
+                        row.entries,
+                        expandedGroups.has(row.groupId)
+                      )
+                    }
+                    className="jobs-table-wrapper"
+                    showCheckboxes={true}
+                    selectedRows={selectedJobIds}
+                    onRowSelect={handleRowSelect}
+                  />
+                </>
+              )}
             </>
           )}
 
