@@ -18,6 +18,17 @@ const toUuid = (value: unknown): string | undefined => {
 const withUserId = (userId?: string) => (userId ? { userId } : {});
 const withJobId = (jobId?: string) => (jobId ? { jobId } : {});
 
+const resolveReqUserName = (reqUser: any): string => {
+  const fullName = String(reqUser?.fullName || "").trim();
+  if (fullName) return fullName;
+  const firstName = String(reqUser?.firstName || "").trim();
+  const lastName = String(reqUser?.lastName || "").trim();
+  const joined = `${firstName} ${lastName}`.trim();
+  if (joined) return joined;
+  const email = String(reqUser?.email || "").trim();
+  return email.split("@")[0]?.trim() || "";
+};
+
 router.post("/programmer/start", async (req, res) => {
   try {
     const reqUser = req.user as any;
@@ -32,7 +43,7 @@ router.post("/programmer/start", async (req, res) => {
         status: "IN_PROGRESS",
         ...withUserId(userId),
         userEmail: String(reqUser?.email || ""),
-        userName: String(reqUser?.fullName || "").trim(),
+        userName: resolveReqUserName(reqUser),
         refNumber: String(refNumber || ""),
         startedAt,
         workItemTitle: refNumber ? `New Job Draft #${refNumber}` : "New Job Draft",
@@ -86,7 +97,7 @@ router.post("/programmer/complete", async (req, res) => {
           status: "IN_PROGRESS",
           ...withUserId(userId),
           userEmail: String(reqUser?.email || ""),
-          userName: String(reqUser?.fullName || "").trim(),
+          userName: resolveReqUserName(reqUser),
           refNumber: String(refNumber || ""),
           startedAt: fallbackStartedAt,
         },
@@ -234,7 +245,7 @@ router.post("/operator/complete", async (req, res) => {
         status: "COMPLETED",
         ...withUserId(userId),
         userEmail: String(reqUser?.email || ""),
-        userName: String(reqUser?.fullName || "").trim(),
+        userName: resolveReqUserName(reqUser),
         ...withJobId(resolvedJobId),
         jobGroupId: toBigInt(jobGroupId) ?? null,
         refNumber: String(refNumber || ""),
@@ -297,7 +308,7 @@ router.post("/operator/start", async (req, res) => {
         status: "IN_PROGRESS",
         ...withUserId(userId),
         userEmail: String(reqUser?.email || ""),
-        userName: String(reqUser?.fullName || "").trim(),
+        userName: resolveReqUserName(reqUser),
         ...withJobId(resolvedJobId),
         jobGroupId: toBigInt(jobGroupId) ?? null,
         refNumber: String(refNumber || ""),
@@ -359,7 +370,7 @@ router.post("/operator/task-switch", async (req, res) => {
         status: "COMPLETED",
         ...withUserId(toUuid(reqUser?.userId)),
         userEmail: String(reqUser?.email || ""),
-        userName: String(reqUser?.fullName || "").trim(),
+        userName: resolveReqUserName(reqUser),
         workItemTitle: "Operator Task Switch",
         workSummary: `Task switch idle: ${reason}`,
         startedAt: safeStart,

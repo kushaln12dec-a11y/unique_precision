@@ -10,6 +10,7 @@ import idleTimeConfigRoutes from "./routes/idleTimeConfig";
 import employeeLogsRoutes from "./routes/employeeLogs";
 import masterConfigRoutes from "./routes/masterConfig";
 import inspectionReportsRoutes from "./routes/inspectionReports";
+import uploadRoutes from "./routes/upload";
 import { authMiddleware } from "./middleware/auth";
 
 const app = express();
@@ -57,6 +58,9 @@ app.use("/api/master-config", masterConfigRoutes);
 
 // Inspection report routes
 app.use("/api/inspection-reports", inspectionReportsRoutes);
+
+// Upload routes
+app.use("/api/upload", uploadRoutes);
 
 // Protected route example
 app.get("/api/protected", authMiddleware, (_req, res) => {
