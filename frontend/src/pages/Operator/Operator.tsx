@@ -28,7 +28,7 @@ import type { MasterConfig } from "../../types/masterConfig";
 import type { FilterValues } from "../../components/FilterModal";
 import { formatDisplayDateTime, getDisplayDateTimeParts } from "../../utils/date";
 import { calculateTotals } from "../Programmer/programmerUtils";
-import { formatMachineLabel, MACHINE_OPTIONS, toMachineIndex } from "../../utils/jobFormatting";
+import { formatMachineLabel, getFirstNameDisplay, MACHINE_OPTIONS, toMachineIndex } from "../../utils/jobFormatting";
 import MarqueeCopyText from "../../components/MarqueeCopyText";
 import "../RoleBoard.css";
 import "../Programmer/Programmer.css";
@@ -415,6 +415,11 @@ const Operator = () => {
   const machineOptionsForDropdown =
     configuredMachineOptions.length > 0 ? configuredMachineOptions : [...MACHINE_OPTIONS];
 
+  const operatorOptionUsers = operatorUsers.map((user) => ({
+    id: user._id,
+    name: getFirstNameDisplay(user.firstName, user.email, String(user._id)).toUpperCase(),
+  }));
+
   const { tableData, expandableRows } = useOperatorTableData(
     jobs,
     sortField,
@@ -425,10 +430,7 @@ const Operator = () => {
     handleImageInput,
     handleAssignChange,
     handleChildMachineNumberChange,
-    operatorUsers.map((user) => ({
-      id: user._id,
-      name: `${user.firstName} ${user.lastName}`.trim() || user.email || String(user._id),
-    })),
+    operatorOptionUsers,
     machineOptionsForDropdown,
     isAdmin,
     isTaskTimerRunning,
@@ -442,10 +444,7 @@ const Operator = () => {
     canAssign,
     machineOptions: machineOptionsForDropdown,
     currentUserName,
-    operatorUsers: operatorUsers.map((user) => ({
-      id: user._id,
-      name: `${user.firstName} ${user.lastName}`.trim() || user.email || String(user._id),
-    })),
+    operatorUsers: operatorOptionUsers,
     handleAssignChange,
     handleMachineNumberChange,
     handleViewJob,
@@ -456,14 +455,6 @@ const Operator = () => {
     isAdmin,
     isImageInputDisabled: isTaskTimerRunning,
   });
-
-  const getInitials = (value: string): string => {
-    const full = String(value || "").trim();
-    if (!full) return "--";
-    const parts = full.split(/\s+/).filter(Boolean);
-    if (parts.length >= 2) return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
-    return full.slice(0, 2).toUpperCase();
-  };
 
   const handleApplyFiltersWithPageReset = (newFilters: FilterValues) => {
     handleApplyFilters(newFilters);
@@ -521,10 +512,12 @@ const Operator = () => {
   const designationByUserName = useMemo(() => {
     const map = new Map<string, string>();
     users.forEach((u) => {
-      const key = `${u.firstName || ""} ${u.lastName || ""}`.trim();
+      const fullName = `${u.firstName || ""} ${u.lastName || ""}`.trim();
+      const firstName = String(u.firstName || "").trim();
       const role = String(u.role || "").toUpperCase();
       const designation = role === "ADMIN" ? "Admin" : role === "OPERATOR" ? "Operator" : role;
-      if (key) map.set(key.toLowerCase(), designation);
+      if (fullName) map.set(fullName.toLowerCase(), designation);
+      if (firstName) map.set(firstName.toLowerCase(), designation);
     });
     return map;
   }, [users]);
@@ -637,12 +630,12 @@ const Operator = () => {
         label: "User",
         sortable: false,
         render: (row) => {
-          const name = String(row.userName || "").trim();
+          const name = String(row.userName || "").trim() || "-";
           const designation = designationByUserName.get(name.toLowerCase()) || "Operator";
           return (
             <div className="log-user-stack log-user-badge-stack">
-              <span className="log-user-initial-badge" title={(name || "-").toUpperCase()}>
-                {getInitials(name)}
+              <span className="log-user-initial-badge" title={name.toUpperCase()}>
+                {name.length > 0 ? name.slice(0, 2).toUpperCase() : "--"}
               </span>
               <span>{designation}</span>
             </div>

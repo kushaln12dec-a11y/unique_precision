@@ -75,6 +75,15 @@ export const useOperatorViewData = (groupId: string | null, cutIdParam: string |
   const [cutInputs, setCutInputs] = useState<Map<number | string, CutInputData>>(new Map());
   const [expandedCuts, setExpandedCuts] = useState<Set<number | string>>(new Set());
 
+  const parseAssignedOperators = (rawAssignedTo: unknown): string[] => {
+    if (Array.isArray(rawAssignedTo)) {
+      return [...new Set(rawAssignedTo.map((value) => String(value || "").trim()).filter(Boolean))];
+    }
+    const normalized = String(rawAssignedTo || "").trim();
+    if (!normalized || normalized === "Unassigned") return [];
+    return [...new Set(normalized.split(",").map((value) => value.trim()).filter(Boolean))];
+  };
+
   // Fetch idle time configs
   useEffect(() => {
     const fetchIdleTimeConfigs = async () => {
@@ -113,15 +122,15 @@ export const useOperatorViewData = (groupId: string | null, cutIdParam: string |
         const savedInputs = loadFromLocalStorage(groupId);
         
         // Initialize inputs for all cuts
-        const initialInputs = new Map<number, CutInputData>();
+        const initialInputs = new Map<number | string, CutInputData>();
         filteredJobs.forEach((job) => {
-          const jobId = job.id as number;
+          const jobId = job.id;
           const existing = job as any;
           const getOpsNameArray = (rawOpsName: string | string[]) => {
-            if (Array.isArray(rawOpsName)) return rawOpsName;
-            return rawOpsName && rawOpsName !== "Unassigned" ? rawOpsName.split(", ").filter(Boolean) : [];
+            if (Array.isArray(rawOpsName)) return rawOpsName.map((value) => String(value || "").trim()).filter(Boolean);
+            return rawOpsName && rawOpsName !== "Unassigned" ? rawOpsName.split(",").map((value) => value.trim()).filter(Boolean) : [];
           };
-          const assignedToArray = getOpsNameArray(existing.assignedTo || "");
+          const assignedToArray = parseAssignedOperators(existing.assignedTo || "");
           
           // If we have saved data for this cut, use it
           if (savedInputs && savedInputs.has(jobId)) {
@@ -129,10 +138,8 @@ export const useOperatorViewData = (groupId: string | null, cutIdParam: string |
             initialInputs.set(jobId, {
               quantities: (saved.quantities || []).map((qty) => ({
                 ...qty,
-                opsName:
-                  assignedToArray.length > 0
-                    ? assignedToArray
-                    : (Array.isArray(qty.opsName) && qty.opsName.length > 0 ? qty.opsName : []),
+                machineNumber: String(existing.machineNumber || qty.machineNumber || "").trim(),
+                opsName: assignedToArray.length > 0 ? assignedToArray : (Array.isArray(qty.opsName) ? qty.opsName : []),
               })),
             });
             return;

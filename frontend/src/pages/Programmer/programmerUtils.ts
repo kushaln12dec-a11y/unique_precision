@@ -368,7 +368,7 @@ export const calculateTotals = (form: CutForm, config: CalculationConfig = {}): 
   const rows: WedmRowBreakdown[] = operationRows.map((row, index) => {
     const cutLength = Number(row.cut) || 0;
     const thicknessInput = String(row.thickness ?? "");
-    const thicknessUsed = parseThicknessValue(row.thickness);
+    const thicknessUsed = getEffectiveThickness(row.thickness);
     const divisor = thicknessUsed > 100 ? 1200 : 1500;
     const base = (cutLength * thicknessUsed) / divisor;
     const passMultiplier = PASS_MAP[row.passLevel] || 1;
@@ -427,7 +427,7 @@ export const calculateTotals = (form: CutForm, config: CalculationConfig = {}): 
   const sedmEntries = calculateSedmBreakdown(form);
   const sedmAmount = sedmEntries.reduce((sum, entry) => sum + entry.entryCost, 0);
   const totalAmount = wedmAmount + sedmAmount;
-  const estimatedTime = wedmAmount / 625;
+  const estimatedTime = wedmAmount / 625 / 24;
 
   return {
     totalHrs,

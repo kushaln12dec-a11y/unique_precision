@@ -325,9 +325,9 @@ export const useOperatorTable = ({
         className: "created-by-cell",
         headerClassName: "created-by-header",
         render: (row) => {
-          const fullName = String(row.parent.createdBy || "-").toUpperCase();
+          const fullName = String(row.parent.createdBy || "-").trim() || "-";
           return (
-            <span className="created-by-badge" title={fullName}>
+            <span className="created-by-badge" title={fullName.toUpperCase()}>
               {getInitials(fullName)}
             </span>
           );

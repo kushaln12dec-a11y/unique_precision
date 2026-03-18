@@ -1,3 +1,10 @@
+const getEmailLocalPart = (email: unknown): string | null => {
+  const normalizedEmail = String(email || "").trim();
+  if (!normalizedEmail) return null;
+  const localPart = normalizedEmail.split("@")[0]?.trim();
+  return localPart || null;
+};
+
 export const getUserRoleFromToken = (): string | null => {
   const token = localStorage.getItem("token");
   if (!token) {
@@ -43,9 +50,10 @@ export const getUserDisplayNameFromToken = (): string | null => {
     decoded.fullName ||
     (decoded.firstName && decoded.lastName ? `${decoded.firstName} ${decoded.lastName}`.trim() : null) ||
     (decoded.firstName || decoded.lastName ? `${decoded.firstName || ""} ${decoded.lastName || ""}`.trim() : null) ||
+    decoded.empId ||
     decoded.name ||
     decoded.username ||
-    (decoded.email ? "User" : null);
+    getEmailLocalPart(decoded.email);
 
   return displayName ? String(displayName).toUpperCase() : null;
 };

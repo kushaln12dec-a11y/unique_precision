@@ -10,7 +10,7 @@ import { getQaProgressCounts } from "../../Operator/utils/qaProgress";
 
 interface JobDetailsModalProps {
   job: {
-    groupId: string;
+    groupId: string | number;
     parent: JobEntry;
     entries: JobEntry[];
     groupTotalHrs: number;
@@ -174,7 +174,7 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
                   {
                     label: showOperatorSpecificLayout ? "Estimated Time" : "Cut Length Hrs",
                     value: showOperatorSpecificLayout
-                      ? formatDecimalHoursToHHMMhrs(Number((((amounts.perCut[index]?.wedmAmount || 0) / 625).toFixed(2))))
+                      ? formatDecimalHoursToHHMMhrs(Number((((amounts.perCut[index]?.wedmAmount || 0) / 625 / 24).toFixed(2))))
                       : (cutItem.totalHrs ? formatDecimalHoursToHHMMhrs(cutItem.totalHrs) : "00:00hrs"),
                   },
                 ];
@@ -314,7 +314,7 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
               <span>
                 {showOperatorSpecificLayout
                   ? formatDecimalHoursToHHMMhrs(
-                      Number(((amounts.totalWedmAmount || 0) / 625).toFixed(2))
+                      Number(((amounts.totalWedmAmount || 0) / 625 / 24).toFixed(2))
                     )
                   : (displayGroupTotalHrs ? formatDecimalHoursToHHMMhrs(displayGroupTotalHrs) : "00:00hrs")}
               </span>

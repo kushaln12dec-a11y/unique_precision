@@ -77,7 +77,7 @@ export const OperatorCutCard: React.FC<OperatorCutCardProps> = ({
   isAdmin,
 }) => {
   const quantity = Number(cutItem.qty || 1);
-  const cutEstimatedHrs = Number(((calculateTotals(cutItem as any).wedmAmount / 625).toFixed(2)));
+  const cutEstimatedHrs = Number(((calculateTotals(cutItem as any).wedmAmount / 625 / 24).toFixed(2)));
   const expectedHoursPerQuantity = cutEstimatedHrs / Math.max(1, quantity);
   return (
     <div className="operator-cut-card">

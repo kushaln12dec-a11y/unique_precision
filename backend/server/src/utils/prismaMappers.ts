@@ -13,7 +13,16 @@ const decimalToString = (value: any): string => {
 export const mapUser = (user: any) => {
   if (!user) return user;
   const { passwordHash, ...rest } = user;
-  return { ...rest, _id: user.id };
+  return {
+    ...rest,
+    _id: user.id,
+    firstName: user.firstName ?? "",
+    lastName: user.lastName ?? "",
+    phone: user.phone ?? "",
+    empId: user.empId ?? "",
+    image: user.image ?? "",
+    role: user.role ?? "OPERATOR",
+  };
 };
 
 export const mapEmployeeLog = (log: any) => {

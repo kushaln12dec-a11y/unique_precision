@@ -14,14 +14,21 @@ export const filterUsers = (
   const query = searchQuery.trim().toLowerCase();
 
   return users.filter((user) => {
+    const firstName = String(user.firstName || "").toLowerCase();
+    const lastName = String(user.lastName || "").toLowerCase();
+    const email = String(user.email || "").toLowerCase();
+    const phone = String(user.phone || "").toLowerCase();
+    const empId = String(user.empId || "").toLowerCase();
+    const role = String(user.role || "").toLowerCase();
+
     if (query) {
       const matchesSearch =
-        user.firstName.toLowerCase().includes(query) ||
-        user.lastName.toLowerCase().includes(query) ||
-        user.email.toLowerCase().includes(query) ||
-        user.phone.toLowerCase().includes(query) ||
-        user.empId.toLowerCase().includes(query) ||
-        user.role.toLowerCase().includes(query);
+        firstName.includes(query) ||
+        lastName.includes(query) ||
+        email.includes(query) ||
+        phone.includes(query) ||
+        empId.includes(query) ||
+        role.includes(query);
 
       if (!matchesSearch) {
         return false;
@@ -44,10 +51,8 @@ export const sortUsers = (
   if (!field) return users;
 
   return [...users].sort((a, b) => {
-    const aValue = a[field];
-    const bValue = b[field];
-
-    if (aValue === undefined || bValue === undefined) return 0;
+    const aValue = a[field] ?? "";
+    const bValue = b[field] ?? "";
 
     const comparison =
       aValue < bValue ? -1 : aValue > bValue ? 1 : 0;

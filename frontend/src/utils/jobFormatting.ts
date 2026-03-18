@@ -1,3 +1,32 @@
+export const getEmailLocalPart = (value: unknown): string => {
+  const email = String(value || "").trim();
+  if (!email) return "";
+  return email.split("@")[0]?.trim() || "";
+};
+
+export const getDisplayName = (
+  firstName: unknown,
+  lastName: unknown,
+  email?: unknown,
+  fallback = "User"
+): string => {
+  const fullName = `${String(firstName || "").trim()} ${String(lastName || "").trim()}`.trim();
+  if (fullName) return fullName;
+  const emailLocalPart = getEmailLocalPart(email);
+  return emailLocalPart || fallback;
+};
+
+export const getFirstNameDisplay = (
+  firstName: unknown,
+  email?: unknown,
+  fallback = "User"
+): string => {
+  const normalizedFirstName = String(firstName || "").trim();
+  if (normalizedFirstName) return normalizedFirstName;
+  const emailLocalPart = getEmailLocalPart(email);
+  return emailLocalPart || fallback;
+};
+
 export const getInitials = (value: string): string => {
   const full = String(value || "").trim();
   if (!full) return "--";
@@ -15,7 +44,7 @@ export const toYN = (value: unknown): string => {
 };
 
 export const estimatedTimeFromAmount = (amount: number): string => {
-  return ((Number(amount || 0) || 0) / 625).toFixed(2);
+  return ((Number(amount || 0) || 0) / 625 / 24).toFixed(2);
 };
 
 export const MACHINE_OPTIONS = ["1", "2", "3", "4", "5", "6"] as const;

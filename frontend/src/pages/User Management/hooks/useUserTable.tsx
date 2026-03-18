@@ -9,6 +9,13 @@ export const useUserTable = (
   handleEdit: (user: User) => void,
   handleDeleteClick: (user: User) => void
 ): Column<User>[] => {
+  const getDisplayName = (user: User) => {
+    const fullName = `${user.firstName || ""} ${user.lastName || ""}`.trim();
+    if (fullName) return fullName.toUpperCase();
+    const emailName = String(user.email || "").split("@")[0]?.trim();
+    return (emailName || "USER").toUpperCase();
+  };
+
   return useMemo(
     () => [
       {
@@ -16,7 +23,7 @@ export const useUserTable = (
         label: "Name",
         sortable: true,
         sortKey: "firstName",
-        render: (user) => `${user.firstName} ${user.lastName}`.trim().toUpperCase(),
+        render: (user) => getDisplayName(user),
       },
       {
         key: "email",
@@ -30,14 +37,14 @@ export const useUserTable = (
         label: "Phone",
         sortable: true,
         sortKey: "phone",
-        render: (user) => user.phone,
+        render: (user) => user.phone || "-",
       },
       {
         key: "empId",
         label: "Emp ID",
         sortable: true,
         sortKey: "empId",
-        render: (user) => user.empId,
+        render: (user) => user.empId || "-",
       },
       {
         key: "role",

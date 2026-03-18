@@ -42,7 +42,7 @@ import {
   setProgrammerFilters,
   setProgrammerShowFilterModal,
 } from "../../store/slices/filtersSlice";
-import { getInitials } from "../../utils/jobFormatting";
+import { getDisplayName, getInitials } from "../../utils/jobFormatting";
 
 const Programmer = () => {
   const PROGRAMMER_ACTIVE_LOG_KEY = "programmer_active_job_log_id";
@@ -412,10 +412,10 @@ const Programmer = () => {
         headerClassName: "programmer-log-user-col",
         render: (row) => {
           const designation = designationByUserId.get(String(row.userId)) || "Programmer";
-          const name = String(row.userName || "").trim();
+          const name = String(row.userName || "").trim() || "-";
           return (
             <div className="log-user-stack log-user-badge-stack">
-              <span className="log-user-initial-badge" title={(name || "-").toUpperCase()}>
+              <span className="log-user-initial-badge" title={name.toUpperCase()}>
                 {getInitials(name)}
               </span>
               <span>{designation}</span>
@@ -672,7 +672,7 @@ const Programmer = () => {
                   {users
                     .filter((user) => user.role === "PROGRAMMER" || user.role === "ADMIN")
                     .map((user) => {
-                      const displayName = `${user.firstName} ${user.lastName}`.trim() || user.email;
+                      const displayName = getDisplayName(user.firstName, user.lastName, user.email);
                       return (
                         <option key={user._id} value={user._id}>
                           {displayName.toUpperCase()}

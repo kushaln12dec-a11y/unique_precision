@@ -270,6 +270,17 @@
   cursor: default;
 }
 
+.created-by-text {
+  display: inline-block;
+  max-width: 100%;
+  color: #1e293b;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
 .inline-filters {
   display: flex;
   gap: 1rem;
@@ -2276,6 +2287,12 @@
 .child-jobs-table th,
 .child-jobs-table td {
   text-align: center;
+}
+
+.child-jobs-table tbody td,
+.child-jobs-table tbody td[class] {
+  text-align: center !important;
+  vertical-align: middle;
 }
 
 .child-jobs-table th .sort-icon {
