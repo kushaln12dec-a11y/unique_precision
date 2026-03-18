@@ -27,7 +27,6 @@ import type { EmployeeLog } from "../../types/employeeLog";
 import type { MasterConfig } from "../../types/masterConfig";
 import type { FilterValues } from "../../components/FilterModal";
 import { formatDisplayDateTime, getDisplayDateTimeParts } from "../../utils/date";
-import { calculateTotals } from "../Programmer/programmerUtils";
 import {
   formatMachineLabel,
   getEmailLocalPart,
@@ -542,7 +541,10 @@ const Operator = () => {
       groups.get(key)!.push(entry);
     });
     groups.forEach((entries, groupId) => {
-      const wedm = entries.reduce((sum, entry) => sum + calculateTotals(entry as any).wedmAmount, 0);
+      const wedm = entries.reduce(
+        (sum, entry) => sum + (Number(entry.totalHrs || 0) * Number(entry.rate || 0)),
+        0
+      );
       map.set(groupId, wedm);
     });
     return map;

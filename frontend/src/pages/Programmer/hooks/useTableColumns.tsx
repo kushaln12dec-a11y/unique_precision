@@ -5,14 +5,13 @@ import ArrowForwardIosSharpIcon from "@mui/icons-material/ArrowForwardIosSharp";
 import type { TableRow } from "../utils/jobDataTransform";
 import ActionButtons from "../components/ActionButtons";
 import { estimatedTimeFromAmount, formatJobRefDisplay, getInitials, toYN } from "../../../utils/jobFormatting";
-import { calculateTotals, getThicknessDisplayValue } from "../programmerUtils";
+import { getThicknessDisplayValue } from "../programmerUtils";
 import MarqueeCopyText from "../../../components/MarqueeCopyText";
 
 type UseTableColumnsProps = {
   expandableRows: Map<string, any>;
   isAdmin: boolean;
-  setViewingJob: (job: TableRow) => void;
-  setShowJobViewModal: (show: boolean) => void;
+  handleViewJob: (groupId: string) => void;
   handleEditJob: (groupId: string) => void;
   handleDeleteClick: (groupId: string, customer: string) => void;
 };
@@ -20,8 +19,7 @@ type UseTableColumnsProps = {
 export const useTableColumns = ({
   expandableRows,
   isAdmin,
-  setViewingJob,
-  setShowJobViewModal,
+  handleViewJob,
   handleEditJob,
   handleDeleteClick,
 }: UseTableColumnsProps): Column<TableRow>[] => {
@@ -157,7 +155,7 @@ export const useTableColumns = ({
         sortable: false,
         sortKey: "totalHrs",
         render: (row) => {
-          const totalHrs = calculateTotals(row.parent as any).totalHrs;
+          const totalHrs = Number(row.parent.totalHrs || 0);
           return totalHrs ? `${totalHrs.toFixed(2)}hrs` : "-";
         },
       },
@@ -174,7 +172,10 @@ export const useTableColumns = ({
         className: "estimated-time-col",
         headerClassName: "estimated-time-col",
         render: (row) => {
-          const wedmAmount = row.entries.reduce((sum, entry) => sum + calculateTotals(entry as any).wedmAmount, 0);
+          const wedmAmount = row.entries.reduce(
+            (sum, entry) => sum + (Number(entry.totalHrs || 0) * Number(entry.rate || 0)),
+            0
+          );
           return estimatedTimeFromAmount(wedmAmount);
         },
       },
@@ -227,10 +228,7 @@ export const useTableColumns = ({
         headerClassName: "action-header",
         render: (row) => (
           <ActionButtons
-            onView={() => {
-              setViewingJob(row);
-              setShowJobViewModal(true);
-            }}
+            onView={() => handleViewJob(row.groupId)}
             onEdit={() => handleEditJob(row.groupId)}
             onDelete={() => handleDeleteClick(row.groupId, row.parent.customer || "entry")}
             viewLabel={`View ${row.parent.customer || "entry"}`}
@@ -240,6 +238,6 @@ export const useTableColumns = ({
         ),
       },
     ],
-    [expandableRows, isAdmin, setViewingJob, setShowJobViewModal, handleEditJob, handleDeleteClick]
+    [expandableRows, isAdmin, handleViewJob, handleEditJob, handleDeleteClick]
   );
 };

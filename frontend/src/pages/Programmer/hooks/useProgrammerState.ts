@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLocation, useParams } from "react-router-dom";
-import { getJobs } from "../../../services/jobApi";
+import { getJobsByGroupId, getProgrammerJobs } from "../../../services/jobApi";
 import type { JobEntry } from "../../../types/job";
 import type { FilterValues } from "../../../components/FilterModal";
 import { calculateTotals, DEFAULT_CUT, type CutForm } from "../programmerUtils";
@@ -36,6 +36,7 @@ export const useProgrammerState = (
   const [cuts, setCuts] = useState<CutForm[]>([DEFAULT_CUT]);
   const [editingGroupId, setEditingGroupId] = useState<string | null>(null);
   const [refNumber, setRefNumber] = useState<string>("");
+  const loadedEditGroupRef = useRef<string | null>(null);
 
   const isNewJobRoute = location.pathname === "/programmer/newjob";
   const isEditRoute = location.pathname.startsWith("/programmer/edit/");
@@ -43,11 +44,10 @@ export const useProgrammerState = (
   useEffect(() => {
     const fetchJobs = async () => {
       try {
-        const fetchedJobs = await getJobs(
+        const fetchedJobs = await getProgrammerJobs(
           filters, 
           customerFilter, 
           createdByFilter, 
-          undefined,
           criticalFilter ? true : undefined,
           descriptionFilter
         );
@@ -83,15 +83,24 @@ export const useProgrammerState = (
   useEffect(() => {
     if (isEditRoute && params.groupId) {
       const groupId = String(params.groupId);
-      if (groupId) {
-        const groupCuts = jobs
-          .filter((job) => String(job.groupId) === groupId)
-          .sort((a, b) => {
-            const idA = typeof a.id === 'number' ? a.id : Number(a.id) || 0;
-            const idB = typeof b.id === 'number' ? b.id : Number(b.id) || 0;
+      if (loadedEditGroupRef.current === groupId) {
+        setShowForm(true);
+        return;
+      }
+
+      loadedEditGroupRef.current = groupId;
+      let mounted = true;
+
+      const loadEditGroup = async () => {
+        if (!groupId) return;
+        try {
+          const groupCuts = (await getJobsByGroupId(groupId)).sort((a, b) => {
+            const idA = typeof a.id === "number" ? a.id : Number(a.id) || 0;
+            const idB = typeof b.id === "number" ? b.id : Number(b.id) || 0;
             return idA - idB;
           });
-        if (groupCuts.length > 0) {
+          if (!mounted || groupCuts.length === 0) return;
+
           setEditingGroupId(groupId);
           setCuts(
             groupCuts.map((job) => {
@@ -142,15 +151,19 @@ export const useProgrammerState = (
             })
           );
           const firstJob = groupCuts[0];
-          if (firstJob && (firstJob as any).refNumber) {
-            setRefNumber((firstJob as any).refNumber);
-          } else {
-            setRefNumber(String(groupId));
-          }
+          setRefNumber((firstJob as any)?.refNumber ? String((firstJob as any).refNumber) : String(groupId));
           setShowForm(true);
+        } catch (error) {
+          console.error("Failed to fetch edit group", error);
         }
-      }
+      };
+
+      void loadEditGroup();
+      return () => {
+        mounted = false;
+      };
     } else if (isNewJobRoute) {
+      loadedEditGroupRef.current = null;
       if (editingGroupId !== null) {
         setEditingGroupId(null);
       }
@@ -162,6 +175,7 @@ export const useProgrammerState = (
       }
       setShowForm(true);
     } else {
+      loadedEditGroupRef.current = null;
       setShowForm(false);
       if (editingGroupId !== null) {
         setEditingGroupId(null);
@@ -170,7 +184,7 @@ export const useProgrammerState = (
         setCuts([DEFAULT_CUT]);
       }
     }
-  }, [location.pathname, isEditRoute, params.groupId, jobs, editingGroupId, isNewJobRoute, cuts, refNumber]);
+  }, [location.pathname, isEditRoute, params.groupId, isNewJobRoute, jobs]);
 
   const handleNewJob = () => {
     setEditingGroupId(null);

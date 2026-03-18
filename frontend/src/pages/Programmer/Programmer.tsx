@@ -13,6 +13,7 @@ import "../../utils/tokenDebug";
 import { getUsers } from "../../services/userApi";
 import { getEmployeeLogs, rejectProgrammerJobLog, startProgrammerJobLog } from "../../services/employeeLogsApi";
 import { getMasterConfig } from "../../services/masterConfigApi";
+import { getJobsByGroupId } from "../../services/jobApi";
 import type { User } from "../../types/user";
 import type { MasterConfig } from "../../types/masterConfig";
 import type { EmployeeLog } from "../../types/employeeLog";
@@ -180,6 +181,23 @@ const Programmer = () => {
     expandedGroups,
     toggleGroup,
     isAdmin,
+    onViewJob: async (entry) => {
+      try {
+        const fullEntries = await getJobsByGroupId(String(entry.groupId));
+        const targetEntry = fullEntries.find((job) => String(job.id) === String(entry.id)) || entry;
+        setViewingJob({
+          groupId: String(targetEntry.groupId),
+          parent: targetEntry,
+          entries: [targetEntry],
+          groupTotalHrs: Number(targetEntry.totalHrs || 0),
+          groupTotalAmount: Number(targetEntry.totalAmount || 0),
+        });
+        setShowJobViewModal(true);
+      } catch (error) {
+        console.error("Failed to fetch job details", error);
+        setToast({ message: "Failed to load job details.", variant: "error", visible: true });
+      }
+    },
     onEdit: handleEditJob,
     onDelete: handleDeleteClick,
     showChildCheckboxes: true,
@@ -197,11 +215,28 @@ const Programmer = () => {
     }
   };
 
+  const handleViewGroup = useCallback(async (groupId: string) => {
+    try {
+      const fullEntries = await getJobsByGroupId(groupId);
+      if (!fullEntries.length) return;
+      setViewingJob({
+        groupId,
+        parent: fullEntries[0],
+        entries: fullEntries,
+        groupTotalHrs: fullEntries.reduce((sum, entry) => sum + (Number(entry.totalHrs || 0) || 0), 0),
+        groupTotalAmount: fullEntries.reduce((sum, entry) => sum + (Number(entry.totalAmount || 0) || 0), 0),
+      });
+      setShowJobViewModal(true);
+    } catch (error) {
+      console.error("Failed to fetch job group details", error);
+      setToast({ message: "Failed to load job details.", variant: "error", visible: true });
+    }
+  }, []);
+
   const columns = useTableColumns({
     expandableRows,
     isAdmin,
-    setViewingJob,
-    setShowJobViewModal,
+    handleViewJob: handleViewGroup,
     handleEditJob,
     handleDeleteClick,
   });

@@ -12,6 +12,7 @@ type UseJobDataProps = {
   isAdmin?: boolean;
   onEdit?: (groupId: string) => void;
   onDelete?: (groupId: string, customer: string) => void;
+  onViewJob?: (entry: JobEntry) => void;
   showChildCheckboxes?: boolean;
   selectedChildRows?: Set<string | number>;
   onChildRowSelect?: (rowKey: string | number, selected: boolean) => void;
@@ -26,6 +27,7 @@ export const useJobData = ({
   isAdmin = false,
   onEdit,
   onDelete,
+  onViewJob,
   showChildCheckboxes = false,
   selectedChildRows = new Set(),
   onChildRowSelect,
@@ -54,6 +56,7 @@ export const useJobData = ({
               entries={row.entries} 
               parentSetting={String(row.parent.setting || "").trim()}
               showSetNumberColumn={false}
+              onViewJob={onViewJob}
               onEdit={onEdit} 
               onDelete={onDelete}
               isAdmin={isAdmin}
@@ -74,6 +77,7 @@ export const useJobData = ({
     toggleGroup, 
     onEdit, 
     onDelete,
+    onViewJob,
     isAdmin,
     showChildCheckboxes,
     selectedChildRows,
