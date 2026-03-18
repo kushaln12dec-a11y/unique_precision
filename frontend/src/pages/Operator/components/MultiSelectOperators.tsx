@@ -64,8 +64,8 @@ export const MultiSelectOperators: React.FC<MultiSelectOperatorsProps> = ({
     const viewportWidth = window.innerWidth;
     const viewportMargin = 8;
 
-    const desiredWidth = Math.max(triggerRect.width, 150);
-    const maxAllowedWidth = Math.max(150, viewportWidth - viewportMargin * 2);
+    const desiredWidth = Math.max(triggerRect.width, 1);
+    const maxAllowedWidth = Math.max(desiredWidth, viewportWidth - viewportMargin * 2);
     const finalWidth = Math.min(desiredWidth, maxAllowedWidth);
     const maxHeight = Math.min(220, Math.max(120, viewportHeight - viewportMargin * 2));
 

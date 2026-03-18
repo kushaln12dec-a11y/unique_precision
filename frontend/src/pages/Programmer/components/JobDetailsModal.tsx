@@ -3,6 +3,7 @@ import ImageUpload from "./ImageUpload";
 import type { JobEntry } from "../../../types/job";
 import { calculateTotals, getThicknessDisplayValue, type CutForm } from "../programmerUtils";
 import { formatDecimalHoursToHHMMhrs, formatDisplayDateTime } from "../../../utils/date";
+import { formatEstimatedTime, formatJobRefDisplay } from "../../../utils/jobFormatting";
 import { formatMachineLabel } from "../../../utils/jobFormatting";
 import "./JobDetailsModal.css";
 import { useLocation } from "react-router-dom";
@@ -85,7 +86,7 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
       label: "Updated At",
       value: (displayCut as any)?.updatedAt ? formatDate((displayCut as any).updatedAt) : "-",
     },
-    { label: "Job Number", value: `#${(displayCut as any)?.refNumber || displayGroupId || "-"}` },
+    { label: "Job Number", value: formatJobRefDisplay((displayCut as any)?.refNumber || displayGroupId || "") },
     { label: "Priority", value: displayCut?.priority || "-" },
     { label: "Complex", value: displayCut?.critical ? "Yes" : "No" },
   ];
@@ -174,7 +175,7 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
                   {
                     label: showOperatorSpecificLayout ? "Estimated Time" : "Cut Length Hrs",
                     value: showOperatorSpecificLayout
-                      ? formatDecimalHoursToHHMMhrs(Number((((amounts.perCut[index]?.wedmAmount || 0) / 625 / 24).toFixed(2))))
+                      ? formatEstimatedTime((amounts.perCut[index]?.wedmAmount || 0) / 625 / 24)
                       : (cutItem.totalHrs ? formatDecimalHoursToHHMMhrs(cutItem.totalHrs) : "00:00hrs"),
                   },
                 ];
@@ -313,9 +314,7 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
               <label>{showOperatorSpecificLayout ? "Estimated Time:" : "Cut Length Hrs:"}</label>
               <span>
                 {showOperatorSpecificLayout
-                  ? formatDecimalHoursToHHMMhrs(
-                      Number(((amounts.totalWedmAmount || 0) / 625 / 24).toFixed(2))
-                    )
+                  ? formatEstimatedTime((amounts.totalWedmAmount || 0) / 625 / 24)
                   : (displayGroupTotalHrs ? formatDecimalHoursToHHMMhrs(displayGroupTotalHrs) : "00:00hrs")}
               </span>
             </div>

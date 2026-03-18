@@ -340,7 +340,7 @@ const ChildCutsTable: React.FC<ChildCutsTableProps> = ({
                   })()}
                 </td>
               )}
-              <td className="estimated-time-col">{`${estimatedTimeFromAmount(calculateTotals(entry as any).wedmAmount)}hrs`}</td>
+              <td className="estimated-time-col">{estimatedTimeFromAmount(calculateTotals(entry as any).wedmAmount)}</td>
               {isAdmin && <td className="total-amount-col">{entry.totalAmount ? `Rs. ${Math.round(entry.totalAmount)}` : "-"}</td>}
               {isOperator && (
                 <td className="status-col">

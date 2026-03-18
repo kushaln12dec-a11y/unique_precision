@@ -10,6 +10,7 @@ import SelectDropdown from "./SelectDropdown";
 import FlagIcon from "@mui/icons-material/Flag";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import type { CustomerRate } from "../../../types/masterConfig";
+import { formatEstimatedTime } from "../../../utils/jobFormatting";
 
 type CutTotals = {
   totalHrs: number;
@@ -91,6 +92,14 @@ const SEDM_OPTIONS: Array<{ value: CutForm["sedm"]; label: string }> = [
   { value: "No", label: "No" },
   { value: "Yes", label: "Yes" },
 ];
+
+const normalizeNonNegativeNumberInput = (value: string): string => {
+  const raw = String(value || "");
+  if (raw === "") return "";
+  const parsed = Number(raw);
+  if (!Number.isFinite(parsed)) return "";
+  return parsed < 0 ? "0" : raw;
+};
 
 
 export const CutSection: React.FC<CutSectionProps> = ({
@@ -326,8 +335,9 @@ export const CutSection: React.FC<CutSectionProps> = ({
           <FormInput label="Rate (Rs./hr)" className="grid-rate" required error={fieldErrors.rate}>
             <input
               type="number"
+              min="0"
               value={cut.rate}
-              onChange={(e) => onCutChange("rate")(e.target.value)}
+              onChange={(e) => onCutChange("rate")(normalizeNonNegativeNumberInput(e.target.value))}
             />
           </FormInput>
 
@@ -373,11 +383,12 @@ export const CutSection: React.FC<CutSectionProps> = ({
                 >
                   <input
                     type="number"
+                    min="0"
                     value={row.cut}
                     placeholder= "Cut Length (mm)"
                     onChange={(e) => {
                       const updated = [...operationRows];
-                      updated[rowIndex].cut = e.target.value;
+                      updated[rowIndex].cut = normalizeNonNegativeNumberInput(e.target.value);
                       setOperationRows(updated);
                     }}
                   />
@@ -430,11 +441,12 @@ export const CutSection: React.FC<CutSectionProps> = ({
                 >
                   <input
                     type="number"
+                    min="0"
                     value={row.setting}
                     placeholder="Setting Hrs"
                     onChange={(e) => {
                       const updated = [...operationRows];
-                      updated[rowIndex].setting = e.target.value;
+                      updated[rowIndex].setting = normalizeNonNegativeNumberInput(e.target.value);
                       setOperationRows(updated);
                     }}
                   />
@@ -449,11 +461,12 @@ export const CutSection: React.FC<CutSectionProps> = ({
                   <div className="qty-with-add">
                     <input
                       type="number"
+                      min="0"
                       value={row.qty}
                       placeholder="Quantity"
                       onChange={(e) => {
                         const updated = [...operationRows];
-                        updated[rowIndex].qty = e.target.value;
+                        updated[rowIndex].qty = normalizeNonNegativeNumberInput(e.target.value);
                         setOperationRows(updated);
                       }}
                     />
@@ -537,9 +550,11 @@ export const CutSection: React.FC<CutSectionProps> = ({
             style={{ gridRow: 2 + operationRows.length }}
           >
             <input
-              type="text"
-              value={cutTotals.totalHrs.toFixed(2)}
-              readOnly
+              type="number"
+              step="0.01"
+              min="0"
+              value={String(cut.manualTotalHrs ?? "").trim() !== "" ? String(cut.manualTotalHrs) : cutTotals.totalHrs.toFixed(2)}
+              onChange={(e) => onCutChange("manualTotalHrs")(normalizeNonNegativeNumberInput(e.target.value))}
             />
           </FormInput>
 
@@ -550,7 +565,7 @@ export const CutSection: React.FC<CutSectionProps> = ({
           >
             <input
               type="text"
-              value={cutTotals.estimatedTime.toFixed(2)}
+              value={formatEstimatedTime(cutTotals.estimatedTime)}
               readOnly
             />
           </FormInput>
@@ -597,7 +612,7 @@ export const CutSection: React.FC<CutSectionProps> = ({
                 <p>SEDM Cost = 0.00</p>
               )}
               <p>{`Total Amount = WEDM(${cutTotals.wedmAmount.toFixed(2)}) + SEDM(${cutTotals.sedmAmount.toFixed(2)}) = ${cutTotals.totalAmount.toFixed(2)}`}</p>
-              <p>{`Estimated Time = WEDM / 625 / 24 = ${cutTotals.wedmAmount.toFixed(2)} / 625 / 24 = ${cutTotals.estimatedTime.toFixed(2)}`}</p>
+              <p>{`Estimated Time = WEDM / 625 / 24 = ${cutTotals.wedmAmount.toFixed(2)} / 625 / 24 = ${formatEstimatedTime(cutTotals.estimatedTime)}`}</p>
             </div>
           </div>
         </div>

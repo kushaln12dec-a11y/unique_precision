@@ -3,9 +3,21 @@ import { useLocation, useParams } from "react-router-dom";
 import { getJobs } from "../../../services/jobApi";
 import type { JobEntry } from "../../../types/job";
 import type { FilterValues } from "../../../components/FilterModal";
-import { DEFAULT_CUT, type CutForm } from "../programmerUtils";
+import { calculateTotals, DEFAULT_CUT, type CutForm } from "../programmerUtils";
 
 const STORAGE_KEY = "programmerJobs";
+const JOB_REF_REGEX = /^JOB-(\d{5})$/;
+
+const getNextDisplayRefNumber = (jobs: JobEntry[]): string => {
+  const maxSequence = jobs.reduce((max, job) => {
+    const ref = String((job as any).refNumber || "").trim().toUpperCase();
+    const match = ref.match(JOB_REF_REGEX);
+    if (!match) return max;
+    return Math.max(max, Number(match[1] || 0));
+  }, 0);
+
+  return `JOB-${String(maxSequence + 1).padStart(5, "0")}`;
+};
 
 /**
  * Hook for managing programmer page state
@@ -82,39 +94,52 @@ export const useProgrammerState = (
         if (groupCuts.length > 0) {
           setEditingGroupId(groupId);
           setCuts(
-            groupCuts.map((job) => ({
-              customer: String(job.customer ?? ""),
-              rate: String(job.rate ?? ""),
-              cut: String(job.cut ?? ""),
-              thickness: String(job.thickness ?? ""),
-              passLevel: String(job.passLevel ?? ""),
-              setting: String(job.setting ?? ""),
-              qty: String(job.qty ?? ""),
-              sedm: job.sedm,
-              sedmSelectionType: job.sedmSelectionType ?? "range",
-              sedmRangeKey: job.sedmRangeKey ?? "0.3-0.4",
-              sedmStandardValue: job.sedmStandardValue ?? "",
-              sedmLengthType: job.sedmLengthType ?? "min",
-              sedmOver20Length: job.sedmOver20Length ?? "",
-              sedmLengthValue:
-                job.sedmLengthValue ??
-                (job.sedmSelectionType === "range"
-                  ? job.sedmRangeKey ?? ""
-                  : job.sedmStandardValue ?? ""),
-              sedmHoles: job.sedmHoles ?? "1",
-              sedmEntriesJson: (job as any).sedmEntriesJson ?? "",
-              operationRowsJson: (job as any).operationRowsJson ?? "",
-              material: (job as any).material ?? "",
-              priority: job.priority,
-              description: job.description,
-              programRefFile: String((job as any).programRefFile ?? (job as any).programRefFileName ?? ""),
-              cutImage: Array.isArray(job.cutImage)
-                ? job.cutImage
-                : (job.cutImage ? [job.cutImage as unknown as string] : []),
-              critical: job.critical,
-              pipFinish: job.pipFinish,
-              refNumber: (job as any).refNumber || "",
-            }))
+            groupCuts.map((job) => {
+              const baseCut: CutForm = {
+                customer: String(job.customer ?? ""),
+                rate: String(job.rate ?? ""),
+                cut: String(job.cut ?? ""),
+                thickness: String(job.thickness ?? ""),
+                passLevel: String(job.passLevel ?? ""),
+                setting: String(job.setting ?? ""),
+                qty: String(job.qty ?? ""),
+                sedm: job.sedm,
+                sedmSelectionType: job.sedmSelectionType ?? "range",
+                sedmRangeKey: job.sedmRangeKey ?? "0.3-0.4",
+                sedmStandardValue: job.sedmStandardValue ?? "",
+                sedmLengthType: job.sedmLengthType ?? "min",
+                sedmOver20Length: job.sedmOver20Length ?? "",
+                sedmLengthValue:
+                  job.sedmLengthValue ??
+                  (job.sedmSelectionType === "range"
+                    ? job.sedmRangeKey ?? ""
+                    : job.sedmStandardValue ?? ""),
+                sedmHoles: job.sedmHoles ?? "1",
+                sedmEntriesJson: (job as any).sedmEntriesJson ?? "",
+                operationRowsJson: (job as any).operationRowsJson ?? "",
+                material: (job as any).material ?? "",
+                priority: job.priority,
+                description: job.description,
+                programRefFile: String((job as any).programRefFile ?? (job as any).programRefFileName ?? ""),
+                cutImage: Array.isArray(job.cutImage)
+                  ? job.cutImage
+                  : (job.cutImage ? [job.cutImage as unknown as string] : []),
+                critical: job.critical,
+                pipFinish: job.pipFinish,
+                refNumber: (job as any).refNumber || "",
+                manualTotalHrs: "",
+              };
+
+              const derivedTotalHrs = calculateTotals(baseCut).totalHrs;
+              const savedTotalHrs = Number(job.totalHrs || 0);
+              const shouldKeepManualOverride =
+                Number.isFinite(savedTotalHrs) && Math.abs(savedTotalHrs - derivedTotalHrs) > 0.01;
+
+              return {
+                ...baseCut,
+                manualTotalHrs: shouldKeepManualOverride ? String(savedTotalHrs) : "",
+              };
+            })
           );
           const firstJob = groupCuts[0];
           if (firstJob && (firstJob as any).refNumber) {
@@ -132,6 +157,9 @@ export const useProgrammerState = (
       if (cuts.length === 0 || (cuts.length === 1 && !cuts[0].customer)) {
         setCuts([DEFAULT_CUT]);
       }
+      if (!refNumber) {
+        setRefNumber(getNextDisplayRefNumber(jobs));
+      }
       setShowForm(true);
     } else {
       setShowForm(false);
@@ -142,13 +170,12 @@ export const useProgrammerState = (
         setCuts([DEFAULT_CUT]);
       }
     }
-  }, [location.pathname, isEditRoute, params.groupId, jobs, editingGroupId, isNewJobRoute]);
+  }, [location.pathname, isEditRoute, params.groupId, jobs, editingGroupId, isNewJobRoute, cuts, refNumber]);
 
   const handleNewJob = () => {
     setEditingGroupId(null);
     setCuts([DEFAULT_CUT]);
-    const newGroupId = String(Date.now());
-    setRefNumber(newGroupId);
+    setRefNumber(getNextDisplayRefNumber(jobs));
   };
 
   const handleCancel = () => {

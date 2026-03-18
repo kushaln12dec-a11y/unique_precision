@@ -4,7 +4,7 @@ import { getDisplayDateTimeParts } from "../../../utils/date";
 import ArrowForwardIosSharpIcon from "@mui/icons-material/ArrowForwardIosSharp";
 import type { TableRow } from "../utils/jobDataTransform";
 import ActionButtons from "../components/ActionButtons";
-import { estimatedTimeFromAmount, getInitials, toYN } from "../../../utils/jobFormatting";
+import { estimatedTimeFromAmount, formatJobRefDisplay, getInitials, toYN } from "../../../utils/jobFormatting";
 import { calculateTotals, getThicknessDisplayValue } from "../programmerUtils";
 import MarqueeCopyText from "../../../components/MarqueeCopyText";
 
@@ -76,7 +76,7 @@ export const useTableColumns = ({
         sortable: false,
         render: (row) => {
           const ref = row.parent.refNumber || "";
-          return ref ? `#${ref}` : "-";
+          return formatJobRefDisplay(ref);
         },
       },
       {
@@ -175,7 +175,7 @@ export const useTableColumns = ({
         headerClassName: "estimated-time-col",
         render: (row) => {
           const wedmAmount = row.entries.reduce((sum, entry) => sum + calculateTotals(entry as any).wedmAmount, 0);
-          return `${estimatedTimeFromAmount(wedmAmount)}hrs`;
+          return estimatedTimeFromAmount(wedmAmount);
         },
       },
       ...(isAdmin

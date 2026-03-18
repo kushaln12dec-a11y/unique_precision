@@ -170,7 +170,6 @@ const AdminConsole = () => {
       <div className="roleboard-content">
         <Header title="Admin Console" />
         <div className="roleboard-body admin-console-panel">
-          <h3>Admin Console</h3>
           {loading ? (
             <p>Loading...</p>
           ) : (

@@ -467,7 +467,7 @@ const OperatorViewPage = () => {
   const parentJob = jobs.length > 0 ? jobs[0] : null;
   const totalGroupQuantity = jobs.reduce((sum, job) => sum + Math.max(1, Number(job.qty || 1)), 0);
   const groupTotalAmount = jobs.reduce((sum, job) => sum + (job.totalAmount || 0), 0);
-  const groupEstimatedHrs = Number(((amounts.totalWedmAmount || 0) / 625 / 24).toFixed(2));
+  const groupEstimatedHrs = (amounts.totalWedmAmount || 0) / 625 / 24;
 
   const getCutInputData = (cutId: number | string, quantity: number = 1): CutInputData => {
     return cutInputs.get(cutId) || createEmptyCutInputData(quantity);

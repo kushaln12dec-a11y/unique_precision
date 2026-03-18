@@ -1,5 +1,5 @@
 ﻿import React from "react";
-import { formatDecimalHoursToHHMMhrs } from "../../../utils/date";
+import { formatEstimatedTime } from "../../../utils/jobFormatting";
 import "../OperatorViewPage.css";
 
 type OperatorTotalsSectionProps = {
@@ -21,7 +21,7 @@ export const OperatorTotalsSection: React.FC<OperatorTotalsSectionProps> = ({
     <div className="operator-totals-section">
       <div className="operator-total-card">
         <label>Estimated Time</label>
-        <span>{groupEstimatedHrs ? formatDecimalHoursToHHMMhrs(groupEstimatedHrs) : "00:00hrs"}</span>
+        <span>{formatEstimatedTime(groupEstimatedHrs)}</span>
       </div>
       {isAdmin && (
         <>

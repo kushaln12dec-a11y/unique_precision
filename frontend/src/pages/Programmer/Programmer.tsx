@@ -42,7 +42,7 @@ import {
   setProgrammerFilters,
   setProgrammerShowFilterModal,
 } from "../../store/slices/filtersSlice";
-import { getDisplayName, getInitials } from "../../utils/jobFormatting";
+import { getDisplayName, getInitials, getLogUserDisplayName } from "../../utils/jobFormatting";
 
 const Programmer = () => {
   const PROGRAMMER_ACTIVE_LOG_KEY = "programmer_active_job_log_id";
@@ -412,7 +412,7 @@ const Programmer = () => {
         headerClassName: "programmer-log-user-col",
         render: (row) => {
           const designation = designationByUserId.get(String(row.userId)) || "Programmer";
-          const name = String(row.userName || "").trim() || "-";
+          const name = getLogUserDisplayName(row.userName, row.userEmail, "Programmer");
           return (
             <div className="log-user-stack log-user-badge-stack">
               <span className="log-user-initial-badge" title={name.toUpperCase()}>
@@ -429,7 +429,7 @@ const Programmer = () => {
         sortable: false,
         render: (row) => {
           const ref = String(row.refNumber || "").trim().replace(/^#/, "");
-          return ref ? `#${ref}` : "-";
+          return ref ? `#${ref}` : "";
         },
       },
       {
@@ -523,12 +523,12 @@ const Programmer = () => {
     const headers = ["User", "JOB #", "Summary", "Started at", "Ended at", "Shift", "Duration", "Status"];
     const rows = filteredProgrammerLogs.map((row) => {
       const designation = designationByUserId.get(String(row.userId)) || "Programmer";
-      const name = String(row.userName || "").trim();
+      const name = getLogUserDisplayName(row.userName, row.userEmail, "");
       const userValue = name ? `${name} (${designation})` : designation;
       const ref = String(row.refNumber || "").trim().replace(/^#/, "");
       return [
         userValue,
-        ref ? `#${ref}` : "-",
+        ref ? `#${ref}` : "",
         String((row as any).workSummary || "-"),
         formatDisplayDateTime(row.startedAt),
         formatDisplayDateTime(row.endedAt || null),

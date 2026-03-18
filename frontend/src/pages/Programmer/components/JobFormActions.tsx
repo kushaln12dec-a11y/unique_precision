@@ -1,4 +1,5 @@
 import React from "react";
+import { formatEstimatedTime } from "../../../utils/jobFormatting";
 
 type JobFormActionsProps = {
   grandTotals: { totalHrs: number; totalAmount: number; wedmAmount: number; sedmAmount: number };
@@ -26,7 +27,7 @@ export const JobFormActions: React.FC<JobFormActionsProps> = ({
         </div>
         <div>
           <span className="form-total-label">Estimated Time</span>
-          <span className="form-total-value">{(grandTotals.wedmAmount / 625 / 24).toFixed(2)}</span>
+          <span className="form-total-value">{formatEstimatedTime(grandTotals.wedmAmount / 625 / 24)}</span>
         </div>
         {isAdmin && (
           <>

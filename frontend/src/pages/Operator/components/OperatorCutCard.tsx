@@ -3,7 +3,7 @@ import ImageUpload from "../../Programmer/components/ImageUpload";
 import type { JobEntry } from "../../../types/job";
 import type { CutInputData } from "../types/cutInput";
 import { OperatorInputSection } from "./OperatorInputSection";
-import { formatDecimalHoursToHHMMhrs } from "../../../utils/date";
+import { formatEstimatedTime } from "../../../utils/jobFormatting";
 import "../OperatorViewPage.css";
 
 import type { QuantityInputData } from "../types/cutInput";
@@ -77,7 +77,7 @@ export const OperatorCutCard: React.FC<OperatorCutCardProps> = ({
   isAdmin,
 }) => {
   const quantity = Number(cutItem.qty || 1);
-  const cutEstimatedHrs = Number(((calculateTotals(cutItem as any).wedmAmount / 625 / 24).toFixed(2)));
+  const cutEstimatedHrs = calculateTotals(cutItem as any).wedmAmount / 625 / 24;
   const expectedHoursPerQuantity = cutEstimatedHrs / Math.max(1, quantity);
   return (
     <div className="operator-cut-card">
@@ -104,7 +104,7 @@ export const OperatorCutCard: React.FC<OperatorCutCardProps> = ({
               <div className="cut-detail-item"><label>PIP Finish</label><span className={cutItem.pipFinish ? "pip-badge yes" : "pip-badge no"}>{cutItem.pipFinish ? "Yes" : "No"}</span></div>
               <div className="cut-detail-item"><label>Complex</label><span className={cutItem.critical ? "complex-badge yes" : "complex-badge no"}>{cutItem.critical ? "Yes" : "No"}</span></div>
               <div className="cut-detail-item"><label>Priority</label><span className={`priority-badge priority-${(cutItem.priority || "").toLowerCase()}`}>{cutItem.priority || "-"}</span></div>
-              <div className="cut-detail-item"><label>Estimated Time</label><span>{cutEstimatedHrs ? formatDecimalHoursToHHMMhrs(cutEstimatedHrs) : "00:00hrs"}</span></div>
+              <div className="cut-detail-item"><label>Estimated Time</label><span>{formatEstimatedTime(cutEstimatedHrs)}</span></div>
               {isAdmin && (
                 <div className="cut-detail-item">
                   <label>Total Amount (Rs.)</label>

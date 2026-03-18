@@ -39,7 +39,7 @@ export const OperatorJobInfo: React.FC<OperatorJobInfoProps> = ({ parentJob, gro
         )}
         <div className="operator-info-card">
           <label>Job Number</label>
-          <span>#{(parentJob as any)?.refNumber || groupId || "—"}</span>
+          <span>{formatJobRefDisplay((parentJob as any)?.refNumber || groupId || "")}</span>
         </div>
         <div className="operator-info-card">
           <label>Priority</label>
@@ -53,3 +53,4 @@ export const OperatorJobInfo: React.FC<OperatorJobInfoProps> = ({ parentJob, gro
   );
 };
 
+import { formatJobRefDisplay } from "../../../utils/jobFormatting";

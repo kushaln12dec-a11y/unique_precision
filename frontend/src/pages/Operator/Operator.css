@@ -641,17 +641,19 @@
 .child-jobs-table td .child-stage-summary {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  justify-content: flex-start;
-  gap: 0.25rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
   margin: 0;
-  text-align: left;
+  text-align: center;
   white-space: normal;
 }
 
 .child-stage-summary {
   min-width: 0;
   width: 100%;
+  display: flex;
+  justify-content: center;
 }
 
 /* ============================================
@@ -2046,12 +2048,18 @@
 .qa-mini {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   padding: 0.1rem 0.4rem;
   border-radius: 999px;
   font-size: 0.6rem;
   font-weight: 700;
   border: 1px solid transparent;
   line-height: 1.2;
+  min-height: 20px;
+  width: 100%;
+  box-sizing: border-box;
+  white-space: nowrap;
+  letter-spacing: 0.02em;
 }
 
 .qa-mini.saved {
@@ -2076,6 +2084,101 @@
   background: #fffbeb;
   border-color: #fcd34d;
   color: #92400e;
+}
+
+.qa-badge-ticker {
+  position: relative;
+  width: 92px;
+  height: 22px;
+  overflow: hidden;
+  border-radius: 999px;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.16) 0%, rgba(15, 23, 42, 0.04) 100%);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.18),
+    0 10px 24px rgba(15, 23, 42, 0.14);
+}
+
+.qa-badge-ticker::before {
+  content: "";
+  position: absolute;
+  inset: 1px;
+  border-radius: inherit;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0.02) 48%, rgba(255, 255, 255, 0.12) 100%);
+  opacity: 1;
+  pointer-events: none;
+}
+
+.qa-badge-ticker::after {
+  content: "";
+  position: absolute;
+  top: -55%;
+  left: -22%;
+  width: 44%;
+  height: 210%;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.95) 48%, rgba(255, 255, 255, 0) 100%);
+  transform: rotate(14deg);
+  animation: qa-badge-highlight 1.15s linear infinite;
+  pointer-events: none;
+  mix-blend-mode: screen;
+}
+
+.qa-badge-track {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+  z-index: 1;
+  animation: qa-badge-scroll 4.2s linear infinite;
+  will-change: transform;
+}
+
+.qa-badge-ticker:hover {
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.3),
+    0 0 0 1px rgba(96, 165, 250, 0.26),
+    0 12px 28px rgba(37, 99, 235, 0.28);
+}
+
+.qa-badge-ticker:hover .qa-badge-track,
+.qa-badge-ticker:focus-within .qa-badge-track {
+  animation-duration: 1.9s;
+}
+
+.qa-badge-ticker:hover .qa-mini,
+.qa-badge-ticker:focus-within .qa-mini {
+  transform: rotate(-2.6deg) scale(1.02);
+  filter: saturate(1.28) brightness(1.08);
+}
+
+@keyframes qa-badge-scroll {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(calc(-50% - 2px));
+  }
+}
+
+@keyframes qa-badge-highlight {
+  0% {
+    transform: translateY(-110%) rotate(18deg);
+    opacity: 0;
+  }
+  15% {
+    opacity: 0.82;
+  }
+  50% {
+    opacity: 0.92;
+  }
+  100% {
+    transform: translateY(115%) rotate(18deg);
+    opacity: 0;
+  }
 }
 
 .child-stage-legend {

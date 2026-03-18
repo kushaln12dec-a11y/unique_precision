@@ -52,8 +52,8 @@ const SelectDropdown: React.FC<SelectDropdownProps> = ({
     const viewportHeight = window.innerHeight;
     const viewportWidth = window.innerWidth;
     const viewportMargin = 8;
-    const desiredWidth = Math.max(triggerRect.width, 120);
-    const maxAllowedWidth = Math.max(120, viewportWidth - viewportMargin * 2);
+    const desiredWidth = Math.max(triggerRect.width, 1);
+    const maxAllowedWidth = Math.max(desiredWidth, viewportWidth - viewportMargin * 2);
     const finalWidth = Math.min(desiredWidth, maxAllowedWidth);
     const menuMaxHeight = Math.min(220, Math.max(120, viewportHeight - viewportMargin * 2));
 

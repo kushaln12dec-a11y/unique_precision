@@ -39,8 +39,48 @@
 
 .jobs-table-wrapper .data-table td.qc-job-ref-cell,
 .jobs-table-wrapper .data-table td.qc-qty-cell {
-  white-space: nowrap;
+  white-space: normal;
   word-break: normal;
+  text-align: center;
+}
+
+.qc-customer-cell,
+.qc-job-ref-stack {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.qc-customer-name,
+.qc-job-ref-value {
+  font-weight: 700;
+  color: #0f172a;
+  line-height: 1.15;
+}
+
+.qc-quantity-tag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 54px;
+  padding: 0.15rem 0.45rem;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+  border: 1px solid #93c5fd;
+  color: #1d4ed8;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.qc-job-ref-subline {
+  max-width: 140px;
+  color: #64748b;
+  font-size: 0.66rem;
+  font-weight: 700;
+  line-height: 1.1;
   text-align: center;
 }
 

@@ -28,7 +28,15 @@ import type { MasterConfig } from "../../types/masterConfig";
 import type { FilterValues } from "../../components/FilterModal";
 import { formatDisplayDateTime, getDisplayDateTimeParts } from "../../utils/date";
 import { calculateTotals } from "../Programmer/programmerUtils";
-import { formatMachineLabel, getFirstNameDisplay, MACHINE_OPTIONS, toMachineIndex } from "../../utils/jobFormatting";
+import {
+  formatMachineLabel,
+  getEmailLocalPart,
+  getFirstNameDisplay,
+  getInitials,
+  getLogUserDisplayName,
+  MACHINE_OPTIONS,
+  toMachineIndex,
+} from "../../utils/jobFormatting";
 import MarqueeCopyText from "../../components/MarqueeCopyText";
 import "../RoleBoard.css";
 import "../Programmer/Programmer.css";
@@ -46,6 +54,7 @@ const Operator = () => {
   const navigate = useNavigate();
   const userRole = (getUserRoleFromToken() || "").toUpperCase();
   const currentUserName = (getUserDisplayNameFromToken() || "").trim();
+  const currentUserShortName = currentUserName.split(/\s+/).filter(Boolean)[0] || currentUserName;
   const isAdmin = userRole === "ADMIN";
   const canUseTaskSwitchTimer = userRole === "ADMIN" || userRole === "OPERATOR";
   const [sortField, setSortField] = useState<keyof JobEntry | null>(null);
@@ -443,7 +452,7 @@ const Operator = () => {
     expandableRows,
     canAssign,
     machineOptions: machineOptionsForDropdown,
-    currentUserName,
+    currentUserName: currentUserShortName,
     operatorUsers: operatorOptionUsers,
     handleAssignChange,
     handleMachineNumberChange,
@@ -514,10 +523,12 @@ const Operator = () => {
     users.forEach((u) => {
       const fullName = `${u.firstName || ""} ${u.lastName || ""}`.trim();
       const firstName = String(u.firstName || "").trim();
+      const emailLocalPart = getEmailLocalPart(u.email);
       const role = String(u.role || "").toUpperCase();
       const designation = role === "ADMIN" ? "Admin" : role === "OPERATOR" ? "Operator" : role;
       if (fullName) map.set(fullName.toLowerCase(), designation);
       if (firstName) map.set(firstName.toLowerCase(), designation);
+      if (emailLocalPart) map.set(emailLocalPart.toLowerCase(), designation);
     });
     return map;
   }, [users]);
@@ -630,12 +641,12 @@ const Operator = () => {
         label: "User",
         sortable: false,
         render: (row) => {
-          const name = String(row.userName || "").trim() || "-";
+          const name = getLogUserDisplayName(row.userName, row.userEmail, "Operator");
           const designation = designationByUserName.get(name.toLowerCase()) || "Operator";
           return (
             <div className="log-user-stack log-user-badge-stack">
               <span className="log-user-initial-badge" title={name.toUpperCase()}>
-                {name.length > 0 ? name.slice(0, 2).toUpperCase() : "--"}
+                {getInitials(name)}
               </span>
               <span>{designation}</span>
             </div>
@@ -767,7 +778,7 @@ const Operator = () => {
     ];
 
     const rows = operatorLogs.map((row) => {
-      const name = String(row.userName || "").trim();
+      const name = getLogUserDisplayName(row.userName, row.userEmail, "");
       const designation = designationByUserName.get(name.toLowerCase()) || "Operator";
       return [
         name ? `${name} (${designation})` : designation,
@@ -855,7 +866,7 @@ const Operator = () => {
                 onSendSelectedRowsToQa={handleSendSelectedRowsToQa}
                 selectedRowsCount={selectedEntryIds.size}
                 machineOptions={machineOptionsForDropdown}
-                currentUserName={currentUserName}
+                currentUserName={currentUserShortName}
                 onApplyBulkAssignment={handleApplyBulkAssignment}
               />
               <DataTable
