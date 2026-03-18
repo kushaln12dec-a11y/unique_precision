@@ -22,7 +22,7 @@ export const useProgrammerState = (
   const [jobs, setJobs] = useState<JobEntry[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [cuts, setCuts] = useState<CutForm[]>([DEFAULT_CUT]);
-  const [editingGroupId, setEditingGroupId] = useState<number | null>(null);
+  const [editingGroupId, setEditingGroupId] = useState<string | null>(null);
   const [refNumber, setRefNumber] = useState<string>("");
 
   const isNewJobRoute = location.pathname === "/programmer/newjob";
@@ -51,13 +51,13 @@ export const useProgrammerState = (
               if (criticalFilter) {
                 filtered = parsed.filter((job) => job.critical === true);
               }
-              setJobs(
-                filtered.map((job) => ({
-                  ...job,
-                  assignedTo: job.assignedTo || "Unassigned",
-                  groupId: job.groupId ?? job.id,
-                }))
-              );
+            setJobs(
+              filtered.map((job) => ({
+                ...job,
+                assignedTo: job.assignedTo || "Unassigned",
+                groupId: String(job.groupId ?? job.id),
+              }))
+            );
             }
           } catch (parseError) {
             console.error("Failed to parse jobs from storage", parseError);
@@ -70,10 +70,10 @@ export const useProgrammerState = (
 
   useEffect(() => {
     if (isEditRoute && params.groupId) {
-      const groupId = Number(params.groupId);
-      if (!isNaN(groupId)) {
+      const groupId = String(params.groupId);
+      if (groupId) {
         const groupCuts = jobs
-          .filter((job) => job.groupId === groupId)
+          .filter((job) => String(job.groupId) === groupId)
           .sort((a, b) => {
             const idA = typeof a.id === 'number' ? a.id : Number(a.id) || 0;
             const idB = typeof b.id === 'number' ? b.id : Number(b.id) || 0;
@@ -147,8 +147,8 @@ export const useProgrammerState = (
   const handleNewJob = () => {
     setEditingGroupId(null);
     setCuts([DEFAULT_CUT]);
-    const newGroupId = Date.now();
-    setRefNumber(String(newGroupId));
+    const newGroupId = String(Date.now());
+    setRefNumber(newGroupId);
   };
 
   const handleCancel = () => {

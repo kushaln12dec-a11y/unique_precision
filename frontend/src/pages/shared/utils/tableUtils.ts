@@ -2,7 +2,7 @@ import type { JobEntry } from "../../../types/job";
 import { getParentRowClassName } from "../../Programmer/utils/priorityUtils";
 
 export type TableRow = {
-  groupId: number;
+  groupId: string;
   parent: JobEntry;
   groupTotalHrs: number;
   groupTotalAmount: number;
@@ -15,7 +15,7 @@ export type TableRow = {
  */
 export const getTableRowClassName = (
   row: TableRow,
-  expandedGroups: Set<number>
+  expandedGroups: Set<string>
 ): string => {
   return getParentRowClassName(
     row.parent,

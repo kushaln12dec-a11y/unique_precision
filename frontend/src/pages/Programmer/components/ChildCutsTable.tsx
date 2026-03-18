@@ -14,9 +14,9 @@ type ChildCutsTableProps = {
   entries: JobEntry[];
   parentSetting?: string;
   showSetNumberColumn?: boolean;
-  onEdit?: (groupId: number) => void;
-  onDelete?: (groupId: number, customer: string) => void;
-  onImage?: (groupId: number, cutId?: number) => void;
+  onEdit?: (groupId: string) => void;
+  onDelete?: (groupId: string, customer: string) => void;
+  onImage?: (groupId: string, cutId?: number) => void;
   onAssignChange?: (jobId: number | string, value: string) => void;
   onMachineNumberChange?: (jobId: number | string, value: string) => void;
   operatorUsers?: Array<{ id: number | string; name: string }>;

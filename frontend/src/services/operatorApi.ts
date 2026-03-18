@@ -57,7 +57,7 @@ export const getOperatorJobs = async (
   return jobs.map((job: any) => ({
     ...job,
     id: job._id || job.id,
-    groupId: job.groupId ?? job.id,
+    groupId: String(job.groupId ?? job.id),
     assignedTo: job.assignedTo || "Unassigned",
   }));
 };
@@ -77,13 +77,13 @@ export const getOperatorJobById = async (id: string): Promise<JobEntry> => {
   return {
     ...job,
     id: job._id || job.id,
-    groupId: job.groupId ?? job.id,
+    groupId: String(job.groupId ?? job.id),
     assignedTo: job.assignedTo || "Unassigned",
   };
 };
 
 // Get operator jobs by groupId
-export const getOperatorJobsByGroupId = async (groupId: number): Promise<JobEntry[]> => {
+export const getOperatorJobsByGroupId = async (groupId: string): Promise<JobEntry[]> => {
   const res = await fetch(apiUrl(`/api/operator/jobs/group/${groupId}`), {
     method: "GET",
     headers: getAuthHeaders(),
@@ -97,7 +97,7 @@ export const getOperatorJobsByGroupId = async (groupId: number): Promise<JobEntr
   return jobs.map((job: any) => ({
     ...job,
     id: job._id || job.id,
-    groupId: job.groupId ?? job.id,
+    groupId: String(job.groupId ?? job.id),
     assignedTo: job.assignedTo || "Unassigned",
   }));
 };
@@ -119,7 +119,7 @@ export const updateOperatorJob = async (id: string, jobData: Partial<JobEntry>):
   return {
     ...job,
     id: job._id || job.id,
-    groupId: job.groupId ?? job.id,
+    groupId: String(job.groupId ?? job.id),
     assignedTo: job.assignedTo || "Unassigned",
   };
 };
@@ -141,7 +141,7 @@ export const captureOperatorInput = async (id: string, inputData: CaptureOperato
   return {
     ...job,
     id: job._id || job.id,
-    groupId: job.groupId ?? job.id,
+    groupId: String(job.groupId ?? job.id),
     assignedTo: job.assignedTo || "Unassigned",
   };
 };
@@ -165,7 +165,7 @@ export const updateOperatorQaStatus = async (
   return {
     ...job,
     id: job._id || job.id,
-    groupId: job.groupId ?? job.id,
+    groupId: String(job.groupId ?? job.id),
     assignedTo: job.assignedTo || "Unassigned",
   };
 };

@@ -15,7 +15,7 @@ export type EmployeeLog = {
   userId: string;
   userEmail: string;
   userName: string;
-  jobGroupId?: number | null;
+  jobGroupId?: string | number | null;
   jobId?: string;
   refNumber?: string;
   settingLabel?: string;

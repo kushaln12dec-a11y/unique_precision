@@ -35,7 +35,7 @@ import "../Programmer/Programmer.css";
 import "./Operator.css";
 
 type TableRow = {
-  groupId: number;
+  groupId: string;
   parent: JobEntry;
   groupTotalHrs: number;
   groupTotalAmount: number;
@@ -50,10 +50,10 @@ const Operator = () => {
   const canUseTaskSwitchTimer = userRole === "ADMIN" || userRole === "OPERATOR";
   const [sortField, setSortField] = useState<keyof JobEntry | null>(null);
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
-  const [expandedGroups, setExpandedGroups] = useState<Set<number>>(() => new Set());
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(() => new Set());
   const [viewingJob, setViewingJob] = useState<TableRow | null>(null);
   const [showJobViewModal, setShowJobViewModal] = useState(false);
-  const [selectedJobIds, setSelectedJobIds] = useState<Set<number>>(new Set());
+  const [selectedJobIds, setSelectedJobIds] = useState<Set<string>>(new Set());
   const [selectedEntryIds, setSelectedEntryIds] = useState<Set<string | number>>(new Set());
   const [isTaskTimerRunning, setIsTaskTimerRunning] = useState(false);
   const [activeTab, setActiveTab] = useState<"jobs" | "logs">("jobs");
@@ -99,7 +99,7 @@ const Operator = () => {
     canAssign,
   } = useOperatorData(filters, customerFilter, descriptionFilter, createdByFilter, assignedToFilter);
 
-  const toggleGroup = (groupId: number) => {
+  const toggleGroup = (groupId: string) => {
     setExpandedGroups((prev) => {
       const next = new Set(prev);
       if (next.has(groupId)) {
@@ -125,7 +125,7 @@ const Operator = () => {
     }
   };
 
-  const handleImageInput = (groupId: number, cutId?: number): void => {
+  const handleImageInput = (groupId: string, cutId?: number): void => {
     if (cutId) {
       navigate(`/operator/viewpage?groupId=${groupId}&cutId=${cutId}`);
     } else {
@@ -133,7 +133,7 @@ const Operator = () => {
     }
   };
 
-  const handleSubmit = (groupId: number): void => {
+  const handleSubmit = (groupId: string): void => {
     navigate(`/operator/viewpage?groupId=${groupId}`);
   };
 
@@ -179,7 +179,7 @@ const Operator = () => {
 
       setJobs((prev) =>
         prev.map((job) => {
-          if (job.groupId !== row.groupId) return job;
+          if (String(job.groupId) !== row.groupId) return job;
           const qty = Math.max(1, Number(job.qty || 1));
           const nextStates: Record<string, "SENT_TO_QA"> = {};
           for (let i = 1; i <= qty; i += 1) nextStates[String(i)] = "SENT_TO_QA";
@@ -212,9 +212,9 @@ const Operator = () => {
     exportOperatorJobsToCSV(tableData, isAdmin);
   };
 
-  const handleMachineNumberChange = async (groupId: number, machineNumber: string) => {
+  const handleMachineNumberChange = async (groupId: string, machineNumber: string) => {
     try {
-      const targetJobs = jobs.filter((job) => job.groupId === groupId);
+      const targetJobs = jobs.filter((job) => String(job.groupId) === groupId);
       if (targetJobs.length === 0) return;
       await Promise.all(
         targetJobs.map((job) =>
@@ -222,7 +222,7 @@ const Operator = () => {
         )
       );
       setJobs((prev) =>
-        prev.map((job) => (job.groupId === groupId ? { ...job, machineNumber } : job))
+        prev.map((job) => (String(job.groupId) === groupId ? { ...job, machineNumber } : job))
       );
     } catch (error) {
       setToast({ message: "Failed to update machine number.", variant: "error", visible: true });
@@ -321,7 +321,7 @@ const Operator = () => {
     await createOperatorTaskSwitchLog(payload);
   };
 
-  const handleChildRowSelect = (groupId: number, rowKey: string | number, selected: boolean) => {
+  const handleChildRowSelect = (groupId: string, rowKey: string | number, selected: boolean) => {
     const normalizedKey = String(rowKey);
 
     setSelectedEntryIds((prev) => {
@@ -329,7 +329,7 @@ const Operator = () => {
       if (selected) next.add(normalizedKey);
       else next.delete(normalizedKey);
 
-      const groupEntries = jobs.filter((job) => job.groupId === groupId);
+      const groupEntries = jobs.filter((job) => String(job.groupId) === groupId);
       const allGroupEntryKeys = groupEntries
         .map((entry) => (entry.id === undefined || entry.id === null ? null : String(entry.id)))
         .filter((key): key is string => key !== null);
@@ -530,10 +530,10 @@ const Operator = () => {
   }, [users]);
 
   const groupWedmByGroupId = useMemo(() => {
-    const map = new Map<number, number>();
-    const groups = new Map<number, JobEntry[]>();
+    const map = new Map<string, number>();
+    const groups = new Map<string, JobEntry[]>();
     jobs.forEach((entry) => {
-      const key = entry.groupId ?? Number(entry.id);
+      const key = String(entry.groupId ?? entry.id);
       if (!groups.has(key)) groups.set(key, []);
       groups.get(key)!.push(entry);
     });
@@ -554,9 +554,9 @@ const Operator = () => {
   };
 
   const groupWorkedSecondsByGroupId = useMemo(() => {
-    const map = new Map<number, number>();
+    const map = new Map<string, number>();
     operatorLogs.forEach((log) => {
-      const groupId = Number(log.jobGroupId || 0);
+      const groupId = String(log.jobGroupId || "").trim();
       if (!groupId) return;
       if (String(log.role || "").toUpperCase() !== "OPERATOR") return;
       const workedSeconds = getWorkedSecondsForLog(log);
@@ -580,8 +580,8 @@ const Operator = () => {
       return String(explicitRevenue);
     }
 
-    const groupId = Number(log.jobGroupId || 0);
-    const wedm = groupWedmByGroupId.get(groupId) || 0;
+    const groupId = String(log.jobGroupId || "").trim();
+    const wedm = groupId ? groupWedmByGroupId.get(groupId) || 0 : 0;
     if (!wedm) return "-";
     const totalWorkedSeconds = groupWorkedSecondsByGroupId.get(groupId) || 0;
     if (!totalWorkedSeconds) return "-";
@@ -611,9 +611,9 @@ const Operator = () => {
   const getMachineNumberForLog = (log: EmployeeLog): string => {
     const machineFromMeta = String((log.metadata as any)?.machineNumber || "").trim();
     if (machineFromMeta) return toMachineIndex(machineFromMeta);
-    const groupId = Number(log.jobGroupId || 0);
+    const groupId = String(log.jobGroupId || "").trim();
     if (!groupId) return "-";
-    const groupEntries = jobs.filter((entry) => Number(entry.groupId) === groupId);
+    const groupEntries = jobs.filter((entry) => String(entry.groupId) === groupId);
     if (!groupEntries.length) return "-";
     const firstMachine = String(
       groupEntries.find((entry) => String(entry.machineNumber || "").trim())?.machineNumber || ""
@@ -895,8 +895,7 @@ const Operator = () => {
                 showCheckboxes={true}
                 selectedRows={selectedJobIds}
                 onRowSelect={(rowKey, selected) => {
-                  const groupId = typeof rowKey === 'number' ? rowKey : Number(rowKey);
-                  if (isNaN(groupId)) return;
+                  const groupId = String(rowKey);
                   const row = tableData.find((r) => r.groupId === groupId);
                   if (!row) return;
 

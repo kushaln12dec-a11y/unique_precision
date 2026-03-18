@@ -7,11 +7,11 @@ type UseJobDataProps = {
   jobs: JobEntry[];
   sortField: keyof JobEntry | null;
   sortDirection: "asc" | "desc";
-  expandedGroups: Set<number>;
-  toggleGroup: (groupId: number) => void;
+  expandedGroups: Set<string>;
+  toggleGroup: (groupId: string) => void;
   isAdmin?: boolean;
-  onEdit?: (groupId: number) => void;
-  onDelete?: (groupId: number, customer: string) => void;
+  onEdit?: (groupId: string) => void;
+  onDelete?: (groupId: string, customer: string) => void;
   showChildCheckboxes?: boolean;
   selectedChildRows?: Set<string | number>;
   onChildRowSelect?: (rowKey: string | number, selected: boolean) => void;
@@ -42,7 +42,7 @@ export const useJobData = ({
   const tableData = useMemo<TableRow[]>(() => transformToTableRows(sortedGroups), [sortedGroups]);
 
   const expandableRows = useMemo(() => {
-    const map = new Map<number, any>();
+    const map = new Map<string, any>();
     tableData.forEach((row) => {
       const hasChildren = row.entries.length > 1;
       if (hasChildren) {

@@ -9,12 +9,12 @@ import type { JobEntry } from "../../../types/job";
 
 type UseJobHandlersProps = {
   cuts: CutForm[];
-  editingGroupId: number | null;
+  editingGroupId: string | null;
   refNumber: string;
   jobs: JobEntry[];
   setJobs: React.Dispatch<React.SetStateAction<JobEntry[]>>;
   setShowForm: React.Dispatch<React.SetStateAction<boolean>>;
-  setEditingGroupId: React.Dispatch<React.SetStateAction<number | null>>;
+  setEditingGroupId: React.Dispatch<React.SetStateAction<string | null>>;
   setCuts: React.Dispatch<React.SetStateAction<CutForm[]>>;
   setToast: React.Dispatch<
     React.SetStateAction<{ message: string; variant: "success" | "error" | "info"; visible: boolean }>
@@ -42,7 +42,7 @@ export const useJobHandlers = ({
       const displayName = getUserDisplayNameFromToken();
       const createdBy = displayName || "Unknown User";
       const createdAt = formatDateLabel(new Date());
-      const groupId = editingGroupId || Date.now();
+      const groupId = editingGroupId || String(Date.now());
 
       const entries: JobEntry[] = cuts.map((cut, index) => {
         const cutTotals = totals[index] ?? calculateTotals(cut);
@@ -53,14 +53,14 @@ export const useJobHandlers = ({
           ...cut,
           cutImage: normalizedCutImage as any,
           refNumber: refNumber || String(groupId) || cut.refNumber || "",
-          id: groupId + index,
+          id: `${groupId}-${index}`,
           groupId,
           totalHrs: cutTotals.totalHrs,
           totalAmount: cutTotals.totalAmount,
           createdAt,
           createdBy,
           assignedTo: editingGroupId
-            ? jobs.find((job) => job.groupId === editingGroupId)?.assignedTo || "Unassigned"
+            ? jobs.find((job) => String(job.groupId) === editingGroupId)?.assignedTo || "Unassigned"
             : "Unassigned",
         };
       });
@@ -69,7 +69,7 @@ export const useJobHandlers = ({
         const updatedJobs = await updateJobsByGroupId(editingGroupId, entries);
         setJobs((prev) => [
           ...updatedJobs,
-          ...prev.filter((job) => job.groupId !== editingGroupId),
+          ...prev.filter((job) => String(job.groupId) !== editingGroupId),
         ]);
         setToast({ message: "Job updated successfully!", variant: "success", visible: true });
         setTimeout(() => setToast({ message: "", variant: "success", visible: false }), 3000);
@@ -132,10 +132,10 @@ export const useJobHandlers = ({
   ]);
 
   const handleDeleteJob = useCallback(
-    async (groupId: number) => {
+    async (groupId: string) => {
       try {
         await deleteJobsByGroupId(groupId);
-        setJobs((prev) => prev.filter((job) => job.groupId !== groupId));
+        setJobs((prev) => prev.filter((job) => String(job.groupId) !== groupId));
         setToast({ message: "Job deleted successfully!", variant: "success", visible: true });
         setTimeout(() => setToast({ message: "", variant: "success", visible: false }), 3000);
       } catch (error) {
@@ -153,7 +153,7 @@ export const useJobHandlers = ({
   );
 
   const handleMassDelete = useCallback(
-    async (selectedJobIds: Set<number>) => {
+    async (selectedJobIds: Set<string>) => {
       if (selectedJobIds.size === 0) return;
 
       try {
@@ -162,7 +162,7 @@ export const useJobHandlers = ({
         );
         await Promise.all(deletePromises);
 
-        setJobs((prev) => prev.filter((job) => !selectedJobIds.has(job.groupId)));
+        setJobs((prev) => prev.filter((job) => !selectedJobIds.has(String(job.groupId))));
         setToast({
           message: `${selectedJobIds.size} job(s) deleted successfully!`,
           variant: "success",
@@ -183,7 +183,7 @@ export const useJobHandlers = ({
   );
 
   const handleEditJob = useCallback(
-    (groupId: number) => {
+    (groupId: string) => {
       navigate(`/programmer/edit/${groupId}`);
     },
     [navigate]

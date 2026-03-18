@@ -17,7 +17,7 @@ export type InspectionReportRowPayload = {
 };
 
 export type InspectionReportPayload = {
-  groupId?: number;
+  groupId?: string;
   customerId: string;
   date: string;
   drawingName: string;

@@ -101,7 +101,7 @@ export const useOperatorViewData = (groupId: string | null, cutIdParam: string |
     const fetchJobs = async () => {
       if (!groupId) return;
       try {
-        const fetchedJobs = await getOperatorJobsByGroupId(Number(groupId));
+        const fetchedJobs = await getOperatorJobsByGroupId(groupId);
         
         // Filter to specific cut if cutId is provided
         let filteredJobs = fetchedJobs;

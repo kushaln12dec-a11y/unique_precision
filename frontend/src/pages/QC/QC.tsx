@@ -31,7 +31,7 @@ import "../Programmer/Programmer.css";
 import "./QC.css";
 
 type QcRow = {
-  groupId: number;
+  groupId: string;
   parent: JobEntry;
   entries: JobEntry[];
   totalHrs: number;
@@ -79,7 +79,7 @@ const QC = () => {
     try {
       const updated = await setQcReportClosedByGroupId(reportCloseCandidate.groupId, true);
       setJobs((prev) => {
-        const keep = prev.filter((j) => j.groupId !== reportCloseCandidate.groupId);
+        const keep = prev.filter((j) => String(j.groupId) !== reportCloseCandidate.groupId);
         return [...keep, ...updated];
       });
       showToast("Inspection report closed and removed from QC queue.", "success");
@@ -113,9 +113,9 @@ const QC = () => {
   }, [showToast]);
 
   const tableData = useMemo<QcRow[]>(() => {
-    const groups = new Map<number, JobEntry[]>();
+    const groups = new Map<string, JobEntry[]>();
     jobs.forEach((job) => {
-      const key = job.groupId ?? Number(job.id);
+      const key = String(job.groupId ?? job.id);
       if (!groups.has(key)) groups.set(key, []);
       groups.get(key)!.push(job);
     });
@@ -238,7 +238,7 @@ const QC = () => {
                 try {
                   const updated = await updateQcDecisionByGroupId(row.groupId, "APPROVED");
                   setJobs((prev) => {
-                    const keep = prev.filter((j) => j.groupId !== row.groupId);
+                    const keep = prev.filter((j) => String(j.groupId) !== row.groupId);
                     return [...keep, ...updated];
                   });
                   showToast("QC decision updated: Approved.", "success");
@@ -257,7 +257,7 @@ const QC = () => {
                 try {
                   const updated = await updateQcDecisionByGroupId(row.groupId, "REJECTED");
                   setJobs((prev) => {
-                    const keep = prev.filter((j) => j.groupId !== row.groupId);
+                    const keep = prev.filter((j) => String(j.groupId) !== row.groupId);
                     return [...keep, ...updated];
                   });
                   showToast("QC decision updated: Rejected.", "success");

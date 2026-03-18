@@ -51,7 +51,7 @@ const Programmer = () => {
   const dispatch = useAppDispatch();
   const [sortField, setSortField] = useState<keyof JobEntry | null>(null);
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
-  const [expandedGroups, setExpandedGroups] = useState<Set<number>>(() => new Set());
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(() => new Set());
   const {
     filters,
     showFilterModal,
@@ -67,8 +67,8 @@ const Programmer = () => {
     visible: false,
   });
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [jobToDelete, setJobToDelete] = useState<{ groupId: number; customer: string } | null>(null);
-  const [selectedJobIds, setSelectedJobIds] = useState<Set<number>>(new Set());
+  const [jobToDelete, setJobToDelete] = useState<{ groupId: string; customer: string } | null>(null);
+  const [selectedJobIds, setSelectedJobIds] = useState<Set<string>>(new Set());
   const [showJobViewModal, setShowJobViewModal] = useState(false);
   const [viewingJob, setViewingJob] = useState<TableRow | null>(null);
   const [selectedChildRows, setSelectedChildRows] = useState<Set<string | number>>(new Set());
@@ -156,7 +156,7 @@ const Programmer = () => {
     dispatch(setProgrammerFilters(updated));
   };
 
-  const toggleGroup = (groupId: number) => {
+  const toggleGroup = (groupId: string) => {
     setExpandedGroups((prev) => {
       const next = new Set(prev);
       if (next.has(groupId)) {
@@ -168,7 +168,7 @@ const Programmer = () => {
     });
   };
 
-  const handleDeleteClick = (groupId: number, customer: string) => {
+  const handleDeleteClick = (groupId: string, customer: string) => {
     setJobToDelete({ groupId, customer });
     setShowDeleteModal(true);
   };
@@ -301,9 +301,8 @@ const Programmer = () => {
   };
 
   const handleRowSelect = (rowKey: string | number, selected: boolean) => {
-    const groupId = typeof rowKey === 'number' ? rowKey : Number(rowKey);
-    if (isNaN(groupId)) return;
-    
+    const groupId = String(rowKey);
+
     setSelectedJobIds((prev) => {
       const next = new Set(prev);
       if (selected) {
@@ -550,10 +549,10 @@ const Programmer = () => {
     document.body.removeChild(link);
   };
 
-  const routeEditGroupId = Number(params.groupId);
+  const routeEditGroupId = params.groupId ? String(params.groupId) : null;
   const isEditFormReady =
     isEditRoute &&
-    !Number.isNaN(routeEditGroupId) &&
+    Boolean(routeEditGroupId) &&
     editingGroupId === routeEditGroupId &&
     cuts.length > 0;
   const shouldRenderJobForm = isNewJobRoute || (isEditRoute ? isEditFormReady : showForm);

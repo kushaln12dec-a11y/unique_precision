@@ -65,8 +65,7 @@ const InspectionReportPage = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const groupIdParam = searchParams.get("groupId");
-  const parsedGroupId = groupIdParam ? Number(groupIdParam) : NaN;
-  const groupId = Number.isFinite(parsedGroupId) ? parsedGroupId : undefined;
+  const groupId = groupIdParam ? String(groupIdParam).trim() : undefined;
 
   const [loading, setLoading] = useState(false);
   const [generating, setGenerating] = useState(false);

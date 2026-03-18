@@ -2,7 +2,7 @@ import { formatDisplayDateTime } from "../../../utils/date";
 import type { JobEntry } from "../../../types/job";
 
 export type TableRow = {
-  groupId: number;
+  groupId: string;
   parent: JobEntry;
   groupTotalHrs: number;
   groupTotalAmount: number;

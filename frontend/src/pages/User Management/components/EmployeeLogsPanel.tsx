@@ -76,9 +76,9 @@ export const EmployeeLogsPanel = () => {
   };
 
   const groupWorkedSecondsByGroupId = useMemo(() => {
-    const map = new Map<number, number>();
+    const map = new Map<string, number>();
     logs.forEach((log) => {
-      const groupId = Number(log.jobGroupId || 0);
+      const groupId = String(log.jobGroupId || '').trim();
       if (!groupId) return;
       if (String(log.role || '').toUpperCase() !== 'OPERATOR') return;
       const workedSeconds = getWorkedSecondsForLog(log);
@@ -148,8 +148,8 @@ export const EmployeeLogsPanel = () => {
               return String(explicit);
             const wedm = Number(metadata.wedmAmount || 0);
             if (!wedm) return '-';
-            const groupId = Number(row.jobGroupId || 0);
-            const totalWorkedSeconds = groupWorkedSecondsByGroupId.get(groupId) || 0;
+            const groupId = String(row.jobGroupId || '').trim();
+            const totalWorkedSeconds = groupId ? groupWorkedSecondsByGroupId.get(groupId) || 0 : 0;
             if (!totalWorkedSeconds) return '-';
             const workedSeconds = getWorkedSecondsForLog(row);
             const share = Math.max(0, workedSeconds) / totalWorkedSeconds;

@@ -18,7 +18,7 @@ import SelectDropdown from "../../Programmer/components/SelectDropdown";
 import { MultiSelectOperators } from "../components/MultiSelectOperators";
 
 type TableRow = {
-  groupId: number;
+  groupId: string;
   parent: JobEntry;
   groupTotalHrs: number;
   groupTotalAmount: number;
@@ -27,16 +27,16 @@ type TableRow = {
 
 type UseOperatorTableProps = {
   tableData: TableRow[];
-  expandableRows: Map<number, any>;
+  expandableRows: Map<string, any>;
   canAssign: boolean;
   operatorUsers: Array<{ id: string | number; name: string }>;
   machineOptions: string[];
   currentUserName: string;
   handleAssignChange: (jobId: number | string, value: string) => void;
-  handleMachineNumberChange: (groupId: number, machineNumber: string) => void;
+  handleMachineNumberChange: (groupId: string, machineNumber: string) => void;
   handleViewJob: (row: TableRow) => void;
-  handleSubmit: (groupId: number) => void;
-  handleImageInput: (groupId: number, cutId?: number) => void;
+  handleSubmit: (groupId: string) => void;
+  handleImageInput: (groupId: string, cutId?: number) => void;
   handleMoveGroupToQa: (row: TableRow) => void;
   canMoveGroupToQa: (entries: JobEntry[]) => boolean;
   isAdmin: boolean;

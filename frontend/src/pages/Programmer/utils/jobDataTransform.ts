@@ -2,17 +2,17 @@ import { parseDateValue } from "../../../utils/date";
 import type { JobEntry } from "../../../types/job";
 
 export type TableRow = {
-  groupId: number;
+  groupId: string;
   parent: JobEntry;
   groupTotalHrs: number;
   groupTotalAmount: number;
   entries: JobEntry[];
 };
 
-export const groupJobs = (jobs: JobEntry[]): Array<{ groupId: number; entries: JobEntry[] }> => {
-  const groups = new Map<number, JobEntry[]>();
+export const groupJobs = (jobs: JobEntry[]): Array<{ groupId: string; entries: JobEntry[] }> => {
+  const groups = new Map<string, JobEntry[]>();
   jobs.forEach((job) => {
-    const key = job.groupId ?? job.id;
+    const key = String(job.groupId ?? job.id);
     if (!groups.has(key)) {
       groups.set(key, []);
     }
@@ -29,10 +29,10 @@ export const groupJobs = (jobs: JobEntry[]): Array<{ groupId: number; entries: J
 };
 
 export const sortGroups = (
-  groupedJobs: Array<{ groupId: number; entries: JobEntry[] }>,
+  groupedJobs: Array<{ groupId: string; entries: JobEntry[] }>,
   sortField: keyof JobEntry | null,
   sortDirection: "asc" | "desc"
-): Array<{ groupId: number; entries: JobEntry[] }> => {
+): Array<{ groupId: string; entries: JobEntry[] }> => {
   if (!sortField) {
     return [...groupedJobs].sort((a, b) => {
       const dateA = parseDateValue(a.entries[0]?.createdAt || "");
@@ -75,7 +75,7 @@ export const sortGroups = (
 };
 
 export const transformToTableRows = (
-  sortedGroups: Array<{ groupId: number; entries: JobEntry[] }>
+  sortedGroups: Array<{ groupId: string; entries: JobEntry[] }>
 ): TableRow[] => {
   return sortedGroups
     .map((group) => {

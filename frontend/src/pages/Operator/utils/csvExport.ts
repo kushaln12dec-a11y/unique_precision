@@ -2,7 +2,7 @@
 import { formatDisplayDateTime } from "../../../utils/date";
 
 type TableRow = {
-  groupId: number;
+  groupId: string;
   parent: JobEntry;
   groupTotalHrs: number;
   groupTotalAmount: number;

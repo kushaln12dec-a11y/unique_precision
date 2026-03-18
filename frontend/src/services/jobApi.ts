@@ -104,7 +104,7 @@ export const getJobs = async (
   return jobs.map((job: any) => ({
     ...job,
     id: job._id || job.id,
-    groupId: job.groupId ?? job.id,
+    groupId: String(job.groupId ?? job.id),
     assignedTo: job.assignedTo || "Unassigned",
   }));
 };
@@ -123,12 +123,12 @@ export const getJobById = async (id: string): Promise<JobEntry> => {
   return {
     ...job,
     id: job._id || job.id,
-    groupId: job.groupId ?? job.id,
+    groupId: String(job.groupId ?? job.id),
     assignedTo: job.assignedTo || "Unassigned",
   };
 };
 
-export const getJobsByGroupId = async (groupId: number): Promise<JobEntry[]> => {
+export const getJobsByGroupId = async (groupId: string): Promise<JobEntry[]> => {
   const res = await fetch(apiUrl(`/api/jobs/group/${groupId}`), {
     method: "GET",
     headers: getAuthHeaders(),
@@ -142,7 +142,7 @@ export const getJobsByGroupId = async (groupId: number): Promise<JobEntry[]> => 
   return jobs.map((job: any) => ({
     ...job,
     id: job._id || job.id,
-    groupId: job.groupId ?? job.id,
+    groupId: String(job.groupId ?? job.id),
     assignedTo: job.assignedTo || "Unassigned",
   }));
 };
@@ -175,13 +175,13 @@ export const createJobs = async (jobs: JobEntry[]): Promise<JobEntry[]> => {
     ? createdJobs.map((job: any) => ({
         ...job,
         id: job._id || job.id,
-        groupId: job.groupId ?? job.id,
+        groupId: String(job.groupId ?? job.id),
         assignedTo: job.assignedTo || "Unassigned",
       }))
     : [{
         ...createdJobs,
         id: createdJobs._id || createdJobs.id,
-        groupId: createdJobs.groupId ?? createdJobs.id,
+        groupId: String(createdJobs.groupId ?? createdJobs.id),
         assignedTo: createdJobs.assignedTo || "Unassigned",
       }];
 };
@@ -202,12 +202,12 @@ export const updateJob = async (id: string, jobData: Partial<JobEntry>): Promise
   return {
     ...job,
     id: job._id || job.id,
-    groupId: job.groupId ?? job.id,
+    groupId: String(job.groupId ?? job.id),
     assignedTo: job.assignedTo || "Unassigned",
   };
 };
 
-export const updateJobsByGroupId = async (groupId: number, jobs: JobEntry[]): Promise<JobEntry[]> => {
+export const updateJobsByGroupId = async (groupId: string, jobs: JobEntry[]): Promise<JobEntry[]> => {
   // Get existing jobs for this group
   const existingJobs = await getJobsByGroupId(groupId);
   
@@ -253,7 +253,7 @@ export const deleteJob = async (id: string): Promise<void> => {
   }
 };
 
-export const deleteJobsByGroupId = async (groupId: number): Promise<void> => {
+export const deleteJobsByGroupId = async (groupId: string): Promise<void> => {
   const res = await fetch(apiUrl(`/api/jobs/group/${groupId}`), {
     method: "DELETE",
     headers: getAuthHeaders(),
@@ -265,7 +265,7 @@ export const deleteJobsByGroupId = async (groupId: number): Promise<void> => {
 };
 
 export const updateQcDecisionByGroupId = async (
-  groupId: number,
+  groupId: string,
   decision: "PENDING" | "APPROVED" | "REJECTED"
 ): Promise<JobEntry[]> => {
   const res = await fetch(apiUrl(`/api/jobs/group/${groupId}/qc-decision`), {
@@ -283,13 +283,13 @@ export const updateQcDecisionByGroupId = async (
   return jobs.map((job: any) => ({
     ...job,
     id: job._id || job.id,
-    groupId: job.groupId ?? job.id,
+    groupId: String(job.groupId ?? job.id),
     assignedTo: job.assignedTo || "Unassigned",
   }));
 };
 
 export const setQcReportClosedByGroupId = async (
-  groupId: number,
+  groupId: string,
   closed: boolean = true
 ): Promise<JobEntry[]> => {
   const res = await fetch(apiUrl(`/api/jobs/group/${groupId}/qc-report-close`), {
@@ -307,7 +307,7 @@ export const setQcReportClosedByGroupId = async (
   return jobs.map((job: any) => ({
     ...job,
     id: job._id || job.id,
-    groupId: job.groupId ?? job.id,
+    groupId: String(job.groupId ?? job.id),
     assignedTo: job.assignedTo || "Unassigned",
   }));
 };

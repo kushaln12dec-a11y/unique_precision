@@ -9,12 +9,12 @@ import { calculateTotals, getThicknessDisplayValue } from "../programmerUtils";
 import MarqueeCopyText from "../../../components/MarqueeCopyText";
 
 type UseTableColumnsProps = {
-  expandableRows: Map<number, any>;
+  expandableRows: Map<string, any>;
   isAdmin: boolean;
   setViewingJob: (job: TableRow) => void;
   setShowJobViewModal: (show: boolean) => void;
-  handleEditJob: (groupId: number) => void;
-  handleDeleteClick: (groupId: number, customer: string) => void;
+  handleEditJob: (groupId: string) => void;
+  handleDeleteClick: (groupId: string, customer: string) => void;
 };
 
 export const useTableColumns = ({

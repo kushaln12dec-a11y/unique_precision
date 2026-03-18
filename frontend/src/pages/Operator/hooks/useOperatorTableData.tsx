@@ -5,7 +5,7 @@ import ChildCutsTable from "../../Programmer/components/ChildCutsTable";
 import { getGroupQaProgressCounts, isGroupFullySentToQa } from "../utils/qaProgress";
 
 type TableRow = {
-  groupId: number;
+  groupId: string;
   parent: JobEntry;
   groupTotalHrs: number;
   groupTotalAmount: number;
@@ -14,7 +14,7 @@ type TableRow = {
 
 type UseOperatorTableDataReturn = {
   tableData: TableRow[];
-  expandableRows: Map<number, any>;
+  expandableRows: Map<string, any>;
 };
 
 /**
@@ -25,9 +25,9 @@ export const useOperatorTableData = (
   sortField: keyof JobEntry | null,
   sortDirection: "asc" | "desc",
   productionStageFilter: string,
-  expandedGroups: Set<number>,
-  toggleGroup: (groupId: number) => void,
-  handleImageInput: (groupId: number, cutId?: number) => void,
+  expandedGroups: Set<string>,
+  toggleGroup: (groupId: string) => void,
+  handleImageInput: (groupId: string, cutId?: number) => void,
   handleAssignChange: (jobId: number | string, value: string) => void,
   handleChildMachineNumberChange: (jobId: number | string, machineNumber: string) => void,
   operatorUsers: Array<{ id: string | number; name: string }>,
@@ -35,13 +35,13 @@ export const useOperatorTableData = (
   isAdmin: boolean,
   isImageInputDisabled: boolean,
   selectedChildRows: Set<string | number> = new Set(),
-  onChildRowSelect?: (groupId: number, rowKey: string | number, selected: boolean) => void
+  onChildRowSelect?: (groupId: string, rowKey: string | number, selected: boolean) => void
 ): UseOperatorTableDataReturn => {
   // Group jobs by groupId
   const groupedJobs = useMemo(() => {
-    const groups = new Map<number, JobEntry[]>();
+    const groups = new Map<string, JobEntry[]>();
     jobs.forEach((job) => {
-      const key = job.groupId ?? job.id;
+      const key = String(job.groupId ?? job.id);
       if (!groups.has(key)) {
         groups.set(key, []);
       }
@@ -138,7 +138,7 @@ export const useOperatorTableData = (
 
   // Create expandable rows configuration
   const expandableRows = useMemo(() => {
-    const map = new Map<number, any>();
+    const map = new Map<string, any>();
     tableData.forEach((row) => {
       const hasChildren = row.entries.length > 1;
       if (hasChildren) {
@@ -151,7 +151,7 @@ export const useOperatorTableData = (
               parentSetting={String(row.parent.setting || "").trim()}
               showSetNumberColumn={false}
               onEdit={undefined}
-              onImage={(groupId: number, cutId?: number) => handleImageInput(groupId, cutId)}
+              onImage={(groupId: string, cutId?: number) => handleImageInput(groupId, cutId)}
               onAssignChange={handleAssignChange}
               onMachineNumberChange={handleChildMachineNumberChange}
               operatorUsers={operatorUsers}

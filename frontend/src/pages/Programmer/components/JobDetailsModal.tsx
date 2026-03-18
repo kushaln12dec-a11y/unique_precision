@@ -10,7 +10,7 @@ import { getQaProgressCounts } from "../../Operator/utils/qaProgress";
 
 interface JobDetailsModalProps {
   job: {
-    groupId: number;
+    groupId: string;
     parent: JobEntry;
     entries: JobEntry[];
     groupTotalHrs: number;
@@ -46,7 +46,7 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
 
   const displayCut = cut || (job ? job.parent : null);
   const displayEntries = cut ? [cut] : job ? job.entries : [];
-  const displayGroupId = cut ? cut.groupId : job ? job.groupId : 0;
+  const displayGroupId = cut ? cut.groupId : job ? job.groupId : "0";
   const displayGroupTotalHrs = cut ? cut.totalHrs || 0 : job ? job.groupTotalHrs : 0;
   const displayGroupTotalAmount = cut ? cut.totalAmount || 0 : job ? job.groupTotalAmount : 0;
 

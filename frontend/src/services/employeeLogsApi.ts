@@ -56,7 +56,7 @@ export const startProgrammerJobLog = async (payload: { refNumber?: string } = {}
 
 export const completeProgrammerJobLog = async (payload: {
   logId?: string;
-  jobGroupId?: number;
+  jobGroupId?: string;
   refNumber?: string;
   customer?: string;
   description?: string;
@@ -94,7 +94,7 @@ export const rejectProgrammerJobLog = async (payload: {
 
 export const startOperatorProductionLog = async (payload: {
   jobId: string | number;
-  jobGroupId?: number;
+  jobGroupId?: string;
   refNumber?: string;
   customer?: string;
   description?: string;

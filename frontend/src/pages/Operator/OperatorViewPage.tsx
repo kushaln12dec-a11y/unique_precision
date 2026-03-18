@@ -478,7 +478,7 @@ const OperatorViewPage = () => {
       const fromQty = quantityIndex + 1;
       const startedLog = await startOperatorProductionLog({
         jobId: String(job.id),
-        jobGroupId: Number(job.groupId || 0),
+        jobGroupId: String(job.groupId ?? ""),
         refNumber: String((job as any).refNumber || ""),
         customer: job.customer || "",
         description: job.description || "",
