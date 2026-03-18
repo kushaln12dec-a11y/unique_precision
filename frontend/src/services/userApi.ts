@@ -9,6 +9,19 @@ const getAuthHeaders = () => {
   };
 };
 
+const normalizeUser = (user: any): User => ({
+  _id: String(user?._id ?? user?.id ?? ""),
+  email: String(user?.email ?? ""),
+  firstName: String(user?.firstName ?? ""),
+  lastName: String(user?.lastName ?? ""),
+  phone: String(user?.phone ?? ""),
+  empId: String(user?.empId ?? ""),
+  image: user?.image ? String(user.image) : "",
+  role: user?.role ?? "OPERATOR",
+  createdAt: user?.createdAt ? String(user.createdAt) : undefined,
+  updatedAt: user?.updatedAt ? String(user.updatedAt) : undefined,
+});
+
 export const getUsers = async (roles?: string[]): Promise<User[]> => {
   let url = "/api/users";
   
@@ -27,7 +40,8 @@ export const getUsers = async (roles?: string[]): Promise<User[]> => {
     throw new Error("Failed to fetch users");
   }
 
-  return res.json();
+  const data = await res.json();
+  return Array.isArray(data) ? data.map(normalizeUser) : [];
 };
 
 export const getUserById = async (id: string): Promise<User> => {
@@ -40,7 +54,7 @@ export const getUserById = async (id: string): Promise<User> => {
     throw new Error("Failed to fetch user");
   }
 
-  return res.json();
+  return normalizeUser(await res.json());
 };
 
 export const createUser = async (userData: CreateUserData): Promise<User> => {
@@ -55,7 +69,7 @@ export const createUser = async (userData: CreateUserData): Promise<User> => {
     throw new Error(error.message || "Failed to create user");
   }
 
-  return res.json();
+  return normalizeUser(await res.json());
 };
 
 export const updateUser = async (id: string, userData: UpdateUserData): Promise<User> => {
@@ -70,7 +84,7 @@ export const updateUser = async (id: string, userData: UpdateUserData): Promise<
     throw new Error(error.message || "Failed to update user");
   }
 
-  return res.json();
+  return normalizeUser(await res.json());
 };
 
 export const deleteUser = async (id: string): Promise<void> => {
