@@ -29,6 +29,34 @@ const resolveReqUserName = (reqUser: any): string => {
   return email.split("@")[0]?.trim() || "";
 };
 
+const parsePositiveInt = (value: unknown, fallback: number) => {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return fallback;
+  const normalized = Math.trunc(parsed);
+  return normalized > 0 ? normalized : fallback;
+};
+
+const parseNonNegativeInt = (value: unknown, fallback: number) => {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return fallback;
+  const normalized = Math.trunc(parsed);
+  return normalized >= 0 ? normalized : fallback;
+};
+
+const getPagination = (req: any, defaultLimit = 15, maxLimit = 100) => {
+  const limit = Math.min(parsePositiveInt(req.query.limit, defaultLimit), maxLimit);
+  const offset = parseNonNegativeInt(req.query.offset, 0);
+  return { limit, offset };
+};
+
+const createPaginatedResponse = <T,>(items: T[], total: number, offset: number, limit: number) => ({
+  items,
+  total,
+  offset,
+  limit,
+  hasMore: offset + items.length < total,
+});
+
 router.post("/programmer/start", async (req, res) => {
   try {
     const reqUser = req.user as any;
@@ -452,12 +480,17 @@ router.get("/", async (req, res) => {
       ];
     }
 
-    const logs = await prisma.employeeLog.findMany({
-      where,
-      orderBy: { startedAt: "desc" },
-      take: 1000,
-    });
-    res.json(logs.map(mapEmployeeLog));
+    const { limit, offset } = getPagination(req);
+    const [total, logs] = await prisma.$transaction([
+      prisma.employeeLog.count({ where }),
+      prisma.employeeLog.findMany({
+        where,
+        orderBy: { startedAt: "desc" },
+        skip: offset,
+        take: limit,
+      }),
+    ]);
+    res.json(createPaginatedResponse(logs.map(mapEmployeeLog), total, offset, limit));
   } catch (error: any) {
     console.error("Error fetching employee logs:", error);
     res.status(500).json({ message: "Error fetching employee logs" });

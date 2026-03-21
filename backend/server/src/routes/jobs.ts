@@ -296,6 +296,49 @@ const buildJobWhere = (req: any) => {
   return where;
 };
 
+const parsePositiveInt = (value: unknown, fallback: number) => {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return fallback;
+  const normalized = Math.trunc(parsed);
+  return normalized > 0 ? normalized : fallback;
+};
+
+const parseNonNegativeInt = (value: unknown, fallback: number) => {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return fallback;
+  const normalized = Math.trunc(parsed);
+  return normalized >= 0 ? normalized : fallback;
+};
+
+const getPagination = (req: any, defaultLimit = 15, maxLimit = 100) => {
+  const limit = Math.min(parsePositiveInt(req.query.limit, defaultLimit), maxLimit);
+  const offset = parseNonNegativeInt(req.query.offset, 0);
+  return { limit, offset };
+};
+
+const createPaginatedResponse = <T,>(items: T[], total: number, offset: number, limit: number) => ({
+  items,
+  total,
+  offset,
+  limit,
+  hasMore: offset + items.length < total,
+});
+
+const getPagedGroupIds = async (where: Prisma.JobWhereInput, offset: number, limit: number) => {
+  const allGroups = await prisma.job.groupBy({
+    by: ["groupId"],
+    where,
+    _max: { createdAt: true },
+    orderBy: { _max: { createdAt: "desc" } },
+  });
+
+  const pagedGroups = allGroups.slice(offset, offset + limit);
+  return {
+    totalGroups: allGroups.length,
+    groupIds: pagedGroups.map((group) => group.groupId),
+  };
+};
+
 // All routes require authentication
 router.use(authMiddleware);
 
@@ -318,12 +361,25 @@ router.get("/", async (req, res) => {
 router.get("/programmer", async (req, res) => {
   try {
     const where = buildJobWhere(req);
-    const jobs = await prisma.job.findMany({
-      where,
-      orderBy: { createdAt: "desc" },
-      select: programmerListSelect,
+    const { limit, offset } = getPagination(req);
+    const { totalGroups, groupIds } = await getPagedGroupIds(where, offset, limit);
+    const jobs = groupIds.length
+      ? await prisma.job.findMany({
+          where: { ...where, groupId: { in: groupIds } },
+          orderBy: [{ createdAt: "desc" }, { id: "asc" }],
+          select: programmerListSelect,
+        })
+      : [];
+
+    const jobsByGroupId = new Map<string, any[]>();
+    jobs.forEach((job) => {
+      const key = String(job.groupId);
+      if (!jobsByGroupId.has(key)) jobsByGroupId.set(key, []);
+      jobsByGroupId.get(key)!.push(job);
     });
-    res.json(jobs.map(mapJobList));
+
+    const orderedJobs = groupIds.flatMap((groupId) => jobsByGroupId.get(String(groupId)) || []);
+    res.json(createPaginatedResponse(orderedJobs.map(mapJobList), totalGroups, offset, limit));
   } catch (error: any) {
     console.error("Error fetching programmer jobs:", error);
     res.status(500).json({ message: "Error fetching programmer jobs" });
@@ -333,25 +389,52 @@ router.get("/programmer", async (req, res) => {
 router.get("/operator", async (req, res) => {
   try {
     const where = buildJobWhere(req);
-    const jobs = await prisma.job.findMany({
-      where,
-      orderBy: { createdAt: "desc" },
-      select: operatorListSelect,
+    const { limit, offset } = getPagination(req);
+    const { totalGroups, groupIds } = await getPagedGroupIds(where, offset, limit);
+    const jobs = groupIds.length
+      ? await prisma.job.findMany({
+          where: { ...where, groupId: { in: groupIds } },
+          orderBy: [{ createdAt: "desc" }, { id: "asc" }],
+          select: operatorListSelect,
+        })
+      : [];
+
+    const jobsByGroupId = new Map<string, any[]>();
+    jobs.forEach((job) => {
+      const key = String(job.groupId);
+      if (!jobsByGroupId.has(key)) jobsByGroupId.set(key, []);
+      jobsByGroupId.get(key)!.push(job);
     });
-    res.json(jobs.map(mapOperatorJobList));
+
+    const orderedJobs = groupIds.flatMap((groupId) => jobsByGroupId.get(String(groupId)) || []);
+    res.json(createPaginatedResponse(orderedJobs.map(mapOperatorJobList), totalGroups, offset, limit));
   } catch (error: any) {
     console.error("Error fetching operator jobs:", error);
     res.status(500).json({ message: "Error fetching operator jobs" });
   }
 });
 
-router.get("/qc", async (_req, res) => {
+router.get("/qc", async (req, res) => {
   try {
-    const jobs = await prisma.job.findMany({
-      orderBy: { createdAt: "desc" },
-      select: qcListSelect,
+    const { limit, offset } = getPagination(req);
+    const { totalGroups, groupIds } = await getPagedGroupIds({}, offset, limit);
+    const jobs = groupIds.length
+      ? await prisma.job.findMany({
+          where: { groupId: { in: groupIds } },
+          orderBy: [{ createdAt: "desc" }, { id: "asc" }],
+          select: qcListSelect,
+        })
+      : [];
+
+    const jobsByGroupId = new Map<string, any[]>();
+    jobs.forEach((job) => {
+      const key = String(job.groupId);
+      if (!jobsByGroupId.has(key)) jobsByGroupId.set(key, []);
+      jobsByGroupId.get(key)!.push(job);
     });
-    res.json(jobs.map(mapQcJobList));
+
+    const orderedJobs = groupIds.flatMap((groupId) => jobsByGroupId.get(String(groupId)) || []);
+    res.json(createPaginatedResponse(orderedJobs.map(mapQcJobList), totalGroups, offset, limit));
   } catch (error: any) {
     console.error("Error fetching QC jobs:", error);
     res.status(500).json({ message: "Error fetching QC jobs" });
