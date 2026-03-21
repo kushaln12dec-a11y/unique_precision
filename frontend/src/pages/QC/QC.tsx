@@ -2,13 +2,13 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Sidebar from "../../components/Sidebar";
 import Header from "../../components/Header";
-import DataTable from "../../components/DataTable";
+import LazyAgGrid from "../../components/LazyAgGrid";
 import Toast from "../../components/Toast";
 import AppLoader from "../../components/AppLoader";
 import ConfirmDeleteModal from "../../components/ConfirmDeleteModal";
 import CloseIcon from "@mui/icons-material/Close";
 import {
-  getQcJobs,
+  getQcJobsPage,
   setQcReportClosedByGroupId,
   updateQcDecisionByGroupId,
 } from "../../services/jobApi";
@@ -82,7 +82,7 @@ const getDrawingNo = (entry: JobEntry) => {
 const QC = () => {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
-  const [jobs, setJobs] = useState<JobEntry[]>([]);
+  const [qcGridJobs, setQcGridJobs] = useState<JobEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [reportCloseCandidate, setReportCloseCandidate] = useState<QcRow | null>(null);
   const [isCloseConfirmOpen, setIsCloseConfirmOpen] = useState(false);
@@ -113,7 +113,7 @@ const QC = () => {
 
     try {
       const updated = await setQcReportClosedByGroupId(reportCloseCandidate.groupId, true);
-      setJobs((prev) => {
+      setQcGridJobs((prev) => {
         const keep = prev.filter((j) => String(j.groupId) !== reportCloseCandidate.groupId);
         return [...keep, ...updated];
       });
@@ -138,8 +138,8 @@ const QC = () => {
     const fetchJobs = async () => {
       try {
         setLoading(true);
-        const data = await getQcJobs();
-        setJobs(data);
+        const page = await getQcJobsPage({ offset: 0, limit: 100 });
+        setQcGridJobs(page.items);
       } catch (error) {
         console.error("Failed to fetch QC jobs", error);
         showToast("Failed to load QC queue.", "error");
@@ -152,7 +152,7 @@ const QC = () => {
 
   const tableData = useMemo<QcRow[]>(() => {
     const groups = new Map<string, JobEntry[]>();
-    jobs.forEach((job) => {
+    qcGridJobs.forEach((job) => {
       const key = String(job.groupId ?? job.id);
       if (!groups.has(key)) groups.set(key, []);
       groups.get(key)!.push(job);
@@ -191,7 +191,7 @@ const QC = () => {
         parseDateValue(b.entry.createdAt || b.parent.createdAt) -
         parseDateValue(a.entry.createdAt || a.parent.createdAt)
     );
-  }, [jobs]);
+  }, [qcGridJobs]);
 
   const filteredTableData = useMemo(() => {
     return tableData.filter((row) => {
@@ -289,7 +289,7 @@ const QC = () => {
               onClick={async () => {
                 try {
                   const updated = await updateQcDecisionByGroupId(row.groupId, "APPROVED");
-                  setJobs((prev) => {
+                  setQcGridJobs((prev) => {
                     const keep = prev.filter((j) => String(j.groupId) !== row.groupId);
                     return [...keep, ...updated];
                   });
@@ -308,7 +308,7 @@ const QC = () => {
               onClick={async () => {
                 try {
                   const updated = await updateQcDecisionByGroupId(row.groupId, "REJECTED");
-                  setJobs((prev) => {
+                  setQcGridJobs((prev) => {
                     const keep = prev.filter((j) => String(j.groupId) !== row.groupId);
                     return [...keep, ...updated];
                   });
@@ -423,6 +423,24 @@ const QC = () => {
     [navigate, showToast]
   );
 
+  const qcColumnDefs = useMemo(
+    () =>
+      columns.map((column: any) => ({
+        headerName: typeof column.label === "string" ? column.label : String(column.key),
+        field: column.key,
+        minWidth:
+          column.key === "description"
+            ? 240
+            : column.key === "inspectionReport" || column.key === "decision"
+              ? 220
+              : 130,
+        cellClass: column.className,
+        headerClass: column.headerClassName,
+        cellRenderer: column.render ? (params: any) => column.render?.(params.data, params.node?.rowIndex || 0) : undefined,
+      })),
+    [columns]
+  );
+
   return (
     <div className="roleboard-container">
       <Sidebar currentPath="/qc" onNavigate={(path) => navigate(path)} />
@@ -430,7 +448,7 @@ const QC = () => {
         <Header title="QC" />
         <div className="roleboard-body qc-table-panel">
           <h3>QC Queue</h3>
-          {loading ? (
+          {loading && qcGridJobs.length === 0 ? (
             <AppLoader message="Loading QC queue..." />
           ) : (
             <>
@@ -459,13 +477,17 @@ const QC = () => {
                   ))}
                 </select>
               </div>
-              <DataTable
-                columns={columns as any}
-                data={filteredTableData as any}
-                getRowKey={(row: QcRow) => row.qcItemId}
-                getRowClassName={(row: QcRow) => {
-                  return getParentRowClassName(row.parent, row.entries, false);
+              <LazyAgGrid
+                columnDefs={qcColumnDefs as any}
+                fetchPage={async (offset, limit) => {
+                  const page = await getQcJobsPage({ offset, limit });
+                  return { items: page.items, hasMore: page.hasMore };
                 }}
+                rows={qcGridJobs}
+                onRowsChange={setQcGridJobs}
+                transformRows={() => filteredTableData}
+                getRowId={(row: QcRow) => row.qcItemId}
+                getRowClass={(params) => getParentRowClassName(params.data.parent, params.data.entries, false)}
                 emptyMessage="No rows dispatched to QC yet."
                 className="jobs-table-wrapper"
               />

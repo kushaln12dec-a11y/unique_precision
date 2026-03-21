@@ -136,6 +136,7 @@
 .programmer-logs-table .data-table td {
   white-space: normal;
   word-break: break-word;
+  text-align: center;
 }
 
 .programmer-logs-table .data-table th.programmer-log-user-col,
@@ -268,6 +269,13 @@
   letter-spacing: 0.4px;
   text-transform: uppercase;
   cursor: default;
+}
+
+.jobs-table-wrapper .data-table th.created-by-header,
+.jobs-table-wrapper .data-table td.created-by-cell {
+  width: 110px;
+  min-width: 110px;
+  max-width: 110px;
 }
 
 .created-by-text {
@@ -634,6 +642,13 @@
   "sedm totalhrs estimated totalamount .";
 
 
+}
+
+.cut-section-grid.cut-section-grid-non-admin {
+  grid-template-areas:
+    "customer material programref description description"
+    "cut thickness pass setting qty"
+    "sedm totalhrs estimated . .";
 }
 
 .qty-with-add {
@@ -1527,7 +1542,7 @@
 }
 
 .jobs-table-wrapper {
-  overflow-x: auto !important;
+  overflow-x: hidden !important;
   overflow-y: auto !important;
   max-height: calc(100vh - 280px);
   scrollbar-width: none;
@@ -1560,9 +1575,9 @@
 }
 
 .jobs-table-wrapper .data-table th {
-  font-size: 0.7rem;
+  font-size: 0.78rem;
   padding: 0.5rem 0.3rem;
-  letter-spacing: 0.2px;
+  letter-spacing: 0.35px;
 }
 
 .jobs-table-wrapper .data-table .checkbox-header-cell,
@@ -1824,7 +1839,7 @@
     linear-gradient(90deg, rgba(220, 38, 38, 0.2) 0%, rgba(220, 38, 38, 0.07) 38%, rgba(255, 255, 255, 0.95) 100%);
 }
 .programmer-container .jobs-table-wrapper .group-row.critical-row td:first-child {
-  box-shadow: inset 4px 0 0 #dc2626;
+  box-shadow: none;
 }
 
 .programmer-container .jobs-table-wrapper .group-row.critical-row td {
@@ -1840,7 +1855,7 @@
     linear-gradient(90deg, rgba(239, 68, 68, 0.18) 0%, rgba(239, 68, 68, 0.06) 38%, rgba(255, 255, 255, 0.96) 100%);
 }
 .programmer-container .jobs-table-wrapper .group-row.priority-row.priority-high td:first-child {
-  box-shadow: inset 3px 0 0 #ef4444;
+  box-shadow: none;
 }
 
 .programmer-container .jobs-table-wrapper .group-row.priority-row.priority-high td {
@@ -1855,7 +1870,7 @@
     linear-gradient(90deg, rgba(245, 158, 11, 0.2) 0%, rgba(245, 158, 11, 0.07) 38%, rgba(255, 255, 255, 0.96) 100%);
 }
 .programmer-container .jobs-table-wrapper .group-row.priority-row.priority-medium td:first-child {
-  box-shadow: inset 3px 0 0 #f59e0b;
+  box-shadow: none;
 }
 
 .programmer-container .jobs-table-wrapper .group-row.priority-row.priority-medium td {
@@ -1870,7 +1885,7 @@
     linear-gradient(90deg, rgba(16, 185, 129, 0.19) 0%, rgba(16, 185, 129, 0.065) 38%, rgba(255, 255, 255, 0.96) 100%);
 }
 .programmer-container .jobs-table-wrapper .group-row.priority-row.priority-low td:first-child {
-  box-shadow: inset 3px 0 0 #10b981;
+  box-shadow: none;
 }
 
 .programmer-container .jobs-table-wrapper .group-row.priority-row.priority-low td {
@@ -2203,6 +2218,7 @@
   overflow: hidden;
   white-space: nowrap;
   cursor: text;
+  padding-right: 1.25rem;
 }
 
 .description-marquee .marquee-animated {
@@ -2232,6 +2248,38 @@
   height: 0;
 }
 
+.description-marquee .marquee-copy-btn {
+  position: absolute;
+  right: 0.15rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border-radius: 999px;
+  border: 1px solid #93c5fd;
+  background: #eff6ff;
+  color: #1d4ed8;
+  line-height: 1;
+  opacity: 0;
+  pointer-events: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+}
+
+.description-marquee .marquee-copy-btn:hover {
+  background: #dbeafe;
+}
+
+.description-marquee .marquee-copy-btn.copied {
+  border-color: #86efac;
+  background: #dcfce7;
+  color: #166534;
+}
+
 /* Show static selectable text only on hovered/focused cell while animation keeps running globally. */
 .jobs-table-wrapper .data-table tbody tr .description-marquee:hover .marquee-static,
 .jobs-table-wrapper .data-table tbody tr .description-marquee:focus-within .marquee-static,
@@ -2253,6 +2301,25 @@
 .programmer-logs-table .data-table tbody tr .description-marquee:hover .marquee-animated,
 .programmer-logs-table .data-table tbody tr .description-marquee:focus-within .marquee-animated {
   visibility: hidden;
+}
+
+.jobs-table-wrapper .data-table tbody tr .description-marquee:hover .marquee-copy-btn,
+.jobs-table-wrapper .data-table tbody tr .description-marquee:focus-within .marquee-copy-btn,
+.operator-table-no-scroll .data-table tbody tr .description-marquee:hover .marquee-copy-btn,
+.operator-table-no-scroll .data-table tbody tr .description-marquee:focus-within .marquee-copy-btn,
+.child-jobs-table tbody tr .description-marquee:hover .marquee-copy-btn,
+.child-jobs-table tbody tr .description-marquee:focus-within .marquee-copy-btn,
+.programmer-logs-table .data-table tbody tr .description-marquee:hover .marquee-copy-btn,
+.programmer-logs-table .data-table tbody tr .description-marquee:focus-within .marquee-copy-btn {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+@media (hover: none) {
+  .description-marquee .marquee-copy-btn {
+    opacity: 1;
+    pointer-events: auto;
+  }
 }
 
 @keyframes description-marquee-scroll {
@@ -2337,6 +2404,149 @@
 
 .child-jobs-table .action-icon-button.danger.child-table-delete:hover {
   background: rgba(220, 38, 38, 0.15);
+}
+
+.jobs-table-wrapper .action-buttons {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.1rem;
+  flex-wrap: nowrap;
+}
+
+.child-stage-summary {
+  min-width: 0;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.qa-mini {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.1rem 0.4rem;
+  border-radius: 999px;
+  font-size: 0.6rem;
+  font-weight: 700;
+  border: 1px solid transparent;
+  line-height: 1.2;
+  min-height: 20px;
+  width: 100%;
+  box-sizing: border-box;
+  white-space: nowrap;
+  letter-spacing: 0.02em;
+}
+
+.qa-mini.saved {
+  background: #e0f2fe;
+  border-color: #7dd3fc;
+  color: #075985;
+}
+
+.qa-mini.ready {
+  background: #ecfdf5;
+  border-color: #86efac;
+  color: #166534;
+}
+
+.qa-mini.sent {
+  background: #eef2ff;
+  border-color: #c7d2fe;
+  color: #4338ca;
+}
+
+.qa-mini.empty {
+  background: #fffbeb;
+  border-color: #fcd34d;
+  color: #92400e;
+}
+
+.qa-badge-ticker {
+  position: relative;
+  width: 92px;
+  height: 22px;
+  overflow: hidden;
+  border-radius: 999px;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.16) 0%, rgba(15, 23, 42, 0.04) 100%);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.18),
+    0 10px 24px rgba(15, 23, 42, 0.14);
+}
+
+.qa-badge-ticker::before {
+  content: "";
+  position: absolute;
+  inset: 1px;
+  border-radius: inherit;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0.02) 48%, rgba(255, 255, 255, 0.12) 100%);
+  pointer-events: none;
+}
+
+.qa-badge-ticker::after {
+  content: "";
+  position: absolute;
+  top: -55%;
+  left: -22%;
+  width: 44%;
+  height: 210%;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.95) 48%, rgba(255, 255, 255, 0) 100%);
+  transform: rotate(14deg);
+  animation: qa-badge-highlight 1.15s linear infinite;
+  pointer-events: none;
+  mix-blend-mode: screen;
+}
+
+.qa-badge-track {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+  z-index: 1;
+  animation: qa-badge-scroll 4.2s linear infinite;
+  will-change: transform;
+}
+
+.qa-badge-ticker:hover .qa-badge-track,
+.qa-badge-ticker:focus-within .qa-badge-track {
+  animation-duration: 1.9s;
+}
+
+.qa-badge-ticker:hover .qa-mini,
+.qa-badge-ticker:focus-within .qa-mini {
+  transform: rotate(-2.6deg) scale(1.02);
+  filter: saturate(1.28) brightness(1.08);
+}
+
+@keyframes qa-badge-scroll {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(calc(-50% - 2px));
+  }
+}
+
+@keyframes qa-badge-highlight {
+  0% {
+    transform: translateY(-110%) rotate(18deg);
+    opacity: 0;
+  }
+  15% {
+    opacity: 0.82;
+  }
+  50% {
+    opacity: 0.92;
+  }
+  100% {
+    transform: translateY(115%) rotate(18deg);
+    opacity: 0;
+  }
 }
 
 .child-assigned-to-select {
@@ -2443,6 +2653,39 @@
 .programmer-container .jobs-table-wrapper .child-row.child-priority-row.child-priority-low:hover td {
   background: transparent !important;
   color: #0f172a !important;
+}
+
+.programmer-container .jobs-table-wrapper .child-row.operator-stage-row-not-started:not(.child-priority-row):not(.child-critical-row) {
+  border-left: 3px solid #f59e0b;
+  background-image:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.54) 0%, rgba(255, 255, 255, 0.1) 48%, rgba(255, 255, 255, 0) 100%),
+    linear-gradient(90deg, rgba(245, 158, 11, 0.2) 0%, rgba(245, 158, 11, 0.07) 38%, rgba(255, 255, 255, 0.96) 100%);
+}
+
+.programmer-container .jobs-table-wrapper .child-row.operator-stage-row-not-started:not(.child-priority-row):not(.child-critical-row) td:first-child {
+  box-shadow: inset 3px 0 0 #f59e0b;
+}
+
+.programmer-container .jobs-table-wrapper .child-row.operator-stage-row-logged:not(.child-priority-row):not(.child-critical-row) {
+  border-left: 3px solid #38bdf8;
+  background-image:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.54) 0%, rgba(255, 255, 255, 0.1) 48%, rgba(255, 255, 255, 0) 100%),
+    linear-gradient(90deg, rgba(56, 189, 248, 0.18) 0%, rgba(56, 189, 248, 0.06) 38%, rgba(255, 255, 255, 0.96) 100%);
+}
+
+.programmer-container .jobs-table-wrapper .child-row.operator-stage-row-logged:not(.child-priority-row):not(.child-critical-row) td:first-child {
+  box-shadow: inset 3px 0 0 #38bdf8;
+}
+
+.programmer-container .jobs-table-wrapper .child-row.operator-stage-row-dispatched:not(.child-priority-row):not(.child-critical-row) {
+  border-left: 3px solid #818cf8;
+  background-image:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.54) 0%, rgba(255, 255, 255, 0.1) 48%, rgba(255, 255, 255, 0) 100%),
+    linear-gradient(90deg, rgba(129, 140, 248, 0.18) 0%, rgba(129, 140, 248, 0.06) 38%, rgba(255, 255, 255, 0.96) 100%);
+}
+
+.programmer-container .jobs-table-wrapper .child-row.operator-stage-row-dispatched:not(.child-priority-row):not(.child-critical-row) td:first-child {
+  box-shadow: inset 3px 0 0 #818cf8;
 }
 
 .btn-danger.small {

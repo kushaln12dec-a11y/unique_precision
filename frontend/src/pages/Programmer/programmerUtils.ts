@@ -31,6 +31,13 @@ export type CalculationConfig = {
   settingHoursPerSetting?: number;
   complexExtraHours?: number;
   pipExtraHours?: number;
+  customerConfigs?: Array<{
+    customer: string;
+    rate: string;
+    settingHours?: string;
+  }>;
+  thicknessRateUpto100?: number;
+  thicknessRateAbove100?: number;
 };
 
 export type WedmRowBreakdown = {
@@ -363,15 +370,26 @@ const getSettingHours = (rawSetting: number, configuredSettingHours: number): nu
 };
 
 export const calculateTotals = (form: CutForm, config: CalculationConfig = {}): CalculationResult => {
+  const selectedCustomer = String(form.customer || "").trim().toUpperCase();
+  const customerConfig = (config.customerConfigs || []).find(
+    (item) => String(item.customer || "").trim().toUpperCase() === selectedCustomer
+  );
   const customerRate = Number(form.rate) || 0;
   const operationRows = parseOperationRows(form);
-  const configuredSettingHours = Number(config.settingHoursPerSetting) === 0.25 ? 0.25 : 0.5;
+  const configuredSettingHours =
+    Number(customerConfig?.settingHours || "") > 0
+      ? Number(customerConfig?.settingHours)
+      : Number(config.settingHoursPerSetting) === 0.25
+        ? 0.25
+        : 0.5;
+  const thicknessRateUpto100 = Number(config.thicknessRateUpto100) > 0 ? Number(config.thicknessRateUpto100) : 1500;
+  const thicknessRateAbove100 = Number(config.thicknessRateAbove100) > 0 ? Number(config.thicknessRateAbove100) : 1200;
 
   const rows: WedmRowBreakdown[] = operationRows.map((row, index) => {
     const cutLength = Number(row.cut) || 0;
     const thicknessInput = String(row.thickness ?? "");
     const thicknessUsed = getEffectiveThickness(row.thickness);
-    const divisor = thicknessUsed > 100 ? 1200 : 1500;
+    const divisor = thicknessUsed > 100 ? thicknessRateAbove100 : thicknessRateUpto100;
     const base = (cutLength * thicknessUsed) / divisor;
     const passMultiplier = PASS_MAP[row.passLevel] || 1;
     const passPercent = PASS_PERCENT_MAP[row.passLevel] ?? Math.max(0, (passMultiplier - 1) * 100);

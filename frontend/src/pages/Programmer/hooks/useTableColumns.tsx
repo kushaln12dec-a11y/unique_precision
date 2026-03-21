@@ -1,10 +1,11 @@
 import { useMemo } from "react";
 import type { Column } from "../../../components/DataTable";
+import CreatedByBadge from "../../../components/CreatedByBadge";
 import { getDisplayDateTimeParts } from "../../../utils/date";
 import ArrowForwardIosSharpIcon from "@mui/icons-material/ArrowForwardIosSharp";
 import type { TableRow } from "../utils/jobDataTransform";
 import ActionButtons from "../components/ActionButtons";
-import { estimatedTimeFromAmount, formatJobRefDisplay, getInitials, toYN } from "../../../utils/jobFormatting";
+import { estimatedTimeFromAmount, formatJobRefDisplay, toYN } from "../../../utils/jobFormatting";
 import { getThicknessDisplayValue } from "../programmerUtils";
 import MarqueeCopyText from "../../../components/MarqueeCopyText";
 
@@ -13,6 +14,7 @@ type UseTableColumnsProps = {
   isAdmin: boolean;
   handleViewJob: (groupId: string) => void;
   handleEditJob: (groupId: string) => void;
+  handleCloneJob: (groupId: string) => void;
   handleDeleteClick: (groupId: string, customer: string) => void;
 };
 
@@ -21,6 +23,7 @@ export const useTableColumns = ({
   isAdmin,
   handleViewJob,
   handleEditJob,
+  handleCloneJob,
   handleDeleteClick,
 }: UseTableColumnsProps): Column<TableRow>[] => {
   return useMemo(
@@ -30,11 +33,13 @@ export const useTableColumns = ({
         label: "Customer",
         sortable: false,
         sortKey: "customer",
+        className: "customer-cell",
+        headerClassName: "customer-header",
         render: (row) => {
           const expandable = expandableRows?.get(row.groupId);
           const isExpanded = expandable?.isExpanded || false;
           return (
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "0.2rem" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-start", gap: "0.2rem", width: "100%" }}>
               {expandable && (
                 <button
                   type="button"
@@ -156,7 +161,7 @@ export const useTableColumns = ({
         sortKey: "totalHrs",
         render: (row) => {
           const totalHrs = Number(row.parent.totalHrs || 0);
-          return totalHrs ? `${totalHrs.toFixed(2)}hrs` : "-";
+          return totalHrs ? totalHrs.toFixed(2) : "-";
         },
       },
       {
@@ -196,14 +201,9 @@ export const useTableColumns = ({
         label: "Created By",
         sortable: false,
         sortKey: "createdBy",
-        render: (row) => {
-          const fullName = String(row.parent.createdBy || "-").trim() || "-";
-          return (
-            <span className="created-by-badge" title={fullName.toUpperCase()}>
-              {getInitials(fullName)}
-            </span>
-          );
-        },
+        className: "created-by-cell",
+        headerClassName: "created-by-header",
+        render: (row) => <CreatedByBadge value={row.parent.createdBy} />,
       },
       {
         key: "createdAt",
@@ -230,14 +230,16 @@ export const useTableColumns = ({
           <ActionButtons
             onView={() => handleViewJob(row.groupId)}
             onEdit={() => handleEditJob(row.groupId)}
+            onClone={() => handleCloneJob(row.groupId)}
             onDelete={() => handleDeleteClick(row.groupId, row.parent.customer || "entry")}
             viewLabel={`View ${row.parent.customer || "entry"}`}
             editLabel={`Edit ${row.parent.customer || "entry"}`}
+            cloneLabel={`Clone ${row.parent.customer || "entry"}`}
             deleteLabel={`Delete ${row.parent.customer || "entry"}`}
           />
         ),
       },
     ],
-    [expandableRows, isAdmin, handleViewJob, handleEditJob, handleDeleteClick]
+    [expandableRows, isAdmin, handleViewJob, handleEditJob, handleCloneJob, handleDeleteClick]
   );
 };

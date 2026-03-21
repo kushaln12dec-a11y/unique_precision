@@ -7,7 +7,7 @@ import { OperatorTaskTimer } from "./OperatorTaskTimer";
 import SelectDropdown, { type SelectOption } from "../../Programmer/components/SelectDropdown";
 import { MultiSelectOperators } from "./MultiSelectOperators";
 import type { FilterField, FilterCategory, FilterValues } from "../../../components/FilterModal";
-import { getDisplayName, getFirstNameDisplay } from "../../../utils/jobFormatting";
+import { getDisplayName } from "../../../utils/jobFormatting";
 
 type OperatorFiltersProps = {
   filters: FilterValues;
@@ -16,7 +16,6 @@ type OperatorFiltersProps = {
   jobSearchFilter: string;
   createdByFilter: string;
   assignedToFilter: string;
-  productionStageFilter: string;
   showFilterModal: boolean;
   activeFilterCount: number;
   users: Array<{ _id: string; firstName: string; lastName: string; email: string }>;
@@ -28,7 +27,6 @@ type OperatorFiltersProps = {
   onJobSearchFilterChange: (value: string) => void;
   onCreatedByFilterChange: (value: string) => void;
   onAssignedToFilterChange: (value: string) => void;
-  onProductionStageFilterChange: (value: string) => void;
   canUseTaskSwitchTimer: boolean;
   onSaveTaskSwitch: (payload: {
     idleTime: string;
@@ -54,7 +52,6 @@ export const OperatorFilters: React.FC<OperatorFiltersProps> = ({
   jobSearchFilter,
   createdByFilter,
   assignedToFilter,
-  productionStageFilter,
   showFilterModal,
   activeFilterCount,
   users,
@@ -66,7 +63,6 @@ export const OperatorFilters: React.FC<OperatorFiltersProps> = ({
   onJobSearchFilterChange,
   onCreatedByFilterChange,
   onAssignedToFilterChange,
-  onProductionStageFilterChange,
   canUseTaskSwitchTimer,
   onSaveTaskSwitch,
   onShowToast,
@@ -101,7 +97,7 @@ export const OperatorFilters: React.FC<OperatorFiltersProps> = ({
     ];
 
     source.forEach((user) => {
-      const displayName = getFirstNameDisplay(user.firstName, user.email);
+      const displayName = getDisplayName(user.firstName, user.lastName, user.email);
       const key = displayName.toLowerCase();
       if (!seen.has(key)) {
         seen.add(key);
@@ -111,17 +107,6 @@ export const OperatorFilters: React.FC<OperatorFiltersProps> = ({
 
     return options;
   }, [operatorUsers, users]);
-
-  const statusOptions = useMemo<SelectOption[]>(
-    () => [
-      { label: "All", value: "" },
-      { label: "Yet to Start", value: "PENDING_INPUT" },
-      { label: "Operation Logged", value: "OP_LOGGED" },
-      { label: "In Progress", value: "IN_PROGRESS" },
-      { label: "QC Dispatched", value: "QA_DISPATCHED" },
-    ],
-    []
-  );
 
   const bulkMachineOptions = useMemo<SelectOption[]>(
     () => [
@@ -169,19 +154,6 @@ export const OperatorFilters: React.FC<OperatorFiltersProps> = ({
                 className="operator-filter-dropdown"
               />
             </div>
-            <div className="operator-status-legend-group">
-              <div className="filter-group operator-filter-status">
-                <label>Status</label>
-                <SelectDropdown
-                  value={productionStageFilter}
-                  onChange={onProductionStageFilterChange}
-                  options={statusOptions}
-                  placeholder="All"
-                  align="left"
-                  className="operator-filter-dropdown"
-                />
-              </div>
-            </div>
           </div>
           <div className="operator-stage-legend-inline">
             <span className="operator-stage-legend-title">Stage Legend:</span>
@@ -210,7 +182,7 @@ export const OperatorFilters: React.FC<OperatorFiltersProps> = ({
                   selectedOperators={bulkOperators}
                   availableOperators={(operatorUsers.length > 0 ? operatorUsers : users).map((user) => ({
                     id: user._id,
-                    name: getFirstNameDisplay(user.firstName, user.email, String(user._id)).toUpperCase(),
+                    name: getDisplayName(user.firstName, user.lastName, user.email, String(user._id)),
                   }))}
                   onChange={setBulkOperators}
                   assignToSelfName={currentUserName || undefined}

@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Login from "./pages/Login page/Login";
-import Dashboard from "./pages/Dashboard/Dashboard";
+import SharedDashboard from "./pages/Dashboard/SharedDashboard";
+import OperatorDashboard from "./pages/OperatorDashboard/OperatorDashboard";
 import Programmer from "./pages/Programmer/Programmer";
 import Operator from "./pages/Operator/Operator";
 import OperatorViewPage from "./pages/Operator/OperatorViewPage.tsx";
@@ -21,7 +22,15 @@ function App() {
           path="/dashboard"
           element={
             <ProtectedRoute>
-              <Dashboard />
+              <SharedDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/operator-dashboard"
+          element={
+            <ProtectedRoute>
+              <OperatorDashboard />
             </ProtectedRoute>
           }
         />
@@ -35,6 +44,14 @@ function App() {
         />
         <Route
           path="/programmer/newjob"
+          element={
+            <ProtectedRoute>
+              <Programmer />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/programmer/clone/:groupId"
           element={
             <ProtectedRoute>
               <Programmer />
@@ -98,13 +115,14 @@ function App() {
           }
         />
         <Route
-          path="/employee-logs"
+          path="/job-logs"
           element={
             <ProtectedRoute>
               <EmployeeLogs />
             </ProtectedRoute>
           }
         />
+        <Route path="/employee-logs" element={<Navigate to="/job-logs" replace />} />
         <Route
           path="/admin-console"
           element={

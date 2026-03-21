@@ -195,6 +195,11 @@
   color: #1e293b;
 }
 
+.operator-info-card .operator-info-created-by {
+  display: inline-flex;
+  align-items: center;
+}
+
 .priority-badge {
   display: inline-block;
   padding: 0.35rem 0.75rem;

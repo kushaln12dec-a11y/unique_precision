@@ -22,6 +22,7 @@ type ProgrammerJobFormProps = {
   isAdmin: boolean;
   refNumber?: string;
   masterConfig: MasterConfig | null;
+  formMode?: "draft" | "edit";
 };
 
 const ProgrammerJobForm = ({
@@ -33,6 +34,7 @@ const ProgrammerJobForm = ({
   isAdmin,
   refNumber = "",
   masterConfig,
+  formMode = "draft",
 }: ProgrammerJobFormProps) => {
   const [sedmModalIndex, setSedmModalIndex] = useState<number | null>(null);
 
@@ -97,7 +99,7 @@ const ProgrammerJobForm = ({
   return (
     <div className="job-form-card">
       <div className="job-form-grid">
-        <JobFormHeader refNumber={refNumber} onAddCut={addCut} />
+        <JobFormHeader refNumber={refNumber} onAddCut={addCut} formMode={formMode} />
 
         {cuts.map((cut, index) => {
           const isCollapsed = index === 0 ? false : collapsedCuts.has(index);
@@ -181,6 +183,7 @@ const ProgrammerJobForm = ({
         }
         electrodeOptions={masterConfig?.sedmElectrodeOptions || []}
         thOptions={masterConfig?.sedmThOptions || []}
+        isAdmin={isAdmin}
       />
     </div>
   );

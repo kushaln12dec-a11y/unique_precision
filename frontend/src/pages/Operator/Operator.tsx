@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Sidebar from "../../components/Sidebar";
 import Header from "../../components/Header";
-import DataTable, { type Column } from "../../components/DataTable";
+import type { Column } from "../../components/DataTable";
+import LazyAgGrid from "../../components/LazyAgGrid";
 import Toast from "../../components/Toast";
 import AppLoader from "../../components/AppLoader";
 import DownloadIcon from "@mui/icons-material/Download";
@@ -16,9 +17,9 @@ import { useOperatorTableData } from "./hooks/useOperatorTableData.tsx";
 import { useOperatorTable } from "./hooks/useOperatorTable.tsx";
 import { exportOperatorJobsToCSV } from "./utils/csvExport";
 import { updateOperatorJob, updateOperatorQaStatus } from "../../services/operatorApi";
-import { deleteJob } from "../../services/jobApi";
+import { deleteJob, getOperatorJobsPage } from "../../services/jobApi";
 import { getMasterConfig } from "../../services/masterConfigApi";
-import { createOperatorTaskSwitchLog, getEmployeeLogs } from "../../services/employeeLogsApi";
+import { createOperatorTaskSwitchLog, getEmployeeLogs, getEmployeeLogsPage } from "../../services/employeeLogsApi";
 import { MassDeleteButton } from "../Programmer/components/MassDeleteButton";
 import { getUserDisplayNameFromToken, getUserRoleFromToken } from "../../utils/auth";
 import { getGroupQaProgressCounts, getQaProgressCounts } from "./utils/qaProgress";
@@ -30,14 +31,15 @@ import type { FilterValues } from "../../components/FilterModal";
 import { formatDisplayDateTime, getDisplayDateTimeParts } from "../../utils/date";
 import {
   formatMachineLabel,
+  getDisplayName,
   getEmailLocalPart,
-  getFirstNameDisplay,
   getInitials,
   getLogUserDisplayName,
   MACHINE_OPTIONS,
   toMachineIndex,
 } from "../../utils/jobFormatting";
 import MarqueeCopyText from "../../components/MarqueeCopyText";
+import ChildCutsTable from "../Programmer/components/ChildCutsTable";
 import "../RoleBoard.css";
 import "../Programmer/Programmer.css";
 import "./Operator.css";
@@ -50,24 +52,49 @@ type TableRow = {
   entries: JobEntry[];
 };
 
+type OperatorGridRow =
+  | { kind: "parent"; groupId: string; row: TableRow }
+  | { kind: "detail"; groupId: string; row: TableRow };
+
+const getOperatorHeaderName = (column: Column<TableRow>) => {
+  if (typeof column.label === "string") return column.label;
+  switch (column.key) {
+    case "programRef":
+      return "JOB REF";
+    case "programRefFileName":
+      return "PROGRAM REF FILE NAME";
+    case "machineNumber":
+      return "MACH #";
+    case "estimatedTime":
+      return "ESTIMATED TIME";
+    case "totalAmount":
+      return "AMOUNT (RS.)";
+    case "productionStage":
+      return "STATUS";
+    case "createdBy":
+      return "CREATED BY";
+    default:
+      return String(column.key);
+  }
+};
+
 const Operator = () => {
   const navigate = useNavigate();
   const userRole = (getUserRoleFromToken() || "").toUpperCase();
   const currentUserName = (getUserDisplayNameFromToken() || "").trim();
-  const currentUserShortName = currentUserName.split(/\s+/).filter(Boolean)[0] || currentUserName;
+  const currentUserDisplayName = currentUserName;
   const isAdmin = userRole === "ADMIN";
   const canUseTaskSwitchTimer = userRole === "ADMIN" || userRole === "OPERATOR";
-  const [sortField, setSortField] = useState<keyof JobEntry | null>(null);
-  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
+  const [sortField] = useState<keyof JobEntry | null>(null);
+  const [sortDirection] = useState<"asc" | "desc">("asc");
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(() => new Set());
   const [viewingJob, setViewingJob] = useState<TableRow | null>(null);
   const [showJobViewModal, setShowJobViewModal] = useState(false);
   const [selectedJobIds, setSelectedJobIds] = useState<Set<string>>(new Set());
   const [selectedEntryIds, setSelectedEntryIds] = useState<Set<string | number>>(new Set());
+  const [operatorGridJobs, setOperatorGridJobs] = useState<JobEntry[]>([]);
   const [isTaskTimerRunning, setIsTaskTimerRunning] = useState(false);
   const [activeTab, setActiveTab] = useState<"jobs" | "logs">("jobs");
-  const [operatorLogs, setOperatorLogs] = useState<EmployeeLog[]>([]);
-  const [logsLoading, setLogsLoading] = useState(false);
   const [operatorLogSearch, setOperatorLogSearch] = useState("");
   const [operatorLogStatus, setOperatorLogStatus] = useState<"" | "IN_PROGRESS" | "COMPLETED" | "REJECTED">("");
   const [operatorLogMachine, setOperatorLogMachine] = useState("");
@@ -90,8 +117,6 @@ const Operator = () => {
     setCreatedByFilter,
     assignedToFilter,
     setAssignedToFilter,
-    productionStageFilter,
-    setProductionStageFilter,
     filterCategories,
     filterFields,
     activeFilterCount,
@@ -126,6 +151,9 @@ const Operator = () => {
       // Store as comma-separated string (backend can handle this)
       await updateOperatorJob(String(jobId), { assignedTo: value });
       setJobs((prev) =>
+        prev.map((job) => (job.id === jobId ? { ...job, assignedTo: value } : job))
+      );
+      setOperatorGridJobs((prev) =>
         prev.map((job) => (job.id === jobId ? { ...job, assignedTo: value } : job))
       );
     } catch (error) {
@@ -196,6 +224,15 @@ const Operator = () => {
           return { ...job, quantityQaStates: nextStates };
         })
       );
+      setOperatorGridJobs((prev) =>
+        prev.map((job) => {
+          if (String(job.groupId) !== row.groupId) return job;
+          const qty = Math.max(1, Number(job.qty || 1));
+          const nextStates: Record<string, "SENT_TO_QA"> = {};
+          for (let i = 1; i <= qty; i += 1) nextStates[String(i)] = "SENT_TO_QA";
+          return { ...job, quantityQaStates: nextStates };
+        })
+      );
       setToast({ message: "Job moved to QC.", variant: "success", visible: true });
       setTimeout(() => setToast((prev) => ({ ...prev, visible: false })), 2500);
     } catch (error) {
@@ -207,15 +244,6 @@ const Operator = () => {
   const handleViewJob = (row: TableRow) => {
     setViewingJob(row);
     setShowJobViewModal(true);
-  };
-
-  const handleSort = (field: keyof JobEntry) => {
-    if (sortField === field) {
-      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
-    } else {
-      setSortField(field);
-      setSortDirection("asc");
-    }
   };
 
   const handleDownloadCSV = () => {
@@ -234,6 +262,9 @@ const Operator = () => {
       setJobs((prev) =>
         prev.map((job) => (String(job.groupId) === groupId ? { ...job, machineNumber } : job))
       );
+      setOperatorGridJobs((prev) =>
+        prev.map((job) => (String(job.groupId) === groupId ? { ...job, machineNumber } : job))
+      );
     } catch (error) {
       setToast({ message: "Failed to update machine number.", variant: "error", visible: true });
       setTimeout(() => setToast((prev) => ({ ...prev, visible: false })), 2500);
@@ -244,6 +275,9 @@ const Operator = () => {
     try {
       await updateOperatorJob(String(jobId), { machineNumber });
       setJobs((prev) =>
+        prev.map((job) => (String(job.id) === String(jobId) ? { ...job, machineNumber } : job))
+      );
+      setOperatorGridJobs((prev) =>
         prev.map((job) => (String(job.id) === String(jobId) ? { ...job, machineNumber } : job))
       );
     } catch (error) {
@@ -289,6 +323,15 @@ const Operator = () => {
           return { ...job, quantityQaStates: nextStates };
         })
       );
+      setOperatorGridJobs((prev) =>
+        prev.map((job) => {
+          if (!selectedIdSet.has(String(job.id))) return job;
+          const qty = Math.max(1, Number(job.qty || 1));
+          const nextStates: Record<string, "SENT_TO_QA"> = {};
+          for (let i = 1; i <= qty; i += 1) nextStates[String(i)] = "SENT_TO_QA";
+          return { ...job, quantityQaStates: nextStates };
+        })
+      );
       setSelectedEntryIds(new Set());
       setSelectedJobIds(new Set());
       setToast({ message: "Selected rows moved to QC.", variant: "success", visible: true });
@@ -311,6 +354,7 @@ const Operator = () => {
       await Promise.all(Array.from(selectedIdSet).map((id) => deleteJob(id)));
 
       setJobs((prev) => prev.filter((job) => !selectedIdSet.has(String(job.id))));
+      setOperatorGridJobs((prev) => prev.filter((job) => !selectedIdSet.has(String(job.id))));
       setSelectedEntryIds(new Set());
       setSelectedJobIds(new Set());
       setToast({ message: "Selected rows deleted.", variant: "success", visible: true });
@@ -339,7 +383,7 @@ const Operator = () => {
       if (selected) next.add(normalizedKey);
       else next.delete(normalizedKey);
 
-      const groupEntries = jobs.filter((job) => String(job.groupId) === groupId);
+      const groupEntries = operatorGridJobs.filter((job) => String(job.groupId) === groupId);
       const allGroupEntryKeys = groupEntries
         .map((entry) => (entry.id === undefined || entry.id === null ? null : String(entry.id)))
         .filter((key): key is string => key !== null);
@@ -405,6 +449,16 @@ const Operator = () => {
           };
         })
       );
+      setOperatorGridJobs((prev) =>
+        prev.map((job) => {
+          if (!selectedIdSet.has(String(job.id))) return job;
+          return {
+            ...job,
+            ...(assignedToValue !== null ? { assignedTo: assignedToValue } : {}),
+            ...(machineNumber ? { machineNumber } : {}),
+          };
+        })
+      );
 
       setToast({
         message: `Updated ${targetEntries.length} selected row(s).`,
@@ -427,14 +481,13 @@ const Operator = () => {
 
   const operatorOptionUsers = operatorUsers.map((user) => ({
     id: user._id,
-    name: getFirstNameDisplay(user.firstName, user.email, String(user._id)).toUpperCase(),
+    name: getDisplayName(user.firstName, user.lastName, user.email, String(user._id)),
   }));
 
   const { tableData, expandableRows } = useOperatorTableData(
-    jobs,
+    operatorGridJobs,
     sortField,
     sortDirection,
-    productionStageFilter,
     expandedGroups,
     toggleGroup,
     handleImageInput,
@@ -453,7 +506,7 @@ const Operator = () => {
     expandableRows,
     canAssign,
     machineOptions: machineOptionsForDropdown,
-    currentUserName: currentUserShortName,
+    currentUserName: currentUserDisplayName,
     operatorUsers: operatorOptionUsers,
     handleAssignChange,
     handleMachineNumberChange,
@@ -465,6 +518,209 @@ const Operator = () => {
     isAdmin,
     isImageInputDisabled: isTaskTimerRunning,
   });
+
+  const operatorGridRows = useMemo<OperatorGridRow[]>(
+    () =>
+      tableData.flatMap((row) =>
+        expandableRows.has(row.groupId) && expandedGroups.has(row.groupId)
+          ? [
+              { kind: "parent", groupId: row.groupId, row },
+              { kind: "detail", groupId: row.groupId, row },
+            ]
+          : [{ kind: "parent", groupId: row.groupId, row }]
+      ),
+    [tableData, expandableRows, expandedGroups]
+  );
+
+  const operatorJobColumnDefs = useMemo(
+    () => [
+      {
+        headerName: "",
+        field: "__select__",
+        width: 34,
+        minWidth: 34,
+        maxWidth: 34,
+        sortable: false,
+        resizable: false,
+        suppressSizeToFit: true,
+        suppressMovable: true,
+        headerComponent: () => (
+          <input
+            type="checkbox"
+            checked={tableData.length > 0 && tableData.every((row) => selectedJobIds.has(row.groupId))}
+            onChange={(event) => {
+              const checked = event.target.checked;
+              const nextGroupIds = checked ? new Set(tableData.map((row) => row.groupId)) : new Set<string>();
+              const nextEntryIds = checked
+                ? new Set(
+                    tableData.flatMap((row) =>
+                      row.entries
+                        .map((entry) => (entry.id === undefined || entry.id === null ? null : String(entry.id)))
+                        .filter((id): id is string => Boolean(id))
+                    )
+                  )
+                : new Set<string>();
+              setSelectedJobIds(nextGroupIds);
+              setSelectedEntryIds(nextEntryIds);
+            }}
+          />
+        ),
+        cellRenderer: (params: any) => {
+          if (params.data?.kind !== "parent") return null;
+          const groupId = String(params.data.row.groupId);
+          return (
+            <input
+              type="checkbox"
+              checked={selectedJobIds.has(groupId)}
+              onChange={(event) => {
+                const selected = event.target.checked;
+                const row = params.data.row as TableRow;
+                setSelectedEntryIds((prev) => {
+                  const next = new Set(prev);
+                  row.entries.forEach((entry) => {
+                    if (entry.id === undefined || entry.id === null) return;
+                    const key = String(entry.id);
+                    if (selected) next.add(key);
+                    else next.delete(key);
+                  });
+                  return next;
+                });
+                setSelectedJobIds((prev) => {
+                  const next = new Set(prev);
+                  if (selected) next.add(groupId);
+                  else next.delete(groupId);
+                  return next;
+                });
+              }}
+              onClick={(event) => event.stopPropagation()}
+            />
+          );
+        },
+      },
+      ...columns.map((column) => ({
+        headerName: getOperatorHeaderName(column),
+        field: column.key,
+        width:
+          column.key === "customer" ? 92 :
+          column.key === "programRef" ? 84 :
+          column.key === "programRefFileName" ? 108 :
+          column.key === "description" ? 118 :
+          column.key === "cut" ? 62 :
+          column.key === "thickness" ? 62 :
+          column.key === "passLevel" ? 48 :
+          column.key === "setting" ? 56 :
+          column.key === "qty" ? 44 :
+          column.key === "sedm" ? 50 :
+          column.key === "assignedTo" ? 128 :
+          column.key === "machineNumber" ? 88 :
+          column.key === "estimatedTime" ? 76 :
+          column.key === "totalAmount" ? 84 :
+          column.key === "productionStage" ? 88 :
+          column.key === "createdBy" ? 68 :
+          column.key === "action" ? 70 :
+          70,
+        minWidth:
+          column.key === "customer" ? 92 :
+          column.key === "programRef" ? 84 :
+          column.key === "programRefFileName" ? 108 :
+          column.key === "description" ? 118 :
+          column.key === "cut" ? 62 :
+          column.key === "thickness" ? 62 :
+          column.key === "passLevel" ? 48 :
+          column.key === "setting" ? 56 :
+          column.key === "qty" ? 44 :
+          column.key === "sedm" ? 50 :
+          column.key === "assignedTo" ? 128 :
+          column.key === "machineNumber" ? 88 :
+          column.key === "estimatedTime" ? 76 :
+          column.key === "totalAmount" ? 84 :
+          column.key === "productionStage" ? 88 :
+          column.key === "createdBy" ? 68 :
+          column.key === "action" ? 70 :
+          70,
+        maxWidth:
+          column.key === "customer" ? 92 :
+          column.key === "programRef" ? 84 :
+          column.key === "programRefFileName" ? 108 :
+          column.key === "description" ? 118 :
+          column.key === "cut" ? 62 :
+          column.key === "thickness" ? 62 :
+          column.key === "passLevel" ? 48 :
+          column.key === "setting" ? 56 :
+          column.key === "qty" ? 44 :
+          column.key === "sedm" ? 50 :
+          column.key === "assignedTo" ? 128 :
+          column.key === "machineNumber" ? 88 :
+          column.key === "estimatedTime" ? 76 :
+          column.key === "totalAmount" ? 84 :
+          column.key === "productionStage" ? 88 :
+          column.key === "createdBy" ? 68 :
+          column.key === "action" ? 70 :
+          70,
+        suppressSizeToFit: true,
+        resizable: false,
+        suppressMovable: true,
+        cellClass: column.className,
+        headerClass: column.headerClassName,
+        cellRenderer:
+          column.render
+            ? (params: any) =>
+                params.data?.kind === "parent"
+                  ? column.render?.(params.data.row, params.node?.rowIndex || 0)
+                  : null
+            : (params: any) => (params.data?.kind === "parent" ? String(params.data?.row?.[column.key] ?? "-") : null),
+      })),
+    ],
+    [columns, selectedJobIds, tableData]
+  );
+
+  const renderOperatorDetailRow = useCallback((params: any) => {
+    const row = params?.data?.row as TableRow | undefined;
+    if (!row) return null;
+    return (
+      <div className="lazy-ag-grid-detail-row">
+        <ChildCutsTable
+          entries={row.entries}
+          parentSetting={String(row.parent.setting || "").trim()}
+          showSetNumberColumn={false}
+          onImage={(groupId: string, cutId?: number) => handleImageInput(groupId, cutId)}
+          onAssignChange={handleAssignChange}
+          onMachineNumberChange={handleChildMachineNumberChange}
+          operatorUsers={operatorOptionUsers}
+          machineOptions={machineOptionsForDropdown}
+          isOperator={true}
+          isAdmin={isAdmin}
+          disableImageButton={isTaskTimerRunning}
+          showCheckboxes={true}
+          selectedRows={selectedEntryIds}
+          onRowSelect={(rowKey, selected) => handleChildRowSelect(row.groupId, rowKey, selected)}
+          getRowKey={(entry, index) =>
+            entry.id !== undefined && entry.id !== null ? String(entry.id) : `${row.groupId}-${index}`
+          }
+          onViewJob={(entry) => {
+            setViewingJob({
+              groupId: row.groupId,
+              parent: entry,
+              entries: [entry],
+              groupTotalHrs: Number(entry.totalHrs || 0),
+              groupTotalAmount: Number(entry.totalAmount || 0),
+            });
+            setShowJobViewModal(true);
+          }}
+        />
+      </div>
+    );
+  }, [
+    handleAssignChange,
+    handleChildMachineNumberChange,
+    handleChildRowSelect,
+    handleImageInput,
+    isAdmin,
+    isTaskTimerRunning,
+    machineOptionsForDropdown,
+    operatorOptionUsers,
+    selectedEntryIds,
+  ]);
 
   const handleApplyFiltersWithPageReset = (newFilters: FilterValues) => {
     handleApplyFilters(newFilters);
@@ -489,35 +745,6 @@ const Operator = () => {
     };
     fetchMasterConfig();
   }, []);
-
-  useEffect(() => {
-    if (activeTab !== "logs") return;
-    let mounted = true;
-    const fetchLogs = async () => {
-      try {
-        setLogsLoading(true);
-        const logs = await getEmployeeLogs({
-          role: "OPERATOR",
-          status: operatorLogStatus || undefined,
-          search: operatorLogSearch.trim() || undefined,
-          machine: operatorLogMachine || undefined,
-        });
-        if (mounted) setOperatorLogs(logs);
-      } catch (error) {
-        if (mounted) {
-          setOperatorLogs([]);
-          setToast({ message: "Failed to fetch operator logs.", variant: "error", visible: true });
-          setTimeout(() => setToast((prev) => ({ ...prev, visible: false })), 2500);
-        }
-      } finally {
-        if (mounted) setLogsLoading(false);
-      }
-    };
-    fetchLogs();
-    return () => {
-      mounted = false;
-    };
-  }, [activeTab, operatorLogSearch, operatorLogStatus, operatorLogMachine]);
 
   const designationByUserName = useMemo(() => {
     const map = new Map<string, string>();
@@ -561,9 +788,11 @@ const Operator = () => {
     return Math.max(0, Number(log.durationSeconds || 0));
   };
 
-  const groupWorkedSecondsByGroupId = useMemo(() => {
+  const groupWorkedSecondsByGroupId = useMemo(() => new Map<string, number>(), []);
+
+  const calculateWorkedSecondsByLogs = useCallback((logs: EmployeeLog[]) => {
     const map = new Map<string, number>();
-    operatorLogs.forEach((log) => {
+    logs.forEach((log) => {
       const groupId = String(log.jobGroupId || "").trim();
       if (!groupId) return;
       if (String(log.role || "").toUpperCase() !== "OPERATOR") return;
@@ -571,9 +800,9 @@ const Operator = () => {
       map.set(groupId, (map.get(groupId) || 0) + workedSeconds);
     });
     return map;
-  }, [operatorLogs]);
+  }, []);
 
-  const getRevenueForLog = (log: EmployeeLog): string => {
+  const getRevenueForLog = (log: EmployeeLog, workedSecondsMap: Map<string, number> = groupWorkedSecondsByGroupId): string => {
     const metadata = (log.metadata || {}) as Record<string, any>;
     const explicitRevenue = metadata.revenue;
     if (
@@ -591,7 +820,7 @@ const Operator = () => {
     const groupId = String(log.jobGroupId || "").trim();
     const wedm = groupId ? groupWedmByGroupId.get(groupId) || 0 : 0;
     if (!wedm) return "-";
-    const totalWorkedSeconds = groupWorkedSecondsByGroupId.get(groupId) || 0;
+    const totalWorkedSeconds = workedSecondsMap.get(groupId) || 0;
     if (!totalWorkedSeconds) return "-";
     const workedSeconds = getWorkedSecondsForLog(log);
     const share = Math.max(0, workedSeconds) / totalWorkedSeconds;
@@ -629,14 +858,7 @@ const Operator = () => {
     return toMachineIndex(firstMachine) || "-";
   };
 
-  const machineFilterOptions = useMemo(() => {
-    const unique = new Set<string>();
-    operatorLogs.forEach((log) => {
-      const machine = getMachineNumberForLog(log);
-      if (machine && machine !== "-") unique.add(machine);
-    });
-    return Array.from(unique).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
-  }, [operatorLogs, jobs]);
+  const machineFilterOptions = machineOptionsForDropdown;
 
   const logsColumns = useMemo<Column<EmployeeLog>[]>(
     () => [
@@ -737,12 +959,16 @@ const Operator = () => {
         sortable: false,
         render: (row) => String((row.metadata as any)?.remark || "-"),
       },
-      {
-        key: "revenue",
-        label: "Revenue",
-        sortable: false,
-        render: (row) => <span className="log-revenue-value">{getRevenueForLog(row)}</span>,
-      },
+      ...(isAdmin
+        ? [
+            {
+              key: "revenue",
+              label: "Revenue",
+              sortable: false,
+              render: (row: EmployeeLog) => <span className="log-revenue-value">{getRevenueForLog(row)}</span>,
+            } as Column<EmployeeLog>,
+          ]
+        : []),
       {
         key: "status",
         label: "Status",
@@ -762,54 +988,81 @@ const Operator = () => {
         },
       },
     ],
-    [designationByUserName, groupWedmByGroupId, groupWorkedSecondsByGroupId, jobs]
+    [designationByUserName, groupWedmByGroupId, groupWorkedSecondsByGroupId, jobs, isAdmin]
   );
 
   const handleExportOperatorLogsCsv = () => {
-    const headers = [
-      "User",
-      "MACH #",
-      "Work Item",
-      "Summary",
-      "Started at",
-      "Ended at",
-      "Shift",
-      "Duration",
-      "Idle Time",
-      "Remark",
-      "Revenue",
-      "Status",
-    ];
-
-    const rows = operatorLogs.map((row) => {
-      const name = getLogUserDisplayName(row.userName, row.userEmail, "");
-      const designation = designationByUserName.get(name.toLowerCase()) || "Operator";
-      return [
-        name ? `${name} (${designation})` : designation,
-        formatMachineLabel(getMachineNumberForLog(row)),
-        row.workItemTitle || "",
-        row.workSummary || "",
-        formatDisplayDateTime(row.startedAt),
-        formatDisplayDateTime(row.endedAt || null),
-        getShiftLabel(row.startedAt),
-        formatDuration(row.durationSeconds),
-        String((row.metadata as any)?.idleTime || "-"),
-        String((row.metadata as any)?.remark || "-"),
-        getRevenueForLog(row),
-        row.status || "-",
+    void (async () => {
+      const allLogs = await getEmployeeLogs({
+        role: "OPERATOR",
+        status: operatorLogStatus || undefined,
+        search: operatorLogSearch.trim() || undefined,
+        machine: operatorLogMachine || undefined,
+      });
+      const workedSecondsMap = calculateWorkedSecondsByLogs(allLogs);
+      const headers = [
+        "User",
+        "MACH #",
+        "Work Item",
+        "Summary",
+        "Started at",
+        "Ended at",
+        "Shift",
+        "Duration",
+        "Idle Time",
+        "Remark",
+        "Status",
       ];
-    });
+      if (isAdmin) {
+        headers.splice(headers.length - 1, 0, "Revenue");
+      }
 
-    const csvContent = [headers.join(","), ...rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(","))].join("\n");
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const link = document.createElement("a");
-    const url = URL.createObjectURL(blob);
-    link.setAttribute("href", url);
-    link.setAttribute("download", `operator_logs_${new Date().toISOString().split("T")[0]}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+      const rows = allLogs.map((row) => {
+        const name = getLogUserDisplayName(row.userName, row.userEmail, "");
+        const designation = designationByUserName.get(name.toLowerCase()) || "Operator";
+        return [
+          name ? `${name} (${designation})` : designation,
+          formatMachineLabel(getMachineNumberForLog(row)),
+          row.workItemTitle || "",
+          row.workSummary || "",
+          formatDisplayDateTime(row.startedAt),
+          formatDisplayDateTime(row.endedAt || null),
+          getShiftLabel(row.startedAt),
+          formatDuration(row.durationSeconds),
+          String((row.metadata as any)?.idleTime || "-"),
+          String((row.metadata as any)?.remark || "-"),
+          ...(isAdmin ? [getRevenueForLog(row, workedSecondsMap)] : []),
+          row.status || "-",
+        ];
+      });
+
+      const csvContent = [headers.join(","), ...rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(","))].join("\n");
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const link = document.createElement("a");
+      const url = URL.createObjectURL(blob);
+      link.setAttribute("href", url);
+      link.setAttribute("download", `operator_logs_${new Date().toISOString().split("T")[0]}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    })().catch(() => {
+      setToast({ message: "Failed to export operator logs.", variant: "error", visible: true });
+      setTimeout(() => setToast((prev) => ({ ...prev, visible: false })), 2500);
+    });
   };
+
+  const operatorLogColumnDefs = useMemo(
+    () =>
+      logsColumns.map((column) => ({
+        headerName: typeof column.label === "string" ? column.label : String(column.key),
+        field: column.key,
+        minWidth: column.key === "workSummary" ? 200 : 120,
+        cellClass: column.className,
+        headerClass: column.headerClassName,
+        cellRenderer: column.render ? ((params: any) => column.render!(params.data, params.node?.rowIndex || 0)) : undefined,
+      })),
+    [logsColumns]
+  );
 
   return (
     <div className="roleboard-container">
@@ -836,7 +1089,7 @@ const Operator = () => {
 
           {activeTab === "jobs" ? (
             <>
-              {loadingJobs ? (
+              {loadingJobs && operatorGridJobs.length === 0 ? (
                 <AppLoader message="Loading operator jobs..." />
               ) : (
                 <>
@@ -847,7 +1100,6 @@ const Operator = () => {
                     jobSearchFilter={customerFilter}
                     createdByFilter={createdByFilter}
                     assignedToFilter={assignedToFilter}
-                    productionStageFilter={productionStageFilter}
                     showFilterModal={showFilterModal}
                     activeFilterCount={activeFilterCount}
                     users={users}
@@ -862,7 +1114,6 @@ const Operator = () => {
                     }}
                     onCreatedByFilterChange={setCreatedByFilter}
                     onAssignedToFilterChange={setAssignedToFilter}
-                    onProductionStageFilterChange={setProductionStageFilter}
                     canUseTaskSwitchTimer={canUseTaskSwitchTimer}
                     onSaveTaskSwitch={handleSaveTaskSwitch}
                     onTimerRunningChange={setIsTaskTimerRunning}
@@ -874,64 +1125,56 @@ const Operator = () => {
                     onSendSelectedRowsToQa={handleSendSelectedRowsToQa}
                     selectedRowsCount={selectedEntryIds.size}
                     machineOptions={machineOptionsForDropdown}
-                    currentUserName={currentUserShortName}
+                    currentUserName={currentUserDisplayName}
                     onApplyBulkAssignment={handleApplyBulkAssignment}
                   />
-                  <DataTable
-                    columns={columns}
-                    data={tableData}
-                    sortField={sortField}
-                    sortDirection={sortDirection}
-                    onSort={(field) => handleSort(field as keyof JobEntry)}
-                    emptyMessage='No entries added yet.'
-                    expandableRows={expandableRows}
-                    showAccordion={false}
-                    getRowKey={(row) => row.groupId}
-                    getRowClassName={(row) =>
-                      (() => {
-                        const flagClass = getParentRowClassName(
-                          row.parent,
-                          row.entries,
-                          expandedGroups.has(row.groupId)
-                        );
-                        const c = getGroupQaProgressCounts(row.entries);
-                        const logged = c.saved + c.ready;
-                        const maxCount = Math.max(logged, c.sent, c.empty);
-                        let stageClass = "operator-stage-row-not-started";
-                        if (c.sent === maxCount) stageClass = "operator-stage-row-dispatched";
-                        else if (logged === maxCount) stageClass = "operator-stage-row-logged";
-                        return `${flagClass} ${stageClass}`;
-                      })()
-                    }
-                    className="jobs-table-wrapper operator-table-no-scroll"
-                    showCheckboxes={true}
-                    selectedRows={selectedJobIds}
-                    onRowSelect={(rowKey, selected) => {
-                      const groupId = String(rowKey);
-                      const row = tableData.find((r) => r.groupId === groupId);
-                      if (!row) return;
-
-                      setSelectedEntryIds((prev) => {
-                        const next = new Set(prev);
-                        row.entries.forEach((entry) => {
-                          if (entry.id === undefined || entry.id === null) return;
-                          const key = String(entry.id);
-                          if (selected) next.add(key);
-                          else next.delete(key);
-                        });
-                        return next;
-                      });
-
-                      setSelectedJobIds((prev) => {
-                        const next = new Set(prev);
-                        if (selected) {
-                          next.add(groupId);
-                        } else {
-                          next.delete(groupId);
-                        }
-                        return next;
-                      });
+                  <LazyAgGrid
+                    columnDefs={operatorJobColumnDefs as any}
+                    fetchPage={async (offset, limit) => {
+                      const page = await getOperatorJobsPage(
+                        filters,
+                        customerFilter,
+                        createdByFilter,
+                        assignedToFilter,
+                        descriptionFilter,
+                        { offset, limit }
+                      );
+                      return { items: page.items, hasMore: page.hasMore };
                     }}
+                    rows={operatorGridJobs}
+                    onRowsChange={setOperatorGridJobs}
+                    transformRows={() => operatorGridRows}
+                    getRowId={(row: OperatorGridRow) =>
+                      row.kind === "detail" ? `${row.groupId}__detail` : row.groupId
+                    }
+                    isFullWidthRow={(row: OperatorGridRow) => row.kind === "detail"}
+                    fullWidthCellRenderer={renderOperatorDetailRow}
+                    getRowHeight={(params) =>
+                      params.data?.kind === "detail"
+                        ? 92 + params.data.row.entries.length * 62
+                        : 56
+                    }
+                    emptyMessage="No entries added yet."
+                    getRowClass={(params) => {
+                      if (params.data?.kind === "detail") return "operator-grid-detail";
+                      const row = params.data.row as TableRow;
+                      const flagClass = getParentRowClassName(
+                        row.parent,
+                        row.entries,
+                        expandedGroups.has(row.groupId)
+                      );
+                      const c = getGroupQaProgressCounts(row.entries);
+                      const logged = c.saved + c.ready;
+                      const maxCount = Math.max(logged, c.sent, c.empty);
+                      let stageClass = "operator-stage-row-not-started";
+                      if (c.sent === maxCount) stageClass = "operator-stage-row-dispatched";
+                      else if (logged === maxCount) stageClass = "operator-stage-row-logged";
+                      return `${flagClass} ${stageClass}`;
+                    }}
+                    className="jobs-table-wrapper operator-table-no-scroll"
+                    rowHeight={40}
+                    fitColumns={true}
+                    refreshKey={`${customerFilter}|${descriptionFilter}|${createdByFilter}|${assignedToFilter}|${JSON.stringify(filters)}`}
                   />
                 </>
               )}
@@ -975,12 +1218,23 @@ const Operator = () => {
                   CSV
                 </button>
               </div>
-              <DataTable
-                columns={logsColumns}
-                data={operatorLogs}
-                emptyMessage={logsLoading ? "Loading logs..." : "No operator logs found."}
-                getRowKey={(row) => row._id}
-                className="left-align operator-logs-table"
+              <LazyAgGrid
+                columnDefs={operatorLogColumnDefs as any}
+                fetchPage={async (offset, limit) => {
+                  const page = await getEmployeeLogsPage({
+                    role: "OPERATOR",
+                    status: operatorLogStatus || undefined,
+                    search: operatorLogSearch.trim() || undefined,
+                    machine: operatorLogMachine || undefined,
+                    offset,
+                    limit,
+                  });
+                  return { items: page.items, hasMore: page.hasMore };
+                }}
+                emptyMessage="No operator logs found."
+                getRowId={(row) => row._id}
+                className="operator-logs-table logs-center"
+                refreshKey={`${operatorLogSearch}|${operatorLogStatus}|${operatorLogMachine}`}
               />
             </>
           )}

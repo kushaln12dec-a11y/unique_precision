@@ -1,6 +1,14 @@
 import type { JobEntry } from "../types/job";
 import { apiUrl } from "./apiClient";
 
+export type PaginatedOperatorJobs = {
+  items: JobEntry[];
+  total: number;
+  offset: number;
+  limit: number;
+  hasMore: boolean;
+};
+
 export type CaptureOperatorInputPayload = {
   startTime: string;
   endTime: string;
@@ -60,6 +68,49 @@ export const getOperatorJobs = async (
     groupId: String(job.groupId ?? job.id),
     assignedTo: job.assignedTo || "Unassigned",
   }));
+};
+
+export const getOperatorJobsPage = async (
+  customerFilter?: string,
+  createdByFilter?: string,
+  assignedToFilter?: string,
+  pagination: { offset?: number; limit?: number } = {}
+): Promise<PaginatedOperatorJobs> => {
+  const params = new URLSearchParams();
+  if (customerFilter) params.append("customer", customerFilter);
+  if (createdByFilter) params.append("createdBy", createdByFilter);
+  if (assignedToFilter) params.append("assignedTo", assignedToFilter);
+  if (pagination.offset !== undefined) params.append("offset", String(Math.max(0, pagination.offset)));
+  if (pagination.limit !== undefined) params.append("limit", String(Math.max(1, pagination.limit)));
+
+  const url = params.toString() ? `/api/operator/jobs?${params.toString()}` : "/api/operator/jobs";
+
+  const res = await fetch(apiUrl(url), {
+    method: "GET",
+    headers: getAuthHeaders(),
+  });
+
+  if (!res.ok) {
+    throw new Error("Failed to fetch operator jobs");
+  }
+
+  const payload = await res.json();
+  const items = Array.isArray(payload?.items)
+    ? payload.items.map((job: any) => ({
+        ...job,
+        id: job._id || job.id,
+        groupId: String(job.groupId ?? job.id),
+        assignedTo: job.assignedTo || "Unassigned",
+      }))
+    : [];
+
+  return {
+    items,
+    total: Number(payload?.total || 0),
+    offset: Number(payload?.offset || 0),
+    limit: Number(payload?.limit || items.length || 0),
+    hasMore: Boolean(payload?.hasMore),
+  };
 };
 
 // Get operator job by ID

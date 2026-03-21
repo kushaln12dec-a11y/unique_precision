@@ -36,6 +36,7 @@ type SEDMModalProps = {
   onApply?: () => void;
   electrodeOptions?: string[];
   thOptions?: Array<{ value: string; label: string }>;
+  isAdmin?: boolean;
 };
 
 const calculateSingleSedmAmount = (entry: SEDMEntry, qty: number): number => {
@@ -79,6 +80,7 @@ const SEDMModal: React.FC<SEDMModalProps> = ({
   onApply,
   electrodeOptions = [],
   thOptions = [],
+  isAdmin = false,
 }) => {
   const resolvedElectrodeOptions = (electrodeOptions.length > 0 ? electrodeOptions : [
     "0.3",
@@ -363,9 +365,11 @@ const SEDMModal: React.FC<SEDMModalProps> = ({
       <p className="sedm-meta">
         Job Quantity: {cut.qty || "0"} | Total Holes: {totalHoles}
       </p>
-      <p className="sedm-amount">
-        Total SEDM Amount: Rs. {totalSedmAmount.toFixed(2)}
-      </p>
+      {isAdmin && (
+        <p className="sedm-amount">
+          Total SEDM Amount: Rs. {totalSedmAmount.toFixed(2)}
+        </p>
+      )}
       <div className="sedm-modal-actions">
         <button
           type="button"

@@ -26,11 +26,19 @@
   max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
+  appearance: none;
+  text-align: left;
 }
 
 .multi-select-trigger.disabled {
   cursor: not-allowed;
   opacity: 0.6;
+}
+
+.multi-select-trigger:focus-visible {
+  outline: 2px solid rgba(37, 99, 235, 0.35);
+  outline-offset: 2px;
+  border-radius: 8px;
 }
 
 .selected-text {
@@ -76,6 +84,11 @@
   min-width: 0;
 }
 
+.multi-select-display-track {
+  display: inline-block;
+  min-width: 100%;
+}
+
 .multi-select-dropdown {
   position: fixed;
   min-width: 150px;
@@ -87,26 +100,12 @@
   max-height: 200px;
   overflow-y: auto;
   overflow-x: hidden;
-  z-index: 9999;
+  z-index: 2147483000;
   padding: 0.2rem;
   box-sizing: border-box;
   scrollbar-width: none;
   -ms-overflow-style: none;
   overscroll-behavior: contain;
-}
-
-.multi-select-operators .multi-select-dropdown {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  margin-top: 0.25rem;
-}
-
-.multi-select-operators .multi-select-dropdown.dropdown-above {
-  top: auto;
-  bottom: 100%;
-  margin-top: 0;
-  margin-bottom: 0.25rem;
 }
 
 .dropdown-option {
@@ -240,8 +239,9 @@
   border-color: #93c5fd;
   background: linear-gradient(180deg, #f8fbff 0%, #eef4ff 100%);
   box-shadow: inset 0 0 0 1px rgba(147, 197, 253, 0.3);
-  padding: 0.25rem 0.55rem;
-  max-width: 76px;
+  padding: 0.15rem 0.55rem;
+  min-width: 122px;
+  max-width: 100%;
 }
 
 .multi-select-operators.operator-assigned-dropdown .selected-text,
@@ -249,8 +249,39 @@
 .multi-select-operators.operator-assigned-dropdown .placeholder {
   color: #1e3a8a;
   font-weight: 700;
+  font-size: 0.78rem;
 }
 
 .multi-select-operators.operator-assigned-dropdown .dropdown-icon {
   color: #1d4ed8;
+}
+
+.multi-select-operators.operator-assigned-dropdown .selected-text,
+.multi-select-operators.operator-assigned-dropdown .compact-display {
+  display: inline-block;
+  min-width: 0;
+  padding-right: 0.7rem;
+  overflow: hidden;
+  position: relative;
+}
+
+.multi-select-operators.operator-assigned-dropdown .multi-select-display-track {
+  min-width: max-content;
+  padding-right: 1rem;
+  animation: operator-name-marquee 6.4s linear infinite;
+  will-change: transform;
+}
+
+.multi-select-operators.operator-assigned-dropdown:hover .multi-select-display-track,
+.multi-select-operators.operator-assigned-dropdown:focus-within .multi-select-display-track {
+  animation-duration: 4.6s;
+}
+
+@keyframes operator-name-marquee {
+  0% {
+    transform: translateX(100%);
+  }
+  100% {
+    transform: translateX(-100%);
+  }
 }

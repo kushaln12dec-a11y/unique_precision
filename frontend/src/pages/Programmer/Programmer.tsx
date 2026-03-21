@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import Sidebar from "../../components/Sidebar";
 import Header from "../../components/Header";
-import DataTable, { type Column } from "../../components/DataTable";
+import type { Column } from "../../components/DataTable";
+import LazyAgGrid from "../../components/LazyAgGrid";
 import Toast from "../../components/Toast";
 import AppLoader from "../../components/AppLoader";
 import DownloadIcon from "@mui/icons-material/Download";
@@ -12,9 +13,9 @@ import ConfirmDeleteModal from "../../components/ConfirmDeleteModal";
 import { getUserRoleFromToken } from "../../utils/auth";
 import "../../utils/tokenDebug";
 import { getUsers } from "../../services/userApi";
-import { getEmployeeLogs } from "../../services/employeeLogsApi";
+import { getEmployeeLogs, getEmployeeLogsPage } from "../../services/employeeLogsApi";
 import { getMasterConfig } from "../../services/masterConfigApi";
-import { getJobsByGroupId } from "../../services/jobApi";
+import { getJobsByGroupId, getProgrammerJobsPage } from "../../services/jobApi";
 import type { User } from "../../types/user";
 import type { MasterConfig } from "../../types/masterConfig";
 import type { EmployeeLog } from "../../types/employeeLog";
@@ -36,6 +37,7 @@ import { getParentRowClassName } from "./utils/priorityUtils";
 import { formatDisplayDateTime, getDisplayDateTimeParts } from "../../utils/date";
 import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import MarqueeCopyText from "../../components/MarqueeCopyText";
+import ChildCutsTable from "./components/ChildCutsTable";
 import {
   setProgrammerCreatedByFilter,
   setProgrammerCriticalFilter,
@@ -46,12 +48,38 @@ import {
 } from "../../store/slices/filtersSlice";
 import { getDisplayName, getInitials, getLogUserDisplayName } from "../../utils/jobFormatting";
 
+type ProgrammerGridRow =
+  | { kind: "parent"; groupId: string; row: TableRow }
+  | { kind: "detail"; groupId: string; row: TableRow };
+
+const getProgrammerHeaderName = (column: Column<TableRow>) => {
+  if (typeof column.label === "string") return column.label;
+  switch (column.key) {
+    case "programRef":
+      return "JOB REF";
+    case "programRefFileName":
+      return "PROGRAM REF FILE NAME";
+    case "estimatedTime":
+      return "ESTIMATED TIME";
+    case "totalHrs":
+      return "CUT LENGTH HRS";
+    case "totalAmount":
+      return "TOTAL AMOUNT (RS.)";
+    case "createdBy":
+      return "CREATED BY";
+    case "createdAt":
+      return "CREATED AT";
+    default:
+      return String(column.key);
+  }
+};
+
 const Programmer = () => {
   const navigate = useNavigate();
   const params = useParams<{ groupId?: string }>();
   const dispatch = useAppDispatch();
-  const [sortField, setSortField] = useState<keyof JobEntry | null>(null);
-  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
+  const [sortField] = useState<keyof JobEntry | null>(null);
+  const [sortDirection] = useState<"asc" | "desc">("asc");
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(() => new Set());
   const {
     filters,
@@ -73,13 +101,14 @@ const Programmer = () => {
   const [showJobViewModal, setShowJobViewModal] = useState(false);
   const [viewingJob, setViewingJob] = useState<TableRow | null>(null);
   const [selectedChildRows, setSelectedChildRows] = useState<Set<string | number>>(new Set());
+  const [programmerGridJobs, setProgrammerGridJobs] = useState<JobEntry[]>([]);
+  const [programmerGridRefreshKey, setProgrammerGridRefreshKey] = useState(0);
   const [masterConfig, setMasterConfig] = useState<MasterConfig | null>(null);
   const [activeTab, setActiveTab] = useState<"jobs" | "logs">("jobs");
-  const [programmerLogs, setProgrammerLogs] = useState<EmployeeLog[]>([]);
-  const [logsLoading, setLogsLoading] = useState(false);
   const [logSearch, setLogSearch] = useState("");
   const [logStatus, setLogStatus] = useState<"" | "IN_PROGRESS" | "COMPLETED" | "REJECTED">("");
   const [logUserId, setLogUserId] = useState("");
+  const previousProgrammerFormRouteRef = useRef(false);
 
   const isAdmin = getUserRoleFromToken() === "ADMIN";
 
@@ -109,6 +138,7 @@ const Programmer = () => {
     refNumber,
     isNewJobRoute,
     isEditRoute,
+    isCloneRoute,
     handleNewJob: handleNewJobState,
     handleCancel: handleCancelState,
   } = useProgrammerState(filters, customerFilter, descriptionFilter, createdByFilter, criticalFilter);
@@ -118,8 +148,11 @@ const Programmer = () => {
       cuts.map((cut) =>
         calculateTotals(cut, {
           settingHoursPerSetting: masterConfig?.settingHoursPerSetting,
+          thicknessRateUpto100: masterConfig?.thicknessRateUpto100,
+          thicknessRateAbove100: masterConfig?.thicknessRateAbove100,
           complexExtraHours: masterConfig?.complexExtraHours,
           pipExtraHours: masterConfig?.pipExtraHours,
+          customerConfigs: masterConfig?.customers,
         })
       ),
     [cuts, masterConfig]
@@ -176,8 +209,13 @@ const Programmer = () => {
     setShowDeleteModal(true);
   };
 
+  const handleCloneJob = useCallback((groupId: string) => {
+    handleNewJobState();
+    navigate(`/programmer/clone/${groupId}`);
+  }, [handleNewJobState, navigate]);
+
   const { tableData, expandableRows } = useJobData({
-    jobs,
+    jobs: programmerGridJobs,
     sortField,
     sortDirection,
     expandedGroups,
@@ -211,6 +249,7 @@ const Programmer = () => {
     if (!jobToDelete) return;
     try {
       await handleDeleteJob(jobToDelete.groupId);
+      setProgrammerGridJobs((prev) => prev.filter((job) => String(job.groupId) !== jobToDelete.groupId));
       setShowDeleteModal(false);
       setJobToDelete(null);
     } catch (error) {
@@ -240,8 +279,178 @@ const Programmer = () => {
     isAdmin,
     handleViewJob: handleViewGroup,
     handleEditJob,
+    handleCloneJob,
     handleDeleteClick,
   });
+
+  const programmerGridRows = useMemo<ProgrammerGridRow[]>(
+    () =>
+      tableData.flatMap((row) =>
+        expandableRows.has(row.groupId) && expandedGroups.has(row.groupId)
+          ? [
+              { kind: "parent", groupId: row.groupId, row },
+              { kind: "detail", groupId: row.groupId, row },
+            ]
+          : [{ kind: "parent", groupId: row.groupId, row }]
+      ),
+    [tableData, expandableRows, expandedGroups]
+  );
+
+  const programmerJobColumnDefs = useMemo(
+    () => [
+      {
+        headerName: "",
+        field: "__select__",
+        width: 34,
+        minWidth: 34,
+        maxWidth: 34,
+        sortable: false,
+        resizable: false,
+        suppressSizeToFit: true,
+        suppressMovable: true,
+        headerComponent: () => (
+          <input
+            type="checkbox"
+            checked={tableData.length > 0 && tableData.every((row) => selectedJobIds.has(row.groupId))}
+            onChange={(event) => {
+              const checked = event.target.checked;
+              const nextSelected = checked ? new Set(tableData.map((row) => row.groupId)) : new Set<string>();
+              setSelectedJobIds(nextSelected);
+            }}
+          />
+        ),
+        cellRenderer: (params: any) => {
+          if (params.data?.kind !== "parent") return null;
+          const groupId = String(params.data.row.groupId);
+          return (
+            <input
+              type="checkbox"
+              checked={selectedJobIds.has(groupId)}
+              onChange={(event) => {
+                const selected = event.target.checked;
+                setSelectedJobIds((prev) => {
+                  const next = new Set(prev);
+                  if (selected) next.add(groupId);
+                  else next.delete(groupId);
+                  return next;
+                });
+              }}
+              onClick={(event) => event.stopPropagation()}
+            />
+          );
+        },
+      },
+      ...columns.map((column) => ({
+        headerName: getProgrammerHeaderName(column),
+        field: column.key,
+        width:
+          column.key === "customer" ? 104 :
+          column.key === "programRef" ? 92 :
+          column.key === "programRefFileName" ? 132 :
+          column.key === "description" ? 134 :
+          column.key === "cut" ? 68 :
+          column.key === "thickness" ? 68 :
+          column.key === "passLevel" ? 56 :
+          column.key === "setting" ? 78 :
+          column.key === "qty" ? 48 :
+          column.key === "sedm" ? 54 :
+          column.key === "totalHrs" ? 92 :
+          column.key === "estimatedTime" ? 88 :
+          column.key === "totalAmount" ? 116 :
+          column.key === "createdBy" ? 84 :
+          column.key === "createdAt" ? 114 :
+          column.key === "action" ? 80 :
+          64,
+        minWidth:
+          column.key === "customer" ? 104 :
+          column.key === "programRef" ? 92 :
+          column.key === "programRefFileName" ? 132 :
+          column.key === "description" ? 134 :
+          column.key === "cut" ? 68 :
+          column.key === "thickness" ? 68 :
+          column.key === "passLevel" ? 56 :
+          column.key === "setting" ? 78 :
+          column.key === "qty" ? 48 :
+          column.key === "sedm" ? 54 :
+          column.key === "totalHrs" ? 92 :
+          column.key === "estimatedTime" ? 88 :
+          column.key === "totalAmount" ? 116 :
+          column.key === "createdBy" ? 84 :
+          column.key === "createdAt" ? 114 :
+          column.key === "action" ? 80 :
+          64,
+        maxWidth:
+          column.key === "customer" ? 104 :
+          column.key === "programRef" ? 92 :
+          column.key === "programRefFileName" ? 132 :
+          column.key === "description" ? 134 :
+          column.key === "cut" ? 68 :
+          column.key === "thickness" ? 68 :
+          column.key === "passLevel" ? 56 :
+          column.key === "setting" ? 78 :
+          column.key === "qty" ? 48 :
+          column.key === "sedm" ? 54 :
+          column.key === "totalHrs" ? 92 :
+          column.key === "estimatedTime" ? 88 :
+          column.key === "totalAmount" ? 116 :
+          column.key === "createdBy" ? 84 :
+          column.key === "createdAt" ? 114 :
+          column.key === "action" ? 80 :
+          64,
+        suppressSizeToFit: true,
+        resizable: false,
+        suppressMovable: true,
+        cellClass: column.className,
+        headerClass: column.headerClassName,
+        cellRenderer:
+          column.render
+            ? (params: any) =>
+                params.data?.kind === "parent"
+                  ? column.render?.(params.data.row, params.node?.rowIndex || 0)
+                  : null
+            : (params: any) => (params.data?.kind === "parent" ? String(params.data?.row?.[column.key] ?? "-") : null),
+      })),
+    ],
+    [columns, selectedJobIds, tableData]
+  );
+
+  const renderProgrammerDetailRow = useCallback((params: any) => {
+    const row = params?.data?.row as TableRow | undefined;
+    if (!row) return null;
+    return (
+      <div className="lazy-ag-grid-detail-row">
+        <ChildCutsTable
+          entries={row.entries}
+          parentSetting={String(row.parent.setting || "").trim()}
+          showSetNumberColumn={false}
+          onViewJob={async (entry) => {
+            try {
+              const fullEntries = await getJobsByGroupId(String(entry.groupId));
+              const targetEntry = fullEntries.find((job) => String(job.id) === String(entry.id)) || entry;
+              setViewingJob({
+                groupId: String(targetEntry.groupId),
+                parent: targetEntry,
+                entries: [targetEntry],
+                groupTotalHrs: Number(targetEntry.totalHrs || 0),
+                groupTotalAmount: Number(targetEntry.totalAmount || 0),
+              });
+              setShowJobViewModal(true);
+            } catch (error) {
+              console.error("Failed to fetch job details", error);
+              setToast({ message: "Failed to load job details.", variant: "error", visible: true });
+            }
+          }}
+          onEdit={handleEditJob}
+          onDelete={handleDeleteClick}
+          isAdmin={isAdmin}
+          showCheckboxes={true}
+          selectedRows={selectedChildRows}
+          onRowSelect={handleChildRowSelect}
+          getRowKey={(entry, index) => entry.id || index}
+        />
+      </div>
+    );
+  }, [handleChildRowSelect, handleDeleteClick, handleEditJob, isAdmin, selectedChildRows]);
 
   useEffect(() => {
     const fetchMasterConfig = async () => {
@@ -268,10 +477,22 @@ const Programmer = () => {
   }, []);
 
   useEffect(() => {
-    if (isNewJobRoute || isEditRoute) {
+    if (isNewJobRoute || isEditRoute || isCloneRoute) {
       setActiveTab("jobs");
     }
-  }, [isNewJobRoute, isEditRoute]);
+  }, [isNewJobRoute, isEditRoute, isCloneRoute]);
+
+  useEffect(() => {
+    const isFormRoute = isNewJobRoute || isEditRoute || isCloneRoute;
+    if (previousProgrammerFormRouteRef.current && !isFormRoute) {
+      setProgrammerGridJobs([]);
+      setExpandedGroups(new Set());
+      setSelectedJobIds(new Set());
+      setSelectedChildRows(new Set());
+      setProgrammerGridRefreshKey((prev) => prev + 1);
+    }
+    previousProgrammerFormRouteRef.current = isFormRoute;
+  }, [isCloneRoute, isEditRoute, isNewJobRoute]);
 
   const handleNewJob = () => {
     handleNewJobState();
@@ -286,24 +507,12 @@ const Programmer = () => {
     setShowForm(false);
   };
 
-  const handleRowSelect = (rowKey: string | number, selected: boolean) => {
-    const groupId = String(rowKey);
-
-    setSelectedJobIds((prev) => {
-      const next = new Set(prev);
-      if (selected) {
-        next.add(groupId);
-      } else {
-        next.delete(groupId);
-      }
-      return next;
-    });
-  };
-
   const handleMassDeleteClick = async () => {
     if (selectedJobIds.size === 0) return;
     await handleMassDelete(selectedJobIds);
+    setProgrammerGridJobs((prev) => prev.filter((job) => !selectedJobIds.has(String(job.groupId))));
     setSelectedJobIds(new Set());
+    setSelectedChildRows(new Set());
   };
 
   const handleDeleteCancel = () => {
@@ -311,49 +520,11 @@ const Programmer = () => {
     setJobToDelete(null);
   };
 
-  const handleSort = (field: keyof JobEntry) => {
-    if (sortField === field) {
-      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
-    } else {
-      setSortField(field);
-      setSortDirection("asc");
-    }
-  };
-
   const handleDownloadCSV = () => {
     exportJobsToCSV(tableData, isAdmin);
   };
 
   const activeFilterCount = useMemo(() => countActiveFilters(filters), [filters]);
-
-  useEffect(() => {
-    if (activeTab !== "logs" || isNewJobRoute || isEditRoute) return;
-    let mounted = true;
-
-    const fetchProgrammerLogs = async () => {
-      try {
-        setLogsLoading(true);
-        const logs = await getEmployeeLogs({
-          role: "PROGRAMMER",
-          status: logStatus || undefined,
-          search: logSearch.trim() || undefined,
-        });
-        if (mounted) setProgrammerLogs(logs);
-      } catch (error) {
-        if (mounted) {
-          setProgrammerLogs([]);
-          setToast({ message: "Failed to fetch programmer logs.", variant: "error", visible: true });
-        }
-      } finally {
-        if (mounted) setLogsLoading(false);
-      }
-    };
-
-    fetchProgrammerLogs();
-    return () => {
-      mounted = false;
-    };
-  }, [activeTab, isNewJobRoute, isEditRoute, logSearch, logStatus]);
 
   const formatDuration = (seconds?: number): string => {
     const total = Math.max(0, Number(seconds || 0));
@@ -382,11 +553,6 @@ const Programmer = () => {
     });
     return map;
   }, [users]);
-
-  const filteredProgrammerLogs = useMemo(
-    () => programmerLogs.filter((log) => (logUserId ? String(log.userId) === String(logUserId) : true)),
-    [programmerLogs, logUserId]
-  );
 
   const programmerLogColumns = useMemo<Column<EmployeeLog>[]>(
     () => [
@@ -506,34 +672,59 @@ const Programmer = () => {
   );
 
   const handleExportProgrammerLogsCsv = () => {
-    const headers = ["User", "JOB #", "Summary", "Started at", "Ended at", "Shift", "Duration", "Status"];
-    const rows = filteredProgrammerLogs.map((row) => {
-      const designation = designationByUserId.get(String(row.userId)) || "Programmer";
-      const name = getLogUserDisplayName(row.userName, row.userEmail, "");
-      const userValue = name ? `${name} (${designation})` : designation;
-      const ref = String(row.refNumber || "").trim().replace(/^#/, "");
-      return [
-        userValue,
-        ref ? `#${ref}` : "",
-        String((row as any).workSummary || "-"),
-        formatDisplayDateTime(row.startedAt),
-        formatDisplayDateTime(row.endedAt || null),
-        getShiftLabel(row.startedAt),
-        formatDuration(row.durationSeconds),
-        String(row.status || "").toUpperCase() === "REJECTED" ? "Stopped" : String(row.status || "-"),
-      ];
-    });
+    void (async () => {
+      const allLogs = await getEmployeeLogs({
+        role: "PROGRAMMER",
+        status: logStatus || undefined,
+        search: logSearch.trim() || undefined,
+      });
+      const filteredProgrammerLogs = allLogs.filter((log) =>
+        logUserId ? String(log.userId) === String(logUserId) : true
+      );
+      const headers = ["User", "JOB #", "Summary", "Started at", "Ended at", "Shift", "Duration", "Status"];
+      const rows = filteredProgrammerLogs.map((row) => {
+        const designation = designationByUserId.get(String(row.userId)) || "Programmer";
+        const name = getLogUserDisplayName(row.userName, row.userEmail, "");
+        const userValue = name ? `${name} (${designation})` : designation;
+        const ref = String(row.refNumber || "").trim().replace(/^#/, "");
+        return [
+          userValue,
+          ref ? `#${ref}` : "",
+          String((row as any).workSummary || "-"),
+          formatDisplayDateTime(row.startedAt),
+          formatDisplayDateTime(row.endedAt || null),
+          getShiftLabel(row.startedAt),
+          formatDuration(row.durationSeconds),
+          String(row.status || "").toUpperCase() === "REJECTED" ? "Stopped" : String(row.status || "-"),
+        ];
+      });
 
-    const csvContent = [headers.join(","), ...rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(","))].join("\n");
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const link = document.createElement("a");
-    const url = URL.createObjectURL(blob);
-    link.setAttribute("href", url);
-    link.setAttribute("download", `programmer_logs_${new Date().toISOString().split("T")[0]}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+      const csvContent = [headers.join(","), ...rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(","))].join("\n");
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const link = document.createElement("a");
+      const url = URL.createObjectURL(blob);
+      link.setAttribute("href", url);
+      link.setAttribute("download", `programmer_logs_${new Date().toISOString().split("T")[0]}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    })().catch(() => {
+      setToast({ message: "Failed to export programmer logs.", variant: "error", visible: true });
+    });
   };
+
+  const programmerLogColumnDefs = useMemo(
+    () =>
+      programmerLogColumns.map((column) => ({
+        headerName: typeof column.label === "string" ? column.label : String(column.key),
+        field: column.key,
+        minWidth: column.className?.includes("summary") ? 200 : 120,
+        cellClass: column.className,
+        headerClass: column.headerClassName,
+        cellRenderer: column.render ? ((params: any) => column.render!(params.data, params.node?.rowIndex || 0)) : undefined,
+      })),
+    [programmerLogColumns]
+  );
 
   const routeEditGroupId = params.groupId ? String(params.groupId) : null;
   const isEditFormReady =
@@ -541,15 +732,15 @@ const Programmer = () => {
     Boolean(routeEditGroupId) &&
     editingGroupId === routeEditGroupId &&
     cuts.length > 0;
-  const shouldRenderJobForm = isNewJobRoute || (isEditRoute ? isEditFormReady : showForm);
+  const shouldRenderJobForm = isNewJobRoute || isCloneRoute || (isEditRoute ? isEditFormReady : showForm);
 
   return (
     <div className="programmer-container">
       <Sidebar currentPath="/programmer" onNavigate={(path) => navigate(path)} />
-      <div className={`programmer-content ${isNewJobRoute || isEditRoute ? "programmer-content-scrollable" : ""}`}>
+      <div className={`programmer-content ${isNewJobRoute || isEditRoute || isCloneRoute ? "programmer-content-scrollable" : ""}`}>
         <Header title="Programmer" />
-        <div className={`programmer-panel ${isNewJobRoute || isEditRoute ? "programmer-panel-scrollable" : ""}`}>
-          {!isNewJobRoute && !isEditRoute && (
+        <div className={`programmer-panel ${isNewJobRoute || isEditRoute || isCloneRoute ? "programmer-panel-scrollable" : ""}`}>
+          {!isNewJobRoute && !isEditRoute && !isCloneRoute && (
             <div className="programmer-subtabs">
               <button
                 type="button"
@@ -581,13 +772,14 @@ const Programmer = () => {
                 isAdmin={isAdmin}
                 refNumber={refNumber}
                 masterConfig={masterConfig}
+                formMode={editingGroupId ? "edit" : "draft"}
               />
             )
           )}
 
-          {!isNewJobRoute && !isEditRoute && activeTab === "jobs" && (
+          {!isNewJobRoute && !isEditRoute && !isCloneRoute && activeTab === "jobs" && (
             <>
-              {loadingJobs ? (
+              {loadingJobs && programmerGridJobs.length === 0 ? (
                 <AppLoader message="Loading programmer jobs..." />
               ) : (
                 <>
@@ -612,34 +804,53 @@ const Programmer = () => {
                     onDownloadCSV={handleDownloadCSV}
                     onNewJob={handleNewJob}
                   />
-                  <DataTable
-                    columns={columns}
-                    data={tableData}
-                    sortField={sortField}
-                    sortDirection={sortDirection}
-                    onSort={(field) => handleSort(field as keyof JobEntry)}
+                  <LazyAgGrid
+                    columnDefs={programmerJobColumnDefs as any}
+                    fetchPage={async (offset, limit) => {
+                      const page = await getProgrammerJobsPage(
+                        filters,
+                        customerFilter,
+                        createdByFilter,
+                        criticalFilter ? true : undefined,
+                        descriptionFilter,
+                        { offset, limit }
+                      );
+                      return { items: page.items, hasMore: page.hasMore };
+                    }}
+                    rows={programmerGridJobs}
+                    onRowsChange={setProgrammerGridJobs}
+                    transformRows={() => programmerGridRows}
+                    getRowId={(row: ProgrammerGridRow) =>
+                      row.kind === "detail" ? `${row.groupId}__detail` : row.groupId
+                    }
+                    isFullWidthRow={(row: ProgrammerGridRow) => row.kind === "detail"}
+                    fullWidthCellRenderer={renderProgrammerDetailRow}
+                    getRowHeight={(params) =>
+                      params.data?.kind === "detail"
+                        ? 84 + params.data.row.entries.length * 54
+                        : 52
+                    }
                     emptyMessage='No entries added yet. Use "New" to add an entry.'
-                    expandableRows={expandableRows}
-                    showAccordion={false}
-                    getRowKey={(row) => row.groupId}
-                    getRowClassName={(row) =>
-                      getParentRowClassName(
-                        row.parent,
-                        row.entries,
-                        expandedGroups.has(row.groupId)
-                      )
+                    getRowClass={(params) =>
+                      params.data?.kind === "detail"
+                        ? "programmer-grid-detail"
+                        : getParentRowClassName(
+                            params.data.row.parent,
+                            params.data.row.entries,
+                            expandedGroups.has(params.data.row.groupId)
+                          )
                     }
                     className="jobs-table-wrapper"
-                    showCheckboxes={true}
-                    selectedRows={selectedJobIds}
-                    onRowSelect={handleRowSelect}
+                    rowHeight={38}
+                    fitColumns={true}
+                    refreshKey={`${customerFilter}|${descriptionFilter}|${createdByFilter}|${criticalFilter}|${JSON.stringify(filters)}|${programmerGridRefreshKey}`}
                   />
                 </>
               )}
             </>
           )}
 
-          {!isNewJobRoute && !isEditRoute && activeTab === "logs" && (
+          {!isNewJobRoute && !isEditRoute && !isCloneRoute && activeTab === "logs" && (
             <>
               <div className="programmer-logs-filters">
                 <input
@@ -681,12 +892,27 @@ const Programmer = () => {
                   CSV
                 </button>
               </div>
-              <DataTable
-                columns={programmerLogColumns}
-                data={filteredProgrammerLogs}
-                emptyMessage={logsLoading ? "Loading logs..." : "No programmer logs found."}
-                getRowKey={(row) => row._id}
-                className="jobs-table-wrapper left-align programmer-logs-table"
+              <LazyAgGrid
+                columnDefs={programmerLogColumnDefs as any}
+                fetchPage={async (offset, limit) => {
+                  const page = await getEmployeeLogsPage({
+                    role: "PROGRAMMER",
+                    status: logStatus || undefined,
+                    search: logSearch.trim() || undefined,
+                    offset,
+                    limit,
+                  });
+                  return {
+                    items: page.items.filter((log) =>
+                      logUserId ? String(log.userId) === String(logUserId) : true
+                    ),
+                    hasMore: page.hasMore,
+                  };
+                }}
+                emptyMessage="No programmer logs found."
+                getRowId={(row) => row._id}
+                className="jobs-table-wrapper programmer-logs-table logs-center"
+                refreshKey={`${logSearch}|${logStatus}|${logUserId}`}
               />
             </>
           )}
@@ -722,7 +948,7 @@ const Programmer = () => {
         />
       )}
 
-      {!isNewJobRoute && !isEditRoute && activeTab === "jobs" && (
+      {!isNewJobRoute && !isEditRoute && !isCloneRoute && activeTab === "jobs" && (
         <MassDeleteButton
           selectedCount={selectedJobIds.size}
           onDelete={handleMassDeleteClick}

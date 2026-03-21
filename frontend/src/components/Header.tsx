@@ -32,6 +32,9 @@ const Header = ({ title }: HeaderProps) => {
     '/dashboard': [
       { label: 'Dashboard', path: '/dashboard', icon: DashboardIcon },
     ],
+    '/operator-dashboard': [
+      { label: 'Operator Dashboard', path: '/operator-dashboard', icon: BuildIcon },
+    ],
     '/programmer': [
       { label: 'Dashboard', path: '/dashboard', icon: DashboardIcon },
       { label: 'Programmer', path: '/programmer', icon: CodeIcon },
@@ -42,6 +45,15 @@ const Header = ({ title }: HeaderProps) => {
       {
         label: 'New Job',
         path: '/programmer/newjob',
+        icon: AddCircleOutlineIcon,
+      },
+    ],
+    '/programmer/clone': [
+      { label: 'Dashboard', path: '/dashboard', icon: DashboardIcon },
+      { label: 'Programmer', path: '/programmer', icon: CodeIcon },
+      {
+        label: 'Clone Job',
+        path: '/programmer/clone',
         icon: AddCircleOutlineIcon,
       },
     ],
@@ -71,9 +83,9 @@ const Header = ({ title }: HeaderProps) => {
       { label: 'Dashboard', path: '/dashboard', icon: DashboardIcon },
       { label: 'User Management', path: '/users', icon: PeopleIcon },
     ],
-    '/employee-logs': [
+    '/job-logs': [
       { label: 'Dashboard', path: '/dashboard', icon: DashboardIcon },
-      { label: 'Job Logs', path: '/employee-logs', icon: PeopleIcon },
+      { label: 'Job Logs', path: '/job-logs', icon: PeopleIcon },
     ],
     '/admin-console': [
       { label: 'Dashboard', path: '/dashboard', icon: DashboardIcon },
@@ -90,12 +102,23 @@ const Header = ({ title }: HeaderProps) => {
 
   if (!breadcrumbs) {
     // Check for edit route: /programmer/edit/:groupId
-    if (location.pathname.match(/^\/programmer\/edit\/\d+$/)) {
+    if (location.pathname.match(/^\/programmer\/edit\/[^/]+$/)) {
       breadcrumbs = [
         { label: 'Dashboard', path: '/dashboard', icon: DashboardIcon },
         { label: 'Programmer', path: '/programmer', icon: CodeIcon },
         {
           label: 'Edit Job',
+          path: location.pathname,
+          icon: AddCircleOutlineIcon,
+        },
+      ];
+    }
+    else if (location.pathname.match(/^\/programmer\/clone\/[^/]+$/)) {
+      breadcrumbs = [
+        { label: 'Dashboard', path: '/dashboard', icon: DashboardIcon },
+        { label: 'Programmer', path: '/programmer', icon: CodeIcon },
+        {
+          label: 'Clone Job',
           path: location.pathname,
           icon: AddCircleOutlineIcon,
         },

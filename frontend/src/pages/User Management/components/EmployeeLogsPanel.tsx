@@ -1,11 +1,12 @@
-import { useEffect, useMemo, useState } from 'react';
-import DataTable, { type Column } from '../../../components/DataTable';
-import { getEmployeeLogs } from '../../../services/employeeLogsApi';
+import { useMemo, useState } from 'react';
+import { type Column } from '../../../components/DataTable';
+import LazyAgGrid from '../../../components/LazyAgGrid';
+import { getEmployeeLogs, getEmployeeLogsPage } from '../../../services/employeeLogsApi';
 import DownloadIcon from '@mui/icons-material/Download';
 import type { EmployeeLog } from '../../../types/employeeLog';
 import { getDisplayDateTimeParts } from '../../../utils/date';
 import MarqueeCopyText from '../../../components/MarqueeCopyText';
-import AppLoader from '../../../components/AppLoader';
+import { getUserRoleFromToken } from '../../../utils/auth';
 
 type RoleTab = 'PROGRAMMER' | 'OPERATOR' | 'QC';
 
@@ -29,13 +30,12 @@ const formatDuration = (seconds?: number) => {
 };
 
 export const EmployeeLogsPanel = () => {
+  const isAdmin = getUserRoleFromToken() === 'ADMIN';
   const [activeRole, setActiveRole] = useState<RoleTab>('PROGRAMMER');
   const [statusFilter, setStatusFilter] = useState<
     '' | 'COMPLETED' | 'IN_PROGRESS' | 'REJECTED'
   >('');
   const [searchQuery, setSearchQuery] = useState('');
-  const [logs, setLogs] = useState<EmployeeLog[]>([]);
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
   const getInitials = (value: string) => {
@@ -45,27 +45,6 @@ export const EmployeeLogsPanel = () => {
     if (parts.length >= 2) return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
     return full.slice(0, 2).toUpperCase();
   };
-
-  useEffect(() => {
-    const loadLogs = async () => {
-      setLoading(true);
-      setError('');
-      try {
-        const data = await getEmployeeLogs({
-          role: activeRole,
-          status: statusFilter || undefined,
-          search: searchQuery || undefined,
-        });
-        setLogs(data);
-      } catch (fetchError: any) {
-        setError(fetchError?.message || 'Failed to load employee logs');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadLogs();
-  }, [activeRole, statusFilter, searchQuery]);
 
   const getWorkedSecondsForLog = (log: EmployeeLog): number => {
     const metadata = (log.metadata || {}) as Record<string, any>;
@@ -78,15 +57,8 @@ export const EmployeeLogsPanel = () => {
 
   const groupWorkedSecondsByGroupId = useMemo(() => {
     const map = new Map<string, number>();
-    logs.forEach((log) => {
-      const groupId = String(log.jobGroupId || '').trim();
-      if (!groupId) return;
-      if (String(log.role || '').toUpperCase() !== 'OPERATOR') return;
-      const workedSeconds = getWorkedSecondsForLog(log);
-      map.set(groupId, (map.get(groupId) || 0) + workedSeconds);
-    });
     return map;
-  }, [logs]);
+  }, []);
 
   const columns = useMemo<Column<EmployeeLog>[]>(() => {
     if (activeRole === 'OPERATOR') {
@@ -134,29 +106,31 @@ export const EmployeeLogsPanel = () => {
           sortable: false,
           render: (row) => String((row.metadata as any)?.remark || '-'),
         },
-        {
-          key: 'revenue',
-          label: 'Revenue',
-          sortable: false,
-          render: (row) => {
-            const metadata = (row.metadata || {}) as Record<string, any>;
-            const explicit = metadata.revenue;
-            if (
-              explicit !== undefined &&
-              explicit !== null &&
-              String(explicit).trim() !== ''
-            )
-              return String(explicit);
-            const wedm = Number(metadata.wedmAmount || 0);
-            if (!wedm) return '-';
-            const groupId = String(row.jobGroupId || '').trim();
-            const totalWorkedSeconds = groupId ? groupWorkedSecondsByGroupId.get(groupId) || 0 : 0;
-            if (!totalWorkedSeconds) return '-';
-            const workedSeconds = getWorkedSecondsForLog(row);
-            const share = Math.max(0, workedSeconds) / totalWorkedSeconds;
-            return `Rs. ${(wedm * share).toFixed(2)}`;
-          },
-        },
+        ...(isAdmin
+          ? [{
+              key: 'revenue',
+              label: 'Revenue',
+              sortable: false,
+              render: (row: EmployeeLog) => {
+                const metadata = (row.metadata || {}) as Record<string, any>;
+                const explicit = metadata.revenue;
+                if (
+                  explicit !== undefined &&
+                  explicit !== null &&
+                  String(explicit).trim() !== ''
+                )
+                  return String(explicit);
+                const wedm = Number(metadata.wedmAmount || 0);
+                if (!wedm) return '-';
+                const groupId = String(row.jobGroupId || '').trim();
+                const totalWorkedSeconds = groupId ? groupWorkedSecondsByGroupId.get(groupId) || 0 : 0;
+                if (!totalWorkedSeconds) return '-';
+                const workedSeconds = getWorkedSecondsForLog(row);
+                const share = Math.max(0, workedSeconds) / totalWorkedSeconds;
+                return `Rs. ${(wedm * share).toFixed(2)}`;
+              },
+            } as Column<EmployeeLog>]
+          : []),
         {
           key: 'startedAt',
           label: 'Started At',
@@ -308,44 +282,66 @@ export const EmployeeLogsPanel = () => {
         ),
       },
     ] as Column<EmployeeLog>[];
-  }, [activeRole, groupWorkedSecondsByGroupId]);
+  }, [activeRole, groupWorkedSecondsByGroupId, isAdmin]);
 
   const handleExportCsv = () => {
-    const headers = columns.map((col) => String(col.label));
-    const rows = logs.map((row, index) =>
-      columns.map((col) => {
-        try {
-          const rendered = col.render
-            ? col.render(row, index)
-            : (row as any)[col.key];
-          if (typeof rendered === 'string' || typeof rendered === 'number')
-            return String(rendered);
-          if (!rendered) return '';
-          return String((row as any)[col.key] ?? '');
-        } catch {
-          return String((row as any)[col.key] ?? '');
-        }
-      }),
-    );
+    void (async () => {
+      const logs = await getEmployeeLogs({
+        role: activeRole,
+        status: statusFilter || undefined,
+        search: searchQuery || undefined,
+      });
+      const headers = columns.map((col) => String(col.label));
+      const rows = logs.map((row, index) =>
+        columns.map((col) => {
+          try {
+            const rendered = col.render
+              ? col.render(row, index)
+              : (row as any)[col.key];
+            if (typeof rendered === 'string' || typeof rendered === 'number')
+              return String(rendered);
+            if (!rendered) return '';
+            return String((row as any)[col.key] ?? '');
+          } catch {
+            return String((row as any)[col.key] ?? '');
+          }
+        }),
+      );
 
-    const csvContent = [
-      headers.join(','),
-      ...rows.map((r) =>
-        r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(','),
-      ),
-    ].join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    link.setAttribute('href', url);
-    link.setAttribute(
-      'download',
-      `job_logs_${activeRole.toLowerCase()}_${new Date().toISOString().split('T')[0]}.csv`,
-    );
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+      const csvContent = [
+        headers.join(','),
+        ...rows.map((r) =>
+          r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(','),
+        ),
+      ].join('\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute(
+        'download',
+        `job_logs_${activeRole.toLowerCase()}_${new Date().toISOString().split('T')[0]}.csv`,
+      );
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    })().catch((fetchError: any) => {
+      setError(fetchError?.message || 'Failed to export employee logs');
+    });
   };
+
+  const columnDefs = useMemo(
+    () =>
+      columns.map((column) => ({
+        headerName: typeof column.label === 'string' ? column.label : String(column.key),
+        field: column.key,
+        minWidth: column.key === 'jobDescription' || column.key === 'workSummary' ? 190 : 118,
+        cellClass: column.className,
+        headerClass: column.headerClassName,
+        cellRenderer: column.render ? ((params: any) => column.render!(params.data, params.node?.rowIndex || 0)) : undefined,
+      })),
+    [columns],
+  );
 
   return (
     <div className="employee-logs-container">
@@ -420,17 +416,26 @@ export const EmployeeLogsPanel = () => {
             next step.
           </p>
         </div>
-      ) : loading ? (
-        <AppLoader message="Loading employee logs..." />
       ) : error ? (
         <div className="error-message">{error}</div>
       ) : (
-        <DataTable
-          columns={columns}
-          data={logs}
+        <LazyAgGrid
+          columnDefs={columnDefs as any}
+          fetchPage={async (offset, limit) => {
+            setError('');
+            const page = await getEmployeeLogsPage({
+              role: activeRole,
+              status: statusFilter || undefined,
+              search: searchQuery || undefined,
+              offset,
+              limit,
+            });
+            return { items: page.items, hasMore: page.hasMore };
+          }}
           emptyMessage="No logs found for the current filters."
-          getRowKey={(row) => row._id}
-          className="left-align employee-logs-table"
+          getRowId={(row) => row._id}
+          className="employee-logs-table logs-center"
+          refreshKey={`${activeRole}|${statusFilter}|${searchQuery}`}
         />
       )}
     </div>

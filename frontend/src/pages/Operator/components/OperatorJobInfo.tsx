@@ -1,4 +1,6 @@
 import React from "react";
+import CreatedByBadge from "../../../components/CreatedByBadge";
+import { formatJobRefDisplay } from "../../../utils/jobFormatting";
 import type { JobEntry } from "../../../types/job";
 import { formatDate } from "../utils/dateFormat";
 import "../OperatorViewPage.css";
@@ -15,11 +17,13 @@ export const OperatorJobInfo: React.FC<OperatorJobInfoProps> = ({ parentJob, gro
       <div className="operator-job-info-grid">
         <div className="operator-info-card">
           <label>Customer</label>
-          <span>{parentJob.customer || "—"}</span>
+          <span>{parentJob.customer || "-"}</span>
         </div>
         <div className="operator-info-card">
           <label>Created By</label>
-          <span>{parentJob.createdBy || "—"}</span>
+          <span className="operator-info-created-by">
+            <CreatedByBadge value={parentJob.createdBy} />
+          </span>
         </div>
         <div className="operator-info-card">
           <label>Created At</label>
@@ -28,7 +32,7 @@ export const OperatorJobInfo: React.FC<OperatorJobInfoProps> = ({ parentJob, gro
         {(parentJob as any)?.updatedBy && (
           <div className="operator-info-card">
             <label>Updated By</label>
-            <span>{(parentJob as any).updatedBy || "—"}</span>
+            <span>{(parentJob as any).updatedBy || "-"}</span>
           </div>
         )}
         {(parentJob as any)?.updatedAt && (
@@ -44,13 +48,10 @@ export const OperatorJobInfo: React.FC<OperatorJobInfoProps> = ({ parentJob, gro
         <div className="operator-info-card">
           <label>Priority</label>
           <span className={`priority-badge priority-${(parentJob.priority || "").toLowerCase()}`}>
-            {parentJob.priority || "—"}
+            {parentJob.priority || "-"}
           </span>
         </div>
-
       </div>
     </div>
   );
 };
-
-import { formatJobRefDisplay } from "../../../utils/jobFormatting";
