@@ -78,6 +78,29 @@ const getOperatorHeaderName = (column: Column<TableRow>) => {
   }
 };
 
+const OPERATOR_GRID_COLUMN_WIDTHS: Record<string, number> = {
+  customer: 92,
+  programRef: 84,
+  programRefFileName: 108,
+  description: 118,
+  cut: 62,
+  thickness: 62,
+  passLevel: 48,
+  setting: 56,
+  qty: 44,
+  sedm: 50,
+  assignedTo: 128,
+  machineNumber: 88,
+  estimatedTime: 76,
+  totalAmount: 84,
+  productionStage: 88,
+  createdBy: 68,
+  action: 70,
+};
+
+const getOperatorGridColumnWidth = (columnKey: string) =>
+  OPERATOR_GRID_COLUMN_WIDTHS[columnKey] ?? 70;
+
 const Operator = () => {
   const navigate = useNavigate();
   const userRole = (getUserRoleFromToken() || "").toUpperCase();
@@ -597,79 +620,29 @@ const Operator = () => {
           );
         },
       },
-      ...columns.map((column) => ({
-        headerName: getOperatorHeaderName(column),
-        field: column.key,
-        width:
-          column.key === "customer" ? 92 :
-          column.key === "programRef" ? 84 :
-          column.key === "programRefFileName" ? 108 :
-          column.key === "description" ? 118 :
-          column.key === "cut" ? 62 :
-          column.key === "thickness" ? 62 :
-          column.key === "passLevel" ? 48 :
-          column.key === "setting" ? 56 :
-          column.key === "qty" ? 44 :
-          column.key === "sedm" ? 50 :
-          column.key === "assignedTo" ? 128 :
-          column.key === "machineNumber" ? 88 :
-          column.key === "estimatedTime" ? 76 :
-          column.key === "totalAmount" ? 84 :
-          column.key === "productionStage" ? 88 :
-          column.key === "createdBy" ? 68 :
-          column.key === "action" ? 70 :
-          70,
-        minWidth:
-          column.key === "customer" ? 92 :
-          column.key === "programRef" ? 84 :
-          column.key === "programRefFileName" ? 108 :
-          column.key === "description" ? 118 :
-          column.key === "cut" ? 62 :
-          column.key === "thickness" ? 62 :
-          column.key === "passLevel" ? 48 :
-          column.key === "setting" ? 56 :
-          column.key === "qty" ? 44 :
-          column.key === "sedm" ? 50 :
-          column.key === "assignedTo" ? 128 :
-          column.key === "machineNumber" ? 88 :
-          column.key === "estimatedTime" ? 76 :
-          column.key === "totalAmount" ? 84 :
-          column.key === "productionStage" ? 88 :
-          column.key === "createdBy" ? 68 :
-          column.key === "action" ? 70 :
-          70,
-        maxWidth:
-          column.key === "customer" ? 92 :
-          column.key === "programRef" ? 84 :
-          column.key === "programRefFileName" ? 108 :
-          column.key === "description" ? 118 :
-          column.key === "cut" ? 62 :
-          column.key === "thickness" ? 62 :
-          column.key === "passLevel" ? 48 :
-          column.key === "setting" ? 56 :
-          column.key === "qty" ? 44 :
-          column.key === "sedm" ? 50 :
-          column.key === "assignedTo" ? 128 :
-          column.key === "machineNumber" ? 88 :
-          column.key === "estimatedTime" ? 76 :
-          column.key === "totalAmount" ? 84 :
-          column.key === "productionStage" ? 88 :
-          column.key === "createdBy" ? 68 :
-          column.key === "action" ? 70 :
-          70,
-        suppressSizeToFit: true,
-        resizable: false,
-        suppressMovable: true,
-        cellClass: column.className,
-        headerClass: column.headerClassName,
-        cellRenderer:
-          column.render
-            ? (params: any) =>
-                params.data?.kind === "parent"
-                  ? column.render?.(params.data.row, params.node?.rowIndex || 0)
-                  : null
-            : (params: any) => (params.data?.kind === "parent" ? String(params.data?.row?.[column.key] ?? "-") : null),
-      })),
+      ...columns.map((column) => {
+        const baseWidth = getOperatorGridColumnWidth(column.key);
+        return {
+          headerName: getOperatorHeaderName(column),
+          field: column.key,
+          width: baseWidth,
+          minWidth: baseWidth,
+          resizable: false,
+          suppressMovable: true,
+          cellClass: column.className,
+          headerClass: column.headerClassName,
+          cellRenderer:
+            column.render
+              ? (params: any) =>
+                  params.data?.kind === "parent"
+                    ? column.render?.(params.data.row, params.node?.rowIndex || 0)
+                    : null
+              : (params: any) =>
+                  params.data?.kind === "parent"
+                    ? String(params.data?.row?.[column.key] ?? "-")
+                    : null,
+        };
+      }),
     ],
     [columns, selectedJobIds, tableData]
   );

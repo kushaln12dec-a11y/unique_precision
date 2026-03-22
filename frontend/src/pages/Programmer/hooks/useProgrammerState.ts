@@ -3,7 +3,7 @@ import { useLocation, useParams } from "react-router-dom";
 import { getJobsByGroupId, getProgrammerJobs } from "../../../services/jobApi";
 import type { JobEntry } from "../../../types/job";
 import type { FilterValues } from "../../../components/FilterModal";
-import { calculateTotals, DEFAULT_CUT, type CutForm } from "../programmerUtils";
+import { calculateTotals, DEFAULT_CUT, normalizeThicknessInput, type CutForm } from "../programmerUtils";
 
 const STORAGE_KEY = "programmerJobs";
 /**
@@ -104,7 +104,7 @@ export const useProgrammerState = (
                 customer: String(job.customer ?? ""),
                 rate: String(job.rate ?? ""),
                 cut: String(job.cut ?? ""),
-                thickness: String(job.thickness ?? ""),
+                thickness: normalizeThicknessInput(String(job.thickness ?? "")),
                 passLevel: String(job.passLevel ?? ""),
                 setting: String(job.setting ?? ""),
                 qty: String(job.qty ?? ""),
@@ -200,7 +200,7 @@ export const useProgrammerState = (
                 customer: String(job.customer ?? ""),
                 rate: String(job.rate ?? ""),
                 cut: String(job.cut ?? ""),
-                thickness: String(job.thickness ?? ""),
+                thickness: normalizeThicknessInput(String(job.thickness ?? "")),
                 passLevel: String(job.passLevel ?? ""),
                 setting: String(job.setting ?? ""),
                 qty: String(job.qty ?? ""),

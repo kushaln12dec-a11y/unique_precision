@@ -74,6 +74,28 @@ const getProgrammerHeaderName = (column: Column<TableRow>) => {
   }
 };
 
+const PROGRAMMER_GRID_COLUMN_WIDTHS: Record<string, number> = {
+  customer: 92,
+  programRef: 84,
+  programRefFileName: 112,
+  description: 116,
+  cut: 62,
+  thickness: 62,
+  passLevel: 50,
+  setting: 68,
+  qty: 42,
+  sedm: 48,
+  totalHrs: 84,
+  estimatedTime: 80,
+  totalAmount: 104,
+  createdBy: 72,
+  createdAt: 100,
+  action: 80,
+};
+
+const getProgrammerGridColumnWidth = (columnKey: string) =>
+  PROGRAMMER_GRID_COLUMN_WIDTHS[columnKey] ?? 64;
+
 const Programmer = () => {
   const navigate = useNavigate();
   const params = useParams<{ groupId?: string }>();
@@ -103,6 +125,7 @@ const Programmer = () => {
   const [selectedChildRows, setSelectedChildRows] = useState<Set<string | number>>(new Set());
   const [programmerGridJobs, setProgrammerGridJobs] = useState<JobEntry[]>([]);
   const [programmerGridRefreshKey, setProgrammerGridRefreshKey] = useState(0);
+  const [savingJob, setSavingJob] = useState(false);
   const [masterConfig, setMasterConfig] = useState<MasterConfig | null>(null);
   const [activeTab, setActiveTab] = useState<"jobs" | "logs">("jobs");
   const [logSearch, setLogSearch] = useState("");
@@ -168,6 +191,7 @@ const Programmer = () => {
     setEditingGroupId,
     setCuts,
     setToast,
+    setSavingJob,
     totals,
   });
 
@@ -340,76 +364,29 @@ const Programmer = () => {
           );
         },
       },
-      ...columns.map((column) => ({
-        headerName: getProgrammerHeaderName(column),
-        field: column.key,
-        width:
-          column.key === "customer" ? 104 :
-          column.key === "programRef" ? 92 :
-          column.key === "programRefFileName" ? 132 :
-          column.key === "description" ? 134 :
-          column.key === "cut" ? 68 :
-          column.key === "thickness" ? 68 :
-          column.key === "passLevel" ? 56 :
-          column.key === "setting" ? 78 :
-          column.key === "qty" ? 48 :
-          column.key === "sedm" ? 54 :
-          column.key === "totalHrs" ? 92 :
-          column.key === "estimatedTime" ? 88 :
-          column.key === "totalAmount" ? 116 :
-          column.key === "createdBy" ? 84 :
-          column.key === "createdAt" ? 114 :
-          column.key === "action" ? 80 :
-          64,
-        minWidth:
-          column.key === "customer" ? 104 :
-          column.key === "programRef" ? 92 :
-          column.key === "programRefFileName" ? 132 :
-          column.key === "description" ? 134 :
-          column.key === "cut" ? 68 :
-          column.key === "thickness" ? 68 :
-          column.key === "passLevel" ? 56 :
-          column.key === "setting" ? 78 :
-          column.key === "qty" ? 48 :
-          column.key === "sedm" ? 54 :
-          column.key === "totalHrs" ? 92 :
-          column.key === "estimatedTime" ? 88 :
-          column.key === "totalAmount" ? 116 :
-          column.key === "createdBy" ? 84 :
-          column.key === "createdAt" ? 114 :
-          column.key === "action" ? 80 :
-          64,
-        maxWidth:
-          column.key === "customer" ? 104 :
-          column.key === "programRef" ? 92 :
-          column.key === "programRefFileName" ? 132 :
-          column.key === "description" ? 134 :
-          column.key === "cut" ? 68 :
-          column.key === "thickness" ? 68 :
-          column.key === "passLevel" ? 56 :
-          column.key === "setting" ? 78 :
-          column.key === "qty" ? 48 :
-          column.key === "sedm" ? 54 :
-          column.key === "totalHrs" ? 92 :
-          column.key === "estimatedTime" ? 88 :
-          column.key === "totalAmount" ? 116 :
-          column.key === "createdBy" ? 84 :
-          column.key === "createdAt" ? 114 :
-          column.key === "action" ? 80 :
-          64,
-        suppressSizeToFit: true,
-        resizable: false,
-        suppressMovable: true,
-        cellClass: column.className,
-        headerClass: column.headerClassName,
-        cellRenderer:
-          column.render
-            ? (params: any) =>
-                params.data?.kind === "parent"
-                  ? column.render?.(params.data.row, params.node?.rowIndex || 0)
-                  : null
-            : (params: any) => (params.data?.kind === "parent" ? String(params.data?.row?.[column.key] ?? "-") : null),
-      })),
+      ...columns.map((column) => {
+        const baseWidth = getProgrammerGridColumnWidth(column.key);
+        return {
+          headerName: getProgrammerHeaderName(column),
+          field: column.key,
+          width: baseWidth,
+          minWidth: baseWidth,
+          resizable: false,
+          suppressMovable: true,
+          cellClass: column.className,
+          headerClass: column.headerClassName,
+          cellRenderer:
+            column.render
+              ? (params: any) =>
+                  params.data?.kind === "parent"
+                    ? column.render?.(params.data.row, params.node?.rowIndex || 0)
+                    : null
+              : (params: any) =>
+                  params.data?.kind === "parent"
+                    ? String(params.data?.row?.[column.key] ?? "-")
+                    : null,
+        };
+      }),
     ],
     [columns, selectedJobIds, tableData]
   );
@@ -481,6 +458,30 @@ const Programmer = () => {
       setActiveTab("jobs");
     }
   }, [isNewJobRoute, isEditRoute, isCloneRoute]);
+
+  useEffect(() => {
+    const isFormRoute = isNewJobRoute || isEditRoute || isCloneRoute;
+    if (!savingJob || isFormRoute) return;
+
+    if (programmerGridJobs.length > 0) {
+      setSavingJob(false);
+      return;
+    }
+
+    if (!loadingJobs) {
+      const timeoutId = window.setTimeout(() => {
+        setSavingJob(false);
+      }, 900);
+      return () => window.clearTimeout(timeoutId);
+    }
+  }, [
+    savingJob,
+    isNewJobRoute,
+    isEditRoute,
+    isCloneRoute,
+    programmerGridJobs.length,
+    loadingJobs,
+  ]);
 
   useEffect(() => {
     const isFormRoute = isNewJobRoute || isEditRoute || isCloneRoute;
@@ -770,6 +771,7 @@ const Programmer = () => {
                 onCancel={handleCancel}
                 totals={totals}
                 isAdmin={isAdmin}
+                isSaving={savingJob}
                 refNumber={refNumber}
                 masterConfig={masterConfig}
                 formMode={editingGroupId ? "edit" : "draft"}
@@ -779,7 +781,9 @@ const Programmer = () => {
 
           {!isNewJobRoute && !isEditRoute && !isCloneRoute && activeTab === "jobs" && (
             <>
-              {loadingJobs && programmerGridJobs.length === 0 ? (
+              {savingJob ? (
+                <AppLoader message="Saving job and loading programmer jobs..." />
+              ) : loadingJobs && programmerGridJobs.length === 0 ? (
                 <AppLoader message="Loading programmer jobs..." />
               ) : (
                 <>

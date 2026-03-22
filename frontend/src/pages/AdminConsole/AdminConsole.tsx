@@ -67,16 +67,6 @@ const serialize = (value: unknown) => JSON.stringify(value);
 
 type AdminSection = "customers" | "materials" | "pass" | "sedm" | "machines" | "hours" | "thickness" | null;
 
-const SECTION_LABELS: Record<Exclude<AdminSection, null>, string> = {
-  customers: "Customers & Rates",
-  materials: "Material Options",
-  pass: "Pass Options",
-  sedm: "SEDM Electrode",
-  machines: "Machine Options",
-  hours: "Hours Config",
-  thickness: "Thickness Pricing",
-};
-
 const AdminConsole = () => {
   const navigate = useNavigate();
   const [config, setConfig] = useState<MasterConfig | null>(null);
@@ -214,8 +204,6 @@ const AdminConsole = () => {
     ]
   );
 
-  const hasAnyUnsavedChanges = Object.values(sectionDirty).some(Boolean);
-  const dirtyCount = Object.values(sectionDirty).filter(Boolean).length;
   const disableSaveAll = saving || loading || activeSection !== null;
 
   const persistSnapshot = (nextConfig: MasterConfig) => {
@@ -379,25 +367,6 @@ const AdminConsole = () => {
     },
   ];
 
-  const statusHighlights = [
-    {
-      label: "Customer Profiles",
-      value: String(normalizedCustomers.length),
-    },
-    {
-      label: "Machine Slots",
-      value: String(normalizedMachineOptions.length),
-    },
-    {
-      label: "Base Setting",
-      value: `${normalizedHoursConfig.settingHoursPerSetting} hrs`,
-    },
-    {
-      label: "Thickness Split",
-      value: `${normalizedThicknessConfig.thicknessRateUpto100} / ${normalizedThicknessConfig.thicknessRateAbove100}`,
-    },
-  ];
-
   return (
     <div className="roleboard-container">
       <Sidebar currentPath="/admin-console" onNavigate={(path) => navigate(path)} />
@@ -408,43 +377,6 @@ const AdminConsole = () => {
             <AppLoader message="Loading admin console..." />
           ) : (
             <>
-              <section className="admin-console-intro">
-                <div>
-                  <span className="admin-console-kicker">Master Configuration</span>
-                  <h2>Control the pricing, machine rules, and production defaults used across the app.</h2>
-                  <p>
-                    Keep default hours, thickness pricing, and customer-level overrides aligned from one place.
-                  </p>
-                </div>
-                <div className="admin-console-status">
-                  <div className="admin-console-status-copy">
-                    <strong>{hasAnyUnsavedChanges ? "Unsaved updates" : "All changes saved"}</strong>
-                    <span>
-                      {activeSection
-                        ? "Save the open card first before using Save All Changes."
-                        : "Live snapshot of the core defaults used across pricing, machines, and hours."}
-                    </span>
-                  </div>
-                  <div className="admin-status-highlight-grid">
-                    {statusHighlights.map((item) => (
-                      <div key={item.label} className="admin-status-highlight">
-                        <span>{item.label}</span>
-                        <strong>{item.value}</strong>
-                      </div>
-                    ))}
-                  </div>
-                  <div className={`admin-status-note ${hasAnyUnsavedChanges ? "dirty" : ""}`}>
-                    <span>
-                      {activeSection
-                        ? `Editing ${SECTION_LABELS[activeSection]}. Save this card to sync the console state.`
-                        : hasAnyUnsavedChanges
-                          ? `${dirtyCount} section${dirtyCount === 1 ? "" : "s"} waiting to be saved.`
-                          : "Pricing, material presets, pass options, machines, and hours are synced."}
-                    </span>
-                  </div>
-                </div>
-              </section>
-
               <div className="admin-mini-card-grid">
                 {summaryCards.map((card) => (
                   <button key={card.title} type="button" className="admin-mini-card" onClick={card.onClick}>

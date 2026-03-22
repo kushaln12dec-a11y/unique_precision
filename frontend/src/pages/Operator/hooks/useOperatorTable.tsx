@@ -16,6 +16,7 @@ import {
 import MarqueeCopyText from "../../../components/MarqueeCopyText";
 import SelectDropdown from "../../Programmer/components/SelectDropdown";
 import { MultiSelectOperators } from "../components/MultiSelectOperators";
+import { getThicknessDisplayValue } from "../../Programmer/programmerUtils";
 
 type TableRow = {
   groupId: string;
@@ -232,7 +233,7 @@ export const useOperatorTable = ({
         label: "TH (MM)",
         sortable: false,
         sortKey: "thickness",
-        render: (row) => Math.round(Number(row.parent.thickness || 0)),
+        render: (row) => getThicknessDisplayValue(row.parent.thickness),
       },
       {
         key: "passLevel",

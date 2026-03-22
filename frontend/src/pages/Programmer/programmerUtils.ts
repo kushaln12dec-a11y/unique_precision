@@ -154,7 +154,8 @@ export const DEFAULT_CUT: CutForm = {
 
 export const getThicknessDisplayValue = (value: unknown): string => {
   const raw = String(value ?? "").trim();
-  return raw || "-";
+  if (!raw) return "-";
+  return normalizeThicknessInput(raw, raw) || raw;
 };
 
 export const normalizeThicknessInput = (rawValue: string, previousValue = ""): string => {

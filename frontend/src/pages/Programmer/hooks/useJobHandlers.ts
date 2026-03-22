@@ -19,6 +19,7 @@ type UseJobHandlersProps = {
   setToast: React.Dispatch<
     React.SetStateAction<{ message: string; variant: "success" | "error" | "info"; visible: boolean }>
   >;
+  setSavingJob: React.Dispatch<React.SetStateAction<boolean>>;
   totals: CalculationResult[];
 };
 
@@ -32,11 +33,13 @@ export const useJobHandlers = ({
   setEditingGroupId,
   setCuts,
   setToast,
+  setSavingJob,
   totals,
 }: UseJobHandlersProps) => {
   const navigate = useNavigate();
 
   const handleSaveJob = useCallback(async () => {
+    setSavingJob(true);
     try {
       const displayName = getUserDisplayNameFromToken();
       const createdBy = displayName || "Unknown User";
@@ -108,6 +111,7 @@ export const useJobHandlers = ({
           : "Failed to save job. Please try again.";
       setToast({ message, variant: "error", visible: true });
       setTimeout(() => setToast({ message: "", variant: "error", visible: false }), 3000);
+      setSavingJob(false);
     }
   }, [
     cuts,
@@ -120,6 +124,7 @@ export const useJobHandlers = ({
     setEditingGroupId,
     setCuts,
     setToast,
+    setSavingJob,
     navigate,
   ]);
 

@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import type { CalculationResult, CutForm } from "./programmerUtils";
+import AppLoader from "../../components/AppLoader";
 import SEDMModalWrapper from "./components/SEDMModalWrapper";
 import { CutSection } from "./components/CutSection";
 import { JobFormHeader } from "./components/JobFormHeader";
@@ -20,6 +21,7 @@ type ProgrammerJobFormProps = {
   onCancel: () => void;
   totals: CutTotals[];
   isAdmin: boolean;
+  isSaving: boolean;
   refNumber?: string;
   masterConfig: MasterConfig | null;
   formMode?: "draft" | "edit";
@@ -32,6 +34,7 @@ const ProgrammerJobForm = ({
   onCancel,
   totals,
   isAdmin,
+  isSaving,
   refNumber = "",
   masterConfig,
   formMode = "draft",
@@ -157,6 +160,7 @@ const ProgrammerJobForm = ({
         grandTotals={grandTotals}
         allCutsSaved={allCutsSaved}
         isAdmin={isAdmin}
+        isSaving={isSaving}
         onClearAll={handleClearAll}
         onSave={onSave}
         onCancel={onCancel}
@@ -185,6 +189,7 @@ const ProgrammerJobForm = ({
         thOptions={masterConfig?.sedmThOptions || []}
         isAdmin={isAdmin}
       />
+      {isSaving && <AppLoader variant="overlay" message="Saving job..." />}
     </div>
   );
 };

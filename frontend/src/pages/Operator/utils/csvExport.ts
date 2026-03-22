@@ -1,5 +1,6 @@
-﻿import type { JobEntry } from "../../../types/job";
+import type { JobEntry } from "../../../types/job";
 import { formatDisplayDateTime } from "../../../utils/date";
+import { getThicknessDisplayValue } from "../../Programmer/programmerUtils";
 
 type TableRow = {
   groupId: string;
@@ -32,7 +33,7 @@ export const exportOperatorJobsToCSV = (tableData: TableRow[], isAdmin: boolean)
     `Rs. ${Number(row.parent.rate || 0).toFixed(2)}`,
     Number(row.parent.cut || 0).toFixed(2),
     row.parent.description || "",
-    Number(row.parent.thickness || 0).toFixed(2),
+    getThicknessDisplayValue(row.parent.thickness),
     row.parent.passLevel || "",
     row.parent.setting || "",
     Number(row.parent.qty || 0).toString(),
