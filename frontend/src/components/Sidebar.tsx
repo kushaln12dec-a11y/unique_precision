@@ -13,8 +13,9 @@ import './Sidebar.css';
 
 const Sidebar = ({ currentPath = '/dashboard', onNavigate }: SidebarProps) => {
   const role = getUserRoleFromToken()?.toUpperCase();
+  const dashboardPath = role === 'OPERATOR' ? '/operator-dashboard' : '/dashboard';
   const menuItems = [
-    { icon: DashboardIcon, label: 'Dashboard', path: '/dashboard' },
+    { icon: DashboardIcon, label: 'Dashboard', path: dashboardPath },
     { icon: CodeIcon, label: 'Programmer', path: '/programmer' },
     { icon: BuildIcon, label: 'Operator', path: '/operator' },
     { icon: VerifiedUserIcon, label: 'QC', path: '/qc' },
@@ -25,11 +26,17 @@ const Sidebar = ({ currentPath = '/dashboard', onNavigate }: SidebarProps) => {
     },
     { icon: InventoryIcon, label: 'Inventory', path: '/inventory' },
     { icon: PeopleIcon, label: 'User Management', path: '/users' },
-    { icon: GroupsIcon, label: 'Job Logs', path: '/employee-logs' },
+    { icon: GroupsIcon, label: 'Job Logs', path: '/job-logs' },
   ];
   const filteredMenuItems =
     role && role !== 'ADMIN'
-      ? menuItems.filter((item) => item.label.toUpperCase() === role)
+      ? menuItems.filter(
+          (item) =>
+            item.path === dashboardPath ||
+            item.path === '/job-logs' ||
+            item.label === 'Dashboard' ||
+            item.label.toUpperCase() === role,
+        )
       : menuItems;
 
   const handleLogout = () => {

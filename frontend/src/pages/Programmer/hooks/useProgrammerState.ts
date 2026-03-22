@@ -3,7 +3,7 @@ import { useLocation, useParams } from "react-router-dom";
 import { getJobsByGroupId, getProgrammerJobs } from "../../../services/jobApi";
 import type { JobEntry } from "../../../types/job";
 import type { FilterValues } from "../../../components/FilterModal";
-import { calculateTotals, DEFAULT_CUT, type CutForm } from "../programmerUtils";
+import { calculateTotals, DEFAULT_CUT, normalizeThicknessInput, type CutForm } from "../programmerUtils";
 
 const STORAGE_KEY = "programmerJobs";
 /**
@@ -26,9 +26,11 @@ export const useProgrammerState = (
   const [editingGroupId, setEditingGroupId] = useState<string | null>(null);
   const [refNumber, setRefNumber] = useState<string>("");
   const loadedEditGroupRef = useRef<string | null>(null);
+  const loadedCloneGroupRef = useRef<string | null>(null);
 
   const isNewJobRoute = location.pathname === "/programmer/newjob";
   const isEditRoute = location.pathname.startsWith("/programmer/edit/");
+  const isCloneRoute = location.pathname.startsWith("/programmer/clone/");
 
   useEffect(() => {
     const fetchJobs = async () => {
@@ -102,7 +104,7 @@ export const useProgrammerState = (
                 customer: String(job.customer ?? ""),
                 rate: String(job.rate ?? ""),
                 cut: String(job.cut ?? ""),
-                thickness: String(job.thickness ?? ""),
+                thickness: normalizeThicknessInput(String(job.thickness ?? "")),
                 passLevel: String(job.passLevel ?? ""),
                 setting: String(job.setting ?? ""),
                 qty: String(job.qty ?? ""),
@@ -158,8 +160,98 @@ export const useProgrammerState = (
       return () => {
         mounted = false;
       };
-    } else if (isNewJobRoute) {
+    } else if (isNewJobRoute || isCloneRoute) {
       loadedEditGroupRef.current = null;
+      const cloneGroupId = isCloneRoute ? String(params.groupId || "").trim() : "";
+
+      if (cloneGroupId) {
+        if (loadedCloneGroupRef.current === cloneGroupId) {
+          setEditingGroupId(null);
+          setRefNumber("");
+          setShowForm(true);
+          return;
+        }
+
+        loadedCloneGroupRef.current = cloneGroupId;
+        let mounted = true;
+
+        const loadCloneDraft = async () => {
+          try {
+            setLoadingEditGroup(true);
+            const groupCuts = (await getJobsByGroupId(cloneGroupId)).sort((a, b) => {
+              const idA = typeof a.id === "number" ? a.id : Number(a.id) || 0;
+              const idB = typeof b.id === "number" ? b.id : Number(b.id) || 0;
+              return idA - idB;
+            });
+            if (!mounted) return;
+
+            if (groupCuts.length === 0) {
+              setCuts([DEFAULT_CUT]);
+              setEditingGroupId(null);
+              setRefNumber("");
+              setShowForm(true);
+              return;
+            }
+
+            setEditingGroupId(null);
+            setRefNumber("");
+            setCuts(
+              groupCuts.map((job) => ({
+                customer: String(job.customer ?? ""),
+                rate: String(job.rate ?? ""),
+                cut: String(job.cut ?? ""),
+                thickness: normalizeThicknessInput(String(job.thickness ?? "")),
+                passLevel: String(job.passLevel ?? ""),
+                setting: String(job.setting ?? ""),
+                qty: String(job.qty ?? ""),
+                sedm: job.sedm,
+                sedmSelectionType: job.sedmSelectionType ?? "range",
+                sedmRangeKey: job.sedmRangeKey ?? "0.3-0.4",
+                sedmStandardValue: job.sedmStandardValue ?? "",
+                sedmLengthType: job.sedmLengthType ?? "min",
+                sedmOver20Length: job.sedmOver20Length ?? "",
+                sedmLengthValue:
+                  job.sedmLengthValue ??
+                  (job.sedmSelectionType === "range"
+                    ? job.sedmRangeKey ?? ""
+                    : job.sedmStandardValue ?? ""),
+                sedmHoles: job.sedmHoles ?? "1",
+                sedmEntriesJson: (job as any).sedmEntriesJson ?? "",
+                operationRowsJson: (job as any).operationRowsJson ?? "",
+                material: (job as any).material ?? "",
+                priority: job.priority,
+                description: job.description,
+                programRefFile: String((job as any).programRefFile ?? (job as any).programRefFileName ?? ""),
+                cutImage: Array.isArray(job.cutImage)
+                  ? job.cutImage
+                  : (job.cutImage ? [job.cutImage as unknown as string] : []),
+                critical: Boolean(job.critical),
+                pipFinish: Boolean(job.pipFinish),
+                refNumber: "",
+                manualTotalHrs: String(job.totalHrs ?? "").trim(),
+              }))
+            );
+            setShowForm(true);
+          } catch (error) {
+            console.error("Failed to fetch clone group", error);
+            if (mounted) {
+              setCuts([DEFAULT_CUT]);
+              setEditingGroupId(null);
+              setRefNumber("");
+              setShowForm(true);
+            }
+          } finally {
+            if (mounted) setLoadingEditGroup(false);
+          }
+        };
+
+        void loadCloneDraft();
+        return () => {
+          mounted = false;
+        };
+      }
+
+      loadedCloneGroupRef.current = null;
       if (editingGroupId !== null) {
         setEditingGroupId(null);
       }
@@ -170,6 +262,7 @@ export const useProgrammerState = (
       setShowForm(true);
     } else {
       loadedEditGroupRef.current = null;
+      loadedCloneGroupRef.current = null;
       setShowForm(false);
       if (editingGroupId !== null) {
         setEditingGroupId(null);
@@ -178,15 +271,17 @@ export const useProgrammerState = (
         setCuts([DEFAULT_CUT]);
       }
     }
-  }, [location.pathname, isEditRoute, params.groupId, isNewJobRoute, jobs, refNumber]);
+  }, [location.pathname, isEditRoute, isCloneRoute, params.groupId, isNewJobRoute, jobs, refNumber]);
 
   const handleNewJob = () => {
+    loadedCloneGroupRef.current = null;
     setEditingGroupId(null);
     setCuts([DEFAULT_CUT]);
     setRefNumber("");
   };
 
   const handleCancel = () => {
+    loadedCloneGroupRef.current = null;
     setCuts([DEFAULT_CUT]);
     setEditingGroupId(null);
     setRefNumber("");
@@ -207,6 +302,7 @@ export const useProgrammerState = (
     setRefNumber,
     isNewJobRoute,
     isEditRoute,
+    isCloneRoute,
     handleNewJob,
     handleCancel,
   };

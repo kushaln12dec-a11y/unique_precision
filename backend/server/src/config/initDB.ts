@@ -136,6 +136,8 @@ const schemaStatements: string[] = [
     "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     "key" TEXT NOT NULL UNIQUE DEFAULT 'global',
     "settingHoursPerSetting" NUMERIC(10, 2),
+    "thicknessRateUpto100" NUMERIC(12, 2),
+    "thicknessRateAbove100" NUMERIC(12, 2),
     "complexExtraHours" NUMERIC(10, 2),
     "pipExtraHours" NUMERIC(10, 2),
     "createdAt" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -147,6 +149,9 @@ const schemaStatements: string[] = [
     "masterConfigId" UUID NOT NULL,
     "customer" TEXT NOT NULL,
     "rate" NUMERIC(12, 2),
+    "settingHours" NUMERIC(10, 2),
+    "thicknessRateUpto100" NUMERIC(12, 2),
+    "thicknessRateAbove100" NUMERIC(12, 2),
     CONSTRAINT "MasterConfigCustomer_masterConfigId_fkey"
       FOREIGN KEY ("masterConfigId") REFERENCES "MasterConfig"("id") ON DELETE CASCADE,
     CONSTRAINT "MasterConfigCustomer_unique" UNIQUE ("masterConfigId", "customer")
@@ -238,6 +243,11 @@ const schemaStatements: string[] = [
   `CREATE INDEX IF NOT EXISTS "EmployeeLog_workItemTitle_idx" ON "EmployeeLog" ("workItemTitle");`,
   `CREATE INDEX IF NOT EXISTS "EmployeeLog_startedAt_idx" ON "EmployeeLog" ("startedAt");`,
   `CREATE INDEX IF NOT EXISTS "EmployeeLog_durationSeconds_idx" ON "EmployeeLog" ("durationSeconds");`,
+  `ALTER TABLE "MasterConfig" ADD COLUMN IF NOT EXISTS "thicknessRateUpto100" NUMERIC(12, 2);`,
+  `ALTER TABLE "MasterConfig" ADD COLUMN IF NOT EXISTS "thicknessRateAbove100" NUMERIC(12, 2);`,
+  `ALTER TABLE "MasterConfigCustomer" ADD COLUMN IF NOT EXISTS "settingHours" NUMERIC(10, 2);`,
+  `ALTER TABLE "MasterConfigCustomer" ADD COLUMN IF NOT EXISTS "thicknessRateUpto100" NUMERIC(12, 2);`,
+  `ALTER TABLE "MasterConfigCustomer" ADD COLUMN IF NOT EXISTS "thicknessRateAbove100" NUMERIC(12, 2);`,
 ];
 
 export const initDB = async (): Promise<void> => {

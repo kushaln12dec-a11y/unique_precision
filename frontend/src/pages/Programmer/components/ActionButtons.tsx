@@ -2,17 +2,20 @@ import React from "react";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import ArrowOutwardIcon from "@mui/icons-material/ArrowOutward";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import { PencilIcon, DustbinIcon } from "../../../utils/icons";
 import { getUserRoleFromToken } from "../../../utils/auth";
 
 type ActionButtonsProps = {
   onView: () => void;
   onEdit?: () => void;
+  onClone?: () => void;
   onDelete?: () => void;
   onImage?: () => void;
   onSubmit?: () => void;
   viewLabel?: string;
   editLabel?: string;
+  cloneLabel?: string;
   deleteLabel?: string;
   imageLabel?: string;
   submitLabel?: string;
@@ -25,11 +28,13 @@ type ActionButtonsProps = {
 const ActionButtons: React.FC<ActionButtonsProps> = ({
   onView,
   onEdit,
+  onClone,
   onDelete,
   onImage,
   onSubmit,
   viewLabel,
   editLabel,
+  cloneLabel,
   deleteLabel,
   imageLabel,
   submitLabel,
@@ -67,6 +72,20 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({
           title={editLabel || "Edit"}
         >
           <PencilIcon fontSize="small" />
+        </button>
+      )}
+      {!isOperator && (isAdmin || isProgrammer) && onClone && (
+        <button
+          type="button"
+          className="action-icon-button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onClone();
+          }}
+          aria-label={cloneLabel || "Clone"}
+          title={cloneLabel || "Clone"}
+        >
+          <ContentCopyIcon fontSize="small" />
         </button>
       )}
       {isOperator && onImage && (

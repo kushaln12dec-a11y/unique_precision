@@ -35,17 +35,20 @@ export const useJobFormState = (cuts: CutForm[], setCuts: React.Dispatch<React.S
 
   useEffect(() => {
     const primaryCustomer = cuts[0]?.customer ?? "";
-    if (!primaryCustomer || cuts.length <= 1) return;
+    const primaryRate = cuts[0]?.rate ?? "";
+    if ((!primaryCustomer && !primaryRate) || cuts.length <= 1) return;
     setCuts((prev) => {
-      const needsUpdate = prev.some((cut, idx) => idx > 0 && cut.customer !== primaryCustomer);
+      const needsUpdate = prev.some(
+        (cut, idx) => idx > 0 && (cut.customer !== primaryCustomer || cut.rate !== primaryRate)
+      );
       if (!needsUpdate) return prev;
       return prev.map((cut, idx) =>
-        idx === 0 || cut.customer === primaryCustomer
+        idx === 0
           ? cut
-          : { ...cut, customer: primaryCustomer }
+          : { ...cut, customer: primaryCustomer, rate: primaryRate }
       );
     });
-  }, [cuts.length, cuts[0]?.customer, setCuts]);
+  }, [cuts.length, cuts[0]?.customer, cuts[0]?.rate, setCuts]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -79,7 +82,17 @@ export const useJobFormState = (cuts: CutForm[], setCuts: React.Dispatch<React.S
   };
 
   const addCut = () => {
-    setCuts((prev) => [...prev, { ...DEFAULT_CUT }]);
+    setCuts((prev) => {
+      const parentCut = prev[0];
+      return [
+        ...prev,
+        {
+          ...DEFAULT_CUT,
+          customer: parentCut?.customer ?? DEFAULT_CUT.customer,
+          rate: parentCut?.rate ?? DEFAULT_CUT.rate,
+        },
+      ];
+    });
   };
 
   const removeCut = (index: number) => {
@@ -93,7 +106,16 @@ export const useJobFormState = (cuts: CutForm[], setCuts: React.Dispatch<React.S
 
   const handleClearCut = (index: number) => {
     setCuts((prev) =>
-      prev.map((cut, idx) => (idx === index ? { ...DEFAULT_CUT } : cut))
+      prev.map((cut, idx) => {
+        if (idx !== index) return cut;
+        if (index === 0) return { ...DEFAULT_CUT };
+        const parentCut = prev[0];
+        return {
+          ...DEFAULT_CUT,
+          customer: parentCut?.customer ?? DEFAULT_CUT.customer,
+          rate: parentCut?.rate ?? DEFAULT_CUT.rate,
+        };
+      })
     );
     setCutValidationErrors((prev) => {
       const next = { ...prev };

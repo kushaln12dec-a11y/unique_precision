@@ -9,7 +9,6 @@ import {
   setOperatorCustomerFilter,
   setOperatorDescriptionFilter,
   setOperatorFilters,
-  setOperatorProductionStageFilter,
   setOperatorShowFilterModal,
 } from "../../../store/slices/filtersSlice";
 
@@ -22,7 +21,6 @@ export const useOperatorFilters = () => {
     descriptionFilter,
     createdByFilter,
     assignedToFilter,
-    productionStageFilter,
   } = useAppSelector((state) => state.filters.operator);
 
   const filterCategories: FilterCategory[] = [
@@ -65,7 +63,6 @@ export const useOperatorFilters = () => {
     dispatch(setOperatorDescriptionFilter(""));
     dispatch(setOperatorCreatedByFilter(""));
     dispatch(setOperatorAssignedToFilter(""));
-    dispatch(setOperatorProductionStageFilter(""));
   };
 
   const handleClearFilters = () => {
@@ -78,7 +75,6 @@ export const useOperatorFilters = () => {
       else if (key === "description") dispatch(setOperatorDescriptionFilter(""));
       else if (key === "createdBy") dispatch(setOperatorCreatedByFilter(""));
       else if (key === "assignedTo") dispatch(setOperatorAssignedToFilter(""));
-      else if (key === "productionStage") dispatch(setOperatorProductionStageFilter(""));
       return;
     }
 
@@ -100,8 +96,6 @@ export const useOperatorFilters = () => {
     setCreatedByFilter: (value: string) => dispatch(setOperatorCreatedByFilter(value)),
     assignedToFilter,
     setAssignedToFilter: (value: string) => dispatch(setOperatorAssignedToFilter(value)),
-    productionStageFilter,
-    setProductionStageFilter: (value: string) => dispatch(setOperatorProductionStageFilter(value)),
     filterCategories,
     filterFields,
     activeFilterCount,

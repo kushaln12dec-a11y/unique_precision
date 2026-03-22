@@ -36,6 +36,34 @@ const toNumber = (value: unknown): number | null => {
   return Number.isFinite(n) ? n : null;
 };
 
+const parsePositiveInt = (value: unknown, fallback: number) => {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return fallback;
+  const normalized = Math.trunc(parsed);
+  return normalized > 0 ? normalized : fallback;
+};
+
+const parseNonNegativeInt = (value: unknown, fallback: number) => {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return fallback;
+  const normalized = Math.trunc(parsed);
+  return normalized >= 0 ? normalized : fallback;
+};
+
+const getPagination = (req: any, defaultLimit = 15, maxLimit = 100) => {
+  const limit = Math.min(parsePositiveInt(req.query.limit, defaultLimit), maxLimit);
+  const offset = parseNonNegativeInt(req.query.offset, 0);
+  return { limit, offset };
+};
+
+const createPaginatedResponse = <T,>(items: T[], total: number, offset: number, limit: number) => ({
+  items,
+  total,
+  offset,
+  limit,
+  hasMore: offset + items.length < total,
+});
+
 // Get operator jobs with filters
 router.get("/jobs", async (req, res) => {
   try {
@@ -51,12 +79,18 @@ router.get("/jobs", async (req, res) => {
       where.assignedTo = String(req.query.assignedTo);
     }
 
-    const jobs = await prisma.job.findMany({
-      where,
-      orderBy: { createdAt: "desc" },
-      include: jobInclude,
-    });
-    res.json(jobs.map(mapJob));
+    const { limit, offset } = getPagination(req);
+    const [total, jobs] = await prisma.$transaction([
+      prisma.job.count({ where }),
+      prisma.job.findMany({
+        where,
+        orderBy: { createdAt: "desc" },
+        skip: offset,
+        take: limit,
+        include: jobInclude,
+      }),
+    ]);
+    res.json(createPaginatedResponse(jobs.map(mapJob), total, offset, limit));
   } catch (error: any) {
     console.error("Error fetching operator jobs:", error);
     res.status(500).json({ message: "Error fetching operator jobs" });

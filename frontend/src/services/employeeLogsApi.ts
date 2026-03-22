@@ -1,6 +1,14 @@
 import type { EmployeeLog, EmployeeLogQueryStatus } from "../types/employeeLog";
 import { apiUrl } from "./apiClient";
 
+export type PaginatedEmployeeLogs = {
+  items: EmployeeLog[];
+  total: number;
+  offset: number;
+  limit: number;
+  hasMore: boolean;
+};
+
 const getAuthHeaders = () => {
   const token = localStorage.getItem("token");
   return {
@@ -16,6 +24,14 @@ type GetEmployeeLogsParams = {
   machine?: string;
   startDate?: string;
   endDate?: string;
+  offset?: number;
+  limit?: number;
+};
+
+const getEmployeeLogItems = (payload: any): EmployeeLog[] => {
+  if (Array.isArray(payload)) return payload;
+  if (Array.isArray(payload?.items)) return payload.items;
+  return [];
 };
 
 export const getEmployeeLogs = async (params: GetEmployeeLogsParams = {}): Promise<EmployeeLog[]> => {
@@ -37,7 +53,42 @@ export const getEmployeeLogs = async (params: GetEmployeeLogsParams = {}): Promi
     throw new Error("Failed to fetch employee logs");
   }
 
-  return res.json();
+  const payload = await res.json();
+  return getEmployeeLogItems(payload);
+};
+
+export const getEmployeeLogsPage = async (
+  params: GetEmployeeLogsParams = {}
+): Promise<PaginatedEmployeeLogs> => {
+  const query = new URLSearchParams();
+  if (params.role) query.append("role", params.role);
+  if (params.status) query.append("status", params.status);
+  if (params.search) query.append("search", params.search);
+  if (params.machine) query.append("machine", params.machine);
+  if (params.startDate) query.append("startDate", params.startDate);
+  if (params.endDate) query.append("endDate", params.endDate);
+  if (params.offset !== undefined) query.append("offset", String(Math.max(0, params.offset)));
+  if (params.limit !== undefined) query.append("limit", String(Math.max(1, params.limit)));
+
+  const url = query.toString() ? `/api/employee-logs?${query.toString()}` : "/api/employee-logs";
+  const res = await fetch(apiUrl(url), {
+    method: "GET",
+    headers: getAuthHeaders(),
+  });
+
+  if (!res.ok) {
+    throw new Error("Failed to fetch employee logs");
+  }
+
+  const payload = await res.json();
+  const items = getEmployeeLogItems(payload);
+  return {
+    items,
+    total: Number(payload?.total || items.length || 0),
+    offset: Number(payload?.offset || 0),
+    limit: Number(payload?.limit || items.length || 0),
+    hasMore: Boolean(payload?.hasMore),
+  };
 };
 
 export const startProgrammerJobLog = async (payload: { refNumber?: string } = {}): Promise<EmployeeLog> => {

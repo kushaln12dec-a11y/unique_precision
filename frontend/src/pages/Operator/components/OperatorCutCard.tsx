@@ -8,7 +8,7 @@ import "../OperatorViewPage.css";
 
 import type { QuantityInputData } from "../types/cutInput";
 import type { QuantityProgressStatus } from "../utils/qaProgress";
-import { calculateTotals } from "../../Programmer/programmerUtils";
+import { calculateTotals, getThicknessDisplayValue } from "../../Programmer/programmerUtils";
 
 type OperatorCutCardProps = {
   cutItem: JobEntry;
@@ -91,12 +91,12 @@ export const OperatorCutCard: React.FC<OperatorCutCardProps> = ({
           <div className="operator-cut-details-section">
             <div className="operator-cut-details-grid">
               <div className="cut-detail-item"><label>Customer</label><span>{cutItem.customer || "-"}</span></div>
-              <div className="cut-detail-item"><label>Rate (Rs./hr)</label><span>Rs. {Number(cutItem.rate || 0).toFixed(2)}</span></div>
+              {isAdmin && <div className="cut-detail-item"><label>Rate (Rs./hr)</label><span>Rs. {Number(cutItem.rate || 0).toFixed(2)}</span></div>}
               <div className="cut-detail-item"><label>Description</label><span>{cutItem.description || "-"}</span></div>
               <div className="cut-detail-item"><label>Material</label><span>{cutItem.material || "-"}</span></div>
               <div className="cut-detail-item"><label>Program Ref File Name</label><span>{(cutItem as any).programRefFile || "-"}</span></div>
               <div className="cut-detail-item"><label>Cut Length (mm)</label><span>{Number(cutItem.cut || 0).toFixed(2)}</span></div>
-              <div className="cut-detail-item"><label>TH (MM)</label><span>{Number(cutItem.thickness || 0).toFixed(2)}</span></div>
+              <div className="cut-detail-item"><label>TH (MM)</label><span>{getThicknessDisplayValue(cutItem.thickness)}</span></div>
               <div className="cut-detail-item"><label>Pass</label><span>{cutItem.passLevel || "-"}</span></div>
               <div className="cut-detail-item"><label>Setting</label><span>{cutItem.setting || "-"}</span></div>
               <div className="cut-detail-item"><label>Quantity</label><span>{Number(cutItem.qty || 0)}</span></div>

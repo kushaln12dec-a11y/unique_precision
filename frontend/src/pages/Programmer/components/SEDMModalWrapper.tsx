@@ -12,6 +12,7 @@ type SEDMModalWrapperProps = {
   onSedmEntriesJsonChange: (value: string) => void;
   electrodeOptions: string[];
   thOptions: Array<{ value: string; label: string }>;
+  isAdmin: boolean;
 };
 
 const SEDMModalWrapper = ({
@@ -25,6 +26,7 @@ const SEDMModalWrapper = ({
   onSedmEntriesJsonChange,
   electrodeOptions,
   thOptions,
+  isAdmin,
 }: SEDMModalWrapperProps) => {
   if (sedmModalIndex === null || !cuts[sedmModalIndex]) {
     return null;
@@ -42,6 +44,7 @@ const SEDMModalWrapper = ({
       onSedmEntriesJsonChange={onSedmEntriesJsonChange}
       electrodeOptions={electrodeOptions}
       thOptions={thOptions}
+      isAdmin={isAdmin}
       onApply={() => {}}
     />
   );

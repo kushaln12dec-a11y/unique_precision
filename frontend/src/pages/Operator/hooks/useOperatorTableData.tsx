@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import type { JobEntry } from "../../../types/job";
 import { parseDateValue } from "../../../utils/date";
 import ChildCutsTable from "../../Programmer/components/ChildCutsTable";
-import { getGroupQaProgressCounts, isGroupFullySentToQa } from "../utils/qaProgress";
+import { isGroupFullySentToQa } from "../utils/qaProgress";
 
 type TableRow = {
   groupId: string;
@@ -24,7 +24,6 @@ export const useOperatorTableData = (
   jobs: JobEntry[],
   sortField: keyof JobEntry | null,
   sortDirection: "asc" | "desc",
-  productionStageFilter: string,
   expandedGroups: Set<string>,
   toggleGroup: (groupId: string) => void,
   handleImageInput: (groupId: string, cutId?: number) => void,
@@ -59,18 +58,7 @@ export const useOperatorTableData = (
 
   // Sort groups
   const sortedGroups = useMemo(() => {
-    const activeGroups = groupedJobs.filter((group) => !isGroupFullySentToQa(group.entries));
-    const filteredGroups = productionStageFilter
-      ? activeGroups.filter((group) => {
-          const c = getGroupQaProgressCounts(group.entries);
-          const counts = { logged: c.saved + c.ready, sent: c.sent, empty: c.empty };
-          if (productionStageFilter === "OP_LOGGED") return counts.logged > 0;
-          if (productionStageFilter === "IN_PROGRESS") return c.ready > 0;
-          if (productionStageFilter === "QA_DISPATCHED") return counts.sent > 0;
-          if (productionStageFilter === "PENDING_INPUT") return counts.empty > 0;
-          return true;
-        })
-      : activeGroups;
+    const filteredGroups = groupedJobs.filter((group) => !isGroupFullySentToQa(group.entries));
 
     if (!sortField) {
       // Default sort: newest first (by createdAt descending)
@@ -111,7 +99,7 @@ export const useOperatorTableData = (
       if (valueA > valueB) return 1 * direction;
       return 0;
     });
-  }, [groupedJobs, sortField, sortDirection, productionStageFilter]);
+  }, [groupedJobs, sortField, sortDirection]);
 
   // Create table data
   const tableData = useMemo<TableRow[]>(() => {

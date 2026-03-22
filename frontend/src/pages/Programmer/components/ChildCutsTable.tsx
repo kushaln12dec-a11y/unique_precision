@@ -231,7 +231,7 @@ const ChildCutsTable: React.FC<ChildCutsTableProps> = ({
               return "operator-stage-row-not-started";
             })();
             return (
-              <tr key={rowKey} className={`${childFlagClass} ${childStageClass}`.trim()}>
+              <tr key={rowKey} className={`${childFlagClass} ${childStageClass} child-row`.trim()}>
                 {showCheckboxes ? (
                   <td className="checkbox-cell" onClick={(e) => e.stopPropagation()}>
                     <input
@@ -292,6 +292,7 @@ const ChildCutsTable: React.FC<ChildCutsTableProps> = ({
                           const value = uniqueOperators.length > 0 ? uniqueOperators.join(", ") : "Unassigned";
                           onAssignChange(entry.id, value);
                         }}
+                        assignToSelfName={undefined}
                         placeholder="Unassigned"
                         compact={true}
                       />
@@ -329,7 +330,6 @@ const ChildCutsTable: React.FC<ChildCutsTableProps> = ({
                       onMachineNumberChange?.(entry.id, nextValue);
                     }}
                   >
-                    <option value="">Select</option>
                     {machineDropdownOptions.map((machine) => (
                       <option key={machine} value={machine}>
                         {formatMachineLabel(machine)}
@@ -342,7 +342,7 @@ const ChildCutsTable: React.FC<ChildCutsTableProps> = ({
                 <td className="total-hrs-col">
                   {(() => {
                     const totalHrs = Number(entry.totalHrs || 0);
-                    return totalHrs ? `${totalHrs.toFixed(2)}hrs` : "-";
+                    return totalHrs ? totalHrs.toFixed(2) : "-";
                   })()}
                 </td>
               )}
@@ -355,12 +355,26 @@ const ChildCutsTable: React.FC<ChildCutsTableProps> = ({
                   {(() => {
                     const qty = Math.max(1, Number(entry.qty || 1));
                     const c = getQaProgressCounts(entry, qty);
+                    const badges = [
+                      { className: "empty", label: `Yet to Start ${c.empty}` },
+                      { className: "saved", label: `Logged ${c.saved}` },
+                      { className: "ready", label: `In Progress ${c.ready}` },
+                      { className: "sent", label: `QC ${c.sent}` },
+                    ];
                     return (
                       <div className="child-stage-summary">
-                        <span className="qa-mini empty">Yet to Start {c.empty}</span>
-                        <span className="qa-mini saved">Logged {c.saved}</span>
-                        <span className="qa-mini ready">In Progress {c.ready}</span>
-                        <span className="qa-mini sent">QC {c.sent}</span>
+                        <div
+                          className="qa-badge-ticker"
+                          title={badges.map((badge) => badge.label).join(" | ")}
+                        >
+                          <div className="qa-badge-track">
+                            {[...badges, ...badges].map((badge, badgeIndex) => (
+                              <span key={`${badge.className}-${badgeIndex}`} className={`qa-mini ${badge.className}`}>
+                                {badge.label}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
                       </div>
                     );
                   })()}

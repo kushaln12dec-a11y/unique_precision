@@ -7,7 +7,7 @@
 .operator-table-no-scroll {
   width: 100%;
   max-width: 100%;
-  overflow-x: auto;
+  overflow-x: hidden;
   overflow-y: auto;
   max-height: calc(100vh - 280px);
   box-sizing: border-box;
@@ -46,9 +46,9 @@
 .operator-table-no-scroll .data-table th {
   color: #ffffff;
   font-weight: 600;
-  font-size: 0.7rem;
+  font-size: 0.78rem;
   text-transform: uppercase;
-  letter-spacing: 0.3px;
+  letter-spacing: 0.35px;
   padding: 0.5rem 0.35rem;
   text-align: left;
   vertical-align: middle;
@@ -133,16 +133,16 @@
 /* Customer Column (includes accordion toggle) */
 .operator-table-no-scroll .data-table th:nth-child(2),
 .operator-table-no-scroll .data-table td:nth-child(2) {
-  width: 90px;
-  min-width: 90px;
+  width: 80px;
+  min-width: 80px;
   text-align: left;
 }
 
 /* Program Ref Column */
 .operator-table-no-scroll .data-table th:nth-child(3),
 .operator-table-no-scroll .data-table td:nth-child(3) {
-  width: 145px;
-  min-width: 145px;
+  width: 118px;
+  min-width: 118px;
   text-align: left;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -153,8 +153,8 @@
 /* Description Column */
 .operator-table-no-scroll .data-table th:nth-child(4),
 .operator-table-no-scroll .data-table td:nth-child(4) {
-  width: 110px;
-  min-width: 110px;
+  width: 92px;
+  min-width: 92px;
   text-align: left;
 }
 
@@ -170,24 +170,24 @@
 /* Program Ref File Name Column */
 .operator-table-no-scroll .data-table th:nth-child(5),
 .operator-table-no-scroll .data-table td:nth-child(5) {
-  width: 108px;
-  min-width: 108px;
+  width: 92px;
+  min-width: 92px;
   text-align: left;
 }
 
 /* Cut Column */
 .operator-table-no-scroll .data-table th:nth-child(6),
 .operator-table-no-scroll .data-table td:nth-child(6) {
-  width: 75px;
-  min-width: 75px;
+  width: 68px;
+  min-width: 68px;
   text-align: left;
 }
 
 /* TH Column */
 .operator-table-no-scroll .data-table th:nth-child(7),
 .operator-table-no-scroll .data-table td:nth-child(7) {
-  width: 75px;
-  min-width: 75px;
+  width: 68px;
+  min-width: 68px;
   text-align: left;
 }
 
@@ -202,8 +202,8 @@
 /* Setting Column */
 .operator-table-no-scroll .data-table th:nth-child(9),
 .operator-table-no-scroll .data-table td:nth-child(9) {
-  width: 60px;
-  min-width: 60px;
+  width: 56px;
+  min-width: 56px;
   text-align: left;
 }
 
@@ -226,40 +226,40 @@
 /* Assigned To Column */
 .operator-table-no-scroll .data-table th:nth-child(12),
 .operator-table-no-scroll .data-table td:nth-child(12) {
-  width: 96px;
-  min-width: 96px;
-  text-align: left;
+  width: 120px;
+  min-width: 120px;
+  text-align: center;
 }
 
 /* Mach # Column */
 .operator-table-no-scroll .data-table th:nth-child(13),
 .operator-table-no-scroll .data-table td:nth-child(13) {
-  width: 64px;
-  min-width: 64px;
-  text-align: left;
+  width: 88px;
+  min-width: 88px;
+  text-align: center;
 }
 
 /* Estimated Time Column */
 .operator-table-no-scroll .data-table th:nth-child(14),
 .operator-table-no-scroll .data-table td:nth-child(14) {
-  width: 82px;
-  min-width: 82px;
+  width: 74px;
+  min-width: 74px;
   text-align: left;
 }
 
 /* Total Amount Column (if admin) */
 .operator-table-no-scroll .data-table th.operator-amount-header,
 .operator-table-no-scroll .data-table td.operator-amount-cell {
-  width: 110px;
-  min-width: 110px;
+  width: 84px;
+  min-width: 84px;
   text-align: left;
 }
 
 /* Status Column */
 .operator-table-no-scroll .data-table th.status-header,
 .operator-table-no-scroll .data-table td.status-cell {
-  width: 165px;
-  min-width: 165px;
+  width: 148px;
+  min-width: 148px;
   white-space: normal;
   text-align: left;
 }
@@ -283,9 +283,9 @@
 .operator-table-no-scroll
   .data-table
   td:last-child:not(.accordion-toggle-cell) {
-  width: 124px;
-  min-width: 124px;
-  max-width: 124px;
+  width: 112px;
+  min-width: 112px;
+  max-width: 112px;
   white-space: nowrap;
   padding: 0.5rem 0.25rem;
   text-align: center;
@@ -344,9 +344,9 @@
   background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
   color: #ffffff;
   font-weight: 600;
-  font-size: 0.7rem;
+  font-size: 0.78rem;
   text-transform: uppercase;
-  letter-spacing: 0.3px;
+  letter-spacing: 0.35px;
   white-space: nowrap;
   word-wrap: normal;
   word-break: normal;
@@ -519,18 +519,18 @@
 /* Assigned To - Align with parent Assigned To - Ensure th and td match */
 .operator-table-no-scroll .child-row-content .child-jobs-table th.assigned-col,
 .operator-table-no-scroll .child-row-content .child-jobs-table td.assigned-col {
-  width: 102px;
-  min-width: 102px;
-  text-align: left;
+  width: 120px;
+  min-width: 120px;
+  text-align: center;
   padding-left: 0.4rem;
   padding-right: 0.4rem;
 }
 
 .operator-table-no-scroll .child-row-content .child-jobs-table th.mach-col,
 .operator-table-no-scroll .child-row-content .child-jobs-table td.mach-col {
-  width: 76px;
-  min-width: 76px;
-  text-align: left;
+  width: 88px;
+  min-width: 88px;
+  text-align: center;
   padding-left: 0.4rem;
   padding-right: 0.4rem;
 }
@@ -1264,14 +1264,14 @@
   width: 100%;
   min-width: 0;
   max-width: 100%;
-  height: 30px;
+  height: 28px;
   border: 1px solid #93c5fd;
   border-radius: 999px;
   background: linear-gradient(135deg, #ffffff 0%, #eff6ff 100%);
   color: #0f172a;
-  font-size: 0.8rem;
+  font-size: 0.74rem;
   font-weight: 600;
-  padding: 0 0.55rem;
+  padding: 0 0.4rem;
 }
 
 .log-user-stack {
@@ -1340,6 +1340,21 @@
   background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
   color: #991b1b;
   border-color: #fca5a5;
+}
+
+.operator-overtime-value {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 0.24rem 0.62rem;
+  background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+  color: #991b1b;
+  border: 1px solid #f87171;
+  font-size: 0.72rem;
+  font-weight: 800;
+  white-space: nowrap;
+  box-shadow: 0 8px 16px rgba(239, 68, 68, 0.18);
 }
 
 .created-by-badge {
@@ -1529,14 +1544,14 @@
 .operator-machine-dropdown-wrapper .option-dropdown-trigger {
   width: 100%;
   min-width: 0;
-  max-width: 76px;
-  height: 30px;
+  max-width: 64px;
+  height: 28px;
   border: 1px solid #cbd5e1;
   border-radius: 14px;
   background: #ffffff;
   color: #0f172a;
-  font-size: 0.82rem;
-  padding: 0 0.35rem;
+  font-size: 0.74rem;
+  padding: 0 0.25rem;
 }
 
 .operator-machine-dropdown-wrapper .option-dropdown-value {
@@ -1633,7 +1648,7 @@
 .operator-table-no-scroll
   .data-table
   tr.operator-stage-row-dispatched.critical-row {
-  border-left: 4px solid #dc2626;
+  border-left: none;
 }
 
 .operator-table-no-scroll
@@ -1648,7 +1663,7 @@
   .data-table
   tr.operator-stage-row-dispatched.critical-row
   td:first-child {
-  box-shadow: inset 4px 0 0 #dc2626;
+  box-shadow: none;
 }
 
 .operator-table-no-scroll
@@ -1660,7 +1675,7 @@
 .operator-table-no-scroll
   .data-table
   tr.operator-stage-row-dispatched.priority-row.priority-high {
-  border-left: 3px solid #ef4444;
+  border-left: none;
 }
 
 .operator-table-no-scroll
@@ -1675,7 +1690,7 @@
   .data-table
   tr.operator-stage-row-dispatched.priority-row.priority-high
   td:first-child {
-  box-shadow: inset 3px 0 0 #ef4444;
+  box-shadow: none;
 }
 
 .operator-table-no-scroll
@@ -1687,7 +1702,7 @@
 .operator-table-no-scroll
   .data-table
   tr.operator-stage-row-dispatched.priority-row.priority-medium {
-  border-left: 3px solid #f59e0b;
+  border-left: none;
 }
 
 .operator-table-no-scroll
@@ -1702,7 +1717,7 @@
   .data-table
   tr.operator-stage-row-dispatched.priority-row.priority-medium
   td:first-child {
-  box-shadow: inset 3px 0 0 #f59e0b;
+  box-shadow: none;
 }
 
 .operator-table-no-scroll
@@ -1714,7 +1729,7 @@
 .operator-table-no-scroll
   .data-table
   tr.operator-stage-row-dispatched.priority-row.priority-low {
-  border-left: 3px solid #10b981;
+  border-left: none;
 }
 
 .operator-table-no-scroll
@@ -1729,47 +1744,47 @@
   .data-table
   tr.operator-stage-row-dispatched.priority-row.priority-low
   td:first-child {
-  box-shadow: inset 3px 0 0 #10b981;
+  box-shadow: none;
 }
 
 /* Fallback left indicator even when priority/critical is missing */
 .operator-table-no-scroll
   .data-table
   tr.operator-stage-row-not-started:not(.priority-row):not(.critical-row) {
-  border-left: 3px solid #f59e0b;
+  border-left: none;
 }
 
 .operator-table-no-scroll
   .data-table
   tr.operator-stage-row-not-started:not(.priority-row):not(.critical-row)
   td:first-child {
-  box-shadow: inset 3px 0 0 #f59e0b;
+  box-shadow: none;
 }
 
 .operator-table-no-scroll
   .data-table
   tr.operator-stage-row-logged:not(.priority-row):not(.critical-row) {
-  border-left: 3px solid #38bdf8;
+  border-left: none;
 }
 
 .operator-table-no-scroll
   .data-table
   tr.operator-stage-row-logged:not(.priority-row):not(.critical-row)
   td:first-child {
-  box-shadow: inset 3px 0 0 #38bdf8;
+  box-shadow: none;
 }
 
 .operator-table-no-scroll
   .data-table
   tr.operator-stage-row-dispatched:not(.priority-row):not(.critical-row) {
-  border-left: 3px solid #818cf8;
+  border-left: none;
 }
 
 .operator-table-no-scroll
   .data-table
   tr.operator-stage-row-dispatched:not(.priority-row):not(.critical-row)
   td:first-child {
-  box-shadow: inset 3px 0 0 #818cf8;
+  box-shadow: none;
 }
 
 /* Child rows: Stage legend controls background, flag controls left strip */
@@ -1834,6 +1849,7 @@
 .operator-logs-table .data-table td {
   white-space: normal;
   word-break: break-word;
+  text-align: center;
 }
 
 .data-table-wrapper.operator-logs-table {
@@ -1858,37 +1874,37 @@
 
 .operator-logs-table .data-table th:nth-child(1),
 .operator-logs-table .data-table td:nth-child(1) {
-  width: 110px;
-  min-width: 110px;
-  max-width: 110px;
+  width: 104px;
+  min-width: 104px;
+  max-width: 104px;
 }
 
 .operator-logs-table .data-table th:nth-child(3),
 .operator-logs-table .data-table td:nth-child(3) {
-  width: 190px;
-  min-width: 190px;
-  max-width: 190px;
+  width: 164px;
+  min-width: 164px;
+  max-width: 164px;
 }
 
 .operator-logs-table .data-table th:nth-child(4),
 .operator-logs-table .data-table td:nth-child(4) {
-  width: 180px;
-  min-width: 180px;
-  max-width: 180px;
+  width: 156px;
+  min-width: 156px;
+  max-width: 156px;
 }
 
 .operator-logs-table .data-table th:nth-child(6),
 .operator-logs-table .data-table td:nth-child(6) {
-  width: 130px;
-  min-width: 130px;
-  max-width: 130px;
+  width: 118px;
+  min-width: 118px;
+  max-width: 118px;
 }
 
 .operator-logs-table .data-table th:nth-child(12),
 .operator-logs-table .data-table td:nth-child(12) {
-  width: 150px;
-  min-width: 150px;
-  max-width: 150px;
+  width: 136px;
+  min-width: 136px;
+  max-width: 136px;
 }
 
 .operator-logs-table .data-table td:nth-child(4) {

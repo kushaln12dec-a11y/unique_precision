@@ -5,6 +5,7 @@ type JobFormActionsProps = {
   grandTotals: { totalHrs: number; totalAmount: number; wedmAmount: number; sedmAmount: number };
   allCutsSaved: boolean;
   isAdmin: boolean;
+  isSaving: boolean;
   onClearAll: () => void;
   onSave: () => void;
   onCancel: () => void;
@@ -14,6 +15,7 @@ export const JobFormActions: React.FC<JobFormActionsProps> = ({
   grandTotals,
   allCutsSaved,
   isAdmin,
+  isSaving,
   onClearAll,
   onSave,
   onCancel,
@@ -50,17 +52,18 @@ export const JobFormActions: React.FC<JobFormActionsProps> = ({
         <button
           className="btn-clear-all"
           onClick={onClearAll}
+          disabled={isSaving}
         >
           Clear All
         </button>
         <button
           className="btn-success"
           onClick={onSave}
-          disabled={!allCutsSaved}
+          disabled={!allCutsSaved || isSaving}
         >
-          Save Job
+          {isSaving ? "Saving Job..." : "Save Job"}
         </button>
-        <button className="btn-secondary" onClick={onCancel}>
+        <button className="btn-secondary" onClick={onCancel} disabled={isSaving}>
           Cancel
         </button>
       </div>

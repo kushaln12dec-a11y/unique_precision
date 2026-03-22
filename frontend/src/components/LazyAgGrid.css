@@ -1,0 +1,315 @@
+.lazy-ag-grid-shell {
+  width: 100%;
+  min-height: 420px;
+  height: calc(100vh - 280px);
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.lazy-ag-grid-shell .ag-root-wrapper {
+  border: 1px solid #d9e1f2;
+  border-radius: 20px;
+  overflow: hidden;
+  height: 100%;
+}
+
+.lazy-ag-grid-shell .ag-root-wrapper-body,
+.lazy-ag-grid-shell .ag-root,
+.lazy-ag-grid-shell .ag-body-viewport,
+.lazy-ag-grid-shell .ag-center-cols-viewport,
+.lazy-ag-grid-shell .ag-center-cols-container,
+.lazy-ag-grid-shell .ag-body,
+.lazy-ag-grid-shell .ag-body-horizontal-scroll-viewport {
+  min-height: 0;
+}
+
+.lazy-ag-grid-shell .ag-root-wrapper,
+.lazy-ag-grid-shell .ag-root-wrapper-body,
+.lazy-ag-grid-shell .ag-root {
+  width: 100%;
+}
+
+.lazy-ag-grid-shell .ag-header {
+  border-bottom: none;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+}
+
+.lazy-ag-grid-shell .ag-header-cell,
+.lazy-ag-grid-shell .ag-header-group-cell {
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  color: #fff;
+  font-size: 0.74rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding-left: 0.2rem;
+  padding-right: 0.2rem;
+}
+
+.lazy-ag-grid-shell .ag-header-cell:focus-within,
+.lazy-ag-grid-shell .ag-header-cell.ag-header-active,
+.lazy-ag-grid-shell .ag-header-cell.ag-column-hover {
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+.lazy-ag-grid-shell .ag-header-cell-resize,
+.lazy-ag-grid-shell .ag-header-cell-resize::after {
+  display: none !important;
+  width: 0 !important;
+}
+
+.lazy-ag-grid-shell .ag-pinned-left-header,
+.lazy-ag-grid-shell .ag-pinned-left-cols-container,
+.lazy-ag-grid-shell .ag-pinned-left-cols-viewport,
+.lazy-ag-grid-shell .ag-cell.ag-cell-last-left-pinned,
+.lazy-ag-grid-shell .ag-header-cell.ag-column-last-left-pinned {
+  border-right: none !important;
+  box-shadow: none !important;
+}
+
+.lazy-ag-grid-shell .ag-row {
+  border-bottom: 1px solid rgba(217, 225, 242, 0.65);
+}
+
+.lazy-ag-grid-shell .ag-cell,
+.lazy-ag-grid-shell .ag-header-cell {
+  display: flex;
+  align-items: center;
+}
+
+.lazy-ag-grid-shell .ag-cell {
+  justify-content: center;
+  padding-left: 0.2rem;
+  padding-right: 0.2rem;
+  font-size: 0.8rem;
+}
+
+.lazy-ag-grid-shell.left-align .ag-cell {
+  justify-content: flex-start;
+}
+
+.lazy-ag-grid-shell.logs-center .ag-cell,
+.lazy-ag-grid-shell.logs-center .ag-cell-value {
+  justify-content: center;
+  text-align: center;
+}
+
+.lazy-ag-grid-shell.logs-center .ag-cell-value .description-marquee,
+.lazy-ag-grid-shell.logs-center .ag-cell-value .log-user-stack,
+.lazy-ag-grid-shell.logs-center .ag-cell-value .employee-log-user,
+.lazy-ag-grid-shell.logs-center .ag-cell-value .created-at-split {
+  margin-left: auto;
+  margin-right: auto;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.lazy-ag-grid-shell .ag-header-cell-comp-wrapper,
+.lazy-ag-grid-shell .ag-header-cell-label {
+  width: 100%;
+  justify-content: center;
+  white-space: normal !important;
+  line-height: 1.15;
+  text-align: center;
+  overflow: visible;
+}
+
+.lazy-ag-grid-shell .ag-header-cell-text {
+  white-space: normal !important;
+  overflow: visible;
+  text-overflow: clip;
+  word-break: break-word;
+  line-height: 1.15;
+  text-align: center;
+}
+
+.lazy-ag-grid-shell .ag-cell-value {
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.lazy-ag-grid-shell .ag-cell-value:has(.description-marquee) {
+  overflow: visible;
+}
+
+.lazy-ag-grid-shell .ag-cell-value .description-marquee {
+  width: 100%;
+  margin: 0 auto;
+}
+
+.lazy-ag-grid-shell .ag-center-cols-clipper,
+.lazy-ag-grid-shell .ag-center-cols-viewport,
+.lazy-ag-grid-shell .ag-body-viewport {
+  width: 100%;
+}
+
+.lazy-ag-grid-shell .ag-body-horizontal-scroll,
+.lazy-ag-grid-shell .ag-horizontal-left-spacer,
+.lazy-ag-grid-shell .ag-horizontal-right-spacer {
+  display: none !important;
+}
+
+.lazy-ag-grid-shell .ag-overlay-loading-center {
+  background: transparent;
+  border: none;
+  color: #24324b;
+  font-size: 0.95rem;
+  box-shadow: none;
+}
+
+.lazy-ag-grid-shell .ag-full-width-container .ag-row {
+  border-bottom: none;
+}
+
+.lazy-ag-grid-detail-row {
+  width: 100%;
+  padding: 0;
+  background: #fff;
+  box-sizing: border-box;
+}
+
+.lazy-ag-grid-shell .ag-full-width-row .ag-cell-wrapper,
+.lazy-ag-grid-shell .ag-full-width-row .ag-cell-value {
+  width: 100%;
+  padding: 0;
+}
+
+.lazy-ag-grid-shell .ag-row-hover.group-row,
+.lazy-ag-grid-shell .ag-row-hover.child-row,
+.lazy-ag-grid-shell .ag-row-hover.critical-row,
+.lazy-ag-grid-shell .ag-row-hover.priority-row,
+.lazy-ag-grid-shell .ag-row-hover.operator-stage-row-not-started,
+.lazy-ag-grid-shell .ag-row-hover.operator-stage-row-logged,
+.lazy-ag-grid-shell .ag-row-hover.operator-stage-row-dispatched {
+  background-color: inherit !important;
+}
+
+.lazy-ag-grid-shell .ag-row.group-row,
+.lazy-ag-grid-shell .ag-row.child-row,
+.lazy-ag-grid-shell .ag-row.critical-row,
+.lazy-ag-grid-shell .ag-row.priority-row,
+.lazy-ag-grid-shell .ag-row.operator-stage-row-not-started,
+.lazy-ag-grid-shell .ag-row.operator-stage-row-logged,
+.lazy-ag-grid-shell .ag-row.operator-stage-row-dispatched {
+  background-image: none !important;
+}
+
+.lazy-ag-grid-shell .ag-row.group-row.priority-row.priority-high,
+.lazy-ag-grid-shell .ag-row.child-row.child-priority-row.child-priority-high {
+  background-image:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0.08) 48%, rgba(255, 255, 255, 0) 100%),
+    linear-gradient(90deg, rgba(239, 68, 68, 0.18) 0%, rgba(239, 68, 68, 0.06) 38%, rgba(255, 255, 255, 0.96) 100%) !important;
+}
+
+.lazy-ag-grid-shell .ag-row.group-row.priority-row.priority-medium,
+.lazy-ag-grid-shell .ag-row.child-row.child-priority-row.child-priority-medium {
+  background-image:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.52) 0%, rgba(255, 255, 255, 0.08) 48%, rgba(255, 255, 255, 0) 100%),
+    linear-gradient(90deg, rgba(245, 158, 11, 0.2) 0%, rgba(245, 158, 11, 0.07) 38%, rgba(255, 255, 255, 0.96) 100%) !important;
+}
+
+.lazy-ag-grid-shell .ag-row.group-row.priority-row.priority-low,
+.lazy-ag-grid-shell .ag-row.child-row.child-priority-row.child-priority-low {
+  background-image:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0.08) 48%, rgba(255, 255, 255, 0) 100%),
+    linear-gradient(90deg, rgba(16, 185, 129, 0.19) 0%, rgba(16, 185, 129, 0.065) 38%, rgba(255, 255, 255, 0.96) 100%) !important;
+}
+
+.lazy-ag-grid-shell .ag-row.group-row.critical-row,
+.lazy-ag-grid-shell .ag-row.child-row.child-critical-row {
+  background-image:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.54) 0%, rgba(255, 255, 255, 0.08) 48%, rgba(255, 255, 255, 0) 100%),
+    linear-gradient(90deg, rgba(220, 38, 38, 0.2) 0%, rgba(220, 38, 38, 0.07) 38%, rgba(255, 255, 255, 0.95) 100%) !important;
+}
+
+.lazy-ag-grid-shell .ag-row.group-row.operator-stage-row-not-started,
+.lazy-ag-grid-shell .ag-row.child-row.operator-stage-row-not-started {
+  background-image:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.54) 0%, rgba(255, 255, 255, 0.1) 48%, rgba(255, 255, 255, 0) 100%),
+    linear-gradient(90deg, rgba(245, 158, 11, 0.2) 0%, rgba(245, 158, 11, 0.07) 38%, rgba(255, 255, 255, 0.96) 100%) !important;
+}
+
+.lazy-ag-grid-shell .ag-row.group-row.operator-stage-row-logged,
+.lazy-ag-grid-shell .ag-row.child-row.operator-stage-row-logged {
+  background-image:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.54) 0%, rgba(255, 255, 255, 0.1) 48%, rgba(255, 255, 255, 0) 100%),
+    linear-gradient(90deg, rgba(56, 189, 248, 0.18) 0%, rgba(56, 189, 248, 0.06) 38%, rgba(255, 255, 255, 0.96) 100%) !important;
+}
+
+.lazy-ag-grid-shell .ag-row.group-row.operator-stage-row-dispatched,
+.lazy-ag-grid-shell .ag-row.child-row.operator-stage-row-dispatched {
+  background-image:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.54) 0%, rgba(255, 255, 255, 0.1) 48%, rgba(255, 255, 255, 0) 100%),
+    linear-gradient(90deg, rgba(129, 140, 248, 0.18) 0%, rgba(129, 140, 248, 0.06) 38%, rgba(255, 255, 255, 0.96) 100%) !important;
+}
+
+.lazy-ag-grid-shell .ag-row.group-row.operator-stage-row-not-started:not(.priority-row):not(.critical-row),
+.lazy-ag-grid-shell .ag-row.child-row.operator-stage-row-not-started:not(.child-priority-row):not(.child-critical-row) {
+}
+
+.lazy-ag-grid-shell .ag-row.group-row.operator-stage-row-logged:not(.priority-row):not(.critical-row),
+.lazy-ag-grid-shell .ag-row.child-row.operator-stage-row-logged:not(.child-priority-row):not(.child-critical-row) {
+}
+
+.lazy-ag-grid-shell .ag-row.group-row.operator-stage-row-dispatched:not(.priority-row):not(.critical-row),
+.lazy-ag-grid-shell .ag-row.child-row.operator-stage-row-dispatched:not(.child-priority-row):not(.child-critical-row) {
+}
+
+.lazy-ag-grid-shell .ag-pinned-left-cols-container .ag-row.group-row.priority-row.priority-high,
+.lazy-ag-grid-shell .ag-pinned-left-cols-container .ag-row.child-row.child-priority-row.child-priority-high {
+  border-left: 3px solid #ef4444 !important;
+}
+
+.lazy-ag-grid-shell .ag-pinned-left-cols-container .ag-row.group-row.priority-row.priority-medium,
+.lazy-ag-grid-shell .ag-pinned-left-cols-container .ag-row.child-row.child-priority-row.child-priority-medium {
+  border-left: 3px solid #f59e0b !important;
+}
+
+.lazy-ag-grid-shell .ag-pinned-left-cols-container .ag-row.group-row.priority-row.priority-low,
+.lazy-ag-grid-shell .ag-pinned-left-cols-container .ag-row.child-row.child-priority-row.child-priority-low {
+  border-left: 3px solid #10b981 !important;
+}
+
+.lazy-ag-grid-shell .ag-pinned-left-cols-container .ag-row.group-row.critical-row,
+.lazy-ag-grid-shell .ag-pinned-left-cols-container .ag-row.child-row.child-critical-row {
+  border-left: 4px solid #dc2626 !important;
+}
+
+.lazy-ag-grid-shell .ag-pinned-left-cols-container .ag-row.group-row.operator-stage-row-not-started:not(.priority-row):not(.critical-row),
+.lazy-ag-grid-shell .ag-pinned-left-cols-container .ag-row.child-row.operator-stage-row-not-started:not(.child-priority-row):not(.child-critical-row) {
+  border-left: 3px solid #f59e0b !important;
+}
+
+.lazy-ag-grid-shell .ag-pinned-left-cols-container .ag-row.group-row.operator-stage-row-logged:not(.priority-row):not(.critical-row),
+.lazy-ag-grid-shell .ag-pinned-left-cols-container .ag-row.child-row.operator-stage-row-logged:not(.child-priority-row):not(.child-critical-row) {
+  border-left: 3px solid #38bdf8 !important;
+}
+
+.lazy-ag-grid-shell .ag-pinned-left-cols-container .ag-row.group-row.operator-stage-row-dispatched:not(.priority-row):not(.critical-row),
+.lazy-ag-grid-shell .ag-pinned-left-cols-container .ag-row.child-row.operator-stage-row-dispatched:not(.child-priority-row):not(.child-critical-row) {
+  border-left: 3px solid #818cf8 !important;
+}
+
+.lazy-ag-grid-shell .ag-row .description-marquee:hover .marquee-static,
+.lazy-ag-grid-shell .ag-row .description-marquee:focus-within .marquee-static {
+  display: block;
+}
+
+.lazy-ag-grid-shell .ag-row .description-marquee:hover .marquee-animated,
+.lazy-ag-grid-shell .ag-row .description-marquee:focus-within .marquee-animated {
+  visibility: hidden;
+}
+
+.lazy-ag-grid-shell .ag-row .description-marquee:hover .marquee-copy-btn,
+.lazy-ag-grid-shell .ag-row .description-marquee:focus-within .marquee-copy-btn {
+  opacity: 1;
+  pointer-events: auto;
+}

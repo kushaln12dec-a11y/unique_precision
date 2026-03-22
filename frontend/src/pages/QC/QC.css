@@ -207,7 +207,7 @@
 }
 
 .jobs-table-wrapper .group-row.critical-row td:first-child {
-  box-shadow: inset 4px 0 0 #dc2626;
+  box-shadow: none;
 }
 
 .jobs-table-wrapper .group-row.critical-row td {
@@ -223,7 +223,7 @@
 }
 
 .jobs-table-wrapper .group-row.priority-row.priority-high td:first-child {
-  box-shadow: inset 3px 0 0 #ef4444;
+  box-shadow: none;
 }
 
 .jobs-table-wrapper .group-row.priority-row.priority-high td {
@@ -239,7 +239,7 @@
 }
 
 .jobs-table-wrapper .group-row.priority-row.priority-medium td:first-child {
-  box-shadow: inset 3px 0 0 #f59e0b;
+  box-shadow: none;
 }
 
 .jobs-table-wrapper .group-row.priority-row.priority-medium td {
@@ -255,7 +255,7 @@
 }
 
 .jobs-table-wrapper .group-row.priority-row.priority-low td:first-child {
-  box-shadow: inset 3px 0 0 #10b981;
+  box-shadow: none;
 }
 
 .jobs-table-wrapper .group-row.priority-row.priority-low td {

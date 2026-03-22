@@ -1,6 +1,7 @@
 export type CustomerRate = {
   customer: string;
   rate: string;
+  settingHours: string;
 };
 
 export type SedmThOption = {
@@ -16,6 +17,8 @@ export type MasterConfig = {
   machineOptions: string[];
   sedmThOptions: SedmThOption[];
   settingHoursPerSetting: number;
+  thicknessRateUpto100: number;
+  thicknessRateAbove100: number;
   complexExtraHours: number;
   pipExtraHours: number;
 };

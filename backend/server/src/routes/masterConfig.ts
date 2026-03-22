@@ -7,11 +7,11 @@ const router = Router();
 const DEFAULT_MASTER_CONFIG = {
   key: "global",
   customers: [
-    { customer: "UPC001", rate: "100" },
-    { customer: "UPC002", rate: "10" },
-    { customer: "UPC003", rate: "" },
-    { customer: "UPC004", rate: "" },
-    { customer: "UPC005", rate: "" },
+    { customer: "UPC001", rate: "100", settingHours: "0.5", thicknessRateUpto100: "1500", thicknessRateAbove100: "1200" },
+    { customer: "UPC002", rate: "10", settingHours: "0.5", thicknessRateUpto100: "1500", thicknessRateAbove100: "1200" },
+    { customer: "UPC003", rate: "", settingHours: "0.5", thicknessRateUpto100: "1500", thicknessRateAbove100: "1200" },
+    { customer: "UPC004", rate: "", settingHours: "0.5", thicknessRateUpto100: "1500", thicknessRateAbove100: "1200" },
+    { customer: "UPC005", rate: "", settingHours: "0.5", thicknessRateUpto100: "1500", thicknessRateAbove100: "1200" },
   ],
   materials: ["SS (Stainless Steel)", "Copper", "Brass", "Carbide"],
   passOptions: ["1", "2", "3", "4", "5", "6"],
@@ -22,6 +22,8 @@ const DEFAULT_MASTER_CONFIG = {
     { value: "per", label: "Greater than 20mm" },
   ],
   settingHoursPerSetting: 0.5,
+  thicknessRateUpto100: 1500,
+  thicknessRateAbove100: 1200,
   complexExtraHours: 1,
   pipExtraHours: 1,
 };
@@ -34,16 +36,42 @@ const normalizeList = (values: unknown): string[] => {
   return [...new Set(cleaned)];
 };
 
-const normalizeCustomers = (values: unknown): Array<{ customer: string; rate: string }> => {
+const normalizeCustomers = (
+  values: unknown
+): Array<{
+  customer: string;
+  rate: string;
+  settingHours: string;
+  thicknessRateUpto100: string;
+  thicknessRateAbove100: string;
+}> => {
   if (!Array.isArray(values)) return [];
-  const unique = new Map<string, string>();
+  const unique = new Map<
+    string,
+    {
+      customer: string;
+      rate: string;
+      settingHours: string;
+      thicknessRateUpto100: string;
+      thicknessRateAbove100: string;
+    }
+  >();
   values.forEach((item) => {
     const customer = String((item as any)?.customer || "").trim();
     const rate = String((item as any)?.rate || "").trim();
+    const settingHours = String((item as any)?.settingHours || "").trim();
+    const thicknessRateUpto100 = String((item as any)?.thicknessRateUpto100 || "").trim();
+    const thicknessRateAbove100 = String((item as any)?.thicknessRateAbove100 || "").trim();
     if (!customer) return;
-    unique.set(customer, rate);
+    unique.set(customer, {
+      customer,
+      rate,
+      settingHours,
+      thicknessRateUpto100,
+      thicknessRateAbove100,
+    });
   });
-  return Array.from(unique.entries()).map(([customer, rate]) => ({ customer, rate }));
+  return Array.from(unique.values());
 };
 
 const normalizeThOptions = (values: unknown): Array<{ value: string; label: string }> => {
@@ -75,13 +103,18 @@ const getMasterConfig = async () => {
     config = await prisma.masterConfig.create({
       data: {
         key: "global",
-        settingHoursPerSetting: DEFAULT_MASTER_CONFIG.settingHoursPerSetting,
-        complexExtraHours: DEFAULT_MASTER_CONFIG.complexExtraHours,
+      settingHoursPerSetting: DEFAULT_MASTER_CONFIG.settingHoursPerSetting,
+      thicknessRateUpto100: DEFAULT_MASTER_CONFIG.thicknessRateUpto100,
+      thicknessRateAbove100: DEFAULT_MASTER_CONFIG.thicknessRateAbove100,
+      complexExtraHours: DEFAULT_MASTER_CONFIG.complexExtraHours,
         pipExtraHours: DEFAULT_MASTER_CONFIG.pipExtraHours,
         customers: {
           create: DEFAULT_MASTER_CONFIG.customers.map((c) => ({
             customer: c.customer,
             rate: c.rate ? c.rate : null,
+            settingHours: c.settingHours ? c.settingHours : null,
+            thicknessRateUpto100: c.thicknessRateUpto100 ? c.thicknessRateUpto100 : null,
+            thicknessRateAbove100: c.thicknessRateAbove100 ? c.thicknessRateAbove100 : null,
           })),
         },
         materials: { create: DEFAULT_MASTER_CONFIG.materials.map((value) => ({ value })) },
@@ -111,16 +144,22 @@ const getMasterConfig = async () => {
   return {
     _id: config.id,
     key: config.key,
-    customers: config.customers.map((c) => ({
+    customers: (config.customers.length > 0 ? config.customers : DEFAULT_MASTER_CONFIG.customers as any[]).map((c) => ({
       customer: c.customer,
       rate: c.rate ? String(c.rate) : "",
+      settingHours: c.settingHours ? String(c.settingHours) : "",
     })),
-    materials: config.materials.map((m) => m.value),
-    passOptions: config.passOptions.map((p) => p.value),
-    sedmElectrodeOptions: config.sedmElectrodeOptions.map((s) => s.value),
-    machineOptions: config.machineOptions.map((m) => m.value),
+    materials: config.materials.length > 0 ? config.materials.map((m) => m.value) : DEFAULT_MASTER_CONFIG.materials,
+    passOptions: config.passOptions.length > 0 ? config.passOptions.map((p) => p.value) : DEFAULT_MASTER_CONFIG.passOptions,
+    sedmElectrodeOptions:
+      config.sedmElectrodeOptions.length > 0
+        ? config.sedmElectrodeOptions.map((s) => s.value)
+        : DEFAULT_MASTER_CONFIG.sedmElectrodeOptions,
+    machineOptions: config.machineOptions.length > 0 ? config.machineOptions.map((m) => m.value) : DEFAULT_MASTER_CONFIG.machineOptions,
     sedmThOptions: config.sedmThOptions.map((s) => ({ value: s.value, label: s.label })),
     settingHoursPerSetting: Number(config.settingHoursPerSetting ?? 0.5) || 0.5,
+    thicknessRateUpto100: Number(config.thicknessRateUpto100 ?? DEFAULT_MASTER_CONFIG.thicknessRateUpto100) || DEFAULT_MASTER_CONFIG.thicknessRateUpto100,
+    thicknessRateAbove100: Number(config.thicknessRateAbove100 ?? DEFAULT_MASTER_CONFIG.thicknessRateAbove100) || DEFAULT_MASTER_CONFIG.thicknessRateAbove100,
     complexExtraHours: Number(config.complexExtraHours ?? 1) || 1,
     pipExtraHours: Number(config.pipExtraHours ?? 1) || 1,
     createdAt: config.createdAt,
@@ -151,6 +190,8 @@ router.put("/", adminMiddleware, async (req, res) => {
       machineOptions: normalizeList(payload.machineOptions),
       sedmThOptions: normalizeThOptions(payload.sedmThOptions),
       settingHoursPerSetting: Number(payload.settingHoursPerSetting) || 0.5,
+      thicknessRateUpto100: Number(payload.thicknessRateUpto100) || DEFAULT_MASTER_CONFIG.thicknessRateUpto100,
+      thicknessRateAbove100: Number(payload.thicknessRateAbove100) || DEFAULT_MASTER_CONFIG.thicknessRateAbove100,
       complexExtraHours: Number(payload.complexExtraHours) || 1,
       pipExtraHours: Number(payload.pipExtraHours) || 1,
     };
@@ -160,12 +201,16 @@ router.put("/", adminMiddleware, async (req, res) => {
         where: { key: "global" },
         update: {
           settingHoursPerSetting: nextData.settingHoursPerSetting,
+          thicknessRateUpto100: nextData.thicknessRateUpto100,
+          thicknessRateAbove100: nextData.thicknessRateAbove100,
           complexExtraHours: nextData.complexExtraHours,
           pipExtraHours: nextData.pipExtraHours,
         },
         create: {
           key: "global",
           settingHoursPerSetting: nextData.settingHoursPerSetting,
+          thicknessRateUpto100: nextData.thicknessRateUpto100,
+          thicknessRateAbove100: nextData.thicknessRateAbove100,
           complexExtraHours: nextData.complexExtraHours,
           pipExtraHours: nextData.pipExtraHours,
         },
@@ -188,6 +233,9 @@ router.put("/", adminMiddleware, async (req, res) => {
             masterConfigId,
             customer: c.customer,
             rate: c.rate ? c.rate : null,
+            settingHours: c.settingHours ? c.settingHours : null,
+            thicknessRateUpto100: c.thicknessRateUpto100 ? c.thicknessRateUpto100 : null,
+            thicknessRateAbove100: c.thicknessRateAbove100 ? c.thicknessRateAbove100 : null,
           })),
         }),
         tx.masterConfigMaterial.createMany({
@@ -231,13 +279,19 @@ router.put("/", adminMiddleware, async (req, res) => {
     return res.json({
       _id: config.id,
       key: config.key,
-      customers: config.customers.map((c) => ({ customer: c.customer, rate: c.rate ? String(c.rate) : "" })),
+      customers: config.customers.map((c) => ({
+        customer: c.customer,
+        rate: c.rate ? String(c.rate) : "",
+        settingHours: c.settingHours ? String(c.settingHours) : "",
+      })),
       materials: config.materials.map((m) => m.value),
       passOptions: config.passOptions.map((p) => p.value),
       sedmElectrodeOptions: config.sedmElectrodeOptions.map((s) => s.value),
       machineOptions: config.machineOptions.map((m) => m.value),
       sedmThOptions: config.sedmThOptions.map((s) => ({ value: s.value, label: s.label })),
       settingHoursPerSetting: Number(config.settingHoursPerSetting ?? 0.5) || 0.5,
+      thicknessRateUpto100: Number(config.thicknessRateUpto100 ?? DEFAULT_MASTER_CONFIG.thicknessRateUpto100) || DEFAULT_MASTER_CONFIG.thicknessRateUpto100,
+      thicknessRateAbove100: Number(config.thicknessRateAbove100 ?? DEFAULT_MASTER_CONFIG.thicknessRateAbove100) || DEFAULT_MASTER_CONFIG.thicknessRateAbove100,
       complexExtraHours: Number(config.complexExtraHours ?? 1) || 1,
       pipExtraHours: Number(config.pipExtraHours ?? 1) || 1,
       createdAt: config.createdAt,

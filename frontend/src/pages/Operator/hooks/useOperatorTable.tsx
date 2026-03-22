@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import CreatedByBadge from "../../../components/CreatedByBadge";
 import type { JobEntry } from "../../../types/job";
 import ActionButtons from "../../Programmer/components/ActionButtons";
 import ArrowForwardIosSharpIcon from "@mui/icons-material/ArrowForwardIosSharp";
@@ -8,7 +9,6 @@ import {
   estimatedTimeFromAmount,
   formatJobRefDisplay,
   formatMachineLabel,
-  getInitials,
   MACHINE_OPTIONS,
   toMachineIndex,
   toYN,
@@ -16,6 +16,7 @@ import {
 import MarqueeCopyText from "../../../components/MarqueeCopyText";
 import SelectDropdown from "../../Programmer/components/SelectDropdown";
 import { MultiSelectOperators } from "../components/MultiSelectOperators";
+import { getThicknessDisplayValue } from "../../Programmer/programmerUtils";
 
 type TableRow = {
   groupId: string;
@@ -74,6 +75,70 @@ export const useOperatorTable = ({
     return toMachineIndex(captureMachine);
   };
 
+  const operatorNameLookup = useMemo(() => {
+    const lookup = new Map<string, string>();
+    operatorUsers.forEach((user) => {
+      const fullName = String(user.name || "").trim();
+      if (!fullName) return;
+      lookup.set(fullName.toLowerCase(), fullName);
+      const firstToken = fullName.split(/\s+/).filter(Boolean)[0];
+      if (firstToken) {
+        lookup.set(firstToken.toLowerCase(), fullName);
+      }
+    });
+    return lookup;
+  }, [operatorUsers]);
+
+  const normalizeAssignedOperators = (value: unknown): string[] => {
+    const source = Array.isArray(value)
+      ? value
+      : String(value || "")
+          .split(",")
+          .map((name) => name.trim())
+          .filter(Boolean);
+
+    const unique = new Set<string>();
+    const normalized: string[] = [];
+    source.forEach((name) => {
+      if (!name || name.toLowerCase() === "unassigned") return;
+      const mappedName = operatorNameLookup.get(name.toLowerCase()) || name;
+      const key = mappedName.toLowerCase();
+      if (unique.has(key)) return;
+      unique.add(key);
+      normalized.push(mappedName);
+    });
+    return normalized;
+  };
+
+  const getGroupExpectedHours = (entries: JobEntry[]): number => {
+    const wedmAmount = entries.reduce(
+      (sum, entry) => sum + (Number(entry.totalHrs || 0) * Number(entry.rate || 0)),
+      0
+    );
+    return wedmAmount / 625 / 24;
+  };
+
+  const getLatestActiveCaptureStartedAt = (entries: JobEntry[]): string | null => {
+    let latestStart: string | null = null;
+    entries.forEach((entry) => {
+      const captures = Array.isArray(entry.operatorCaptures) ? entry.operatorCaptures : [];
+      captures.forEach((capture) => {
+        if (!capture?.startTime || capture?.endTime) return;
+        const startedAt = new Date(capture.startTime);
+        if (Number.isNaN(startedAt.getTime())) return;
+        if (!latestStart || startedAt.getTime() > new Date(latestStart).getTime()) {
+          latestStart = capture.startTime;
+        }
+      });
+    });
+    return latestStart;
+  };
+
+  const formatDurationMinutes = (minutes: number): string => {
+    const safeMinutes = Math.max(1, Math.ceil(minutes));
+    return safeMinutes === 1 ? "1 min" : `${safeMinutes} mins`;
+  };
+
   return useMemo<Column<TableRow>[]>(
     () => [
       {
@@ -81,12 +146,14 @@ export const useOperatorTable = ({
         label: "Customer",
         sortable: false,
         sortKey: "customer",
+        className: "customer-cell",
+        headerClassName: "customer-header",
         render: (row: TableRow) => {
           const expandable = expandableRows?.get(row.groupId);
           const isExpanded = expandable?.isExpanded || false;
 
           return (
-            <div style={{ display: "flex", alignItems: "center", gap: "0.2rem" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-start", gap: "0.2rem", width: "100%" }}>
               {expandable && (
                 <button
                   type="button"
@@ -166,7 +233,7 @@ export const useOperatorTable = ({
         label: "TH (MM)",
         sortable: false,
         sortKey: "thickness",
-        render: (row) => Math.round(Number(row.parent.thickness || 0)),
+        render: (row) => getThicknessDisplayValue(row.parent.thickness),
       },
       {
         key: "passLevel",
@@ -206,13 +273,7 @@ export const useOperatorTable = ({
         className: "operator-assigned-cell",
         render: (row) => {
           const assignedToValue = row.parent.assignedTo || "";
-          let assignedOperators: string[] = [];
-
-          if (Array.isArray(assignedToValue)) {
-            assignedOperators = [...new Set(assignedToValue.map((name) => name.trim()).filter(Boolean))];
-          } else if (assignedToValue && assignedToValue !== "Unassigned") {
-            assignedOperators = [...new Set(String(assignedToValue).split(",").map((name) => name.trim()).filter(Boolean))];
-          }
+          const assignedOperators = normalizeAssignedOperators(assignedToValue);
 
           return canAssign ? (
             <MultiSelectOperators
@@ -258,7 +319,6 @@ export const useOperatorTable = ({
               handleMachineNumberChange(row.groupId, nextValue);
             }}
             options={[
-              { label: "Select", value: "" },
               ...machineDropdownOptions.map((machine) => ({
                 label: formatMachineLabel(machine),
                 value: machine,
@@ -281,11 +341,22 @@ export const useOperatorTable = ({
         ),
         sortable: false,
         render: (row) => {
-          const wedmAmount = row.entries.reduce(
-            (sum, entry) => sum + (Number(entry.totalHrs || 0) * Number(entry.rate || 0)),
-            0
-          );
-          return estimatedTimeFromAmount(wedmAmount);
+          const expectedHours = getGroupExpectedHours(row.entries);
+          const activeStartedAt = getLatestActiveCaptureStartedAt(row.entries);
+          if (activeStartedAt && expectedHours > 0) {
+            const elapsedHours = Math.max(0, Date.now() - new Date(activeStartedAt).getTime()) / 3600000;
+            if (elapsedHours > expectedHours) {
+              return (
+                <span
+                  className="operator-overtime-value"
+                  title={`Expected ${estimatedTimeFromAmount(expectedHours * 625 * 24)}`}
+                >
+                  Overtime {formatDurationMinutes((elapsedHours - expectedHours) * 60)}
+                </span>
+              );
+            }
+          }
+          return estimatedTimeFromAmount(expectedHours * 625 * 24);
         },
       },
         ...(isAdmin
@@ -340,14 +411,7 @@ export const useOperatorTable = ({
         sortKey: "createdBy",
         className: "created-by-cell",
         headerClassName: "created-by-header",
-        render: (row) => {
-          const fullName = String(row.parent.createdBy || "-").trim() || "-";
-          return (
-            <span className="created-by-badge" title={fullName.toUpperCase()}>
-              {getInitials(fullName)}
-            </span>
-          );
-        },
+        render: (row) => <CreatedByBadge value={row.parent.createdBy} />,
       },
       {
         key: "action",
@@ -387,6 +451,7 @@ export const useOperatorTable = ({
       canMoveGroupToQa,
       isAdmin,
       isImageInputDisabled,
+      operatorNameLookup,
     ]
   );
 };

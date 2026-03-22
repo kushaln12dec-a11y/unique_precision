@@ -8,6 +8,7 @@ import { formatMachineLabel } from "../../../utils/jobFormatting";
 import "./JobDetailsModal.css";
 import { useLocation } from "react-router-dom";
 import { getQaProgressCounts } from "../../Operator/utils/qaProgress";
+import CreatedByBadge from "../../../components/CreatedByBadge";
 
 interface JobDetailsModalProps {
   job: {
@@ -79,7 +80,7 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
 
   const jobInfoPairs: DetailPair[] = [
     { label: "Customer", value: displayCut?.customer || "-" },
-    { label: "Created By", value: displayCut?.createdBy || "-" },
+    { label: "Created By", value: <CreatedByBadge value={displayCut?.createdBy} /> },
     { label: "Created At", value: formatDate(displayCut?.createdAt || "") },
     { label: "Updated By", value: (displayCut as any)?.updatedBy || "-" },
     {
@@ -156,7 +157,6 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
               {displayEntries.map((cutItem, index) => {
                 const basePairs: DetailPair[] = [
                   { label: "Customer", value: cutItem.customer || "-" },
-                  { label: "Rate (Rs./hr)", value: `Rs. ${Number(cutItem.rate || 0).toFixed(2)}` },
                   { label: "Cut Length (mm)", value: Number(cutItem.cut || 0).toFixed(2) },
                   { label: "Description", value: cutItem.description || "-" },
                   {
@@ -180,6 +180,13 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
                   },
                 ];
 
+                if (canSeeAmounts) {
+                  basePairs.splice(1, 0, {
+                    label: "Rate (Rs./hr)",
+                    value: `Rs. ${Number(cutItem.rate || 0).toFixed(2)}`,
+                  });
+                }
+
                 if (showOperatorSpecificLayout) {
                   basePairs.push({
                     label: "QC Progress",
@@ -193,7 +200,7 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
 
                 if (isSingleCut) {
                   basePairs.push(
-                    { label: "Created By", value: cutItem.createdBy || "-" },
+                    { label: "Created By", value: <CreatedByBadge value={cutItem.createdBy} /> },
                     { label: "Created At", value: formatDate(cutItem.createdAt) },
                     { label: "Updated By", value: (cutItem as any).updatedBy || "-" },
                     {

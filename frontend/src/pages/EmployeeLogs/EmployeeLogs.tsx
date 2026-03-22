@@ -10,7 +10,7 @@ const EmployeeLogs = () => {
   return (
     <div className="employee-logs-page-container">
       <Sidebar
-        currentPath="/employee-logs"
+        currentPath="/job-logs"
         onNavigate={(path) => navigate(path)}
       />
       <div className="employee-logs-page-content">

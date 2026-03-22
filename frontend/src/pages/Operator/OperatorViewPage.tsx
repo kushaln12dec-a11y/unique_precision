@@ -21,7 +21,7 @@ import { validateQuantityInputs, validateRangeSelection } from "./utils/validati
 import { getQuantityProgressStatuses } from "./utils/qaProgress";
 import type { QuantityQaStatus } from "../../types/job";
 import { getUserRoleFromToken } from "../../utils/auth";
-import { getFirstNameDisplay } from "../../utils/jobFormatting";
+import { getDisplayName } from "../../utils/jobFormatting";
 import "../RoleBoard.css";
 import "../Programmer/Programmer.css";
 import "../Programmer/components/JobDetailsModal.css";
@@ -62,7 +62,7 @@ const OperatorViewPage = () => {
           .filter((user) => user.role === "OPERATOR" || user.role === "ADMIN")
           .map((user) => ({
             id: user._id,
-            name: getFirstNameDisplay(user.firstName, user.email, String(user._id)).toUpperCase(),
+            name: getDisplayName(user.firstName, user.lastName, user.email, String(user._id)).toUpperCase(),
           }));
         setOperatorUsers(operators);
       } catch (error) {

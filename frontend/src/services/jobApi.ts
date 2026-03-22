@@ -2,6 +2,19 @@ import type { JobEntry } from "../types/job";
 import type { FilterValues } from "../components/FilterModal";
 import { apiUrl } from "./apiClient";
 
+export type PaginatedResult<T> = {
+  items: T[];
+  total: number;
+  offset: number;
+  limit: number;
+  hasMore: boolean;
+};
+
+type PaginationParams = {
+  offset?: number;
+  limit?: number;
+};
+
 const getAuthHeaders = () => {
   const token = localStorage.getItem("token");
   return {
@@ -17,7 +30,8 @@ const buildQueryParams = (
   createdByFilter?: string,
   assignedToFilter?: string,
   criticalFilter?: boolean,
-  descriptionFilter?: string
+  descriptionFilter?: string,
+  pagination?: PaginationParams
 ): string => {
   const params = new URLSearchParams();
 
@@ -76,6 +90,13 @@ const buildQueryParams = (
     });
   }
 
+  if (pagination?.offset !== undefined) {
+    params.append("offset", String(Math.max(0, pagination.offset)));
+  }
+  if (pagination?.limit !== undefined) {
+    params.append("limit", String(Math.max(1, pagination.limit)));
+  }
+
   return params.toString();
 };
 
@@ -131,6 +152,12 @@ const normalizeJobListItem = (job: any): JobEntry => ({
   operatorCaptures: Array.isArray(job.operatorCaptures) ? job.operatorCaptures : [],
 });
 
+const getListPayload = (payload: any): any[] => {
+  if (Array.isArray(payload)) return payload;
+  if (Array.isArray(payload?.items)) return payload.items;
+  return [];
+};
+
 const fetchJobList = async (url: string): Promise<JobEntry[]> => {
 
   const res = await fetch(apiUrl(url), {
@@ -142,8 +169,30 @@ const fetchJobList = async (url: string): Promise<JobEntry[]> => {
     throw new Error("Failed to fetch jobs");
   }
 
-  const jobs = await res.json();
+  const payload = await res.json();
+  const jobs = getListPayload(payload);
   return jobs.map(normalizeJobListItem);
+};
+
+const fetchPaginatedJobList = async (url: string): Promise<PaginatedResult<JobEntry>> => {
+  const res = await fetch(apiUrl(url), {
+    method: "GET",
+    headers: getAuthHeaders(),
+  });
+
+  if (!res.ok) {
+    throw new Error("Failed to fetch jobs");
+  }
+
+  const payload = await res.json();
+  const items = getListPayload(payload).map(normalizeJobListItem);
+  return {
+    items,
+    total: Number(payload?.total || items.length || 0),
+    offset: Number(payload?.offset || 0),
+    limit: Number(payload?.limit || items.length || 0),
+    hasMore: Boolean(payload?.hasMore),
+  };
 };
 
 export const getProgrammerJobs = async (
@@ -165,6 +214,27 @@ export const getProgrammerJobs = async (
   return fetchJobList(url);
 };
 
+export const getProgrammerJobsPage = async (
+  filters?: FilterValues,
+  customerFilter?: string,
+  createdByFilter?: string,
+  criticalFilter?: boolean,
+  descriptionFilter?: string,
+  pagination: PaginationParams = {}
+): Promise<PaginatedResult<JobEntry>> => {
+  const queryString = buildQueryParams(
+    filters,
+    customerFilter,
+    createdByFilter,
+    undefined,
+    criticalFilter,
+    descriptionFilter,
+    pagination
+  );
+  const url = queryString ? `/api/jobs/programmer?${queryString}` : "/api/jobs/programmer";
+  return fetchPaginatedJobList(url);
+};
+
 export const getOperatorJobs = async (
   filters?: FilterValues,
   customerFilter?: string,
@@ -184,8 +254,44 @@ export const getOperatorJobs = async (
   return fetchJobList(url);
 };
 
+export const getOperatorJobsPage = async (
+  filters?: FilterValues,
+  customerFilter?: string,
+  createdByFilter?: string,
+  assignedToFilter?: string,
+  descriptionFilter?: string,
+  pagination: PaginationParams = {}
+): Promise<PaginatedResult<JobEntry>> => {
+  const queryString = buildQueryParams(
+    filters,
+    customerFilter,
+    createdByFilter,
+    assignedToFilter,
+    false,
+    descriptionFilter,
+    pagination
+  );
+  const url = queryString ? `/api/jobs/operator?${queryString}` : "/api/jobs/operator";
+  return fetchPaginatedJobList(url);
+};
+
 export const getQcJobs = async (): Promise<JobEntry[]> => {
   return fetchJobList("/api/jobs/qc");
+};
+
+export const getQcJobsPage = async (
+  pagination: PaginationParams = {}
+): Promise<PaginatedResult<JobEntry>> => {
+  const params = new URLSearchParams();
+  if (pagination.offset !== undefined) {
+    params.append("offset", String(Math.max(0, pagination.offset)));
+  }
+  if (pagination.limit !== undefined) {
+    params.append("limit", String(Math.max(1, pagination.limit)));
+  }
+  const queryString = params.toString();
+  const url = queryString ? `/api/jobs/qc?${queryString}` : "/api/jobs/qc";
+  return fetchPaginatedJobList(url);
 };
 
 export const getJobById = async (id: string): Promise<JobEntry> => {
