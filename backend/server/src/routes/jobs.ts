@@ -31,6 +31,7 @@ const programmerListSelect = {
   priority: true,
   description: true,
   programRefFile: true,
+  operationRowsJson: true,
   critical: true,
   pipFinish: true,
   totalHrs: true,

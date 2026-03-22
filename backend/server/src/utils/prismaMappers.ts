@@ -10,9 +10,27 @@ const decimalToString = (value: any): string => {
   return String(value);
 };
 
+const getThicknessFromOperationRows = (operationRowsJson: unknown): string => {
+  const raw = String(operationRowsJson || "").trim();
+  if (!raw) return "";
+
+  try {
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed) || parsed.length === 0) return "";
+    const firstRow = parsed.find((row) => row && typeof row === "object");
+    if (!firstRow) return "";
+    return String((firstRow as any).thickness ?? (firstRow as any).thk ?? "").trim();
+  } catch {
+    return "";
+  }
+};
+
 const mapJobCore = (job: any) => {
   const createdAt = job.createdAt ? formatDbDateTime(new Date(job.createdAt)) : "";
   const updatedAt = job.updatedAt ? formatDbDateTime(new Date(job.updatedAt)) : "";
+  const storedThickness = decimalToString(job.thickness);
+  const operationRowThickness = getThicknessFromOperationRows(job.operationRowsJson);
+  const thickness = operationRowThickness || storedThickness;
 
   return {
     ...job,
@@ -21,7 +39,7 @@ const mapJobCore = (job: any) => {
     updatedAt: updatedAt || job.updatedAt || "",
     rate: decimalToString(job.rate),
     cut: decimalToString(job.cut),
-    thickness: decimalToString(job.thickness),
+    thickness,
     passLevel: job.passLevel !== null && job.passLevel !== undefined ? String(job.passLevel) : "",
     setting: job.setting !== null && job.setting !== undefined ? String(job.setting) : "",
     qty: job.qty !== null && job.qty !== undefined ? String(job.qty) : "",
