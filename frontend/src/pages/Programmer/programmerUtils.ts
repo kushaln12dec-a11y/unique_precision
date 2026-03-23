@@ -1,3 +1,5 @@
+import { estimatedHoursFromAmount } from "../../utils/jobFormatting";
+
 export type CutForm = {
   customer: string;
   rate: string;
@@ -453,7 +455,7 @@ export const calculateTotals = (form: CutForm, config: CalculationConfig = {}): 
   const sedmEntries = calculateSedmBreakdown(form);
   const sedmAmount = sedmEntries.reduce((sum, entry) => sum + entry.entryCost, 0);
   const totalAmount = wedmAmount + sedmAmount;
-  const estimatedTime = wedmAmount / 625 / 24;
+  const estimatedTime = estimatedHoursFromAmount(wedmAmount);
 
   return {
     totalHrs,

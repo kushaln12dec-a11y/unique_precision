@@ -1,5 +1,4 @@
 import React from "react";
-import CreatedByBadge from "../../../components/CreatedByBadge";
 import { formatJobRefDisplay } from "../../../utils/jobFormatting";
 import type { JobEntry } from "../../../types/job";
 import { formatDate } from "../utils/dateFormat";
@@ -11,6 +10,8 @@ type OperatorJobInfoProps = {
 };
 
 export const OperatorJobInfo: React.FC<OperatorJobInfoProps> = ({ parentJob, groupId }) => {
+  const createdByName = String(parentJob.createdBy || "-").trim() || "-";
+
   return (
     <div className="operator-job-info-section">
       <h3 className="operator-section-title">Job Information</h3>
@@ -21,9 +22,7 @@ export const OperatorJobInfo: React.FC<OperatorJobInfoProps> = ({ parentJob, gro
         </div>
         <div className="operator-info-card">
           <label>Created By</label>
-          <span className="operator-info-created-by">
-            <CreatedByBadge value={parentJob.createdBy} />
-          </span>
+          <span className="operator-info-created-by">{createdByName}</span>
         </div>
         <div className="operator-info-card">
           <label>Created At</label>

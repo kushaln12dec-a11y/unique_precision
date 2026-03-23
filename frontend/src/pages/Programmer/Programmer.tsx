@@ -96,6 +96,20 @@ const PROGRAMMER_GRID_COLUMN_WIDTHS: Record<string, number> = {
 const getProgrammerGridColumnWidth = (columnKey: string) =>
   PROGRAMMER_GRID_COLUMN_WIDTHS[columnKey] ?? 64;
 
+const PROGRAMMER_LOG_COLUMN_WIDTHS: Record<string, number> = {
+  user: 96,
+  jobNumber: 96,
+  summary: 176,
+  startedAt: 108,
+  endedAt: 108,
+  shift: 72,
+  duration: 84,
+  status: 110,
+};
+
+const getProgrammerLogColumnWidth = (columnKey: string) =>
+  PROGRAMMER_LOG_COLUMN_WIDTHS[columnKey] ?? 88;
+
 const Programmer = () => {
   const navigate = useNavigate();
   const params = useParams<{ groupId?: string }>();
@@ -719,7 +733,8 @@ const Programmer = () => {
       programmerLogColumns.map((column) => ({
         headerName: typeof column.label === "string" ? column.label : String(column.key),
         field: column.key,
-        minWidth: column.className?.includes("summary") ? 200 : 120,
+        width: getProgrammerLogColumnWidth(String(column.key)),
+        minWidth: getProgrammerLogColumnWidth(String(column.key)),
         cellClass: column.className,
         headerClass: column.headerClassName,
         cellRenderer: column.render ? ((params: any) => column.render!(params.data, params.node?.rowIndex || 0)) : undefined,

@@ -21,7 +21,7 @@ import { validateQuantityInputs, validateRangeSelection } from "./utils/validati
 import { getQuantityProgressStatuses } from "./utils/qaProgress";
 import type { QuantityQaStatus } from "../../types/job";
 import { getUserRoleFromToken } from "../../utils/auth";
-import { getDisplayName } from "../../utils/jobFormatting";
+import { estimatedHoursFromAmount, getDisplayName } from "../../utils/jobFormatting";
 import "../RoleBoard.css";
 import "../Programmer/Programmer.css";
 import "../Programmer/components/JobDetailsModal.css";
@@ -469,7 +469,7 @@ const OperatorViewPage = () => {
   const parentJob = jobs.length > 0 ? jobs[0] : null;
   const totalGroupQuantity = jobs.reduce((sum, job) => sum + Math.max(1, Number(job.qty || 1)), 0);
   const groupTotalAmount = jobs.reduce((sum, job) => sum + (job.totalAmount || 0), 0);
-  const groupEstimatedHrs = (amounts.totalWedmAmount || 0) / 625 / 24;
+  const groupEstimatedHrs = estimatedHoursFromAmount(amounts.totalWedmAmount || 0);
 
   const getCutInputData = (cutId: number | string, quantity: number = 1): CutInputData => {
     return cutInputs.get(cutId) || createEmptyCutInputData(quantity);
