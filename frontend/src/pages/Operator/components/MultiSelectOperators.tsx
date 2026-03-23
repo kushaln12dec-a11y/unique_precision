@@ -209,7 +209,7 @@ export const MultiSelectOperators: React.FC<MultiSelectOperatorsProps> = ({
               <>
                 <div className="dropdown-option" onClick={markUnassigned}>
                   <input type="checkbox" checked={normalizedSelectedOperators.length === 0} readOnly />
-                  <span>Unassigned</span>
+                  <span>Unassign</span>
                 </div>
                 {assignToSelfName && (
                   <div className="dropdown-option" onClick={assignToSelf}>

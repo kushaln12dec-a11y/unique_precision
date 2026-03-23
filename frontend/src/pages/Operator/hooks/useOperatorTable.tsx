@@ -3,7 +3,7 @@ import CreatedByBadge from "../../../components/CreatedByBadge";
 import type { JobEntry } from "../../../types/job";
 import ActionButtons from "../../Programmer/components/ActionButtons";
 import ArrowForwardIosSharpIcon from "@mui/icons-material/ArrowForwardIosSharp";
-import { getGroupQaProgressCounts } from "../utils/qaProgress";
+import { getDispatchableQuantityNumbers, getGroupQaProgressCounts, getQaProgressCounts } from "../utils/qaProgress";
 import type { Column } from "../../../components/DataTable";
 import {
   estimatedHoursFromAmount,
@@ -27,39 +27,51 @@ type TableRow = {
   entries: JobEntry[];
 };
 
+export type OperatorDisplayRow = {
+  kind: "parent" | "child";
+  groupId: string;
+  tableRow: TableRow;
+  entry: JobEntry;
+  childIndex: number | null;
+  hasChildren: boolean;
+  isExpanded: boolean;
+};
+
 type UseOperatorTableProps = {
-  tableData: TableRow[];
-  expandableRows: Map<string, any>;
   canAssign: boolean;
   operatorUsers: Array<{ id: string | number; name: string }>;
   machineOptions: string[];
   currentUserName: string;
   handleAssignChange: (jobId: number | string, value: string) => void;
   handleMachineNumberChange: (groupId: string, machineNumber: string) => void;
+  handleChildMachineNumberChange: (jobId: number | string, machineNumber: string) => void;
   handleViewJob: (row: TableRow) => void;
+  handleViewEntry: (entry: JobEntry) => void;
   handleSubmit: (groupId: string) => void;
   handleImageInput: (groupId: string, cutId?: number) => void;
-  handleMoveGroupToQa: (row: TableRow) => void;
-  canMoveGroupToQa: (entries: JobEntry[]) => boolean;
+  handleOpenQaModal: (entries: JobEntry[]) => void;
   isAdmin: boolean;
   isImageInputDisabled: boolean;
+  toggleGroup: (groupId: string) => void;
 };
 
 export const useOperatorTable = ({
-  expandableRows,
   canAssign,
   operatorUsers,
   machineOptions,
   currentUserName,
   handleAssignChange,
   handleMachineNumberChange,
+  handleChildMachineNumberChange,
   handleViewJob,
+  handleViewEntry,
   handleSubmit,
-  handleMoveGroupToQa,
-  canMoveGroupToQa,
+  handleImageInput,
+  handleOpenQaModal,
   isAdmin,
   isImageInputDisabled,
-}: UseOperatorTableProps): Column<TableRow>[] => {
+  toggleGroup,
+}: UseOperatorTableProps): Column<OperatorDisplayRow>[] => {
   const machineDropdownOptions = useMemo(() => {
     const normalized = machineOptions
       .map((value) => toMachineIndex(value))
@@ -101,7 +113,8 @@ export const useOperatorTable = ({
     const unique = new Set<string>();
     const normalized: string[] = [];
     source.forEach((name) => {
-      if (!name || name.toLowerCase() === "unassigned") return;
+      const normalizedName = String(name || "").trim().toLowerCase();
+      if (!normalizedName || normalizedName === "unassigned" || normalizedName === "unassign") return;
       const mappedName = operatorNameLookup.get(name.toLowerCase()) || name;
       const key = mappedName.toLowerCase();
       if (unique.has(key)) return;
@@ -140,7 +153,7 @@ export const useOperatorTable = ({
     return safeMinutes === 1 ? "1 min" : `${safeMinutes} mins`;
   };
 
-  return useMemo<Column<TableRow>[]>(
+  return useMemo<Column<OperatorDisplayRow>[]>(
     () => [
       {
         key: "customer",
@@ -149,21 +162,20 @@ export const useOperatorTable = ({
         sortKey: "customer",
         className: "customer-cell",
         headerClassName: "customer-header",
-        render: (row: TableRow) => {
-          const expandable = expandableRows?.get(row.groupId);
-          const isExpanded = expandable?.isExpanded || false;
+        render: (row: OperatorDisplayRow) => {
+          const isChild = row.kind === "child";
 
           return (
             <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-start", gap: "0.2rem", width: "100%" }}>
-              {expandable && (
+              {!isChild && row.hasChildren && (
                 <button
                   type="button"
                   className="accordion-toggle-button operator-accordion-toggle"
                   onClick={(event) => {
                     event.stopPropagation();
-                    expandable.onToggle();
+                    toggleGroup(row.groupId);
                   }}
-                  aria-label={expandable.ariaLabel}
+                  aria-label={row.isExpanded ? "Collapse settings" : "Expand settings"}
                   style={{
                     background: "none",
                     border: "none",
@@ -176,14 +188,15 @@ export const useOperatorTable = ({
                     minWidth: "1rem",
                     width: "1rem",
                     transition: "transform 0.2s ease",
-                    transform: isExpanded ? "rotate(90deg)" : "rotate(0deg)",
+                    transform: row.isExpanded ? "rotate(90deg)" : "rotate(0deg)",
                   }}
                 >
                   <ArrowForwardIosSharpIcon sx={{ fontSize: "0.7rem" }} />
                 </button>
               )}
-              {!expandable && <span style={{ width: "1rem" }} />}
-              <span>{row.parent.customer || "-"}</span>
+              {isChild && <span className="inline-row-branch">|-</span>}
+              {!isChild && !row.hasChildren && <span style={{ width: "1rem" }} />}
+              <span>{row.entry.customer || "-"}</span>
             </div>
           );
         },
@@ -193,7 +206,7 @@ export const useOperatorTable = ({
         label: "Job ref",
         sortable: false,
         render: (row) => {
-          const ref = row.parent.refNumber || "";
+          const ref = row.entry.refNumber || "";
           return formatJobRefDisplay(ref);
         },
       },
@@ -208,7 +221,7 @@ export const useOperatorTable = ({
         ),
         sortable: false,
         render: (row) => {
-          const value = String((row.parent as any).programRefFile || (row.parent as any).programRefFileName || "-");
+          const value = String((row.entry as any).programRefFile || (row.entry as any).programRefFileName || "-");
           return <MarqueeCopyText text={value} />;
         },
       },
@@ -218,7 +231,7 @@ export const useOperatorTable = ({
         sortable: false,
         sortKey: "description",
         render: (row) => {
-          const full = row.parent.description || "-";
+          const full = row.entry.description || "-";
           return <MarqueeCopyText text={full} />;
         },
       },
@@ -227,42 +240,42 @@ export const useOperatorTable = ({
         label: "Cut (mm)",
         sortable: false,
         sortKey: "cut",
-        render: (row) => Math.round(Number(row.parent.cut || 0)),
+        render: (row) => Math.round(Number(row.entry.cut || 0)),
       },
       {
         key: "thickness",
         label: "TH (MM)",
         sortable: false,
         sortKey: "thickness",
-        render: (row) => getThicknessDisplayValue(row.parent.thickness),
+        render: (row) => getThicknessDisplayValue(row.entry.thickness),
       },
       {
         key: "passLevel",
         label: "Pass",
         sortable: false,
         sortKey: "passLevel",
-        render: (row) => row.parent.passLevel,
+        render: (row) => row.entry.passLevel,
       },
       {
         key: "setting",
         label: "Setting",
         sortable: false,
         sortKey: "setting",
-        render: (row) => row.parent.setting,
+        render: (row) => row.entry.setting,
       },
       {
         key: "qty",
         label: "Qty",
         sortable: false,
         sortKey: "qty",
-        render: (row) => Number(row.parent.qty || 0).toString(),
+        render: (row) => Number(row.entry.qty || 0).toString(),
       },
       {
         key: "sedm",
         label: "SEDM",
         sortable: false,
         render: (row) => {
-          const sedm = toYN(row.parent.sedm);
+          const sedm = toYN(row.entry.sedm);
           const sedmClass = sedm === "Y" ? "sedm-badge yes" : sedm === "N" ? "sedm-badge no" : "sedm-badge";
           return <span className={sedmClass}>{sedm}</span>;
         },
@@ -273,7 +286,7 @@ export const useOperatorTable = ({
         sortable: false,
         className: "operator-assigned-cell",
         render: (row) => {
-          const assignedToValue = row.parent.assignedTo || "";
+          const assignedToValue = row.entry.assignedTo || "";
           const assignedOperators = normalizeAssignedOperators(assignedToValue);
 
           return canAssign ? (
@@ -283,11 +296,11 @@ export const useOperatorTable = ({
               className="operator-assigned-dropdown"
               onChange={(operators) => {
                 const uniqueOperators = [...new Set(operators.map((name) => name.trim()).filter(Boolean))];
-                const value = uniqueOperators.length > 0 ? uniqueOperators.join(", ") : "Unassigned";
-                handleAssignChange(row.parent.id, value);
+                const value = uniqueOperators.length > 0 ? uniqueOperators.join(", ") : "Unassign";
+                handleAssignChange(row.entry.id, value);
               }}
               assignToSelfName={currentUserName || undefined}
-              placeholder="Unassigned"
+              placeholder="Unassign"
               compact
             />
           ) : (
@@ -301,7 +314,7 @@ export const useOperatorTable = ({
                   <span className="operator-badge-readonly">{assignedOperators[0]}</span>
                 )
               ) : (
-                <span className="unassigned-text">Unassigned</span>
+                <span className="unassigned-text">Unassign</span>
               )}
             </div>
           );
@@ -315,9 +328,13 @@ export const useOperatorTable = ({
         render: (row) => (
           <SelectDropdown
             className="operator-machine-dropdown-wrapper"
-            value={machineDropdownOptions.includes(getMachineNumber(row.parent)) ? getMachineNumber(row.parent) : ""}
+            value={machineDropdownOptions.includes(getMachineNumber(row.entry)) ? getMachineNumber(row.entry) : ""}
             onChange={(nextValue) => {
-              handleMachineNumberChange(row.groupId, nextValue);
+              if (row.kind === "parent") {
+                handleMachineNumberChange(row.groupId, nextValue);
+              } else {
+                handleChildMachineNumberChange(row.entry.id, nextValue);
+              }
             }}
             options={[
               ...machineDropdownOptions.map((machine) => ({
@@ -342,8 +359,9 @@ export const useOperatorTable = ({
         ),
         sortable: false,
         render: (row) => {
-          const expectedHours = getGroupExpectedHours(row.entries);
-          const activeStartedAt = getLatestActiveCaptureStartedAt(row.entries);
+          const sourceEntries = row.kind === "parent" ? row.tableRow.entries : [row.entry];
+          const expectedHours = getGroupExpectedHours(sourceEntries);
+          const activeStartedAt = getLatestActiveCaptureStartedAt(sourceEntries);
           if (activeStartedAt && expectedHours > 0) {
             const elapsedHours = Math.max(0, Date.now() - new Date(activeStartedAt).getTime()) / 3600000;
             if (elapsedHours > expectedHours) {
@@ -369,8 +387,15 @@ export const useOperatorTable = ({
             sortKey: "totalAmount",
             className: "operator-amount-cell",
             headerClassName: "operator-amount-header",
-            render: (row: TableRow) => (row.groupTotalAmount ? `Rs. ${Math.round(row.groupTotalAmount)}` : "-"),
-          } as Column<TableRow>,
+            render: (row: OperatorDisplayRow) =>
+              row.kind === "parent"
+                ? row.tableRow.groupTotalAmount
+                  ? `Rs. ${Math.round(row.tableRow.groupTotalAmount)}`
+                  : "-"
+                : row.entry.totalAmount
+                  ? `Rs. ${Math.round(row.entry.totalAmount)}`
+                  : "-",
+          } as Column<OperatorDisplayRow>,
         ]
         : []),
       {
@@ -380,11 +405,13 @@ export const useOperatorTable = ({
         className: "status-cell",
         headerClassName: "status-header",
         render: (row) => {
-          const c = getGroupQaProgressCounts(row.entries);
+          const c = row.kind === "parent"
+            ? getGroupQaProgressCounts(row.tableRow.entries)
+            : getQaProgressCounts(row.entry, Math.max(1, Number(row.entry.qty || 1)));
           const badges = [
             { className: "empty", label: `Yet to Start ${c.empty}` },
-            { className: "saved", label: `Logged ${c.saved}` },
             { className: "ready", label: `In Progress ${c.ready}` },
+            { className: "saved", label: `Logged ${c.saved}` },
             { className: "sent", label: `QC ${c.sent}` },
           ];
           return (
@@ -412,7 +439,7 @@ export const useOperatorTable = ({
         sortKey: "createdBy",
         className: "created-by-cell",
         headerClassName: "created-by-header",
-        render: (row) => <CreatedByBadge value={row.parent.createdBy} />,
+        render: (row) => <CreatedByBadge value={row.entry.createdBy} />,
       },
       {
         key: "action",
@@ -421,18 +448,20 @@ export const useOperatorTable = ({
         className: "action-cell",
         headerClassName: "action-header",
         render: (row) => {
-          const hasChildren = !!expandableRows?.get(row.groupId);
+          const isChild = row.kind === "child";
+          const targetEntries = isChild ? [row.entry] : row.tableRow.entries;
+          const canSendToQa = targetEntries.some((entry) => getDispatchableQuantityNumbers(entry).length > 0);
           return (
             <ActionButtons
-              onView={() => handleViewJob(row)}
-              onImage={!hasChildren ? () => handleSubmit(row.groupId) : undefined}
-              onSubmit={() => handleMoveGroupToQa(row)}
-              viewLabel={`View ${row.parent.customer || "entry"}`}
-              imageLabel={`Open ${row.parent.customer || "entry"}`}
-              submitLabel="Move to QC"
+              onView={() => (isChild ? handleViewEntry(row.entry) : handleViewJob(row.tableRow))}
+              onImage={isChild ? () => handleImageInput(row.groupId, Number(row.entry.id)) : !row.hasChildren ? () => handleSubmit(row.groupId) : undefined}
+              onSubmit={() => handleOpenQaModal(targetEntries)}
+              viewLabel={`View ${row.entry.customer || "entry"}`}
+              imageLabel={`Open ${row.entry.customer || "entry"}`}
+              submitLabel="Send to QC"
               isOperator={true}
               disableImageButton={isImageInputDisabled}
-              disableSubmitButton={!canMoveGroupToQa(row.entries)}
+              disableSubmitButton={!canSendToQa}
             />
           );
         },
@@ -445,14 +474,16 @@ export const useOperatorTable = ({
       currentUserName,
       handleAssignChange,
       handleMachineNumberChange,
-      expandableRows,
+      handleChildMachineNumberChange,
       handleViewJob,
+      handleViewEntry,
       handleSubmit,
-      handleMoveGroupToQa,
-      canMoveGroupToQa,
+      handleImageInput,
+      handleOpenQaModal,
       isAdmin,
       isImageInputDisabled,
       operatorNameLookup,
+      toggleGroup,
     ]
   );
 };

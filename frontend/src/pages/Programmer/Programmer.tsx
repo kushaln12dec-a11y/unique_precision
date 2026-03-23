@@ -29,15 +29,14 @@ import type { JobEntry } from "../../types/job";
 import type { FilterValues } from "../../components/FilterModal";
 import { useJobHandlers } from "./hooks/useJobHandlers";
 import { useJobData } from "./hooks/useJobData";
-import { useTableColumns } from "./hooks/useTableColumns";
+import { useTableColumns, type ProgrammerDisplayRow } from "./hooks/useTableColumns";
 import { useProgrammerState } from "./hooks/useProgrammerState";
 import { exportJobsToCSV } from "./utils/csvExport";
 import type { TableRow } from "./utils/jobDataTransform";
-import { getParentRowClassName } from "./utils/priorityUtils";
+import { getParentRowClassName, getRowClassName } from "./utils/priorityUtils";
 import { formatDisplayDateTime, getDisplayDateTimeParts } from "../../utils/date";
 import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import MarqueeCopyText from "../../components/MarqueeCopyText";
-import ChildCutsTable from "./components/ChildCutsTable";
 import {
   setProgrammerCreatedByFilter,
   setProgrammerCriticalFilter,
@@ -48,11 +47,7 @@ import {
 } from "../../store/slices/filtersSlice";
 import { getDisplayName, getInitials, getLogUserDisplayName } from "../../utils/jobFormatting";
 
-type ProgrammerGridRow =
-  | { kind: "parent"; groupId: string; row: TableRow }
-  | { kind: "detail"; groupId: string; row: TableRow };
-
-const getProgrammerHeaderName = (column: Column<TableRow>) => {
+const getProgrammerHeaderName = (column: Column<ProgrammerDisplayRow>) => {
   if (typeof column.label === "string") return column.label;
   switch (column.key) {
     case "programRef":
@@ -252,7 +247,7 @@ const Programmer = () => {
     navigate(`/programmer/clone/${groupId}`);
   }, [handleNewJobState, navigate]);
 
-  const { tableData, expandableRows } = useJobData({
+  const { tableData } = useJobData({
     jobs: programmerGridJobs,
     sortField,
     sortDirection,
@@ -313,25 +308,60 @@ const Programmer = () => {
   }, []);
 
   const columns = useTableColumns({
-    expandableRows,
     isAdmin,
-    handleViewJob: handleViewGroup,
+    handleViewGroup,
+    handleViewEntry: async (entry) => {
+      try {
+        const fullEntries = await getJobsByGroupId(String(entry.groupId));
+        const targetEntry = fullEntries.find((job) => String(job.id) === String(entry.id)) || entry;
+        setViewingJob({
+          groupId: String(targetEntry.groupId),
+          parent: targetEntry,
+          entries: [targetEntry],
+          groupTotalHrs: Number(targetEntry.totalHrs || 0),
+          groupTotalAmount: Number(targetEntry.totalAmount || 0),
+        });
+        setShowJobViewModal(true);
+      } catch (error) {
+        console.error("Failed to fetch job details", error);
+        setToast({ message: "Failed to load job details.", variant: "error", visible: true });
+      }
+    },
     handleEditJob,
     handleCloneJob,
     handleDeleteClick,
+    toggleGroup,
   });
 
-  const programmerGridRows = useMemo<ProgrammerGridRow[]>(
+  const programmerGridRows = useMemo<ProgrammerDisplayRow[]>(
     () =>
-      tableData.flatMap((row) =>
-        expandableRows.has(row.groupId) && expandedGroups.has(row.groupId)
-          ? [
-              { kind: "parent", groupId: row.groupId, row },
-              { kind: "detail", groupId: row.groupId, row },
-            ]
-          : [{ kind: "parent", groupId: row.groupId, row }]
-      ),
-    [tableData, expandableRows, expandedGroups]
+      tableData.flatMap((row) => {
+        const hasChildren = row.entries.length > 1;
+        const isExpanded = expandedGroups.has(row.groupId);
+        const parentRow: ProgrammerDisplayRow = {
+          kind: "parent",
+          groupId: row.groupId,
+          tableRow: row,
+          entry: row.parent,
+          childIndex: null,
+          hasChildren,
+          isExpanded,
+        };
+        if (!hasChildren || !isExpanded) {
+          return [parentRow];
+        }
+        const childRows = row.entries.slice(1).map((entry, index) => ({
+          kind: "child" as const,
+          groupId: row.groupId,
+          tableRow: row,
+          entry,
+          childIndex: index,
+          hasChildren: false,
+          isExpanded: false,
+        }));
+        return [parentRow, ...childRows];
+      }),
+    [tableData, expandedGroups]
   );
 
   const programmerJobColumnDefs = useMemo(
@@ -358,8 +388,24 @@ const Programmer = () => {
           />
         ),
         cellRenderer: (params: any) => {
+          if (params.data?.kind === "child") {
+            const entryId = params.data.entry?.id;
+            if (entryId === undefined || entryId === null) return null;
+            const rowKey = String(entryId);
+            return (
+              <input
+                type="checkbox"
+                checked={selectedChildRows.has(rowKey)}
+                onChange={(event) => {
+                  handleChildRowSelect(rowKey, event.target.checked);
+                }}
+                onClick={(event) => event.stopPropagation()}
+              />
+            );
+          }
+
           if (params.data?.kind !== "parent") return null;
-          const groupId = String(params.data.row.groupId);
+          const groupId = String(params.data.groupId);
           return (
             <input
               type="checkbox"
@@ -391,57 +437,13 @@ const Programmer = () => {
           headerClass: column.headerClassName,
           cellRenderer:
             column.render
-              ? (params: any) =>
-                  params.data?.kind === "parent"
-                    ? column.render?.(params.data.row, params.node?.rowIndex || 0)
-                    : null
-              : (params: any) =>
-                  params.data?.kind === "parent"
-                    ? String(params.data?.row?.[column.key] ?? "-")
-                    : null,
+              ? (params: any) => column.render?.(params.data, params.node?.rowIndex || 0)
+              : (params: any) => String(params.data?.entry?.[column.key] ?? "-"),
         };
       }),
     ],
-    [columns, selectedJobIds, tableData]
+    [columns, handleChildRowSelect, selectedChildRows, selectedJobIds, tableData]
   );
-
-  const renderProgrammerDetailRow = useCallback((params: any) => {
-    const row = params?.data?.row as TableRow | undefined;
-    if (!row) return null;
-    return (
-      <div className="lazy-ag-grid-detail-row">
-        <ChildCutsTable
-          entries={row.entries}
-          parentSetting={String(row.parent.setting || "").trim()}
-          showSetNumberColumn={false}
-          onViewJob={async (entry) => {
-            try {
-              const fullEntries = await getJobsByGroupId(String(entry.groupId));
-              const targetEntry = fullEntries.find((job) => String(job.id) === String(entry.id)) || entry;
-              setViewingJob({
-                groupId: String(targetEntry.groupId),
-                parent: targetEntry,
-                entries: [targetEntry],
-                groupTotalHrs: Number(targetEntry.totalHrs || 0),
-                groupTotalAmount: Number(targetEntry.totalAmount || 0),
-              });
-              setShowJobViewModal(true);
-            } catch (error) {
-              console.error("Failed to fetch job details", error);
-              setToast({ message: "Failed to load job details.", variant: "error", visible: true });
-            }
-          }}
-          onEdit={handleEditJob}
-          onDelete={handleDeleteClick}
-          isAdmin={isAdmin}
-          showCheckboxes={true}
-          selectedRows={selectedChildRows}
-          onRowSelect={handleChildRowSelect}
-          getRowKey={(entry, index) => entry.id || index}
-        />
-      </div>
-    );
-  }, [handleChildRowSelect, handleDeleteClick, handleEditJob, isAdmin, selectedChildRows]);
 
   useEffect(() => {
     const fetchMasterConfig = async () => {
@@ -839,26 +841,20 @@ const Programmer = () => {
                     rows={programmerGridJobs}
                     onRowsChange={setProgrammerGridJobs}
                     transformRows={() => programmerGridRows}
-                    getRowId={(row: ProgrammerGridRow) =>
-                      row.kind === "detail" ? `${row.groupId}__detail` : row.groupId
-                    }
-                    isFullWidthRow={(row: ProgrammerGridRow) => row.kind === "detail"}
-                    fullWidthCellRenderer={renderProgrammerDetailRow}
-                    getRowHeight={(params) =>
-                      params.data?.kind === "detail"
-                        ? 84 + params.data.row.entries.length * 54
-                        : 52
+                    getRowId={(row: ProgrammerDisplayRow) =>
+                      row.kind === "parent" ? `parent__${row.groupId}` : `child__${row.groupId}__${row.entry.id}`
                     }
                     emptyMessage='No entries added yet. Use "New" to add an entry.'
-                    getRowClass={(params) =>
-                      params.data?.kind === "detail"
-                        ? "programmer-grid-detail"
-                        : getParentRowClassName(
-                            params.data.row.parent,
-                            params.data.row.entries,
-                            expandedGroups.has(params.data.row.groupId)
-                          )
-                    }
+                    getRowClass={(params) => {
+                      if (params.data?.kind === "child") {
+                        return getRowClassName([params.data.entry], false, true);
+                      }
+                      return getParentRowClassName(
+                        params.data.tableRow.parent,
+                        params.data.tableRow.entries,
+                        expandedGroups.has(params.data.groupId)
+                      );
+                    }}
                     className="jobs-table-wrapper"
                     rowHeight={38}
                     fitColumns={true}

@@ -198,7 +198,7 @@ const OperatorViewPage = () => {
         ? qtyData.opsName.join(", ")
         : (qtyData.opsName || "");
 
-      const assignedToValue = opsName.trim() || "Unassigned";
+      const assignedToValue = opsName.trim() || "Unassign";
 
       // Save this quantity's data
       const payload = {
@@ -351,7 +351,7 @@ const OperatorViewPage = () => {
         ? qtyData.opsName.join(", ")
         : (qtyData.opsName || "");
 
-      const assignedToValue = opsName.trim() || "Unassigned";
+      const assignedToValue = opsName.trim() || "Unassign";
 
       const payload = {
         startTime: qtyData.startTime,

@@ -42,11 +42,11 @@ const sanitizeMachineOptions = (values: string[]): string[] => {
 };
 
 const DEFAULT_CUSTOMERS: CustomerRate[] = [
-  { customer: "UPC001", rate: "100", settingHours: "0.5" },
-  { customer: "UPC002", rate: "10", settingHours: "0.5" },
-  { customer: "UPC003", rate: "", settingHours: "0.5" },
-  { customer: "UPC004", rate: "", settingHours: "0.5" },
-  { customer: "UPC005", rate: "", settingHours: "0.5" },
+  { customer: "UPC001", rate: "100", settingHours: "0.5", thicknessRateUpto100: "1500", thicknessRateAbove100: "1200" },
+  { customer: "UPC002", rate: "10", settingHours: "0.5", thicknessRateUpto100: "1500", thicknessRateAbove100: "1200" },
+  { customer: "UPC003", rate: "", settingHours: "0.5", thicknessRateUpto100: "1500", thicknessRateAbove100: "1200" },
+  { customer: "UPC004", rate: "", settingHours: "0.5", thicknessRateUpto100: "1500", thicknessRateAbove100: "1200" },
+  { customer: "UPC005", rate: "", settingHours: "0.5", thicknessRateUpto100: "1500", thicknessRateAbove100: "1200" },
 ];
 
 const normalizeCustomerRows = (values: CustomerRate[]): CustomerRate[] => {
@@ -58,6 +58,8 @@ const normalizeCustomerRows = (values: CustomerRate[]): CustomerRate[] => {
       customer,
       rate: String(item.rate || "").trim(),
       settingHours: String(item.settingHours || "").trim(),
+      thicknessRateUpto100: String(item.thicknessRateUpto100 || "").trim(),
+      thicknessRateAbove100: String(item.thicknessRateAbove100 || "").trim(),
     });
   });
   return Array.from(unique.values());
@@ -288,6 +290,8 @@ const AdminConsole = () => {
         customer: "",
         rate: "",
         settingHours: "",
+        thicknessRateUpto100: "",
+        thicknessRateAbove100: "",
       },
     ]);
   };
@@ -409,7 +413,7 @@ const AdminConsole = () => {
       >
         <p className="admin-help">
           Programmer reads these values per customer. Default Setting Hrs stays global, and you can override Setting
-          Hrs here for a specific customer when needed.
+          Hrs plus thickness pricing here for a specific customer when needed.
         </p>
         <div className="admin-customer-list">
           {customers.map((item, index) => (
@@ -432,6 +436,18 @@ const AdminConsole = () => {
                 value={item.settingHours}
                 placeholder="Setting Hrs"
                 onChange={(e) => updateCustomerRow(index, "settingHours", e.target.value)}
+              />
+              <input
+                type="number"
+                value={item.thicknessRateUpto100}
+                placeholder="TH <= 100"
+                onChange={(e) => updateCustomerRow(index, "thicknessRateUpto100", e.target.value)}
+              />
+              <input
+                type="number"
+                value={item.thicknessRateAbove100}
+                placeholder="TH > 100"
+                onChange={(e) => updateCustomerRow(index, "thicknessRateAbove100", e.target.value)}
               />
               <button type="button" className="admin-remove-btn" onClick={() => removeCustomerRow(index)}>
                 Remove

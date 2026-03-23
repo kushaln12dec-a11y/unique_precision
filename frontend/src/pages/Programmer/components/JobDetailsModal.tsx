@@ -8,7 +8,6 @@ import { formatMachineLabel } from "../../../utils/jobFormatting";
 import "./JobDetailsModal.css";
 import { useLocation } from "react-router-dom";
 import { getQaProgressCounts } from "../../Operator/utils/qaProgress";
-import CreatedByBadge from "../../../components/CreatedByBadge";
 
 interface JobDetailsModalProps {
   job: {
@@ -77,10 +76,11 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
   const isOperatorRoute = location.pathname.includes("operator");
   const canSeeOperatorFields = isOperatorRoute && (userRole === "OPERATOR" || userRole === "ADMIN");
   const showOperatorSpecificLayout = canSeeOperatorFields;
+  const formatCreatedBy = (value: unknown) => String(value || "-").trim() || "-";
 
   const jobInfoPairs: DetailPair[] = [
     { label: "Customer", value: displayCut?.customer || "-" },
-    { label: "Created By", value: <CreatedByBadge value={displayCut?.createdBy} /> },
+    { label: "Created By", value: formatCreatedBy(displayCut?.createdBy) },
     { label: "Created At", value: formatDate(displayCut?.createdAt || "") },
     { label: "Updated By", value: (displayCut as any)?.updatedBy || "-" },
     {
@@ -193,14 +193,14 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
                     value: (() => {
                       const qty = Math.max(1, Number(cutItem.qty || 1));
                       const c = getQaProgressCounts(cutItem, qty);
-                      return `Logged ${c.saved + c.ready} | QC Dispatched ${c.sent} | Pending ${c.empty}`;
+                      return `Yet to Start ${c.empty} | In Progress ${c.ready} | Logged ${c.saved} | QC ${c.sent}`;
                     })(),
                   });
                 }
 
                 if (isSingleCut) {
                   basePairs.push(
-                    { label: "Created By", value: <CreatedByBadge value={cutItem.createdBy} /> },
+                    { label: "Created By", value: formatCreatedBy(cutItem.createdBy) },
                     { label: "Created At", value: formatDate(cutItem.createdAt) },
                     { label: "Updated By", value: (cutItem as any).updatedBy || "-" },
                     {

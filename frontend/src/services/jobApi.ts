@@ -1,6 +1,7 @@
 import type { JobEntry } from "../types/job";
 import type { FilterValues } from "../components/FilterModal";
 import { apiUrl } from "./apiClient";
+import { sortGroupEntriesParentFirst } from "../pages/Programmer/programmerUtils";
 
 export type PaginatedResult<T> = {
   items: T[];
@@ -117,7 +118,7 @@ const normalizeJobListItem = (job: any): JobEntry => ({
   ...job,
   id: job._id || job.id,
   groupId: String(job.groupId ?? job.id),
-  assignedTo: job.assignedTo || "Unassigned",
+  assignedTo: job.assignedTo || "Unassign",
   customer: String(job.customer ?? ""),
   rate: String(job.rate ?? ""),
   cut: String(job.cut ?? ""),
@@ -309,7 +310,7 @@ export const getJobById = async (id: string): Promise<JobEntry> => {
     ...job,
     id: job._id || job.id,
     groupId: String(job.groupId ?? job.id),
-    assignedTo: job.assignedTo || "Unassigned",
+    assignedTo: job.assignedTo || "Unassign",
   };
 };
 
@@ -324,12 +325,12 @@ export const getJobsByGroupId = async (groupId: string): Promise<JobEntry[]> => 
   }
 
   const jobs = await res.json();
-  return jobs.map((job: any) => ({
+  return sortGroupEntriesParentFirst(jobs.map((job: any) => ({
     ...job,
     id: job._id || job.id,
     groupId: String(job.groupId ?? job.id),
-    assignedTo: job.assignedTo || "Unassigned",
-  }));
+    assignedTo: job.assignedTo || "Unassign",
+  })));
 };
 
 export const createJobs = async (jobs: JobEntry[]): Promise<JobEntry[]> => {
@@ -361,13 +362,13 @@ export const createJobs = async (jobs: JobEntry[]): Promise<JobEntry[]> => {
         ...job,
         id: job._id || job.id,
         groupId: String(job.groupId ?? job.id),
-        assignedTo: job.assignedTo || "Unassigned",
+        assignedTo: job.assignedTo || "Unassign",
       }))
     : [{
         ...createdJobs,
         id: createdJobs._id || createdJobs.id,
         groupId: String(createdJobs.groupId ?? createdJobs.id),
-        assignedTo: createdJobs.assignedTo || "Unassigned",
+        assignedTo: createdJobs.assignedTo || "Unassign",
       }];
 };
 
@@ -388,13 +389,13 @@ export const updateJob = async (id: string, jobData: Partial<JobEntry>): Promise
     ...job,
     id: job._id || job.id,
     groupId: String(job.groupId ?? job.id),
-    assignedTo: job.assignedTo || "Unassigned",
+    assignedTo: job.assignedTo || "Unassign",
   };
 };
 
 export const updateJobsByGroupId = async (groupId: string, jobs: JobEntry[]): Promise<JobEntry[]> => {
   // Get existing jobs for this group
-  const existingJobs = await getJobsByGroupId(groupId);
+  const existingJobs = sortGroupEntriesParentFirst(await getJobsByGroupId(groupId));
   
   const updatedJobs: JobEntry[] = [];
   
@@ -469,7 +470,7 @@ export const updateQcDecisionByGroupId = async (
     ...job,
     id: job._id || job.id,
     groupId: String(job.groupId ?? job.id),
-    assignedTo: job.assignedTo || "Unassigned",
+    assignedTo: job.assignedTo || "Unassign",
   }));
 };
 
@@ -493,6 +494,6 @@ export const setQcReportClosedByGroupId = async (
     ...job,
     id: job._id || job.id,
     groupId: String(job.groupId ?? job.id),
-    assignedTo: job.assignedTo || "Unassigned",
+    assignedTo: job.assignedTo || "Unassign",
   }));
 };

@@ -90,10 +90,10 @@ export const OperatorFilters: React.FC<OperatorFiltersProps> = ({
 
   const assignedToOptions = useMemo<SelectOption[]>(() => {
     const source = operatorUsers.length > 0 ? operatorUsers : users;
-    const seen = new Set<string>(["", "unassigned"]);
+    const seen = new Set<string>(["", "unassigned", "unassign"]);
     const options: SelectOption[] = [
       { label: "All", value: "" },
-      { label: "Unassigned", value: "Unassigned" },
+      { label: "Unassign", value: "Unassign" },
     ];
 
     source.forEach((user) => {
@@ -157,10 +157,10 @@ export const OperatorFilters: React.FC<OperatorFiltersProps> = ({
           </div>
           <div className="operator-stage-legend-inline">
             <span className="operator-stage-legend-title">Stage Legend:</span>
-            <span className="operator-stage-chip saved">Operation Logged</span>
-            <span className="operator-stage-chip ready">In Progress</span>
-            <span className="operator-stage-chip sent">QC Dispatched</span>
             <span className="operator-stage-chip empty">Yet to Start</span>
+            <span className="operator-stage-chip ready">In Progress</span>
+            <span className="operator-stage-chip saved">Logged</span>
+            <span className="operator-stage-chip sent">QC</span>
           </div>
         </div>
 
@@ -213,7 +213,7 @@ export const OperatorFilters: React.FC<OperatorFiltersProps> = ({
               CSV
             </button>
             <button
-              className="btn-download-csv"
+              className="btn-download-csv operator-send-qa-btn"
               onClick={onSendSelectedRowsToQa}
               disabled={selectedRowsCount === 0}
               title="Move selected rows to QC"

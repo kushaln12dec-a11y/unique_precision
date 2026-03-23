@@ -107,6 +107,18 @@ function LazyAgGrid<T extends object>({
     [sourceRows, transformRows]
   );
 
+  const estimatedContentHeight = useMemo(() => {
+    if (displayRows.length === 0) return 0;
+    const headerHeight = 56;
+    const bodyHeight = displayRows.reduce((sum, row) => {
+      const nextHeight = getRowHeight ? getRowHeight({ data: row }) : undefined;
+      return sum + (nextHeight ?? rowHeight);
+    }, 0);
+    return headerHeight + bodyHeight + 2;
+  }, [displayRows, getRowHeight, rowHeight]);
+
+  const fitHeightToContent = !loading && !hasMore && displayRows.length > 0;
+
   const updateRows = (updater: (previous: T[]) => T[]) => {
     const nextRows = updater(sourceRows);
     if (onRowsChange) {
@@ -198,7 +210,15 @@ function LazyAgGrid<T extends object>({
   }, [offset, pageSize]);
 
   return (
-    <div ref={containerRef} className={`lazy-ag-grid-shell ${className}`}>
+    <div
+      ref={containerRef}
+      className={`lazy-ag-grid-shell ${className}`}
+      style={
+        fitHeightToContent
+          ? { height: `min(${Math.max(estimatedContentHeight, 180)}px, calc(100vh - 280px))` }
+          : undefined
+      }
+    >
       <AgGridReact<T>
         theme={themeQuartz}
         rowData={displayRows}

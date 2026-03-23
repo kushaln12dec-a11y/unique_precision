@@ -3,9 +3,76 @@ import { useLocation, useParams } from "react-router-dom";
 import { getJobsByGroupId, getProgrammerJobs } from "../../../services/jobApi";
 import type { JobEntry } from "../../../types/job";
 import type { FilterValues } from "../../../components/FilterModal";
-import { calculateTotals, DEFAULT_CUT, normalizeThicknessInput, type CutForm } from "../programmerUtils";
+import { DEFAULT_CUT, normalizeThicknessInput, sortGroupEntriesParentFirst, type CutForm } from "../programmerUtils";
 
 const STORAGE_KEY = "programmerJobs";
+
+const getProgramRefValue = (job: JobEntry) =>
+  String((job as any).programRefFile ?? (job as any).programRefFileName ?? "").trim();
+
+const getEditableCutSignature = (job: JobEntry) =>
+  JSON.stringify({
+    customer: String(job.customer ?? "").trim(),
+    rate: String(job.rate ?? "").trim(),
+    cut: String(job.cut ?? "").trim(),
+    thickness: normalizeThicknessInput(String(job.thickness ?? "")),
+    passLevel: String(job.passLevel ?? "").trim(),
+    setting: String(job.setting ?? "").trim(),
+    qty: String(job.qty ?? "").trim(),
+    sedm: String(job.sedm ?? "").trim(),
+    sedmSelectionType: String(job.sedmSelectionType ?? "range").trim(),
+    sedmRangeKey: String(job.sedmRangeKey ?? "").trim(),
+    sedmStandardValue: String(job.sedmStandardValue ?? "").trim(),
+    sedmLengthType: String(job.sedmLengthType ?? "min").trim(),
+    sedmOver20Length: String(job.sedmOver20Length ?? "").trim(),
+    sedmLengthValue: String(job.sedmLengthValue ?? "").trim(),
+    sedmHoles: String(job.sedmHoles ?? "").trim(),
+    sedmEntriesJson: String((job as any).sedmEntriesJson ?? "").trim(),
+    operationRowsJson: String((job as any).operationRowsJson ?? "").trim(),
+    material: String((job as any).material ?? "").trim(),
+    priority: String(job.priority ?? "").trim(),
+    description: String(job.description ?? "").trim(),
+    programRefFile: getProgramRefValue(job),
+    critical: Boolean(job.critical),
+    pipFinish: Boolean(job.pipFinish),
+  });
+
+const removeParentMirrorEntries = (groupCuts: JobEntry[]): JobEntry[] => {
+  if (groupCuts.length <= 1) return groupCuts;
+  const parentSignature = getEditableCutSignature(groupCuts[0]);
+  return groupCuts.filter((job, index) => index === 0 || getEditableCutSignature(job) !== parentSignature);
+};
+
+const toEditableCutForm = (job: JobEntry, isClone: boolean): CutForm => ({
+  customer: String(job.customer ?? ""),
+  rate: String(job.rate ?? ""),
+  cut: String(job.cut ?? ""),
+  thickness: normalizeThicknessInput(String(job.thickness ?? "")),
+  passLevel: String(job.passLevel ?? ""),
+  setting: String(job.setting ?? ""),
+  qty: String(job.qty ?? ""),
+  sedm: job.sedm,
+  sedmSelectionType: job.sedmSelectionType ?? "range",
+  sedmRangeKey: job.sedmRangeKey ?? "0.3-0.4",
+  sedmStandardValue: job.sedmStandardValue ?? "",
+  sedmLengthType: job.sedmLengthType ?? "min",
+  sedmOver20Length: job.sedmOver20Length ?? "",
+  sedmLengthValue:
+    job.sedmLengthValue ??
+    (job.sedmSelectionType === "range" ? job.sedmRangeKey ?? "" : job.sedmStandardValue ?? ""),
+  sedmHoles: job.sedmHoles ?? "1",
+  sedmEntriesJson: (job as any).sedmEntriesJson ?? "",
+  operationRowsJson: (job as any).operationRowsJson ?? "",
+  material: (job as any).material ?? "",
+  priority: job.priority,
+  description: job.description,
+  programRefFile: getProgramRefValue(job),
+  cutImage: Array.isArray(job.cutImage) ? job.cutImage : (job.cutImage ? [job.cutImage as unknown as string] : []),
+  critical: Boolean(job.critical),
+  pipFinish: Boolean(job.pipFinish),
+  refNumber: isClone ? "" : ((job as any).refNumber || ""),
+  manualTotalHrs: "",
+});
 /**
  * Hook for managing programmer page state
  */
@@ -58,7 +125,7 @@ export const useProgrammerState = (
             setJobs(
               filtered.map((job) => ({
                 ...job,
-                assignedTo: job.assignedTo || "Unassigned",
+                assignedTo: job.assignedTo || "Unassign",
                 groupId: String(job.groupId ?? job.id),
               }))
             );
@@ -90,62 +157,13 @@ export const useProgrammerState = (
         if (!groupId) return;
         try {
           setLoadingEditGroup(true);
-          const groupCuts = (await getJobsByGroupId(groupId)).sort((a, b) => {
-            const idA = typeof a.id === "number" ? a.id : Number(a.id) || 0;
-            const idB = typeof b.id === "number" ? b.id : Number(b.id) || 0;
-            return idA - idB;
-          });
+          const groupCuts = removeParentMirrorEntries(
+            sortGroupEntriesParentFirst(await getJobsByGroupId(groupId))
+          );
           if (!mounted || groupCuts.length === 0) return;
 
           setEditingGroupId(groupId);
-          setCuts(
-            groupCuts.map((job) => {
-              const baseCut: CutForm = {
-                customer: String(job.customer ?? ""),
-                rate: String(job.rate ?? ""),
-                cut: String(job.cut ?? ""),
-                thickness: normalizeThicknessInput(String(job.thickness ?? "")),
-                passLevel: String(job.passLevel ?? ""),
-                setting: String(job.setting ?? ""),
-                qty: String(job.qty ?? ""),
-                sedm: job.sedm,
-                sedmSelectionType: job.sedmSelectionType ?? "range",
-                sedmRangeKey: job.sedmRangeKey ?? "0.3-0.4",
-                sedmStandardValue: job.sedmStandardValue ?? "",
-                sedmLengthType: job.sedmLengthType ?? "min",
-                sedmOver20Length: job.sedmOver20Length ?? "",
-                sedmLengthValue:
-                  job.sedmLengthValue ??
-                  (job.sedmSelectionType === "range"
-                    ? job.sedmRangeKey ?? ""
-                    : job.sedmStandardValue ?? ""),
-                sedmHoles: job.sedmHoles ?? "1",
-                sedmEntriesJson: (job as any).sedmEntriesJson ?? "",
-                operationRowsJson: (job as any).operationRowsJson ?? "",
-                material: (job as any).material ?? "",
-                priority: job.priority,
-                description: job.description,
-                programRefFile: String((job as any).programRefFile ?? (job as any).programRefFileName ?? ""),
-                cutImage: Array.isArray(job.cutImage)
-                  ? job.cutImage
-                  : (job.cutImage ? [job.cutImage as unknown as string] : []),
-                critical: job.critical,
-                pipFinish: job.pipFinish,
-                refNumber: (job as any).refNumber || "",
-                manualTotalHrs: "",
-              };
-
-              const derivedTotalHrs = calculateTotals(baseCut).totalHrs;
-              const savedTotalHrs = Number(job.totalHrs || 0);
-              const shouldKeepManualOverride =
-                Number.isFinite(savedTotalHrs) && Math.abs(savedTotalHrs - derivedTotalHrs) > 0.01;
-
-              return {
-                ...baseCut,
-                manualTotalHrs: shouldKeepManualOverride ? String(savedTotalHrs) : "",
-              };
-            })
-          );
+          setCuts(groupCuts.map((job) => toEditableCutForm(job, false)));
           const firstJob = groupCuts[0];
           setRefNumber((firstJob as any)?.refNumber ? String((firstJob as any).refNumber) : String(groupId));
           setShowForm(true);
@@ -178,11 +196,9 @@ export const useProgrammerState = (
         const loadCloneDraft = async () => {
           try {
             setLoadingEditGroup(true);
-            const groupCuts = (await getJobsByGroupId(cloneGroupId)).sort((a, b) => {
-              const idA = typeof a.id === "number" ? a.id : Number(a.id) || 0;
-              const idB = typeof b.id === "number" ? b.id : Number(b.id) || 0;
-              return idA - idB;
-            });
+            const groupCuts = removeParentMirrorEntries(
+              sortGroupEntriesParentFirst(await getJobsByGroupId(cloneGroupId))
+            );
             if (!mounted) return;
 
             if (groupCuts.length === 0) {
@@ -195,42 +211,7 @@ export const useProgrammerState = (
 
             setEditingGroupId(null);
             setRefNumber("");
-            setCuts(
-              groupCuts.map((job) => ({
-                customer: String(job.customer ?? ""),
-                rate: String(job.rate ?? ""),
-                cut: String(job.cut ?? ""),
-                thickness: normalizeThicknessInput(String(job.thickness ?? "")),
-                passLevel: String(job.passLevel ?? ""),
-                setting: String(job.setting ?? ""),
-                qty: String(job.qty ?? ""),
-                sedm: job.sedm,
-                sedmSelectionType: job.sedmSelectionType ?? "range",
-                sedmRangeKey: job.sedmRangeKey ?? "0.3-0.4",
-                sedmStandardValue: job.sedmStandardValue ?? "",
-                sedmLengthType: job.sedmLengthType ?? "min",
-                sedmOver20Length: job.sedmOver20Length ?? "",
-                sedmLengthValue:
-                  job.sedmLengthValue ??
-                  (job.sedmSelectionType === "range"
-                    ? job.sedmRangeKey ?? ""
-                    : job.sedmStandardValue ?? ""),
-                sedmHoles: job.sedmHoles ?? "1",
-                sedmEntriesJson: (job as any).sedmEntriesJson ?? "",
-                operationRowsJson: (job as any).operationRowsJson ?? "",
-                material: (job as any).material ?? "",
-                priority: job.priority,
-                description: job.description,
-                programRefFile: String((job as any).programRefFile ?? (job as any).programRefFileName ?? ""),
-                cutImage: Array.isArray(job.cutImage)
-                  ? job.cutImage
-                  : (job.cutImage ? [job.cutImage as unknown as string] : []),
-                critical: Boolean(job.critical),
-                pipFinish: Boolean(job.pipFinish),
-                refNumber: "",
-                manualTotalHrs: String(job.totalHrs ?? "").trim(),
-              }))
-            );
+            setCuts(groupCuts.map((job) => toEditableCutForm(job, true)));
             setShowForm(true);
           } catch (error) {
             console.error("Failed to fetch clone group", error);

@@ -2,6 +2,8 @@ export type CustomerRate = {
   customer: string;
   rate: string;
   settingHours: string;
+  thicknessRateUpto100: string;
+  thicknessRateAbove100: string;
 };
 
 export type SedmThOption = {

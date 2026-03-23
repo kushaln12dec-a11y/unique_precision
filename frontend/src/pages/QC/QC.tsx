@@ -72,7 +72,7 @@ const getPrimaryOperatorName = (value: unknown): string => {
   return String(value || "")
     .split(",")
     .map((name) => name.trim())
-    .find((name) => name && name !== "Unassigned") || "-";
+    .find((name) => name && name !== "Unassigned" && name !== "Unassign") || "-";
 };
 
 const getDrawingNo = (entry: JobEntry) => {

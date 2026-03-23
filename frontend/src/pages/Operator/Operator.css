@@ -303,9 +303,9 @@
 .operator-table-no-scroll .child-row-content {
   width: 100%;
   max-width: 100%;
-  padding: 0 0 0.6rem 0;
+  padding: 0;
   box-sizing: border-box;
-  background: #f9fafb;
+  background: transparent;
 }
 
 .operator-table-no-scroll .child-row-content .child-jobs-table {
@@ -317,7 +317,7 @@
   overflow: visible;
   background: #ffffff;
   box-sizing: border-box;
-  margin-bottom: 0.45rem;
+  margin-bottom: 0;
 }
 
 .operator-table-no-scroll .child-row-content .child-jobs-table th,
@@ -975,6 +975,23 @@
 .operator-bulk-apply-btn:disabled {
   opacity: 0.55;
   cursor: not-allowed;
+  box-shadow: none;
+}
+
+.operator-send-qa-btn {
+  border-color: #0f766e;
+  background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+  color: #065f46;
+  box-shadow: 0 10px 20px rgba(16, 185, 129, 0.16);
+}
+
+.operator-send-qa-btn:hover:not(:disabled) {
+  border-color: #059669;
+  background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
+  color: #047857;
+}
+
+.operator-send-qa-btn:disabled {
   box-shadow: none;
 }
 
@@ -1960,14 +1977,14 @@
   .child-jobs-table
   tr.child-row.child-critical-row
 {
-  border-left: 4px solid #dc2626;
+  border-left: 3px solid #dc2626;
 }
 
 .operator-table-no-scroll
   .child-jobs-table
   tr.child-row.child-critical-row
   td:first-child {
-  box-shadow: inset 4px 0 0 #dc2626;
+  box-shadow: inset 3px 0 0 #dc2626;
 }
 
 .operator-table-no-scroll

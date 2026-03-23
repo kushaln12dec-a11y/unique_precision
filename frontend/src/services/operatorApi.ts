@@ -66,7 +66,7 @@ export const getOperatorJobs = async (
     ...job,
     id: job._id || job.id,
     groupId: String(job.groupId ?? job.id),
-    assignedTo: job.assignedTo || "Unassigned",
+    assignedTo: job.assignedTo || "Unassign",
   }));
 };
 
@@ -100,7 +100,7 @@ export const getOperatorJobsPage = async (
         ...job,
         id: job._id || job.id,
         groupId: String(job.groupId ?? job.id),
-        assignedTo: job.assignedTo || "Unassigned",
+        assignedTo: job.assignedTo || "Unassign",
       }))
     : [];
 
@@ -129,7 +129,7 @@ export const getOperatorJobById = async (id: string): Promise<JobEntry> => {
     ...job,
     id: job._id || job.id,
     groupId: String(job.groupId ?? job.id),
-    assignedTo: job.assignedTo || "Unassigned",
+    assignedTo: job.assignedTo || "Unassign",
   };
 };
 
@@ -149,7 +149,7 @@ export const getOperatorJobsByGroupId = async (groupId: string): Promise<JobEntr
     ...job,
     id: job._id || job.id,
     groupId: String(job.groupId ?? job.id),
-    assignedTo: job.assignedTo || "Unassigned",
+    assignedTo: job.assignedTo || "Unassign",
   }));
 };
 
@@ -171,7 +171,7 @@ export const updateOperatorJob = async (id: string, jobData: Partial<JobEntry>):
     ...job,
     id: job._id || job.id,
     groupId: String(job.groupId ?? job.id),
-    assignedTo: job.assignedTo || "Unassigned",
+    assignedTo: job.assignedTo || "Unassign",
   };
 };
 
@@ -193,7 +193,7 @@ export const captureOperatorInput = async (id: string, inputData: CaptureOperato
     ...job,
     id: job._id || job.id,
     groupId: String(job.groupId ?? job.id),
-    assignedTo: job.assignedTo || "Unassigned",
+    assignedTo: job.assignedTo || "Unassign",
   };
 };
 
@@ -217,7 +217,7 @@ export const updateOperatorQaStatus = async (
     ...job,
     id: job._id || job.id,
     groupId: String(job.groupId ?? job.id),
-    assignedTo: job.assignedTo || "Unassigned",
+    assignedTo: job.assignedTo || "Unassign",
   };
 };
 

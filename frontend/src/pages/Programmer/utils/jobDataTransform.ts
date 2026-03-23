@@ -1,5 +1,6 @@
 import { parseDateValue } from "../../../utils/date";
 import type { JobEntry } from "../../../types/job";
+import { sortGroupEntriesParentFirst } from "../programmerUtils";
 
 export type TableRow = {
   groupId: string;
@@ -20,11 +21,7 @@ export const groupJobs = (jobs: JobEntry[]): Array<{ groupId: string; entries: J
   });
   return Array.from(groups.entries()).map(([groupId, entries]) => ({
     groupId,
-    entries: entries.sort((a, b) => {
-      const idA = typeof a.id === "number" ? a.id : Number(a.id) || 0;
-      const idB = typeof b.id === "number" ? b.id : Number(b.id) || 0;
-      return idA - idB;
-    }),
+    entries: sortGroupEntriesParentFirst(entries),
   }));
 };
 

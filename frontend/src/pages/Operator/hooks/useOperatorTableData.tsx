@@ -3,6 +3,7 @@ import type { JobEntry } from "../../../types/job";
 import { parseDateValue } from "../../../utils/date";
 import ChildCutsTable from "../../Programmer/components/ChildCutsTable";
 import { isGroupFullySentToQa } from "../utils/qaProgress";
+import { sortGroupEntriesParentFirst } from "../../Programmer/programmerUtils";
 
 type TableRow = {
   groupId: string;
@@ -48,11 +49,7 @@ export const useOperatorTableData = (
     });
     return Array.from(groups.entries()).map(([groupId, entries]) => ({
       groupId,
-      entries: entries.sort((a, b) => {
-        const idA = typeof a.id === 'number' ? a.id : Number(a.id) || 0;
-        const idB = typeof b.id === 'number' ? b.id : Number(b.id) || 0;
-        return idA - idB;
-      }),
+      entries: sortGroupEntriesParentFirst(entries),
     }));
   }, [jobs]);
 
@@ -128,14 +125,15 @@ export const useOperatorTableData = (
   const expandableRows = useMemo(() => {
     const map = new Map<string, any>();
     tableData.forEach((row) => {
-      const hasChildren = row.entries.length > 1;
+      const childEntries = row.entries.slice(1);
+      const hasChildren = childEntries.length > 0;
       if (hasChildren) {
         map.set(row.groupId, {
           isExpanded: expandedGroups.has(row.groupId),
           onToggle: () => toggleGroup(row.groupId),
           expandedContent: (
             <ChildCutsTable
-              entries={row.entries}
+              entries={childEntries}
               parentSetting={String(row.parent.setting || "").trim()}
               showSetNumberColumn={false}
               onEdit={undefined}
