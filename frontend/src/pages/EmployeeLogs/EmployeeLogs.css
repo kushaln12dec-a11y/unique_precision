@@ -13,6 +13,14 @@
   min-height: 100vh;
   max-height: 100vh;
   overflow: hidden;
+  transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@media (min-width: 1025px) {
+  .sidebar.collapsed:hover ~ .employee-logs-page-content,
+  .sidebar.expanded ~ .employee-logs-page-content {
+    margin-left: 240px;
+  }
 }
 
 .employee-logs-page-shell {

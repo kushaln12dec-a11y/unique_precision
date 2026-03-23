@@ -126,7 +126,7 @@ export const OperatorFilters: React.FC<OperatorFiltersProps> = ({
               <input
                 id="operator-search"
                 type="text"
-                placeholder="Search customer or description..."
+                placeholder="Search any column..."
                 value={jobSearchFilter}
                 onChange={(e) => onJobSearchFilterChange(e.target.value)}
                 className="filter-input"
@@ -240,6 +240,7 @@ export const OperatorFilters: React.FC<OperatorFiltersProps> = ({
         descriptionFilter=""
         createdByFilter={createdByFilter}
         assignedToFilter={assignedToFilter}
+        searchFilterLabel="Search"
         onRemoveFilter={onRemoveFilter}
       />
     </>

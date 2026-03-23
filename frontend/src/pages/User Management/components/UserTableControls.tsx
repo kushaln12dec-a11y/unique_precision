@@ -28,7 +28,7 @@ export const UserTableControls: React.FC<UserTableControlsProps> = ({
           <input
             type="text"
             className="search-input"
-            placeholder="Search..."
+            placeholder="Search any column..."
             value={searchQuery}
             onChange={onSearchChange}
           />

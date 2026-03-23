@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import Sidebar from "../../components/Sidebar";
 import Header from "../../components/Header";
 import type { Column } from "../../components/DataTable";
@@ -13,7 +13,7 @@ import ConfirmDeleteModal from "../../components/ConfirmDeleteModal";
 import { getUserRoleFromToken } from "../../utils/auth";
 import "../../utils/tokenDebug";
 import { getUsers } from "../../services/userApi";
-import { getEmployeeLogs, getEmployeeLogsPage } from "../../services/employeeLogsApi";
+import { getEmployeeLogsPage } from "../../services/employeeLogsApi";
 import { getMasterConfig } from "../../services/masterConfigApi";
 import { getJobsByGroupId, getProgrammerJobsPage } from "../../services/jobApi";
 import type { User } from "../../types/user";
@@ -45,7 +45,17 @@ import {
   setProgrammerFilters,
   setProgrammerShowFilterModal,
 } from "../../store/slices/filtersSlice";
-import { getDisplayName, getInitials, getLogUserDisplayName } from "../../utils/jobFormatting";
+import {
+  estimatedTimeFromAmount,
+  formatJobRefDisplay,
+  getDisplayName,
+  getInitials,
+  getLogUserDisplayName,
+  toYN,
+} from "../../utils/jobFormatting";
+import { getThicknessDisplayValue } from "./programmerUtils";
+import { fetchAllPaginatedItems } from "../../utils/paginationUtils";
+import { matchesSearchQuery } from "../../utils/searchUtils";
 
 const getProgrammerHeaderName = (column: Column<ProgrammerDisplayRow>) => {
   if (typeof column.label === "string") return column.label;
@@ -105,7 +115,55 @@ const PROGRAMMER_LOG_COLUMN_WIDTHS: Record<string, number> = {
 const getProgrammerLogColumnWidth = (columnKey: string) =>
   PROGRAMMER_LOG_COLUMN_WIDTHS[columnKey] ?? 88;
 
+const SEARCH_FETCH_PAGE_SIZE = 100;
+
+const formatProgrammerLogStatus = (status?: string) => {
+  const raw = String(status || "-").toUpperCase();
+  if (raw === "IN_PROGRESS") return "In Progress";
+  if (raw === "REJECTED") return "Stopped";
+  if (raw === "COMPLETED") return "Completed";
+  return raw
+    .split("_")
+    .map((part) => part.charAt(0) + part.slice(1).toLowerCase())
+    .join(" ");
+};
+
+const getProgrammerRowSearchValues = (row: TableRow, isAdmin: boolean) => {
+  const values: unknown[] = [
+    estimatedTimeFromAmount(
+      row.entries.reduce((sum, entry) => sum + (Number(entry.totalHrs || 0) * Number(entry.rate || 0)), 0)
+    ),
+  ];
+
+  if (isAdmin) {
+    values.push(row.groupTotalAmount ? `Rs. ${Math.round(row.groupTotalAmount)}` : "-");
+  }
+
+  row.entries.forEach((entry) => {
+    values.push(
+      entry.customer || "-",
+      formatJobRefDisplay(entry.refNumber || ""),
+      String((entry as any).programRefFile || (entry as any).programRefFileName || "-"),
+      entry.description || "-",
+      Math.round(Number(entry.cut || 0)),
+      getThicknessDisplayValue(entry.thickness),
+      entry.passLevel || "-",
+      entry.setting || "-",
+      Number(entry.qty || 0).toString(),
+      toYN(entry.sedm),
+      Number(entry.totalHrs || 0) ? Number(entry.totalHrs || 0).toFixed(2) : "-",
+      estimatedTimeFromAmount(Number(entry.totalHrs || 0) * Number(entry.rate || 0)),
+      entry.createdBy || "-",
+      formatDisplayDateTime(entry.createdAt),
+      ...(isAdmin ? [entry.totalAmount ? `Rs. ${Math.round(entry.totalAmount)}` : "-"] : [])
+    );
+  });
+
+  return values;
+};
+
 const Programmer = () => {
+  const location = useLocation();
   const navigate = useNavigate();
   const params = useParams<{ groupId?: string }>();
   const dispatch = useAppDispatch();
@@ -161,13 +219,13 @@ const Programmer = () => {
     loadingJobs,
     loadingEditGroup,
     setJobs,
-    showForm,
     setShowForm,
     cuts,
     setCuts,
     editingGroupId,
     setEditingGroupId,
     refNumber,
+    editGroupError,
     isNewJobRoute,
     isEditRoute,
     isCloneRoute,
@@ -278,6 +336,15 @@ const Programmer = () => {
     onChildRowSelect: handleChildRowSelect,
   });
 
+  const jobSearchQuery = String(customerFilter || descriptionFilter || "").trim();
+  const hasJobSearch = jobSearchQuery.length > 0;
+
+  const filteredProgrammerTableData = useMemo(
+    () =>
+      tableData.filter((row) => matchesSearchQuery(getProgrammerRowSearchValues(row, isAdmin), jobSearchQuery)),
+    [tableData, isAdmin, jobSearchQuery]
+  );
+
   const handleDeleteConfirm = async () => {
     if (!jobToDelete) return;
     try {
@@ -335,7 +402,7 @@ const Programmer = () => {
 
   const programmerGridRows = useMemo<ProgrammerDisplayRow[]>(
     () =>
-      tableData.flatMap((row) => {
+      filteredProgrammerTableData.flatMap((row) => {
         const hasChildren = row.entries.length > 1;
         const isExpanded = expandedGroups.has(row.groupId);
         const parentRow: ProgrammerDisplayRow = {
@@ -361,7 +428,7 @@ const Programmer = () => {
         }));
         return [parentRow, ...childRows];
       }),
-    [tableData, expandedGroups]
+    [filteredProgrammerTableData, expandedGroups]
   );
 
   const programmerJobColumnDefs = useMemo(
@@ -379,10 +446,15 @@ const Programmer = () => {
         headerComponent: () => (
           <input
             type="checkbox"
-            checked={tableData.length > 0 && tableData.every((row) => selectedJobIds.has(row.groupId))}
+            checked={
+              filteredProgrammerTableData.length > 0 &&
+              filteredProgrammerTableData.every((row) => selectedJobIds.has(row.groupId))
+            }
             onChange={(event) => {
               const checked = event.target.checked;
-              const nextSelected = checked ? new Set(tableData.map((row) => row.groupId)) : new Set<string>();
+              const nextSelected = checked
+                ? new Set(filteredProgrammerTableData.map((row) => row.groupId))
+                : new Set<string>();
               setSelectedJobIds(nextSelected);
             }}
           />
@@ -442,7 +514,7 @@ const Programmer = () => {
         };
       }),
     ],
-    [columns, handleChildRowSelect, selectedChildRows, selectedJobIds, tableData]
+    [columns, filteredProgrammerTableData, handleChildRowSelect, selectedChildRows, selectedJobIds]
   );
 
   useEffect(() => {
@@ -518,8 +590,8 @@ const Programmer = () => {
 
   const handleCancel = async () => {
     handleCancelState();
-    if (isNewJobRoute || isEditRoute) {
-      navigate("/programmer");
+    if (isProgrammerFormRoute) {
+      navigate("/programmer", { replace: true });
     }
     setShowForm(false);
   };
@@ -538,7 +610,7 @@ const Programmer = () => {
   };
 
   const handleDownloadCSV = () => {
-    exportJobsToCSV(tableData, isAdmin);
+    exportJobsToCSV(filteredProgrammerTableData, isAdmin);
   };
 
   const activeFilterCount = useMemo(() => countActiveFilters(filters), [filters]);
@@ -688,18 +760,53 @@ const Programmer = () => {
     [designationByUserId]
   );
 
+  const filterProgrammerLogs = useMemo(
+    () => (logs: EmployeeLog[]) =>
+      logs.filter((log) => {
+        if (logUserId && String(log.userId) !== String(logUserId)) {
+          return false;
+        }
+
+        const designation = designationByUserId.get(String(log.userId)) || "Programmer";
+        const name = getLogUserDisplayName(log.userName, log.userEmail, "Programmer");
+
+        return matchesSearchQuery(
+          [
+            name,
+            designation,
+            `${name} ${designation}`.trim(),
+            String(log.refNumber || "").trim() ? `#${String(log.refNumber || "").trim().replace(/^#/, "")}` : "",
+            String((log as any).workSummary || "-"),
+            formatDisplayDateTime(log.startedAt),
+            formatDisplayDateTime(log.endedAt || null),
+            getShiftLabel(log.startedAt),
+            formatDuration(log.durationSeconds),
+            formatProgrammerLogStatus(log.status),
+          ],
+          logSearch
+        );
+      }),
+    [designationByUserId, logSearch, logUserId]
+  );
+  const hasLogSearch = logSearch.trim().length > 0;
+
   const handleExportProgrammerLogsCsv = () => {
     void (async () => {
-      const allLogs = await getEmployeeLogs({
-        role: "PROGRAMMER",
-        status: logStatus || undefined,
-        search: logSearch.trim() || undefined,
-      });
-      const filteredProgrammerLogs = allLogs.filter((log) =>
-        logUserId ? String(log.userId) === String(logUserId) : true
+      const allLogs = await fetchAllPaginatedItems<EmployeeLog>(
+        async (offset, limit) => {
+          const page = await getEmployeeLogsPage({
+            role: "PROGRAMMER",
+            status: logStatus || undefined,
+            offset,
+            limit,
+          });
+          return { items: page.items, hasMore: page.hasMore };
+        },
+        SEARCH_FETCH_PAGE_SIZE
       );
+      const filteredProgrammerLogs = filterProgrammerLogs(allLogs);
       const headers = ["User", "JOB #", "Summary", "Started at", "Ended at", "Shift", "Duration", "Status"];
-      const rows = filteredProgrammerLogs.map((row) => {
+      const rows = filteredProgrammerLogs.map((row: EmployeeLog) => {
         const designation = designationByUserId.get(String(row.userId)) || "Programmer";
         const name = getLogUserDisplayName(row.userName, row.userEmail, "");
         const userValue = name ? `${name} (${designation})` : designation;
@@ -712,11 +819,14 @@ const Programmer = () => {
           formatDisplayDateTime(row.endedAt || null),
           getShiftLabel(row.startedAt),
           formatDuration(row.durationSeconds),
-          String(row.status || "").toUpperCase() === "REJECTED" ? "Stopped" : String(row.status || "-"),
+          formatProgrammerLogStatus(row.status),
         ];
       });
 
-      const csvContent = [headers.join(","), ...rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(","))].join("\n");
+      const csvContent = [
+        headers.join(","),
+        ...rows.map((r: string[]) => r.map((c: string) => `"${String(c).replace(/"/g, '""')}"`).join(",")),
+      ].join("\n");
       const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
       const link = document.createElement("a");
       const url = URL.createObjectURL(blob);
@@ -745,20 +855,27 @@ const Programmer = () => {
   );
 
   const routeEditGroupId = params.groupId ? String(params.groupId) : null;
+  const isProgrammerListRoute = location.pathname === "/programmer";
+  const isProgrammerFormRoute = isNewJobRoute || isEditRoute || isCloneRoute;
   const isEditFormReady =
     isEditRoute &&
     Boolean(routeEditGroupId) &&
     editingGroupId === routeEditGroupId &&
     cuts.length > 0;
-  const shouldRenderJobForm = isNewJobRoute || isCloneRoute || (isEditRoute ? isEditFormReady : showForm);
+  const shouldRenderJobForm =
+    isNewJobRoute ||
+    isCloneRoute ||
+    (isEditRoute && isEditFormReady);
+  const shouldRenderEditLoadingState = isEditRoute && !isEditFormReady && !editGroupError;
+  const shouldRenderEditErrorState = isEditRoute && !loadingEditGroup && !isEditFormReady && Boolean(editGroupError);
 
   return (
     <div className="programmer-container">
       <Sidebar currentPath="/programmer" onNavigate={(path) => navigate(path)} />
-      <div className={`programmer-content ${isNewJobRoute || isEditRoute || isCloneRoute ? "programmer-content-scrollable" : ""}`}>
+      <div className={`programmer-content ${isProgrammerFormRoute ? "programmer-content-scrollable" : ""}`}>
         <Header title="Programmer" />
-        <div className={`programmer-panel ${isNewJobRoute || isEditRoute || isCloneRoute ? "programmer-panel-scrollable" : ""}`}>
-          {!isNewJobRoute && !isEditRoute && !isCloneRoute && (
+        <div className={`programmer-panel ${isProgrammerFormRoute ? "programmer-panel-scrollable" : ""}`}>
+          {isProgrammerListRoute && (
             <div className="programmer-subtabs">
               <button
                 type="button"
@@ -796,7 +913,25 @@ const Programmer = () => {
             )
           )}
 
-          {!isNewJobRoute && !isEditRoute && !isCloneRoute && activeTab === "jobs" && (
+          {shouldRenderEditLoadingState && (
+            <AppLoader message="Loading job details..." />
+          )}
+
+          {shouldRenderEditErrorState && (
+            <div className="job-form-card programmer-form-state">
+              <div className="programmer-form-state-copy">
+                <h2>Unable to open this job</h2>
+                <p>{editGroupError || "The requested edit group is not ready yet."}</p>
+              </div>
+              <div className="programmer-form-state-actions">
+                <button type="button" className="btn-secondary" onClick={() => navigate("/programmer", { replace: true })}>
+                  Back to Programmer
+                </button>
+              </div>
+            </div>
+          )}
+
+          {isProgrammerListRoute && activeTab === "jobs" && (
             <>
               {savingJob ? (
                 <AppLoader message="Saving job and loading programmer jobs..." />
@@ -828,6 +963,24 @@ const Programmer = () => {
                   <LazyAgGrid
                     columnDefs={programmerJobColumnDefs as any}
                     fetchPage={async (offset, limit) => {
+                      if (hasJobSearch) {
+                        const items = await fetchAllPaginatedItems<JobEntry>(
+                          async (pageOffset, pageLimit) => {
+                            const page = await getProgrammerJobsPage(
+                              filters,
+                              "",
+                              createdByFilter,
+                              criticalFilter ? true : undefined,
+                              "",
+                              { offset: pageOffset, limit: pageLimit }
+                            );
+                            return { items: page.items, hasMore: page.hasMore };
+                          },
+                          SEARCH_FETCH_PAGE_SIZE
+                        );
+                        return { items, hasMore: false };
+                      }
+
                       const page = await getProgrammerJobsPage(
                         filters,
                         customerFilter,
@@ -858,21 +1011,21 @@ const Programmer = () => {
                     className="jobs-table-wrapper"
                     rowHeight={38}
                     fitColumns={true}
-                    refreshKey={`${customerFilter}|${descriptionFilter}|${createdByFilter}|${criticalFilter}|${JSON.stringify(filters)}|${programmerGridRefreshKey}`}
+                    refreshKey={`${hasJobSearch}|${createdByFilter}|${criticalFilter}|${JSON.stringify(filters)}|${programmerGridRefreshKey}`}
                   />
                 </>
               )}
             </>
           )}
 
-          {!isNewJobRoute && !isEditRoute && !isCloneRoute && activeTab === "logs" && (
+          {isProgrammerListRoute && activeTab === "logs" && (
             <>
               <div className="programmer-logs-filters">
                 <input
                   type="text"
                   value={logSearch}
                   onChange={(e) => setLogSearch(e.target.value)}
-                  placeholder="Search logs..."
+                  placeholder="Search any column..."
                   className="filter-input programmer-logs-search"
                 />
                 <select
@@ -909,25 +1062,42 @@ const Programmer = () => {
               </div>
               <LazyAgGrid
                 columnDefs={programmerLogColumnDefs as any}
+                transformRows={filterProgrammerLogs}
                 fetchPage={async (offset, limit) => {
+                  if (hasLogSearch) {
+                    const allLogs = await fetchAllPaginatedItems<EmployeeLog>(
+                      async (pageOffset, pageLimit) => {
+                        const page = await getEmployeeLogsPage({
+                          role: "PROGRAMMER",
+                          status: logStatus || undefined,
+                          offset: pageOffset,
+                          limit: pageLimit,
+                        });
+                        return { items: page.items, hasMore: page.hasMore };
+                      },
+                      SEARCH_FETCH_PAGE_SIZE
+                    );
+                    return {
+                      items: allLogs,
+                      hasMore: false,
+                    };
+                  }
+
                   const page = await getEmployeeLogsPage({
                     role: "PROGRAMMER",
                     status: logStatus || undefined,
-                    search: logSearch.trim() || undefined,
                     offset,
                     limit,
                   });
                   return {
-                    items: page.items.filter((log) =>
-                      logUserId ? String(log.userId) === String(logUserId) : true
-                    ),
+                    items: page.items,
                     hasMore: page.hasMore,
                   };
                 }}
                 emptyMessage="No programmer logs found."
                 getRowId={(row) => row._id}
                 className="jobs-table-wrapper programmer-logs-table logs-center"
-                refreshKey={`${logSearch}|${logStatus}|${logUserId}`}
+                refreshKey={`${hasLogSearch}|${logStatus}|${logUserId}`}
               />
             </>
           )}
@@ -963,7 +1133,7 @@ const Programmer = () => {
         />
       )}
 
-      {!isNewJobRoute && !isEditRoute && !isCloneRoute && activeTab === "jobs" && (
+      {isProgrammerListRoute && activeTab === "jobs" && (
         <MassDeleteButton
           selectedCount={selectedJobIds.size}
           onDelete={handleMassDeleteClick}

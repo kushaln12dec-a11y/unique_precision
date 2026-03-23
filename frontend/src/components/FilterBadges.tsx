@@ -18,6 +18,7 @@ type FilterBadgesProps = {
   descriptionFilter?: string;
   createdByFilter?: string;
   assignedToFilter?: string;
+  searchFilterLabel?: string;
   onRemoveFilter: (key: string, type: "inline" | "modal") => void;
 };
 
@@ -28,6 +29,7 @@ const FilterBadges: React.FC<FilterBadgesProps> = ({
   descriptionFilter,
   createdByFilter,
   assignedToFilter,
+  searchFilterLabel,
   onRemoveFilter,
 }) => {
   const badges: FilterBadge[] = [];
@@ -36,7 +38,7 @@ const FilterBadges: React.FC<FilterBadgesProps> = ({
   if (customerFilter) {
     badges.push({
       key: "customer",
-      label: "Customer",
+      label: searchFilterLabel || "Customer",
       value: customerFilter,
       type: "inline",
     });

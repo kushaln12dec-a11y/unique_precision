@@ -174,6 +174,7 @@ function LazyAgGrid<T extends object>({
   }, [fetchPage]);
 
   useEffect(() => {
+    fetchPageRef.current = fetchPage;
     if (onRowsChange) {
       onRowsChange([]);
     } else {

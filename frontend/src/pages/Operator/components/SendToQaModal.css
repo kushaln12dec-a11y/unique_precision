@@ -1,3 +1,19 @@
+.modal-card.send-to-qa-modal.modal-large {
+  width: min(1180px, 95vw) !important;
+  max-width: 95vw !important;
+  max-height: 92vh;
+  padding: 1.2rem 1.3rem 1.3rem;
+}
+
+.send-to-qa-modal .modal-header {
+  margin-bottom: 0.75rem;
+}
+
+.send-to-qa-modal .modal-header h3 {
+  font-size: 1.25rem;
+  font-weight: 800;
+}
+
 .send-to-qa-modal .modal-content {
   padding-top: 0.25rem;
 }
@@ -59,18 +75,18 @@
 }
 
 .send-to-qa-targets {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
   gap: 0.9rem;
-  max-height: 54vh;
+  max-height: 58vh;
   overflow-y: auto;
-  padding-right: 0.2rem;
+  padding-right: 0.25rem;
 }
 
 .send-to-qa-card {
   border: 1px solid #dbe5f4;
   border-radius: 16px;
-  padding: 1rem;
+  padding: 1rem 1.05rem;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(248, 250, 252, 0.98)),
     radial-gradient(circle at top right, rgba(191, 219, 254, 0.32), transparent 34%);
@@ -169,6 +185,7 @@
   flex-wrap: wrap;
   gap: 0.35rem;
   justify-content: flex-end;
+  max-width: 320px;
 }
 
 .send-to-qa-card-toolbar {
@@ -258,7 +275,7 @@
 
 .send-to-qa-pill-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(112px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(124px, 1fr));
   gap: 0.6rem;
 }
 
@@ -359,6 +376,16 @@
 }
 
 @media (max-width: 900px) {
+  .modal-card.send-to-qa-modal.modal-large {
+    width: 96vw !important;
+    max-width: 96vw !important;
+    padding: 1rem;
+  }
+
+  .send-to-qa-targets {
+    grid-template-columns: 1fr;
+  }
+
   .send-to-qa-hero,
   .send-to-qa-card-head,
   .send-to-qa-footer {

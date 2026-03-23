@@ -8,15 +8,18 @@
 
 .user-management-content {
   flex: 1;
-  margin-left: 240px;
+  margin-left: 70px;
   padding: 0;
   transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   overflow: hidden;
 }
 
 
-.sidebar.collapsed ~ .user-management-content {
-  margin-left: 70px;
+@media (min-width: 1025px) {
+  .sidebar.collapsed:hover ~ .user-management-content,
+  .sidebar.expanded ~ .user-management-content {
+    margin-left: 240px;
+  }
 }
 
 .table-header-controls {

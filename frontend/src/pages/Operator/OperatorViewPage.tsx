@@ -153,7 +153,7 @@ const OperatorViewPage = () => {
     const cutData = cutInputs.get(cutId);
     if (!cutData || !cutData.quantities || !cutData.quantities[quantityIndex]) {
       setSaveToast({ message: "No data to save for this quantity.", variant: "error", visible: true });
-      setTimeout(() => setSaveToast({ ...saveToast, visible: false }), 3000);
+      setTimeout(() => setSaveToast((prev) => ({ ...prev, visible: false })), 3000);
       return;
     }
 
@@ -174,7 +174,7 @@ const OperatorViewPage = () => {
         return newErrors;
       });
       setSaveToast({ message: "Please fix validation errors before saving.", variant: "error", visible: true });
-      setTimeout(() => setSaveToast({ ...saveToast, visible: false }), 3000);
+      setTimeout(() => setSaveToast((prev) => ({ ...prev, visible: false })), 3000);
       return;
     }
 
@@ -281,7 +281,7 @@ const OperatorViewPage = () => {
       });
 
       setSaveToast({ message: `Quantity ${quantityIndex + 1} saved successfully!`, variant: "success", visible: true });
-      setTimeout(() => setSaveToast({ ...saveToast, visible: false }), 2000);
+      setTimeout(() => setSaveToast((prev) => ({ ...prev, visible: false })), 2000);
       setActiveOperatorLogIds((prev) => {
         const next = new Map(prev);
         next.delete(`${String(cutId)}:${quantityIndex}`);
@@ -290,7 +290,7 @@ const OperatorViewPage = () => {
     } catch (error) {
       console.error("Failed to save quantity", error);
       setSaveToast({ message: "Failed to save quantity. Please try again.", variant: "error", visible: true });
-      setTimeout(() => setSaveToast({ ...saveToast, visible: false }), 3000);
+      setTimeout(() => setSaveToast((prev) => ({ ...prev, visible: false })), 3000);
     }
   };
 
@@ -303,7 +303,7 @@ const OperatorViewPage = () => {
     const cutData = cutInputs.get(cutId);
     if (!cutData || !cutData.quantities || !cutData.quantities[sourceQuantityIndex]) {
       setSaveToast({ message: "No data to save for selected range.", variant: "error", visible: true });
-      setTimeout(() => setSaveToast({ ...saveToast, visible: false }), 3000);
+      setTimeout(() => setSaveToast((prev) => ({ ...prev, visible: false })), 3000);
       return;
     }
 
@@ -312,7 +312,7 @@ const OperatorViewPage = () => {
     const rangeError = validateRangeSelection(totalQuantity, fromQty, toQty);
     if (rangeError) {
       setSaveToast({ message: rangeError, variant: "error", visible: true });
-      setTimeout(() => setSaveToast({ ...saveToast, visible: false }), 3000);
+      setTimeout(() => setSaveToast((prev) => ({ ...prev, visible: false })), 3000);
       return;
     }
 
@@ -329,7 +329,7 @@ const OperatorViewPage = () => {
         return newErrors;
       });
       setSaveToast({ message: "Please fix validation errors before saving range.", variant: "error", visible: true });
-      setTimeout(() => setSaveToast({ ...saveToast, visible: false }), 3000);
+      setTimeout(() => setSaveToast((prev) => ({ ...prev, visible: false })), 3000);
       return;
     }
 
@@ -398,7 +398,7 @@ const OperatorViewPage = () => {
       });
 
       setSaveToast({ message: `Range ${fromQty}-${toQty} saved successfully!`, variant: "success", visible: true });
-      setTimeout(() => setSaveToast({ ...saveToast, visible: false }), 2000);
+      setTimeout(() => setSaveToast((prev) => ({ ...prev, visible: false })), 2000);
       setActiveOperatorLogIds((prev) => {
         const next = new Map(prev);
         next.delete(`${String(cutId)}:${sourceQuantityIndex}`);
@@ -416,7 +416,7 @@ const OperatorViewPage = () => {
     } catch (error) {
       console.error("Failed to save range", error);
       setSaveToast({ message: "Failed to save range. Please try again.", variant: "error", visible: true });
-      setTimeout(() => setSaveToast({ ...saveToast, visible: false }), 3000);
+      setTimeout(() => setSaveToast((prev) => ({ ...prev, visible: false })), 3000);
     }
   };
 
@@ -635,13 +635,13 @@ const OperatorViewPage = () => {
         message={saveToast.message}
         visible={saveToast.visible}
         variant={saveToast.variant}
-        onClose={() => setSaveToast({ ...saveToast, visible: false })}
+        onClose={() => setSaveToast((prev) => ({ ...prev, visible: false }))}
       />
       <Toast
         message={actionToast.message}
         visible={actionToast.visible}
         variant={actionToast.variant}
-        onClose={() => setActionToast({ ...actionToast, visible: false })}
+        onClose={() => setActionToast((prev) => ({ ...prev, visible: false }))}
       />
       {pendingDispatch && (
         <ConfirmDeleteModal

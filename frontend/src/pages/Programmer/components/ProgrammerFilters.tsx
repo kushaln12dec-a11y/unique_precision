@@ -53,7 +53,7 @@ export const ProgrammerFilters: React.FC<ProgrammerFiltersProps> = ({
             <input
               id="programmer-search"
               type="text"
-              placeholder="Search customer or description..."
+              placeholder="Search any column..."
               value={jobSearchFilter}
               onChange={(e) => onJobSearchFilterChange(e.target.value)}
               className="filter-input"
@@ -124,6 +124,7 @@ export const ProgrammerFilters: React.FC<ProgrammerFiltersProps> = ({
         customerFilter={jobSearchFilter}
         descriptionFilter=""
         createdByFilter={createdByFilter}
+        searchFilterLabel="Search"
         onRemoveFilter={onRemoveFilter}
       />
     </>

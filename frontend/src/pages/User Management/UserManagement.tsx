@@ -32,8 +32,10 @@ const UserManagement = () => {
     formData,
     showPassword,
     setShowPassword,
+    saving,
     showDeleteModal,
     userToDelete,
+    deleting,
     handleInputChange,
     handleSubmit,
     handleEdit,
@@ -108,6 +110,7 @@ const UserManagement = () => {
             editingUser={editingUser}
             formData={formData}
             showPassword={showPassword}
+            saving={saving}
             roles={roles}
             error={error}
             onInputChange={handleInputChange}
@@ -163,6 +166,7 @@ const UserManagement = () => {
             message="Are you sure you want to delete this user?"
             details={getDeleteModalDetails(userToDelete)}
             confirmButtonText="Delete User"
+            isProcessing={deleting}
             onConfirm={handleDeleteConfirm}
             onCancel={handleDeleteCancel}
           />
