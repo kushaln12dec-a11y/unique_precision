@@ -58,6 +58,11 @@ const ChildCutsTable: React.FC<ChildCutsTableProps> = ({
     return normalized.length > 0 ? normalized : [...MACHINE_OPTIONS];
   }, [machineOptions]);
 
+  const isUnassignedValue = (value: unknown): boolean => {
+    const normalized = String(value || "").trim().toLowerCase();
+    return !normalized || normalized === "unassigned" || normalized === "unassign";
+  };
+
   const toAlphabetSuffix = (index: number): string => {
     let n = Math.max(0, index);
     let result = "";
@@ -276,7 +281,7 @@ const ChildCutsTable: React.FC<ChildCutsTableProps> = ({
                     <div onClick={(e) => e.stopPropagation()}>
                       <MultiSelectOperators
                         selectedOperators={
-                          entry.assignedTo && entry.assignedTo !== "Unassigned"
+                          !isUnassignedValue(entry.assignedTo)
                             ? (() => {
                                 const operators = Array.isArray(entry.assignedTo)
                                   ? entry.assignedTo
@@ -289,17 +294,17 @@ const ChildCutsTable: React.FC<ChildCutsTableProps> = ({
                         className="operator-assigned-dropdown"
                         onChange={(operators) => {
                           const uniqueOperators = [...new Set(operators)];
-                          const value = uniqueOperators.length > 0 ? uniqueOperators.join(", ") : "Unassigned";
+                          const value = uniqueOperators.length > 0 ? uniqueOperators.join(", ") : "Unassign";
                           onAssignChange(entry.id, value);
                         }}
                         assignToSelfName={undefined}
-                        placeholder="Unassigned"
+                        placeholder="Unassign"
                         compact={true}
                       />
                     </div>
                   ) : (
                     <div className="assigned-operators-readonly">
-                      {entry.assignedTo && entry.assignedTo !== "Unassigned" ? (
+                      {!isUnassignedValue(entry.assignedTo) ? (
                         (() => {
                           const assignedOps = Array.isArray(entry.assignedTo)
                             ? entry.assignedTo
@@ -354,13 +359,13 @@ const ChildCutsTable: React.FC<ChildCutsTableProps> = ({
                 <td className="status-col">
                   {(() => {
                     const qty = Math.max(1, Number(entry.qty || 1));
-                    const c = getQaProgressCounts(entry, qty);
-                    const badges = [
-                      { className: "empty", label: `Yet to Start ${c.empty}` },
-                      { className: "saved", label: `Logged ${c.saved}` },
-                      { className: "ready", label: `In Progress ${c.ready}` },
-                      { className: "sent", label: `QC ${c.sent}` },
-                    ];
+                        const c = getQaProgressCounts(entry, qty);
+                        const badges = [
+                          { className: "empty", label: `Yet to Start ${c.empty}` },
+                          { className: "ready", label: `In Progress ${c.ready}` },
+                          { className: "saved", label: `Logged ${c.saved}` },
+                          { className: "sent", label: `QC ${c.sent}` },
+                        ];
                     return (
                       <div className="child-stage-summary">
                         <div

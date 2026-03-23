@@ -1,3 +1,4 @@
+import { parseDateValue } from "../../utils/date";
 import { estimatedHoursFromAmount } from "../../utils/jobFormatting";
 
 export type CutForm = {
@@ -158,6 +159,46 @@ export const getThicknessDisplayValue = (value: unknown): string => {
   const raw = String(value ?? "").trim();
   if (!raw) return "-";
   return normalizeThicknessInput(raw, raw) || raw;
+};
+
+const toSortableNumber = (value: unknown): number | null => {
+  const raw = String(value ?? "").trim();
+  if (!raw) return null;
+  const parsed = Number(raw);
+  return Number.isFinite(parsed) ? parsed : null;
+};
+
+export const sortGroupEntriesParentFirst = <T extends {
+  id?: string | number;
+  setting?: string | number;
+  createdAt?: string;
+}>(entries: T[]): T[] => {
+  return [...entries].sort((a, b) => {
+    const createdAtA = parseDateValue(String(a.createdAt || ""));
+    const createdAtB = parseDateValue(String(b.createdAt || ""));
+    const hasCreatedAtA = createdAtA > 0;
+    const hasCreatedAtB = createdAtB > 0;
+    if (hasCreatedAtA && hasCreatedAtB && createdAtA !== createdAtB) {
+      return createdAtA - createdAtB;
+    }
+    if (hasCreatedAtA && !hasCreatedAtB) return -1;
+    if (!hasCreatedAtA && hasCreatedAtB) return 1;
+
+    const idA = typeof a.id === "number" ? a.id : Number(a.id) || 0;
+    const idB = typeof b.id === "number" ? b.id : Number(b.id) || 0;
+    if (idA !== idB) {
+      return idA - idB;
+    }
+
+    const settingA = toSortableNumber(a.setting);
+    const settingB = toSortableNumber(b.setting);
+    if (settingA !== null && settingB !== null && settingA !== settingB) {
+      return settingA - settingB;
+    }
+    if (settingA !== null && settingB === null) return -1;
+    if (settingA === null && settingB !== null) return 1;
+    return 0;
+  });
 };
 
 export const normalizeThicknessInput = (rawValue: string, previousValue = ""): string => {

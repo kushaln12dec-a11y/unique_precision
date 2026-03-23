@@ -148,6 +148,8 @@ const getMasterConfig = async () => {
       customer: c.customer,
       rate: c.rate ? String(c.rate) : "",
       settingHours: c.settingHours ? String(c.settingHours) : "",
+      thicknessRateUpto100: c.thicknessRateUpto100 ? String(c.thicknessRateUpto100) : "",
+      thicknessRateAbove100: c.thicknessRateAbove100 ? String(c.thicknessRateAbove100) : "",
     })),
     materials: config.materials.length > 0 ? config.materials.map((m) => m.value) : DEFAULT_MASTER_CONFIG.materials,
     passOptions: config.passOptions.length > 0 ? config.passOptions.map((p) => p.value) : DEFAULT_MASTER_CONFIG.passOptions,

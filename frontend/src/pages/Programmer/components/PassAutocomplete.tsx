@@ -20,9 +20,12 @@ const PassAutocomplete: React.FC<PassAutocompleteProps> = ({
   error,
 }) => {
   const sourceOptions = options && options.length > 0 ? options : DEFAULT_PASS_OPTIONS;
+  const normalizedOptions = Array.from(
+    new Set(sourceOptions.map((option) => String(option || "").trim()).filter(Boolean))
+  );
   const [inputValue, setInputValue] = useState(value);
   const [isOpen, setIsOpen] = useState(false);
-  const [filteredOptions, setFilteredOptions] = useState(sourceOptions);
+  const [filteredOptions, setFilteredOptions] = useState(normalizedOptions);
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -32,8 +35,8 @@ const PassAutocomplete: React.FC<PassAutocompleteProps> = ({
   }, [value]);
 
   useEffect(() => {
-    setFilteredOptions(sourceOptions);
-  }, [sourceOptions]);
+    setFilteredOptions(normalizedOptions);
+  }, [normalizedOptions]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -55,25 +58,26 @@ const PassAutocomplete: React.FC<PassAutocompleteProps> = ({
     setInputValue(newValue);
 
     if (newValue.trim() === "") {
-      setFilteredOptions(sourceOptions);
+      setFilteredOptions(normalizedOptions);
     } else {
       setFilteredOptions(
-        sourceOptions.filter((option) =>
+        normalizedOptions.filter((option) =>
           option.toLowerCase().includes(newValue.toLowerCase())
         )
       );
     }
 
     setIsOpen(true);
-    setHighlightedIndex(filteredOptions.length > 0 ? 0 : -1);
+    setHighlightedIndex(0);
     onChange(newValue);
   };
 
   const handleInputFocus = () => {
     setIsOpen(true);
-    setHighlightedIndex(filteredOptions.length > 0 ? 0 : -1);
+    const selectedIndex = filteredOptions.findIndex((option) => option === String(value ?? ""));
+    setHighlightedIndex(selectedIndex >= 0 ? selectedIndex : 0);
     if (inputValue.trim() === "") {
-      setFilteredOptions(sourceOptions);
+      setFilteredOptions(normalizedOptions);
     }
   };
 
@@ -137,7 +141,7 @@ const PassAutocomplete: React.FC<PassAutocompleteProps> = ({
             <div
               key={option}
               className={`customer-autocomplete-option ${
-                option === value || highlightedIndex === filteredOptions.indexOf(option) ? "selected" : ""
+                highlightedIndex === filteredOptions.indexOf(option) ? "selected" : ""
               }`}
               onClick={() => handleOptionSelect(option)}
               onMouseDown={(e) => e.preventDefault()}

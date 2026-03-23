@@ -115,7 +115,7 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({
             onSubmit();
           }}
           aria-label={submitLabel || "Submit"}
-          title={disableSubmitButton ? "Complete all quantities as Ready for QC first" : (submitLabel || "Submit")}
+          title={disableSubmitButton ? "No logged quantities available for QC" : (submitLabel || "Submit")}
         >
           <CheckCircleIcon fontSize="small" />
         </button>

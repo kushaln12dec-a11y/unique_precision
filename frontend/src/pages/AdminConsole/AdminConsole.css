@@ -250,8 +250,8 @@
 }
 
 .admin-customer-modal.modal-large {
-  width: min(1080px, 96vw) !important;
-  max-width: 96vw !important;
+  width: min(980px, 92vw) !important;
+  max-width: 92vw !important;
 }
 
 .admin-customer-modal .modal-content {
@@ -328,7 +328,13 @@
 }
 
 .admin-customer-row-simple {
-  grid-template-columns: minmax(180px, 1.35fr) minmax(140px, 0.9fr) minmax(160px, 1fr) auto;
+  grid-template-columns:
+    minmax(150px, 1.25fr)
+    minmax(100px, 0.8fr)
+    minmax(118px, 0.9fr)
+    minmax(118px, 0.9fr)
+    minmax(118px, 0.9fr)
+    auto;
 }
 
 .admin-add-btn,

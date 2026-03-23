@@ -1,6 +1,6 @@
 .lazy-ag-grid-shell {
   width: 100%;
-  min-height: 420px;
+  min-height: 180px;
   height: calc(100vh - 280px);
   box-sizing: border-box;
   overflow: hidden;
@@ -198,12 +198,13 @@
 
 .lazy-ag-grid-shell .ag-full-width-container .ag-row {
   border-bottom: none;
+  overflow: visible;
 }
 
 .lazy-ag-grid-detail-row {
   width: 100%;
   padding: 0;
-  background: #fff;
+  background: transparent;
   box-sizing: border-box;
 }
 
@@ -211,6 +212,11 @@
 .lazy-ag-grid-shell .ag-full-width-row .ag-cell-value {
   width: 100%;
   padding: 0;
+  overflow: visible;
+}
+
+.lazy-ag-grid-shell .ag-full-width-row {
+  overflow: visible;
 }
 
 .lazy-ag-grid-shell .ag-row-hover.group-row,

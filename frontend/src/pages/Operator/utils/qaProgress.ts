@@ -10,9 +10,9 @@ export type QaProgressCounts = {
 };
 
 export const QA_STAGE_LABELS = {
-  SAVED: "Operation Logged",
-  READY_FOR_QA: "Operation Logged",
-  SENT_TO_QA: "QC Dispatched",
+  SAVED: "Logged",
+  READY_FOR_QA: "In Progress",
+  SENT_TO_QA: "QC",
   EMPTY: "Yet to Start",
 } as const;
 
@@ -70,6 +70,16 @@ export const getQaProgressCounts = (job: JobEntry, totalQty: number): QaProgress
     },
     { saved: 0, ready: 0, sent: 0, empty: 0 }
   );
+};
+
+export const isDispatchableQaStatus = (status: QuantityProgressStatus): boolean =>
+  status === "SAVED" || status === "READY_FOR_QA";
+
+export const getDispatchableQuantityNumbers = (job: JobEntry): number[] => {
+  const qty = Math.max(1, Number(job.qty || 1));
+  return getQuantityProgressStatuses(job, qty)
+    .map((status, index) => (isDispatchableQaStatus(status) ? index + 1 : null))
+    .filter((value): value is number => value !== null);
 };
 
 export const isJobFullySentToQa = (job: JobEntry): boolean => {

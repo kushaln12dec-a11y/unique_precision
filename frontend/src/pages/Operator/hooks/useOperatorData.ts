@@ -58,7 +58,7 @@ export const useOperatorData = (
               setJobs(
                 parsed.map((job) => ({
                   ...job,
-                  assignedTo: job.assignedTo || "Unassigned",
+                  assignedTo: job.assignedTo || "Unassign",
                 }))
               );
             }

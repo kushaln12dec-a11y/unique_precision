@@ -1668,6 +1668,17 @@
   gap: 0.5rem;
 }
 
+.inline-row-branch {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1rem;
+  color: #94a3b8;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
 .action-icon-button {
   border: none;
   background: transparent;
@@ -1682,10 +1693,21 @@
   color: #dc2626 !important;
 }
 
+.action-icon-button.submit-icon {
+  color: #0f766e !important;
+  background: radial-gradient(circle at center, rgba(16, 185, 129, 0.14), transparent 70%);
+  border-radius: 999px;
+}
+
 .action-icon-button:hover {
   color: #1d4ed8 !important;
   background: rgba(37, 99, 235, 0.15);
   border-radius: 6px;
+}
+
+.action-icon-button.submit-icon:hover {
+  color: #047857 !important;
+  background: rgba(16, 185, 129, 0.16);
 }
 
 .action-icon-button.danger:hover {
@@ -1919,7 +1941,7 @@
 }
 
 .group-row-expanded {
-  background: #f9fafb;
+  background: transparent;
 }
 
 /* Ensure expanded rows maintain their color coding */
@@ -1931,14 +1953,14 @@
 }
 
 .child-row {
-  background: #f9fafb;
+  background: transparent;
 }
 
 .child-row-content {
-  background: #f9fafb;
+  background: transparent;
   width: 100%;
   max-width: 100%;
-  padding: 0 0 0.55rem 0;
+  padding: 0;
   box-sizing: border-box;
 }
 
@@ -1958,7 +1980,7 @@
   font-size: 0.8rem;
   table-layout: fixed;
   box-sizing: border-box;
-  margin-bottom: 0.4rem;
+  margin-bottom: 0;
 }
 
 .child-jobs-table th,
@@ -2562,13 +2584,13 @@
 
 /* Child row color coding - scoped to Programmer table */
 .programmer-container .jobs-table-wrapper .child-row.child-critical-row {
-  border-left: 4px solid #dc2626 !important;
+  border-left: 3px solid #dc2626 !important;
   background-image:
     linear-gradient(180deg, rgba(255, 255, 255, 0.54) 0%, rgba(255, 255, 255, 0.08) 48%, rgba(255, 255, 255, 0) 100%),
     linear-gradient(90deg, rgba(220, 38, 38, 0.2) 0%, rgba(220, 38, 38, 0.07) 38%, rgba(255, 255, 255, 0.95) 100%);
 }
 .programmer-container .jobs-table-wrapper .child-row.child-critical-row td:first-child {
-  box-shadow: inset 4px 0 0 #dc2626;
+  box-shadow: inset 3px 0 0 #dc2626;
 }
 
 .programmer-container .jobs-table-wrapper .child-row.child-critical-row td {

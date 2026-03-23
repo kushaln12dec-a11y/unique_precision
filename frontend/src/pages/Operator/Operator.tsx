@@ -11,10 +11,11 @@ import WbSunnyOutlinedIcon from "@mui/icons-material/WbSunnyOutlined";
 import DarkModeOutlinedIcon from "@mui/icons-material/DarkModeOutlined";
 import JobDetailsModal from "../Programmer/components/JobDetailsModal";
 import { OperatorFilters } from "./components/OperatorFilters";
+import SendToQaModal, { type SendToQaModalTarget } from "./components/SendToQaModal";
 import { useOperatorData } from "./hooks/useOperatorData";
 import { useOperatorFilters } from "./hooks/useOperatorFilters";
 import { useOperatorTableData } from "./hooks/useOperatorTableData.tsx";
-import { useOperatorTable } from "./hooks/useOperatorTable.tsx";
+import { useOperatorTable, type OperatorDisplayRow } from "./hooks/useOperatorTable.tsx";
 import { exportOperatorJobsToCSV } from "./utils/csvExport";
 import { updateOperatorJob, updateOperatorQaStatus } from "../../services/operatorApi";
 import { deleteJob, getOperatorJobsPage } from "../../services/jobApi";
@@ -22,8 +23,8 @@ import { getMasterConfig } from "../../services/masterConfigApi";
 import { createOperatorTaskSwitchLog, getEmployeeLogs, getEmployeeLogsPage } from "../../services/employeeLogsApi";
 import { MassDeleteButton } from "../Programmer/components/MassDeleteButton";
 import { getUserDisplayNameFromToken, getUserRoleFromToken } from "../../utils/auth";
-import { getGroupQaProgressCounts, getQaProgressCounts } from "./utils/qaProgress";
-import { getParentRowClassName } from "../Programmer/utils/priorityUtils";
+import { getDispatchableQuantityNumbers, getGroupQaProgressCounts, getQaProgressCounts, getQuantityProgressStatuses } from "./utils/qaProgress";
+import { getParentRowClassName, getRowClassName } from "../Programmer/utils/priorityUtils";
 import type { JobEntry } from "../../types/job";
 import type { EmployeeLog } from "../../types/employeeLog";
 import type { MasterConfig } from "../../types/masterConfig";
@@ -39,7 +40,6 @@ import {
   toMachineIndex,
 } from "../../utils/jobFormatting";
 import MarqueeCopyText from "../../components/MarqueeCopyText";
-import ChildCutsTable from "../Programmer/components/ChildCutsTable";
 import "../RoleBoard.css";
 import "../Programmer/Programmer.css";
 import "./Operator.css";
@@ -52,11 +52,7 @@ type TableRow = {
   entries: JobEntry[];
 };
 
-type OperatorGridRow =
-  | { kind: "parent"; groupId: string; row: TableRow }
-  | { kind: "detail"; groupId: string; row: TableRow };
-
-const getOperatorHeaderName = (column: Column<TableRow>) => {
+const getOperatorHeaderName = (column: Column<OperatorDisplayRow>) => {
   if (typeof column.label === "string") return column.label;
   switch (column.key) {
     case "programRef":
@@ -145,6 +141,9 @@ const Operator = () => {
     variant: "info",
     visible: false,
   });
+  const [sendToQaTargets, setSendToQaTargets] = useState<SendToQaModalTarget[]>([]);
+  const [isSendToQaModalOpen, setIsSendToQaModalOpen] = useState(false);
+  const [isSendingToQa, setIsSendingToQa] = useState(false);
 
   const {
     filters,
@@ -216,71 +215,45 @@ const Operator = () => {
     navigate(`/operator/viewpage?groupId=${groupId}`);
   };
 
-  const isEntryReadyForQa = (entry: JobEntry): boolean => {
-    const qty = Math.max(1, Number(entry.qty || 1));
-    const progress = getQaProgressCounts(entry, qty);
-    return progress.empty === 0 && progress.saved === 0 && progress.ready + progress.sent === qty;
-  };
-
-  const canMoveGroupToQa = (entries: JobEntry[]): boolean => {
-    if (!entries.length) return false;
-    const totalQty = entries.reduce((sum, entry) => sum + Math.max(1, Number(entry.qty || 1)), 0);
-    const totalReadyOrSent = entries.reduce((sum, entry) => {
-      const qty = Math.max(1, Number(entry.qty || 1));
-      const progress = getQaProgressCounts(entry, qty);
-      return sum + progress.ready + progress.sent;
-    }, 0);
-    return totalQty === totalReadyOrSent && entries.every(isEntryReadyForQa);
-  };
-
-  const handleMoveGroupToQa = async (row: TableRow) => {
-    if (!canMoveGroupToQa(row.entries)) {
-      setToast({
-        message: "All parent and child quantities must be ready for QC before moving to QC.",
-        variant: "error",
-        visible: true,
+  const applyQaDispatchUpdates = useCallback((updates: Array<{ jobId: string; quantityNumbers: number[] }>) => {
+    const updateJobList = (source: JobEntry[]) =>
+      source.map((job) => {
+        const targetUpdate = updates.find((item) => item.jobId === String(job.id));
+        if (!targetUpdate) return job;
+        const nextStates = { ...(job.quantityQaStates || {}) };
+        targetUpdate.quantityNumbers.forEach((qty) => {
+          nextStates[String(qty)] = "SENT_TO_QA";
+        });
+        return { ...job, quantityQaStates: nextStates };
       });
-      setTimeout(() => setToast((prev) => ({ ...prev, visible: false })), 2500);
-      return;
-    }
 
-    const confirmed = window.confirm(`Move Job #${row.parent.refNumber || row.groupId} to QC?`);
-    if (!confirmed) return;
+    setJobs((prev) => updateJobList(prev));
+    setOperatorGridJobs((prev) => updateJobList(prev));
+  }, [setJobs]);
 
+  const handleConfirmSendToQa = useCallback(async (updates: Array<{ jobId: string; quantityNumbers: number[] }>) => {
+    if (updates.length === 0) return;
+    setIsSendingToQa(true);
     try {
       await Promise.all(
-        row.entries.map((entry) => {
-          const qty = Math.max(1, Number(entry.qty || 1));
-          const quantityNumbers = Array.from({ length: qty }, (_, idx) => idx + 1);
-          return updateOperatorQaStatus(String(entry.id), { quantityNumbers, status: "SENT_TO_QA" });
-        })
+        updates.map((item) =>
+          updateOperatorQaStatus(item.jobId, { quantityNumbers: item.quantityNumbers, status: "SENT_TO_QA" })
+        )
       );
-
-      setJobs((prev) =>
-        prev.map((job) => {
-          if (String(job.groupId) !== row.groupId) return job;
-          const qty = Math.max(1, Number(job.qty || 1));
-          const nextStates: Record<string, "SENT_TO_QA"> = {};
-          for (let i = 1; i <= qty; i += 1) nextStates[String(i)] = "SENT_TO_QA";
-          return { ...job, quantityQaStates: nextStates };
-        })
-      );
-      setOperatorGridJobs((prev) =>
-        prev.map((job) => {
-          if (String(job.groupId) !== row.groupId) return job;
-          const qty = Math.max(1, Number(job.qty || 1));
-          const nextStates: Record<string, "SENT_TO_QA"> = {};
-          for (let i = 1; i <= qty; i += 1) nextStates[String(i)] = "SENT_TO_QA";
-          return { ...job, quantityQaStates: nextStates };
-        })
-      );
-      setToast({ message: "Job moved to QC.", variant: "success", visible: true });
+      applyQaDispatchUpdates(updates);
+      setSelectedEntryIds(new Set());
+      setSelectedJobIds(new Set());
+      setIsSendToQaModalOpen(false);
+      setSendToQaTargets([]);
+      setToast({ message: "Selected quantities sent to QC.", variant: "success", visible: true });
       setTimeout(() => setToast((prev) => ({ ...prev, visible: false })), 2500);
     } catch (error) {
-      setToast({ message: "Failed to move job to QC.", variant: "error", visible: true });
+      setToast({ message: "Failed to send quantities to QC.", variant: "error", visible: true });
       setTimeout(() => setToast((prev) => ({ ...prev, visible: false })), 2500);
+    } finally {
+      setIsSendingToQa(false);
     }
-  };
+  }, [applyQaDispatchUpdates, setJobs]);
 
   const handleViewJob = (row: TableRow) => {
     setViewingJob(row);
@@ -329,7 +302,7 @@ const Operator = () => {
 
   const handleSendSelectedRowsToQa = async () => {
     if (selectedEntryIds.size === 0) {
-      setToast({ message: "Select at least one row to dispatch.", variant: "error", visible: true });
+      setToast({ message: "Select at least one row to send to QC.", variant: "error", visible: true });
       setTimeout(() => setToast((prev) => ({ ...prev, visible: false })), 2500);
       return;
     }
@@ -344,43 +317,7 @@ const Operator = () => {
       setTimeout(() => setToast((prev) => ({ ...prev, visible: false })), 2500);
       return;
     }
-
-    try {
-      await Promise.all(
-        selectedEntries.map((entry) => {
-          const qty = Math.max(1, Number(entry.qty || 1));
-          const quantityNumbers = Array.from({ length: qty }, (_, idx) => idx + 1);
-          return updateOperatorQaStatus(String(entry.id), { quantityNumbers, status: "SENT_TO_QA" });
-        })
-      );
-
-      const selectedIdSet = new Set(selectedEntries.map((entry) => String(entry.id)));
-      setJobs((prev) =>
-        prev.map((job) => {
-          if (!selectedIdSet.has(String(job.id))) return job;
-          const qty = Math.max(1, Number(job.qty || 1));
-          const nextStates: Record<string, "SENT_TO_QA"> = {};
-          for (let i = 1; i <= qty; i += 1) nextStates[String(i)] = "SENT_TO_QA";
-          return { ...job, quantityQaStates: nextStates };
-        })
-      );
-      setOperatorGridJobs((prev) =>
-        prev.map((job) => {
-          if (!selectedIdSet.has(String(job.id))) return job;
-          const qty = Math.max(1, Number(job.qty || 1));
-          const nextStates: Record<string, "SENT_TO_QA"> = {};
-          for (let i = 1; i <= qty; i += 1) nextStates[String(i)] = "SENT_TO_QA";
-          return { ...job, quantityQaStates: nextStates };
-        })
-      );
-      setSelectedEntryIds(new Set());
-      setSelectedJobIds(new Set());
-      setToast({ message: "Selected rows moved to QC.", variant: "success", visible: true });
-      setTimeout(() => setToast((prev) => ({ ...prev, visible: false })), 2500);
-    } catch (error) {
-      setToast({ message: "Failed to move selected rows to QC.", variant: "error", visible: true });
-      setTimeout(() => setToast((prev) => ({ ...prev, visible: false })), 2500);
-    }
+    openSendToQaModal(selectedEntries);
   };
 
   const handleDeleteSelectedRows = async () => {
@@ -525,7 +462,7 @@ const Operator = () => {
     name: getDisplayName(user.firstName, user.lastName, user.email, String(user._id)),
   }));
 
-  const { tableData, expandableRows } = useOperatorTableData(
+  const { tableData } = useOperatorTableData(
     operatorGridJobs,
     sortField,
     sortDirection,
@@ -542,35 +479,111 @@ const Operator = () => {
     handleChildRowSelect
   );
 
+  const buildSendToQaTargets = useCallback((entries: JobEntry[]): SendToQaModalTarget[] => {
+    const dedupedEntries = Array.from(new Map(entries.map((entry) => [String(entry.id), entry])).values());
+    const targets: SendToQaModalTarget[] = [];
+
+    dedupedEntries.forEach((entry, index) => {
+      const totalQty = Math.max(1, Number(entry.qty || 1));
+      const statuses = getQuantityProgressStatuses(entry, totalQty);
+      const statusByQuantity = statuses.reduce<Record<number, any>>((acc, status, qtyIndex) => {
+        acc[qtyIndex + 1] = status;
+        return acc;
+      }, {});
+      const eligibleQuantityNumbers = getDispatchableQuantityNumbers(entry);
+      if (eligibleQuantityNumbers.length === 0) return;
+
+      const groupEntries = tableData.find((row) => row.groupId === String(entry.groupId))?.entries || [];
+      const sortedGroupEntryIds = groupEntries.map((job) => String(job.id));
+      const rowType =
+        sortedGroupEntryIds.length > 0 && sortedGroupEntryIds[0] === String(entry.id) ? "parent" : "child";
+      const settingIndex = groupEntries.findIndex((job) => String(job.id) === String(entry.id));
+
+      targets.push({
+        jobId: String(entry.id),
+        groupId: String(entry.groupId),
+        customer: entry.customer || "",
+        description: entry.description || "",
+        refNumber: entry.refNumber || "",
+        settingLabel: String(settingIndex >= 0 ? settingIndex + 1 : index + 1),
+        totalQty,
+        eligibleQuantityNumbers,
+        statusByQuantity,
+        defaultSelectedQuantityNumbers: eligibleQuantityNumbers,
+        rowType,
+      });
+    });
+
+    return targets;
+  }, [tableData]);
+
+  const openSendToQaModal = useCallback((entries: JobEntry[]) => {
+    const targets = buildSendToQaTargets(entries);
+    if (targets.length === 0) {
+      setToast({ message: "No logged quantities are ready to send to QC.", variant: "error", visible: true });
+      setTimeout(() => setToast((prev) => ({ ...prev, visible: false })), 2500);
+      return;
+    }
+    setSendToQaTargets(targets);
+    setIsSendToQaModalOpen(true);
+  }, [buildSendToQaTargets]);
+
   const columns = useOperatorTable({
-    tableData,
-    expandableRows,
     canAssign,
     machineOptions: machineOptionsForDropdown,
     currentUserName: currentUserDisplayName,
     operatorUsers: operatorOptionUsers,
     handleAssignChange,
     handleMachineNumberChange,
+    handleChildMachineNumberChange,
     handleViewJob,
+    handleViewEntry: (entry) => {
+      setViewingJob({
+        groupId: String(entry.groupId),
+        parent: entry,
+        entries: [entry],
+        groupTotalHrs: Number(entry.totalHrs || 0),
+        groupTotalAmount: Number(entry.totalAmount || 0),
+      });
+      setShowJobViewModal(true);
+    },
     handleSubmit,
     handleImageInput,
-    handleMoveGroupToQa,
-    canMoveGroupToQa,
+    handleOpenQaModal: openSendToQaModal,
     isAdmin,
     isImageInputDisabled: isTaskTimerRunning,
+    toggleGroup,
   });
 
-  const operatorGridRows = useMemo<OperatorGridRow[]>(
+  const operatorGridRows = useMemo<OperatorDisplayRow[]>(
     () =>
-      tableData.flatMap((row) =>
-        expandableRows.has(row.groupId) && expandedGroups.has(row.groupId)
-          ? [
-              { kind: "parent", groupId: row.groupId, row },
-              { kind: "detail", groupId: row.groupId, row },
-            ]
-          : [{ kind: "parent", groupId: row.groupId, row }]
-      ),
-    [tableData, expandableRows, expandedGroups]
+      tableData.flatMap((row) => {
+        const hasChildren = row.entries.length > 1;
+        const isExpanded = expandedGroups.has(row.groupId);
+        const parentRow: OperatorDisplayRow = {
+          kind: "parent",
+          groupId: row.groupId,
+          tableRow: row,
+          entry: row.parent,
+          childIndex: null,
+          hasChildren,
+          isExpanded,
+        };
+        if (!hasChildren || !isExpanded) {
+          return [parentRow];
+        }
+        const childRows = row.entries.slice(1).map((entry, index) => ({
+          kind: "child" as const,
+          groupId: row.groupId,
+          tableRow: row,
+          entry,
+          childIndex: index,
+          hasChildren: false,
+          isExpanded: false,
+        }));
+        return [parentRow, ...childRows];
+      }),
+    [tableData, expandedGroups]
   );
 
   const operatorJobColumnDefs = useMemo(
@@ -607,15 +620,31 @@ const Operator = () => {
           />
         ),
         cellRenderer: (params: any) => {
+          if (params.data?.kind === "child") {
+            const entryId = params.data.entry?.id;
+            if (entryId === undefined || entryId === null) return null;
+            const key = String(entryId);
+            return (
+              <input
+                type="checkbox"
+                checked={selectedEntryIds.has(key)}
+                onChange={(event) => {
+                  handleChildRowSelect(String(params.data.groupId), key, event.target.checked);
+                }}
+                onClick={(event) => event.stopPropagation()}
+              />
+            );
+          }
+
           if (params.data?.kind !== "parent") return null;
-          const groupId = String(params.data.row.groupId);
+          const groupId = String(params.data.groupId);
           return (
             <input
               type="checkbox"
               checked={selectedJobIds.has(groupId)}
               onChange={(event) => {
                 const selected = event.target.checked;
-                const row = params.data.row as TableRow;
+                const row = params.data.tableRow as TableRow;
                 setSelectedEntryIds((prev) => {
                   const next = new Set(prev);
                   row.entries.forEach((entry) => {
@@ -651,67 +680,13 @@ const Operator = () => {
           headerClass: column.headerClassName,
           cellRenderer:
             column.render
-              ? (params: any) =>
-                  params.data?.kind === "parent"
-                    ? column.render?.(params.data.row, params.node?.rowIndex || 0)
-                    : null
-              : (params: any) =>
-                  params.data?.kind === "parent"
-                    ? String(params.data?.row?.[column.key] ?? "-")
-                    : null,
+              ? (params: any) => column.render?.(params.data, params.node?.rowIndex || 0)
+              : (params: any) => String(params.data?.entry?.[column.key] ?? "-"),
         };
       }),
     ],
-    [columns, selectedJobIds, tableData]
+    [columns, handleChildRowSelect, selectedEntryIds, selectedJobIds, tableData]
   );
-
-  const renderOperatorDetailRow = useCallback((params: any) => {
-    const row = params?.data?.row as TableRow | undefined;
-    if (!row) return null;
-    return (
-      <div className="lazy-ag-grid-detail-row">
-        <ChildCutsTable
-          entries={row.entries}
-          parentSetting={String(row.parent.setting || "").trim()}
-          showSetNumberColumn={false}
-          onImage={(groupId: string, cutId?: number) => handleImageInput(groupId, cutId)}
-          onAssignChange={handleAssignChange}
-          onMachineNumberChange={handleChildMachineNumberChange}
-          operatorUsers={operatorOptionUsers}
-          machineOptions={machineOptionsForDropdown}
-          isOperator={true}
-          isAdmin={isAdmin}
-          disableImageButton={isTaskTimerRunning}
-          showCheckboxes={true}
-          selectedRows={selectedEntryIds}
-          onRowSelect={(rowKey, selected) => handleChildRowSelect(row.groupId, rowKey, selected)}
-          getRowKey={(entry, index) =>
-            entry.id !== undefined && entry.id !== null ? String(entry.id) : `${row.groupId}-${index}`
-          }
-          onViewJob={(entry) => {
-            setViewingJob({
-              groupId: row.groupId,
-              parent: entry,
-              entries: [entry],
-              groupTotalHrs: Number(entry.totalHrs || 0),
-              groupTotalAmount: Number(entry.totalAmount || 0),
-            });
-            setShowJobViewModal(true);
-          }}
-        />
-      </div>
-    );
-  }, [
-    handleAssignChange,
-    handleChildMachineNumberChange,
-    handleChildRowSelect,
-    handleImageInput,
-    isAdmin,
-    isTaskTimerRunning,
-    machineOptionsForDropdown,
-    operatorOptionUsers,
-    selectedEntryIds,
-  ]);
 
   const handleApplyFiltersWithPageReset = (newFilters: FilterValues) => {
     handleApplyFilters(newFilters);
@@ -1136,25 +1111,27 @@ const Operator = () => {
                     rows={operatorGridJobs}
                     onRowsChange={setOperatorGridJobs}
                     transformRows={() => operatorGridRows}
-                    getRowId={(row: OperatorGridRow) =>
-                      row.kind === "detail" ? `${row.groupId}__detail` : row.groupId
-                    }
-                    isFullWidthRow={(row: OperatorGridRow) => row.kind === "detail"}
-                    fullWidthCellRenderer={renderOperatorDetailRow}
-                    getRowHeight={(params) =>
-                      params.data?.kind === "detail"
-                        ? 92 + params.data.row.entries.length * 62
-                        : 56
+                    getRowId={(row: OperatorDisplayRow) =>
+                      row.kind === "parent" ? `parent__${row.groupId}` : `child__${row.groupId}__${row.entry.id}`
                     }
                     emptyMessage="No entries added yet."
                     getRowClass={(params) => {
-                      if (params.data?.kind === "detail") return "operator-grid-detail";
-                      const row = params.data.row as TableRow;
-                      const flagClass = getParentRowClassName(
-                        row.parent,
-                        row.entries,
-                        expandedGroups.has(row.groupId)
-                      );
+                      if (params.data?.kind === "child") {
+                        const childFlagClass = getRowClassName([params.data.entry], false, true);
+                        const childCounts = getQaProgressCounts(
+                          params.data.entry,
+                          Math.max(1, Number(params.data.entry.qty || 1))
+                        );
+                        const childLogged = childCounts.saved + childCounts.ready;
+                        const childMax = Math.max(childLogged, childCounts.sent, childCounts.empty);
+                        let childStageClass = "operator-stage-row-not-started";
+                        if (childCounts.sent === childMax) childStageClass = "operator-stage-row-dispatched";
+                        else if (childLogged === childMax) childStageClass = "operator-stage-row-logged";
+                        return `${childFlagClass} ${childStageClass}`;
+                      }
+
+                      const row = params.data.tableRow as TableRow;
+                      const flagClass = getParentRowClassName(row.parent, row.entries, expandedGroups.has(row.groupId));
                       const c = getGroupQaProgressCounts(row.entries);
                       const logged = c.saved + c.ready;
                       const maxCount = Math.max(logged, c.sent, c.empty);
@@ -1164,7 +1141,7 @@ const Operator = () => {
                       return `${flagClass} ${stageClass}`;
                     }}
                     className="jobs-table-wrapper operator-table-no-scroll"
-                    rowHeight={40}
+                    rowHeight={56}
                     fitColumns={true}
                     refreshKey={`${customerFilter}|${descriptionFilter}|${createdByFilter}|${assignedToFilter}|${JSON.stringify(filters)}`}
                   />
@@ -1242,6 +1219,17 @@ const Operator = () => {
             }}
           />
         )}
+        <SendToQaModal
+          isOpen={isSendToQaModalOpen}
+          targets={sendToQaTargets}
+          isSubmitting={isSendingToQa}
+          onClose={() => {
+            if (isSendingToQa) return;
+            setIsSendToQaModalOpen(false);
+            setSendToQaTargets([]);
+          }}
+          onConfirm={handleConfirmSendToQa}
+        />
         <Toast
           message={toast.message}
           visible={toast.visible}

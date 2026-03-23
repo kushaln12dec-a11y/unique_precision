@@ -81,7 +81,7 @@ export const useOperatorViewData = (groupId: string | null, cutIdParam: string |
       return [...new Set(rawAssignedTo.map((value) => String(value || "").trim()).filter(Boolean))];
     }
     const normalized = String(rawAssignedTo || "").trim();
-    if (!normalized || normalized === "Unassigned") return [];
+    if (!normalized || normalized === "Unassigned" || normalized === "Unassign") return [];
     return [...new Set(normalized.split(",").map((value) => value.trim()).filter(Boolean))];
   };
 
@@ -133,7 +133,9 @@ export const useOperatorViewData = (groupId: string | null, cutIdParam: string |
           const existing = job as any;
           const getOpsNameArray = (rawOpsName: string | string[]) => {
             if (Array.isArray(rawOpsName)) return rawOpsName.map((value) => String(value || "").trim()).filter(Boolean);
-            return rawOpsName && rawOpsName !== "Unassigned" ? rawOpsName.split(",").map((value) => value.trim()).filter(Boolean) : [];
+            return rawOpsName && rawOpsName !== "Unassigned" && rawOpsName !== "Unassign"
+              ? rawOpsName.split(",").map((value) => value.trim()).filter(Boolean)
+              : [];
           };
           const assignedToArray = parseAssignedOperators(existing.assignedTo || "");
           

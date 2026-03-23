@@ -62,8 +62,8 @@ export const useJobHandlers = ({
           createdAt,
           createdBy,
           assignedTo: editingGroupId
-            ? jobs.find((job) => String(job.groupId) === editingGroupId)?.assignedTo || "Unassigned"
-            : "Unassigned",
+            ? jobs.find((job) => String(job.groupId) === editingGroupId)?.assignedTo || "Unassign"
+            : "Unassign",
         };
       });
 

@@ -26,6 +26,8 @@ export const getMasterConfig = async (): Promise<MasterConfig> => {
           customer: String(item?.customer || ""),
           rate: String(item?.rate || ""),
           settingHours: String(item?.settingHours || ""),
+          thicknessRateUpto100: String(item?.thicknessRateUpto100 || ""),
+          thicknessRateAbove100: String(item?.thicknessRateAbove100 || ""),
         }))
       : [],
     materials: Array.isArray(data.materials) ? data.materials : [],
