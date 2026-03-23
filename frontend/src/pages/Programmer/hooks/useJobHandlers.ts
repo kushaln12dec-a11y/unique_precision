@@ -78,7 +78,8 @@ export const useJobHandlers = ({
         setShowForm(false);
         setEditingGroupId(null);
         setCuts([DEFAULT_CUT]);
-        navigate("/programmer");
+        setSavingJob(false);
+        navigate("/programmer", { replace: true });
       } else {
         const createdJobs = await createJobs(entries);
         setJobs((prev) => [...createdJobs, ...prev]);
@@ -101,7 +102,8 @@ export const useJobHandlers = ({
         setShowForm(false);
         setEditingGroupId(null);
         setCuts([DEFAULT_CUT]);
-        navigate("/programmer");
+        setSavingJob(false);
+        navigate("/programmer", { replace: true });
       }
     } catch (error) {
       console.error("Failed to save job", error);

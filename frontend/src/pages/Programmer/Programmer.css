@@ -4,6 +4,7 @@
   height: 100vh;
   padding-left: 70px;
   overflow: hidden;
+  transition: padding-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .programmer-content {
@@ -13,6 +14,13 @@
   background: #f5f6fb;
   padding-bottom: 0;
   overflow: hidden;
+}
+
+@media (min-width: 1025px) {
+  .programmer-container:has(.sidebar.collapsed:hover),
+  .programmer-container:has(.sidebar.expanded) {
+    padding-left: 240px;
+  }
 }
 
 .programmer-content.programmer-content-scrollable {
@@ -390,6 +398,35 @@
   margin-bottom: 1.5rem;
   position: relative;
   overflow: visible;
+}
+
+.programmer-form-state {
+  min-height: 240px;
+  justify-content: center;
+}
+
+.programmer-form-state-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  max-width: 560px;
+}
+
+.programmer-form-state-copy h2 {
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: 700;
+}
+
+.programmer-form-state-copy p {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.82);
+  line-height: 1.6;
+}
+
+.programmer-form-state-actions {
+  display: flex;
+  gap: 0.75rem;
 }
 
 .job-form-image {

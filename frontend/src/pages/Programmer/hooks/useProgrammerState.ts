@@ -92,6 +92,7 @@ export const useProgrammerState = (
   const [cuts, setCuts] = useState<CutForm[]>([DEFAULT_CUT]);
   const [editingGroupId, setEditingGroupId] = useState<string | null>(null);
   const [refNumber, setRefNumber] = useState<string>("");
+  const [editGroupError, setEditGroupError] = useState<string | null>(null);
   const loadedEditGroupRef = useRef<string | null>(null);
   const loadedCloneGroupRef = useRef<string | null>(null);
 
@@ -146,11 +147,13 @@ export const useProgrammerState = (
     if (isEditRoute && params.groupId) {
       const groupId = String(params.groupId);
       if (loadedEditGroupRef.current === groupId) {
+        setEditGroupError(null);
+        setLoadingEditGroup(false);
         setShowForm(true);
         return;
       }
 
-      loadedEditGroupRef.current = groupId;
+      setEditGroupError(null);
       let mounted = true;
 
       const loadEditGroup = async () => {
@@ -160,8 +163,19 @@ export const useProgrammerState = (
           const groupCuts = removeParentMirrorEntries(
             sortGroupEntriesParentFirst(await getJobsByGroupId(groupId))
           );
-          if (!mounted || groupCuts.length === 0) return;
+          if (!mounted) return;
 
+          if (groupCuts.length === 0) {
+            loadedEditGroupRef.current = null;
+            setEditingGroupId(null);
+            setRefNumber("");
+            setCuts([DEFAULT_CUT]);
+            setShowForm(false);
+            setEditGroupError("No job entries were found for this edit request.");
+            return;
+          }
+
+          loadedEditGroupRef.current = groupId;
           setEditingGroupId(groupId);
           setCuts(groupCuts.map((job) => toEditableCutForm(job, false)));
           const firstJob = groupCuts[0];
@@ -169,6 +183,18 @@ export const useProgrammerState = (
           setShowForm(true);
         } catch (error) {
           console.error("Failed to fetch edit group", error);
+          if (mounted) {
+            loadedEditGroupRef.current = null;
+            setEditingGroupId(null);
+            setRefNumber("");
+            setCuts([DEFAULT_CUT]);
+            setShowForm(false);
+            setEditGroupError(
+              error instanceof Error && error.message
+                ? error.message
+                : "Failed to load job details for editing."
+            );
+          }
         } finally {
           if (mounted) setLoadingEditGroup(false);
         }
@@ -180,17 +206,18 @@ export const useProgrammerState = (
       };
     } else if (isNewJobRoute || isCloneRoute) {
       loadedEditGroupRef.current = null;
+      setEditGroupError(null);
       const cloneGroupId = isCloneRoute ? String(params.groupId || "").trim() : "";
 
       if (cloneGroupId) {
         if (loadedCloneGroupRef.current === cloneGroupId) {
+          setLoadingEditGroup(false);
           setEditingGroupId(null);
           setRefNumber("");
           setShowForm(true);
           return;
         }
 
-        loadedCloneGroupRef.current = cloneGroupId;
         let mounted = true;
 
         const loadCloneDraft = async () => {
@@ -202,6 +229,7 @@ export const useProgrammerState = (
             if (!mounted) return;
 
             if (groupCuts.length === 0) {
+              loadedCloneGroupRef.current = null;
               setCuts([DEFAULT_CUT]);
               setEditingGroupId(null);
               setRefNumber("");
@@ -209,6 +237,7 @@ export const useProgrammerState = (
               return;
             }
 
+            loadedCloneGroupRef.current = cloneGroupId;
             setEditingGroupId(null);
             setRefNumber("");
             setCuts(groupCuts.map((job) => toEditableCutForm(job, true)));
@@ -216,6 +245,7 @@ export const useProgrammerState = (
           } catch (error) {
             console.error("Failed to fetch clone group", error);
             if (mounted) {
+              loadedCloneGroupRef.current = null;
               setCuts([DEFAULT_CUT]);
               setEditingGroupId(null);
               setRefNumber("");
@@ -244,6 +274,7 @@ export const useProgrammerState = (
     } else {
       loadedEditGroupRef.current = null;
       loadedCloneGroupRef.current = null;
+      setEditGroupError(null);
       setShowForm(false);
       if (editingGroupId !== null) {
         setEditingGroupId(null);
@@ -252,7 +283,7 @@ export const useProgrammerState = (
         setCuts([DEFAULT_CUT]);
       }
     }
-  }, [location.pathname, isEditRoute, isCloneRoute, params.groupId, isNewJobRoute, jobs, refNumber]);
+  }, [location.pathname, isEditRoute, isCloneRoute, params.groupId, isNewJobRoute, refNumber]);
 
   const handleNewJob = () => {
     loadedCloneGroupRef.current = null;
@@ -281,6 +312,7 @@ export const useProgrammerState = (
     setEditingGroupId,
     refNumber,
     setRefNumber,
+    editGroupError,
     isNewJobRoute,
     isEditRoute,
     isCloneRoute,

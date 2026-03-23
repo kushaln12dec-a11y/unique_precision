@@ -7,6 +7,7 @@ type UserFormProps = {
   editingUser: User | null;
   formData: CreateUserData;
   showPassword: boolean;
+  saving: boolean;
   roles: UserRole[];
   error: string;
   onInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void;
@@ -19,6 +20,7 @@ export const UserForm: React.FC<UserFormProps> = ({
   editingUser,
   formData,
   showPassword,
+  saving,
   roles,
   error,
   onInputChange,
@@ -39,6 +41,7 @@ export const UserForm: React.FC<UserFormProps> = ({
               name="firstName"
               value={formData.firstName}
               onChange={onInputChange}
+              disabled={saving}
               placeholder="Enter first name"
               required
             />
@@ -50,6 +53,7 @@ export const UserForm: React.FC<UserFormProps> = ({
               name="lastName"
               value={formData.lastName}
               onChange={onInputChange}
+              disabled={saving}
               placeholder="Enter last name"
               required
             />
@@ -64,6 +68,7 @@ export const UserForm: React.FC<UserFormProps> = ({
               name="email"
               value={formData.email}
               onChange={onInputChange}
+              disabled={saving}
               placeholder="example@email.com"
               required
             />
@@ -75,6 +80,7 @@ export const UserForm: React.FC<UserFormProps> = ({
               name="phone"
               value={formData.phone}
               onChange={onInputChange}
+              disabled={saving}
               placeholder="Enter phone number"
               pattern="[0-9]{10}"
               maxLength={10}
@@ -92,6 +98,7 @@ export const UserForm: React.FC<UserFormProps> = ({
               name="empId"
               value={formData.empId}
               onChange={onInputChange}
+              disabled={saving}
               placeholder="Enter employee ID"
               required
             />
@@ -102,6 +109,7 @@ export const UserForm: React.FC<UserFormProps> = ({
               name="role"
               value={formData.role}
               onChange={onInputChange}
+              disabled={saving}
               required
             >
               {roles.map((role) => (
@@ -122,6 +130,7 @@ export const UserForm: React.FC<UserFormProps> = ({
                 name="password"
                 value={formData.password}
                 onChange={onInputChange}
+                disabled={saving}
                 placeholder={editingUser ? "Leave blank to keep current password" : "Enter password"}
                 required={!editingUser}
               />
@@ -129,6 +138,7 @@ export const UserForm: React.FC<UserFormProps> = ({
                 type="button"
                 className="password-toggle"
                 onClick={onTogglePassword}
+                disabled={saving}
                 tabIndex={-1}
               >
                 {showPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
@@ -138,10 +148,10 @@ export const UserForm: React.FC<UserFormProps> = ({
         </div>
 
         <div className="form-actions">
-          <button type="submit" className="btn-primary">
-            {editingUser ? "Update User" : "Create User"}
+          <button type="submit" className="btn-primary" disabled={saving}>
+            {saving ? "Saving..." : editingUser ? "Update User" : "Create User"}
           </button>
-          <button type="button" className="btn-secondary" onClick={onCancel}>
+          <button type="button" className="btn-secondary" onClick={onCancel} disabled={saving}>
             Cancel
           </button>
         </div>

@@ -22,6 +22,7 @@ import { formatJobRefDisplay } from "../../utils/jobFormatting";
 import { getParentRowClassName } from "../Programmer/utils/priorityUtils";
 import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import MarqueeCopyText from "../../components/MarqueeCopyText";
+import { matchesSearchQuery } from "../../utils/searchUtils";
 import {
   setQcCustomerFilter,
   setQcDescriptionFilter,
@@ -77,6 +78,25 @@ const getPrimaryOperatorName = (value: unknown): string => {
 
 const getDrawingNo = (entry: JobEntry) => {
   return String((entry as any).programRefFile || entry.refNumber || "").trim();
+};
+
+const getQcRowSearchValues = (row: QcRow) => {
+  const createdAtParts = getDisplayDateTimeParts(row.entry.createdAt || row.parent.createdAt);
+  const decision = String(row.parent.qcDecision || row.entry.qcDecision || "PENDING")
+    .toLowerCase()
+    .replace(/_/g, " ");
+
+  return [
+    row.entry.customer || row.parent.customer || "-",
+    row.entry.description || row.parent.description || "-",
+    formatJobRefDisplay(String(row.entry.refNumber || row.parent.refNumber || "").trim()),
+    row.quantityLabel,
+    getPrimaryOperatorName(row.entry.assignedTo || row.parent.assignedTo),
+    createdAtParts.date,
+    createdAtParts.time,
+    `${createdAtParts.date} ${createdAtParts.time}`.trim(),
+    decision,
+  ];
 };
 
 const QC = () => {
@@ -194,22 +214,15 @@ const QC = () => {
   }, [qcGridJobs]);
 
   const filteredTableData = useMemo(() => {
+    const searchQuery = (customerFilter || descriptionFilter).trim();
+
     return tableData.filter((row) => {
-      const customerMatch = customerFilter
-        ? String(row.entry.customer || row.parent.customer || "")
-            .toLowerCase()
-            .includes(customerFilter.toLowerCase())
-        : true;
-      const descriptionMatch = descriptionFilter
-        ? String(row.entry.description || row.parent.description || "")
-            .toLowerCase()
-            .includes(descriptionFilter.toLowerCase())
-        : true;
+      const searchMatch = matchesSearchQuery(getQcRowSearchValues(row), searchQuery);
       const operatorMatch = operatorFilter
         ? getPrimaryOperatorName(row.entry.assignedTo || row.parent.assignedTo).toLowerCase() ===
           operatorFilter.toLowerCase()
         : true;
-      return customerMatch && descriptionMatch && operatorMatch;
+      return searchMatch && operatorMatch;
     });
   }, [tableData, customerFilter, descriptionFilter, operatorFilter]);
 
@@ -461,7 +474,7 @@ const QC = () => {
                     dispatch(setQcCustomerFilter(value));
                     dispatch(setQcDescriptionFilter(value));
                   }}
-                  placeholder="Search customer or description..."
+                  placeholder="Search any column..."
                   className="qc-filter-input"
                 />
                 <select

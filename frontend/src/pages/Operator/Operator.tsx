@@ -20,7 +20,7 @@ import { exportOperatorJobsToCSV } from "./utils/csvExport";
 import { updateOperatorJob, updateOperatorQaStatus } from "../../services/operatorApi";
 import { deleteJob, getOperatorJobsPage } from "../../services/jobApi";
 import { getMasterConfig } from "../../services/masterConfigApi";
-import { createOperatorTaskSwitchLog, getEmployeeLogs, getEmployeeLogsPage } from "../../services/employeeLogsApi";
+import { createOperatorTaskSwitchLog, getEmployeeLogsPage } from "../../services/employeeLogsApi";
 import { MassDeleteButton } from "../Programmer/components/MassDeleteButton";
 import { getUserDisplayNameFromToken, getUserRoleFromToken } from "../../utils/auth";
 import { getDispatchableQuantityNumbers, getGroupQaProgressCounts, getQaProgressCounts, getQuantityProgressStatuses } from "./utils/qaProgress";
@@ -31,15 +31,22 @@ import type { MasterConfig } from "../../types/masterConfig";
 import type { FilterValues } from "../../components/FilterModal";
 import { formatDisplayDateTime, getDisplayDateTimeParts } from "../../utils/date";
 import {
+  estimatedHoursFromAmount,
+  formatEstimatedTime,
   formatMachineLabel,
   getDisplayName,
   getEmailLocalPart,
   getInitials,
   getLogUserDisplayName,
   MACHINE_OPTIONS,
+  formatJobRefDisplay,
   toMachineIndex,
+  toYN,
 } from "../../utils/jobFormatting";
 import MarqueeCopyText from "../../components/MarqueeCopyText";
+import { getThicknessDisplayValue } from "../Programmer/programmerUtils";
+import { fetchAllPaginatedItems } from "../../utils/paginationUtils";
+import { matchesSearchQuery } from "../../utils/searchUtils";
 import "../RoleBoard.css";
 import "../Programmer/Programmer.css";
 import "./Operator.css";
@@ -114,6 +121,61 @@ const OPERATOR_LOG_COLUMN_WIDTHS: Record<string, number> = {
 
 const getOperatorLogColumnWidth = (columnKey: string) =>
   OPERATOR_LOG_COLUMN_WIDTHS[columnKey] ?? 84;
+
+const SEARCH_FETCH_PAGE_SIZE = 100;
+
+const formatOperatorLogStatus = (status?: string) => {
+  const raw = String(status || "-").toUpperCase();
+  if (raw === "IN_PROGRESS") return "In Progress";
+  if (raw === "REJECTED") return "Rejected";
+  if (raw === "COMPLETED") return "Completed";
+  return raw
+    .split("_")
+    .map((part) => part.charAt(0) + part.slice(1).toLowerCase())
+    .join(" ");
+};
+
+const getOperatorRowSearchValues = (row: TableRow, isAdmin: boolean) => {
+  const counts = getGroupQaProgressCounts(row.entries);
+  const stageSummary = [
+    `Yet to Start ${counts.empty}`,
+    `In Progress ${counts.ready}`,
+    `Logged ${counts.saved}`,
+    `QC ${counts.sent}`,
+  ].join(" ");
+  const estimatedTime = formatEstimatedTime(
+    estimatedHoursFromAmount(
+      row.entries.reduce((sum, entry) => sum + (Number(entry.totalHrs || 0) * Number(entry.rate || 0)), 0)
+    )
+  );
+
+  const values: unknown[] = [estimatedTime, stageSummary];
+
+  if (isAdmin) {
+    values.push(row.groupTotalAmount ? `Rs. ${Math.round(row.groupTotalAmount)}` : "-");
+  }
+
+  row.entries.forEach((entry) => {
+    values.push(
+      entry.customer || "-",
+      formatJobRefDisplay(entry.refNumber || ""),
+      String((entry as any).programRefFile || (entry as any).programRefFileName || "-"),
+      entry.description || "-",
+      Math.round(Number(entry.cut || 0)),
+      getThicknessDisplayValue(entry.thickness),
+      entry.passLevel || "-",
+      entry.setting || "-",
+      Number(entry.qty || 0).toString(),
+      toYN(entry.sedm),
+      entry.assignedTo || "Unassign",
+      formatMachineLabel(toMachineIndex(String(entry.machineNumber || "").trim()) || "-"),
+      entry.createdBy || "-",
+      ...(isAdmin ? [entry.totalAmount ? `Rs. ${Math.round(entry.totalAmount)}` : "-"] : [])
+    );
+  });
+
+  return values;
+};
 
 const Operator = () => {
   const navigate = useNavigate();
@@ -261,7 +323,7 @@ const Operator = () => {
   };
 
   const handleDownloadCSV = () => {
-    exportOperatorJobsToCSV(tableData, isAdmin);
+    exportOperatorJobsToCSV(filteredTableData, isAdmin);
   };
 
   const handleMachineNumberChange = async (groupId: string, machineNumber: string) => {
@@ -308,7 +370,7 @@ const Operator = () => {
     }
 
     const selectedKeySet = new Set(Array.from(selectedEntryIds, (id) => String(id)));
-    const selectedEntries = tableData
+    const selectedEntries = filteredTableData
       .flatMap((row) => row.entries)
       .filter((entry) => selectedKeySet.has(String(entry.id)));
 
@@ -395,7 +457,7 @@ const Operator = () => {
     }
 
     const selectedIdSet = new Set(Array.from(selectedEntryIds, (id) => String(id)));
-    const targetEntries = tableData
+    const targetEntries = filteredTableData
       .flatMap((row) => row.entries)
       .filter((entry) => selectedIdSet.has(String(entry.id)));
 
@@ -479,6 +541,14 @@ const Operator = () => {
     handleChildRowSelect
   );
 
+  const jobSearchQuery = String(customerFilter || descriptionFilter || "").trim();
+
+  const filteredTableData = useMemo(
+    () =>
+      tableData.filter((row) => matchesSearchQuery(getOperatorRowSearchValues(row, isAdmin), jobSearchQuery)),
+    [tableData, isAdmin, jobSearchQuery]
+  );
+
   const buildSendToQaTargets = useCallback((entries: JobEntry[]): SendToQaModalTarget[] => {
     const dedupedEntries = Array.from(new Map(entries.map((entry) => [String(entry.id), entry])).values());
     const targets: SendToQaModalTarget[] = [];
@@ -493,7 +563,7 @@ const Operator = () => {
       const eligibleQuantityNumbers = getDispatchableQuantityNumbers(entry);
       if (eligibleQuantityNumbers.length === 0) return;
 
-      const groupEntries = tableData.find((row) => row.groupId === String(entry.groupId))?.entries || [];
+      const groupEntries = filteredTableData.find((row) => row.groupId === String(entry.groupId))?.entries || [];
       const sortedGroupEntryIds = groupEntries.map((job) => String(job.id));
       const rowType =
         sortedGroupEntryIds.length > 0 && sortedGroupEntryIds[0] === String(entry.id) ? "parent" : "child";
@@ -515,7 +585,7 @@ const Operator = () => {
     });
 
     return targets;
-  }, [tableData]);
+  }, [filteredTableData]);
 
   const openSendToQaModal = useCallback((entries: JobEntry[]) => {
     const targets = buildSendToQaTargets(entries);
@@ -557,7 +627,7 @@ const Operator = () => {
 
   const operatorGridRows = useMemo<OperatorDisplayRow[]>(
     () =>
-      tableData.flatMap((row) => {
+      filteredTableData.flatMap((row) => {
         const hasChildren = row.entries.length > 1;
         const isExpanded = expandedGroups.has(row.groupId);
         const parentRow: OperatorDisplayRow = {
@@ -583,8 +653,9 @@ const Operator = () => {
         }));
         return [parentRow, ...childRows];
       }),
-    [tableData, expandedGroups]
+    [filteredTableData, expandedGroups]
   );
+  const hasJobSearch = jobSearchQuery.length > 0;
 
   const operatorJobColumnDefs = useMemo(
     () => [
@@ -601,13 +672,13 @@ const Operator = () => {
         headerComponent: () => (
           <input
             type="checkbox"
-            checked={tableData.length > 0 && tableData.every((row) => selectedJobIds.has(row.groupId))}
+            checked={filteredTableData.length > 0 && filteredTableData.every((row) => selectedJobIds.has(row.groupId))}
             onChange={(event) => {
               const checked = event.target.checked;
-              const nextGroupIds = checked ? new Set(tableData.map((row) => row.groupId)) : new Set<string>();
+              const nextGroupIds = checked ? new Set(filteredTableData.map((row) => row.groupId)) : new Set<string>();
               const nextEntryIds = checked
                 ? new Set(
-                    tableData.flatMap((row) =>
+                    filteredTableData.flatMap((row) =>
                       row.entries
                         .map((entry) => (entry.id === undefined || entry.id === null ? null : String(entry.id)))
                         .filter((id): id is string => Boolean(id))
@@ -685,7 +756,7 @@ const Operator = () => {
         };
       }),
     ],
-    [columns, handleChildRowSelect, selectedEntryIds, selectedJobIds, tableData]
+    [columns, filteredTableData, handleChildRowSelect, selectedEntryIds, selectedJobIds]
   );
 
   const handleApplyFiltersWithPageReset = (newFilters: FilterValues) => {
@@ -957,15 +1028,49 @@ const Operator = () => {
     [designationByUserName, groupWedmByGroupId, groupWorkedSecondsByGroupId, jobs, isAdmin]
   );
 
+  const filterOperatorLogs = useMemo(
+    () => (logs: EmployeeLog[]) =>
+      logs.filter((log) =>
+        matchesSearchQuery(
+          [
+            getLogUserDisplayName(log.userName, log.userEmail, "Operator"),
+            designationByUserName.get(getLogUserDisplayName(log.userName, log.userEmail, "Operator").toLowerCase()) || "Operator",
+            formatMachineLabel(getMachineNumberForLog(log)),
+            log.workItemTitle || "",
+            log.workSummary || "",
+            formatDisplayDateTime(log.startedAt),
+            formatDisplayDateTime(log.endedAt || null),
+            getShiftLabel(log.startedAt),
+            formatDuration(log.durationSeconds),
+            String((log.metadata as any)?.idleTime || "-"),
+            String((log.metadata as any)?.remark || "-"),
+            ...(isAdmin ? [getRevenueForLog(log)] : []),
+            formatOperatorLogStatus(log.status),
+          ],
+          operatorLogSearch
+        )
+      ),
+    [designationByUserName, getRevenueForLog, isAdmin, operatorLogSearch]
+  );
+  const hasOperatorLogSearch = operatorLogSearch.trim().length > 0;
+
   const handleExportOperatorLogsCsv = () => {
     void (async () => {
-      const allLogs = await getEmployeeLogs({
-        role: "OPERATOR",
-        status: operatorLogStatus || undefined,
-        search: operatorLogSearch.trim() || undefined,
-        machine: operatorLogMachine || undefined,
-      });
-      const workedSecondsMap = calculateWorkedSecondsByLogs(allLogs);
+      const allLogs = await fetchAllPaginatedItems<EmployeeLog>(
+        async (offset, limit) => {
+          const page = await getEmployeeLogsPage({
+            role: "OPERATOR",
+            status: operatorLogStatus || undefined,
+            machine: operatorLogMachine || undefined,
+            offset,
+            limit,
+          });
+          return { items: page.items, hasMore: page.hasMore };
+        },
+        SEARCH_FETCH_PAGE_SIZE
+      );
+      const filteredLogs = filterOperatorLogs(allLogs);
+      const workedSecondsMap = calculateWorkedSecondsByLogs(filteredLogs);
       const headers = [
         "User",
         "MACH #",
@@ -983,7 +1088,7 @@ const Operator = () => {
         headers.splice(headers.length - 1, 0, "Revenue");
       }
 
-      const rows = allLogs.map((row) => {
+      const rows = filteredLogs.map((row) => {
         const name = getLogUserDisplayName(row.userName, row.userEmail, "");
         const designation = designationByUserName.get(name.toLowerCase()) || "Operator";
         return [
@@ -998,7 +1103,7 @@ const Operator = () => {
           String((row.metadata as any)?.idleTime || "-"),
           String((row.metadata as any)?.remark || "-"),
           ...(isAdmin ? [getRevenueForLog(row, workedSecondsMap)] : []),
-          row.status || "-",
+          formatOperatorLogStatus(row.status),
         ];
       });
 
@@ -1098,6 +1203,24 @@ const Operator = () => {
                   <LazyAgGrid
                     columnDefs={operatorJobColumnDefs as any}
                     fetchPage={async (offset, limit) => {
+                      if (hasJobSearch) {
+                        const items = await fetchAllPaginatedItems<JobEntry>(
+                          async (pageOffset, pageLimit) => {
+                            const page = await getOperatorJobsPage(
+                              filters,
+                              "",
+                              createdByFilter,
+                              assignedToFilter,
+                              "",
+                              { offset: pageOffset, limit: pageLimit }
+                            );
+                            return { items: page.items, hasMore: page.hasMore };
+                          },
+                          SEARCH_FETCH_PAGE_SIZE
+                        );
+                        return { items, hasMore: false };
+                      }
+
                       const page = await getOperatorJobsPage(
                         filters,
                         customerFilter,
@@ -1143,7 +1266,7 @@ const Operator = () => {
                     className="jobs-table-wrapper operator-table-no-scroll"
                     rowHeight={56}
                     fitColumns={true}
-                    refreshKey={`${customerFilter}|${descriptionFilter}|${createdByFilter}|${assignedToFilter}|${JSON.stringify(filters)}`}
+                    refreshKey={`${hasJobSearch}|${createdByFilter}|${assignedToFilter}|${JSON.stringify(filters)}`}
                   />
                 </>
               )}
@@ -1155,7 +1278,7 @@ const Operator = () => {
                   type="text"
                   value={operatorLogSearch}
                   onChange={(e) => setOperatorLogSearch(e.target.value)}
-                  placeholder="Search logs..."
+                  placeholder="Search any column..."
                   className="filter-input operator-logs-search"
                 />
                 <select
@@ -1189,11 +1312,28 @@ const Operator = () => {
               </div>
               <LazyAgGrid
                 columnDefs={operatorLogColumnDefs as any}
+                transformRows={filterOperatorLogs}
                 fetchPage={async (offset, limit) => {
+                  if (hasOperatorLogSearch) {
+                    const allLogs = await fetchAllPaginatedItems<EmployeeLog>(
+                      async (pageOffset, pageLimit) => {
+                        const page = await getEmployeeLogsPage({
+                          role: "OPERATOR",
+                          status: operatorLogStatus || undefined,
+                          machine: operatorLogMachine || undefined,
+                          offset: pageOffset,
+                          limit: pageLimit,
+                        });
+                        return { items: page.items, hasMore: page.hasMore };
+                      },
+                      SEARCH_FETCH_PAGE_SIZE
+                    );
+                    return { items: allLogs, hasMore: false };
+                  }
+
                   const page = await getEmployeeLogsPage({
                     role: "OPERATOR",
                     status: operatorLogStatus || undefined,
-                    search: operatorLogSearch.trim() || undefined,
                     machine: operatorLogMachine || undefined,
                     offset,
                     limit,
@@ -1203,7 +1343,7 @@ const Operator = () => {
                 emptyMessage="No operator logs found."
                 getRowId={(row) => row._id}
                 className="operator-logs-table logs-center"
-                refreshKey={`${operatorLogSearch}|${operatorLogStatus}|${operatorLogMachine}`}
+                refreshKey={`${hasOperatorLogSearch}|${operatorLogStatus}|${operatorLogMachine}`}
               />
             </>
           )}

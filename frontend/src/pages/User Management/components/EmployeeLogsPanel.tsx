@@ -1,12 +1,14 @@
 import { useMemo, useState } from 'react';
 import { type Column } from '../../../components/DataTable';
 import LazyAgGrid from '../../../components/LazyAgGrid';
-import { getEmployeeLogs, getEmployeeLogsPage } from '../../../services/employeeLogsApi';
+import { getEmployeeLogsPage } from '../../../services/employeeLogsApi';
 import DownloadIcon from '@mui/icons-material/Download';
 import type { EmployeeLog } from '../../../types/employeeLog';
 import { getDisplayDateTimeParts } from '../../../utils/date';
 import MarqueeCopyText from '../../../components/MarqueeCopyText';
 import { getUserRoleFromToken } from '../../../utils/auth';
+import { fetchAllPaginatedItems } from '../../../utils/paginationUtils';
+import { matchesSearchQuery } from '../../../utils/searchUtils';
 
 type RoleTab = 'PROGRAMMER' | 'OPERATOR' | 'QC';
 
@@ -27,6 +29,14 @@ const formatDuration = (seconds?: number) => {
   if (hrs > 0) return `${hrs}h ${mins}m ${secs}s`;
   if (mins > 0) return `${mins}m ${secs}s`;
   return `${secs}s`;
+};
+
+const formatLogStatus = (status?: string) => {
+  const value = String(status || '').toUpperCase();
+  if (value === 'IN_PROGRESS') return 'In Progress';
+  if (value === 'REJECTED') return 'Rejected';
+  if (value === 'COMPLETED') return 'Completed';
+  return value || '-';
 };
 
 export const EmployeeLogsPanel = () => {
@@ -284,15 +294,64 @@ export const EmployeeLogsPanel = () => {
     ] as Column<EmployeeLog>[];
   }, [activeRole, groupWorkedSecondsByGroupId, isAdmin]);
 
+  const filterVisibleLogs = useMemo(
+    () => (logs: EmployeeLog[]) =>
+      logs.filter((log) => {
+        const startedAtParts = getDisplayDateTimeParts(log.startedAt);
+        const endedAtParts = getDisplayDateTimeParts(log.endedAt || null);
+        const commonValues = [
+          String(log.userName || 'Unknown User'),
+          formatRoleLabel((log.metadata as any)?.userRole || log.role),
+          startedAtParts.date,
+          startedAtParts.time,
+          `${startedAtParts.date} ${startedAtParts.time}`.trim(),
+          endedAtParts.date,
+          endedAtParts.time,
+          `${endedAtParts.date} ${endedAtParts.time}`.trim(),
+          formatDuration(log.durationSeconds),
+          formatLogStatus(log.status),
+        ];
+
+        const roleSpecificValues =
+          activeRole === 'OPERATOR'
+            ? [
+                String(log.workItemTitle || '-'),
+                String(log.workSummary || '-'),
+                String((log.metadata as any)?.idleTime || '-'),
+                String((log.metadata as any)?.remark || '-'),
+              ]
+            : [
+                `Job #${String(log.refNumber || '')}`,
+                String(log.jobDescription || '-'),
+                Number(log.quantityCount || 0) ||
+                Number((log.metadata as any)?.quantityCount || 0) ||
+                (Number(log.quantityTo || 0) && Number(log.quantityFrom || 0)
+                  ? Number(log.quantityTo) - Number(log.quantityFrom) + 1
+                  : '-'),
+              ];
+
+        return matchesSearchQuery([...commonValues, ...roleSpecificValues], searchQuery);
+      }),
+    [activeRole, searchQuery]
+  );
+  const hasSearchQuery = searchQuery.trim().length > 0;
+
   const handleExportCsv = () => {
     void (async () => {
-      const logs = await getEmployeeLogs({
-        role: activeRole,
-        status: statusFilter || undefined,
-        search: searchQuery || undefined,
-      });
+      const logs = await fetchAllPaginatedItems<EmployeeLog>(
+        async (offset, limit) => {
+          const page = await getEmployeeLogsPage({
+            role: activeRole,
+            status: statusFilter || undefined,
+            offset,
+            limit,
+          });
+          return { items: page.items, hasMore: page.hasMore };
+        }
+      );
+      const filteredLogs = filterVisibleLogs(logs);
       const headers = columns.map((col) => String(col.label));
-      const rows = logs.map((row, index) =>
+      const rows = filteredLogs.map((row, index) =>
         columns.map((col) => {
           try {
             const rendered = col.render
@@ -379,7 +438,7 @@ export const EmployeeLogsPanel = () => {
         <input
           type="text"
           className="employee-search-input"
-          placeholder="Search employee, job, customer..."
+          placeholder="Search any column..."
           value={searchQuery}
           onChange={(e) => {
             setSearchQuery(e.target.value);
@@ -421,12 +480,27 @@ export const EmployeeLogsPanel = () => {
       ) : (
         <LazyAgGrid
           columnDefs={columnDefs as any}
+          transformRows={filterVisibleLogs}
           fetchPage={async (offset, limit) => {
             setError('');
+            if (hasSearchQuery) {
+              const allLogs = await fetchAllPaginatedItems<EmployeeLog>(
+                async (pageOffset, pageLimit) => {
+                  const page = await getEmployeeLogsPage({
+                    role: activeRole,
+                    status: statusFilter || undefined,
+                    offset: pageOffset,
+                    limit: pageLimit,
+                  });
+                  return { items: page.items, hasMore: page.hasMore };
+                }
+              );
+              return { items: allLogs, hasMore: false };
+            }
+
             const page = await getEmployeeLogsPage({
               role: activeRole,
               status: statusFilter || undefined,
-              search: searchQuery || undefined,
               offset,
               limit,
             });
@@ -435,7 +509,7 @@ export const EmployeeLogsPanel = () => {
           emptyMessage="No logs found for the current filters."
           getRowId={(row) => row._id}
           className="employee-logs-table logs-center"
-          refreshKey={`${activeRole}|${statusFilter}|${searchQuery}`}
+          refreshKey={`${activeRole}|${statusFilter}|${hasSearchQuery}`}
         />
       )}
     </div>

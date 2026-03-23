@@ -134,7 +134,7 @@ const Header = ({ title }: HeaderProps) => {
 
   const handleBreadcrumbClick = (path: string, isLast: boolean) => {
     if (!isLast) {
-      navigate(path);
+      navigate(path, { flushSync: true });
     }
   };
 

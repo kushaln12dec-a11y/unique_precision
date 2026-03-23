@@ -1,7 +1,7 @@
-import dotenv from "dotenv";
+import { loadEnv } from "../config/env";
 import { prisma } from "../lib/prisma";
 
-dotenv.config();
+loadEnv();
 
 const ADMIN_EMAIL = "kushal12dec@gmail.com";
 const ADMIN_PASSWORD_HASH = "$2b$10$1Tt46NEctpQp3St5R5rmFuWM2ZwhY3rnf7p0v3cf.JcA5gSOA03BW";

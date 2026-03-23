@@ -26,6 +26,8 @@ export const useUserManagement = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -81,7 +83,9 @@ export const useUserManagement = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (saving) return;
     setError("");
+    setSaving(true);
 
     try {
       if (editingUser) {
@@ -97,9 +101,11 @@ export const useUserManagement = () => {
       setShowForm(false);
       setEditingUser(null);
       resetForm();
-      fetchUsers();
+      await fetchUsers();
     } catch (error: any) {
       setError(error.message || "Failed to save user");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -138,17 +144,20 @@ export const useUserManagement = () => {
   };
 
   const handleDeleteConfirm = async () => {
-    if (!userToDelete) return;
+    if (!userToDelete || deleting) return;
+    setDeleting(true);
 
     try {
       await deleteUser(userToDelete._id);
       setShowDeleteModal(false);
       setUserToDelete(null);
-      fetchUsers();
+      await fetchUsers();
     } catch (err: any) {
       setError(err.message || "Failed to delete user");
       setShowDeleteModal(false);
       setUserToDelete(null);
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -169,8 +178,10 @@ export const useUserManagement = () => {
     formData,
     showPassword,
     setShowPassword,
+    saving,
     showDeleteModal,
     userToDelete,
+    deleting,
     handleInputChange,
     handleSubmit,
     handleEdit,

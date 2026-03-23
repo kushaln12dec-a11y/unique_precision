@@ -7,11 +7,14 @@ import PeopleIcon from '@mui/icons-material/People';
 import GroupsIcon from '@mui/icons-material/Groups';
 import SettingsSuggestIcon from '@mui/icons-material/SettingsSuggest';
 import LogoutIcon from '@mui/icons-material/Logout';
+import { useLocation, useNavigate } from 'react-router-dom';
 import type { SidebarProps } from '../types/sidebar';
 import { getUserRoleFromToken } from '../utils/auth';
 import './Sidebar.css';
 
-const Sidebar = ({ currentPath = '/dashboard', onNavigate }: SidebarProps) => {
+const Sidebar = (_props: SidebarProps) => {
+  const navigate = useNavigate();
+  const location = useLocation();
   const role = getUserRoleFromToken()?.toUpperCase();
   const dashboardPath = role === 'OPERATOR' ? '/operator-dashboard' : '/dashboard';
   const menuItems = [
@@ -39,13 +42,20 @@ const Sidebar = ({ currentPath = '/dashboard', onNavigate }: SidebarProps) => {
         )
       : menuItems;
 
+  const isPathActive = (path: string) => {
+    if (location.pathname === path) return true;
+    return path !== dashboardPath && location.pathname.startsWith(`${path}/`);
+  };
+
+  const handleNavigate = (path: string) => {
+    if (isPathActive(path)) return;
+    navigate(path, { flushSync: true });
+    window.scrollTo(0, 0);
+  };
+
   const handleLogout = () => {
     localStorage.removeItem('token');
-    if (onNavigate) {
-      onNavigate('/login');
-    } else {
-      window.location.href = '/login';
-    }
+    navigate('/login', { replace: true, flushSync: true });
   };
 
   return (
@@ -74,13 +84,13 @@ const Sidebar = ({ currentPath = '/dashboard', onNavigate }: SidebarProps) => {
       <nav className="sidebar-nav">
         {filteredMenuItems.map((item, index) => {
           const Icon = item.icon;
-          const isActive = currentPath === item.path;
+          const isActive = isPathActive(item.path);
           return (
             <button
               type="button"
               key={index}
               className={`nav-item ${isActive ? 'active' : ''}`}
-              onClick={() => onNavigate && onNavigate(item.path)}
+              onClick={() => handleNavigate(item.path)}
               title={item.label}
             >
               <Icon className="nav-icon" />

@@ -4,6 +4,7 @@
   height: 100vh;
   padding-left: 70px;
   overflow: hidden;
+  transition: padding-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .roleboard-content {
@@ -24,6 +25,13 @@
   box-shadow: 0 10px 30px rgba(15, 23, 42, 0.1);
   border: 1px solid #e2e8f0;
   color: #111827;
+}
+
+@media (min-width: 1025px) {
+  .roleboard-container:has(.sidebar.collapsed:hover),
+  .roleboard-container:has(.sidebar.expanded) {
+    padding-left: 240px;
+  }
 }
 
 .roleboard-body h3 {

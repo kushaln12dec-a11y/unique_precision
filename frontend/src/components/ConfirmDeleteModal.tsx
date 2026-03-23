@@ -5,6 +5,7 @@ interface ConfirmDeleteModalProps {
   message: string;
   details: Array<{ label: string; value: string }>;
   confirmButtonText?: string;
+  isProcessing?: boolean;
   onConfirm: () => void;
   onCancel: () => void;
 }
@@ -14,16 +15,17 @@ const ConfirmDeleteModal = ({
   message,
   details,
   confirmButtonText = "Delete",
+  isProcessing = false,
   onConfirm,
   onCancel,
 }: ConfirmDeleteModalProps) => {
   return (
     <>
-      <div className="modal-overlay" onClick={onCancel} />
+      <div className="modal-overlay" onClick={isProcessing ? undefined : onCancel} />
       <div className="delete-modal">
         <div className="modal-header">
           <h3>{title}</h3>
-          <button className="modal-close" onClick={onCancel} aria-label="Close">
+          <button className="modal-close" onClick={onCancel} aria-label="Close" disabled={isProcessing}>
             ✕
           </button>
         </div>
@@ -43,11 +45,11 @@ const ConfirmDeleteModal = ({
         </div>
 
         <div className="modal-footer">
-          <button className="btn-secondary" onClick={onCancel}>
+          <button className="btn-secondary" onClick={onCancel} disabled={isProcessing}>
             Cancel
           </button>
-          <button className="btn-delete-confirm" onClick={onConfirm}>
-            {confirmButtonText}
+          <button className="btn-delete-confirm" onClick={onConfirm} disabled={isProcessing}>
+            {isProcessing ? "Please wait..." : confirmButtonText}
           </button>
         </div>
       </div>

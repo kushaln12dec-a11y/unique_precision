@@ -116,6 +116,17 @@ const parseGroupIdParam = (value: unknown): bigint | null => {
   return parsed ?? null;
 };
 
+const resolveReqUserName = (reqUser: any): string => {
+  const fullName = String(reqUser?.fullName || "").trim();
+  if (fullName) return fullName;
+  const firstName = String(reqUser?.firstName || "").trim();
+  const lastName = String(reqUser?.lastName || "").trim();
+  const joined = `${firstName} ${lastName}`.trim();
+  if (joined) return joined;
+  const email = String(reqUser?.email || "").trim();
+  return email.split("@")[0]?.trim() || "";
+};
+
 const normalizeJobInput = async (job: any) => {
   const createdAt = parseDisplayDateTime(job.createdAt) ?? new Date();
   const cutImage = Array.isArray(job.cutImage) ? (job.cutImage[0] || "") : job.cutImage;
@@ -550,6 +561,7 @@ router.put("/:id", async (req, res) => {
 // Update QC decision for all jobs in a group
 router.put("/group/:groupId/qc-decision", async (req, res) => {
   try {
+    const reqUser = req.user as any;
     const { decision } = req.body as { decision?: "APPROVED" | "REJECTED" | "PENDING" };
     if (!decision || !["APPROVED", "REJECTED", "PENDING"].includes(decision)) {
       return res.status(400).json({ message: "Invalid decision value" });
@@ -559,9 +571,14 @@ router.put("/group/:groupId/qc-decision", async (req, res) => {
     if (groupId === null) {
       return res.status(400).json({ message: "Invalid groupId" });
     }
+    const updatedBy = resolveReqUserName(reqUser);
     const updateResult = await prisma.job.updateMany({
       where: { groupId },
-      data: { qcDecision: decision },
+      data: {
+        qcDecision: decision,
+        updatedBy: updatedBy || "",
+        updatedAt: new Date(),
+      },
     });
 
     if (updateResult.count === 0) {
@@ -573,6 +590,35 @@ router.put("/group/:groupId/qc-decision", async (req, res) => {
       orderBy: { createdAt: "asc" },
       include: jobInclude,
     });
+
+    if (updatedJobs.length > 0) {
+      const quantityCount = updatedJobs.reduce((sum, job) => sum + Math.max(0, Number(job.qty || 0)), 0);
+      await prisma.employeeLog.create({
+        data: {
+          role: "QC",
+          activityType: "QA_REVIEW",
+          status: "COMPLETED",
+          userId: String(reqUser?.userId || "") || null,
+          userEmail: String(reqUser?.email || ""),
+          userName: updatedBy,
+          jobGroupId: groupId,
+          refNumber: String(updatedJobs[0]?.refNumber || ""),
+          jobCustomer: String(updatedJobs[0]?.customer || ""),
+          jobDescription: String(updatedJobs[0]?.description || ""),
+          workItemTitle: `QC ${decision === "APPROVED" ? "Approval" : decision === "REJECTED" ? "Rejection" : "Review"}`,
+          workSummary: decision === "REJECTED" ? "QC rejected job group" : decision === "APPROVED" ? "QC approved job group" : "QC decision reset to pending",
+          startedAt: new Date(),
+          endedAt: new Date(),
+          durationSeconds: 0,
+          quantityCount: quantityCount || null,
+          metadata: {
+            decision,
+            groupId: String(groupId),
+          },
+        },
+      });
+    }
+
     return res.json(updatedJobs.map(mapJob));
   } catch (error: any) {
     console.error("Error updating QC decision:", error);
