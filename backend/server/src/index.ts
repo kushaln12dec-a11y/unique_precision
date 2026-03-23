@@ -1,9 +1,9 @@
-import dotenv from "dotenv";
 import { connectDB } from "./config/database";
+import { loadEnv } from "./config/env";
 import { initDB } from "./config/initDB";
 import app from "./app";
 
-dotenv.config();
+loadEnv();
 
 const PORT = Number(process.env.PORT) || 3000;
 

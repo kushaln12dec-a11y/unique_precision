@@ -217,6 +217,38 @@ const schemaStatements: string[] = [
     "seq" INTEGER NOT NULL DEFAULT 0
   );`,
 
+  `DO $$
+  BEGIN
+    IF EXISTS (
+      SELECT 1
+      FROM information_schema.columns
+      WHERE table_schema = 'public'
+        AND table_name = 'Job'
+        AND column_name = 'groupId'
+        AND udt_name <> 'int8'
+    ) THEN
+      ALTER TABLE "Job"
+      ALTER COLUMN "groupId" TYPE BIGINT
+      USING "groupId"::BIGINT;
+    END IF;
+  END $$;`,
+
+  `DO $$
+  BEGIN
+    IF EXISTS (
+      SELECT 1
+      FROM information_schema.columns
+      WHERE table_schema = 'public'
+        AND table_name = 'EmployeeLog'
+        AND column_name = 'jobGroupId'
+        AND udt_name <> 'int8'
+    ) THEN
+      ALTER TABLE "EmployeeLog"
+      ALTER COLUMN "jobGroupId" TYPE BIGINT
+      USING "jobGroupId"::BIGINT;
+    END IF;
+  END $$;`,
+
   `CREATE INDEX IF NOT EXISTS "Job_groupId_idx" ON "Job" ("groupId");`,
   `CREATE INDEX IF NOT EXISTS "Job_createdAt_idx" ON "Job" ("createdAt");`,
   `CREATE INDEX IF NOT EXISTS "Job_customer_idx" ON "Job" ("customer");`,

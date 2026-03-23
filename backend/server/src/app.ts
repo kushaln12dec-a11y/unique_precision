@@ -11,6 +11,7 @@ import employeeLogsRoutes from "./routes/employeeLogs";
 import masterConfigRoutes from "./routes/masterConfig";
 import inspectionReportsRoutes from "./routes/inspectionReports";
 import uploadRoutes from "./routes/upload";
+import dashboardRoutes from "./routes/dashboard";
 import { authMiddleware } from "./middleware/auth";
 
 const app = express();
@@ -58,6 +59,9 @@ app.use("/api/master-config", masterConfigRoutes);
 
 // Inspection report routes
 app.use("/api/inspection-reports", inspectionReportsRoutes);
+
+// Dashboard routes
+app.use("/api/dashboard", dashboardRoutes);
 
 // Upload routes
 app.use("/api/upload", uploadRoutes);

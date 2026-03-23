@@ -1,7 +1,7 @@
-import dotenv from "dotenv";
+import { loadEnv } from "../config/env";
 import { prisma } from "../lib/prisma";
 
-dotenv.config();
+loadEnv();
 
 const resetData = async () => {
   const [jobs, logs, masters, idle, counters, captures, qaStates] = await Promise.all([
