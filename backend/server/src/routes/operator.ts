@@ -76,7 +76,12 @@ router.get("/jobs", async (req, res) => {
       where.createdBy = String(req.query.createdBy);
     }
     if (req.query.assignedTo) {
-      where.assignedTo = String(req.query.assignedTo);
+      const assignedTo = String(req.query.assignedTo).trim();
+      if (/^unassign(?:ed)?$/i.test(assignedTo)) {
+        where.OR = [{ assignedTo: "Unassign" }, { assignedTo: "Unassigned" }];
+      } else {
+        where.assignedTo = assignedTo;
+      }
     }
 
     const { limit, offset } = getPagination(req);
