@@ -6,7 +6,8 @@ import ArrowForwardIosSharpIcon from "@mui/icons-material/ArrowForwardIosSharp";
 import { getGroupQaProgressCounts } from "../utils/qaProgress";
 import type { Column } from "../../../components/DataTable";
 import {
-  estimatedTimeFromAmount,
+  estimatedHoursFromAmount,
+  formatEstimatedTime,
   formatJobRefDisplay,
   formatMachineLabel,
   MACHINE_OPTIONS,
@@ -115,7 +116,7 @@ export const useOperatorTable = ({
       (sum, entry) => sum + (Number(entry.totalHrs || 0) * Number(entry.rate || 0)),
       0
     );
-    return wedmAmount / 625 / 24;
+    return estimatedHoursFromAmount(wedmAmount);
   };
 
   const getLatestActiveCaptureStartedAt = (entries: JobEntry[]): string | null => {
@@ -349,14 +350,14 @@ export const useOperatorTable = ({
               return (
                 <span
                   className="operator-overtime-value"
-                  title={`Expected ${estimatedTimeFromAmount(expectedHours * 625 * 24)}`}
+                  title={`Expected ${formatEstimatedTime(expectedHours)}`}
                 >
                   Overtime {formatDurationMinutes((elapsedHours - expectedHours) * 60)}
                 </span>
               );
             }
           }
-          return estimatedTimeFromAmount(expectedHours * 625 * 24);
+          return formatEstimatedTime(expectedHours);
         },
       },
         ...(isAdmin

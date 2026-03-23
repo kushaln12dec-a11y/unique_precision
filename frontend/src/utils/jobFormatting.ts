@@ -64,9 +64,12 @@ export const formatEstimatedTime = (hours: number): string => {
   return `${safeHours.toFixed(2)} hrs`;
 };
 
+export const estimatedHoursFromAmount = (amount: number): number => {
+  return (Number(amount || 0) || 0) / 625;
+};
+
 export const estimatedTimeFromAmount = (amount: number): string => {
-  const hours = (Number(amount || 0) || 0) / 625 / 24;
-  return formatEstimatedTime(hours);
+  return formatEstimatedTime(estimatedHoursFromAmount(amount));
 };
 
 export const MACHINE_OPTIONS = ["1", "2", "3", "4", "5", "6"] as const;

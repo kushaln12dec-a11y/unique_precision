@@ -183,15 +183,6 @@ export const CutSection: React.FC<CutSectionProps> = ({
       onCutChange("rate")(matchedRate);
     }
   }, [isFirstCut, cut.customer, customerRateMap, onCutChange]);
-
-  React.useEffect(() => {
-    if (isFirstCut) return;
-    const selected = String(cut.customer || "").trim().toUpperCase();
-    if (!selected) return;
-    const matchedRate = customerRateMap.get(selected);
-    if (matchedRate === undefined || String(cut.rate || "") === matchedRate) return;
-    onCutChange("rate")(matchedRate);
-  }, [isFirstCut, cut.customer, cut.rate, customerRateMap, onCutChange]);
   
   return (
     <div className={`cut-section ${isCollapsed ? "collapsed" : ""}`}>
@@ -631,7 +622,7 @@ export const CutSection: React.FC<CutSectionProps> = ({
                 <p>SEDM Cost = 0.00</p>
               ))}
               {isAdmin && <p>{`Total Amount = WEDM(${cutTotals.wedmAmount.toFixed(2)}) + SEDM(${cutTotals.sedmAmount.toFixed(2)}) = ${cutTotals.totalAmount.toFixed(2)}`}</p>}
-              <p>{`Estimated Time = WEDM / 625 / 24 = ${cutTotals.wedmAmount.toFixed(2)} / 625 / 24 = ${formatEstimatedTime(cutTotals.estimatedTime)}`}</p>
+              <p>{`Estimated Time = WEDM / 625 = ${cutTotals.wedmAmount.toFixed(2)} / 625 = ${formatEstimatedTime(cutTotals.estimatedTime)}`}</p>
             </div>
           </div>
         </div>

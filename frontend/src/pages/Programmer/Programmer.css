@@ -1833,7 +1833,7 @@
 }
 
 .programmer-container .jobs-table-wrapper .group-row.critical-row {
-  border-left: 4px solid #dc2626 !important;
+  border-left: 1px solid #dc2626 !important;
   background-image:
     linear-gradient(180deg, rgba(255, 255, 255, 0.54) 0%, rgba(255, 255, 255, 0.08) 48%, rgba(255, 255, 255, 0) 100%),
     linear-gradient(90deg, rgba(220, 38, 38, 0.2) 0%, rgba(220, 38, 38, 0.07) 38%, rgba(255, 255, 255, 0.95) 100%);
@@ -2471,34 +2471,16 @@
   display: inline-flex;
   justify-content: center;
   align-items: center;
-  background: linear-gradient(135deg, rgba(15, 23, 42, 0.16) 0%, rgba(15, 23, 42, 0.04) 100%);
-  box-shadow:
-    inset 0 0 0 1px rgba(255, 255, 255, 0.18),
-    0 10px 24px rgba(15, 23, 42, 0.14);
+  background: transparent;
+  box-shadow: none;
 }
 
 .qa-badge-ticker::before {
-  content: "";
-  position: absolute;
-  inset: 1px;
-  border-radius: inherit;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0.02) 48%, rgba(255, 255, 255, 0.12) 100%);
-  pointer-events: none;
+  display: none;
 }
 
 .qa-badge-ticker::after {
-  content: "";
-  position: absolute;
-  top: -55%;
-  left: -22%;
-  width: 44%;
-  height: 210%;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.95) 48%, rgba(255, 255, 255, 0) 100%);
-  transform: rotate(14deg);
-  animation: qa-badge-highlight 1.15s linear infinite;
-  pointer-events: none;
-  mix-blend-mode: screen;
+  display: none;
 }
 
 .qa-badge-track {
@@ -2519,8 +2501,8 @@
 
 .qa-badge-ticker:hover .qa-mini,
 .qa-badge-ticker:focus-within .qa-mini {
-  transform: rotate(-2.6deg) scale(1.02);
-  filter: saturate(1.28) brightness(1.08);
+  transform: none;
+  filter: none;
 }
 
 @keyframes qa-badge-scroll {

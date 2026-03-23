@@ -101,6 +101,24 @@ const OPERATOR_GRID_COLUMN_WIDTHS: Record<string, number> = {
 const getOperatorGridColumnWidth = (columnKey: string) =>
   OPERATOR_GRID_COLUMN_WIDTHS[columnKey] ?? 70;
 
+const OPERATOR_LOG_COLUMN_WIDTHS: Record<string, number> = {
+  userName: 94,
+  machineNumber: 70,
+  workItemTitle: 112,
+  workSummary: 142,
+  startedAt: 100,
+  endedAt: 100,
+  shift: 70,
+  durationSeconds: 82,
+  idleTime: 78,
+  remark: 82,
+  revenue: 86,
+  status: 104,
+};
+
+const getOperatorLogColumnWidth = (columnKey: string) =>
+  OPERATOR_LOG_COLUMN_WIDTHS[columnKey] ?? 84;
+
 const Operator = () => {
   const navigate = useNavigate();
   const userRole = (getUserRoleFromToken() || "").toUpperCase();
@@ -1029,7 +1047,8 @@ const Operator = () => {
       logsColumns.map((column) => ({
         headerName: typeof column.label === "string" ? column.label : String(column.key),
         field: column.key,
-        minWidth: column.key === "workSummary" ? 200 : 120,
+        width: getOperatorLogColumnWidth(String(column.key)),
+        minWidth: getOperatorLogColumnWidth(String(column.key)),
         cellClass: column.className,
         headerClass: column.headerClassName,
         cellRenderer: column.render ? ((params: any) => column.render!(params.data, params.node?.rowIndex || 0)) : undefined,

@@ -3,7 +3,7 @@ import ImageUpload from "./ImageUpload";
 import type { JobEntry } from "../../../types/job";
 import { calculateTotals, getThicknessDisplayValue, type CutForm } from "../programmerUtils";
 import { formatDecimalHoursToHHMMhrs, formatDisplayDateTime } from "../../../utils/date";
-import { formatEstimatedTime, formatJobRefDisplay } from "../../../utils/jobFormatting";
+import { estimatedHoursFromAmount, formatEstimatedTime, formatJobRefDisplay } from "../../../utils/jobFormatting";
 import { formatMachineLabel } from "../../../utils/jobFormatting";
 import "./JobDetailsModal.css";
 import { useLocation } from "react-router-dom";
@@ -175,7 +175,7 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
                   {
                     label: showOperatorSpecificLayout ? "Estimated Time" : "Cut Length Hrs",
                     value: showOperatorSpecificLayout
-                      ? formatEstimatedTime((amounts.perCut[index]?.wedmAmount || 0) / 625 / 24)
+                      ? formatEstimatedTime(estimatedHoursFromAmount(amounts.perCut[index]?.wedmAmount || 0))
                       : (cutItem.totalHrs ? formatDecimalHoursToHHMMhrs(cutItem.totalHrs) : "00:00hrs"),
                   },
                 ];
@@ -321,7 +321,7 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({
               <label>{showOperatorSpecificLayout ? "Estimated Time:" : "Cut Length Hrs:"}</label>
               <span>
                 {showOperatorSpecificLayout
-                  ? formatEstimatedTime((amounts.totalWedmAmount || 0) / 625 / 24)
+                  ? formatEstimatedTime(estimatedHoursFromAmount(amounts.totalWedmAmount || 0))
                   : (displayGroupTotalHrs ? formatDecimalHoursToHHMMhrs(displayGroupTotalHrs) : "00:00hrs")}
               </span>
             </div>

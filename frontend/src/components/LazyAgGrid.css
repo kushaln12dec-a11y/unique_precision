@@ -157,6 +157,37 @@
   display: none !important;
 }
 
+.lazy-ag-grid-shell.programmer-logs-table .ag-body-viewport,
+.lazy-ag-grid-shell.programmer-logs-table .ag-center-cols-viewport,
+.lazy-ag-grid-shell.programmer-logs-table .ag-body-vertical-scroll-viewport {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.lazy-ag-grid-shell.programmer-logs-table .ag-body-viewport::-webkit-scrollbar,
+.lazy-ag-grid-shell.programmer-logs-table .ag-center-cols-viewport::-webkit-scrollbar,
+.lazy-ag-grid-shell.programmer-logs-table .ag-body-vertical-scroll-viewport::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+.lazy-ag-grid-shell.programmer-logs-table .ag-body-vertical-scroll,
+.lazy-ag-grid-shell.programmer-logs-table .ag-body-vertical-scroll-viewport {
+  width: 0 !important;
+  min-width: 0 !important;
+  max-width: 0 !important;
+}
+
+.lazy-ag-grid-shell.operator-logs-table .ag-cell,
+.lazy-ag-grid-shell.operator-logs-table .ag-header-cell {
+  padding-left: 0.12rem;
+  padding-right: 0.12rem;
+}
+
+.lazy-ag-grid-shell.operator-logs-table .ag-cell {
+  font-size: 0.76rem;
+}
+
 .lazy-ag-grid-shell .ag-overlay-loading-center {
   background: transparent;
   border: none;

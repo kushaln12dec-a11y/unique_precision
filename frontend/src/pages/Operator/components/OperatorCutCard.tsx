@@ -3,7 +3,7 @@ import ImageUpload from "../../Programmer/components/ImageUpload";
 import type { JobEntry } from "../../../types/job";
 import type { CutInputData } from "../types/cutInput";
 import { OperatorInputSection } from "./OperatorInputSection";
-import { formatEstimatedTime } from "../../../utils/jobFormatting";
+import { estimatedHoursFromAmount, formatEstimatedTime } from "../../../utils/jobFormatting";
 import "../OperatorViewPage.css";
 
 import type { QuantityInputData } from "../types/cutInput";
@@ -77,7 +77,7 @@ export const OperatorCutCard: React.FC<OperatorCutCardProps> = ({
   isAdmin,
 }) => {
   const quantity = Number(cutItem.qty || 1);
-  const cutEstimatedHrs = calculateTotals(cutItem as any).wedmAmount / 625 / 24;
+  const cutEstimatedHrs = estimatedHoursFromAmount(calculateTotals(cutItem as any).wedmAmount);
   const expectedHoursPerQuantity = cutEstimatedHrs / Math.max(1, quantity);
   return (
     <div className="operator-cut-card">
