@@ -21,84 +21,83 @@ interface BreadcrumbItem {
   icon: React.ElementType;
 }
 
+const BREADCRUMB_MAP: Record<string, BreadcrumbItem[]> = {
+  '/dashboard': [
+    { label: 'Dashboard', path: '/dashboard', icon: DashboardIcon },
+  ],
+  '/operator-dashboard': [
+    { label: 'Operator Dashboard', path: '/operator-dashboard', icon: BuildIcon },
+  ],
+  '/programmer': [
+    { label: 'Dashboard', path: '/dashboard', icon: DashboardIcon },
+    { label: 'Programmer', path: '/programmer', icon: CodeIcon },
+  ],
+  '/programmer/newjob': [
+    { label: 'Dashboard', path: '/dashboard', icon: DashboardIcon },
+    { label: 'Programmer', path: '/programmer', icon: CodeIcon },
+    {
+      label: 'New Job',
+      path: '/programmer/newjob',
+      icon: AddCircleOutlineIcon,
+    },
+  ],
+  '/programmer/clone': [
+    { label: 'Dashboard', path: '/dashboard', icon: DashboardIcon },
+    { label: 'Programmer', path: '/programmer', icon: CodeIcon },
+    {
+      label: 'Clone Job',
+      path: '/programmer/clone',
+      icon: AddCircleOutlineIcon,
+    },
+  ],
+  '/operator': [
+    { label: 'Dashboard', path: '/dashboard', icon: DashboardIcon },
+    { label: 'Operator', path: '/operator', icon: BuildIcon },
+  ],
+  '/operator/viewpage': [
+    { label: 'Dashboard', path: '/dashboard', icon: DashboardIcon },
+    { label: 'Operator', path: '/operator', icon: BuildIcon },
+    { label: 'Job Details', path: '/operator/viewpage', icon: BuildIcon },
+  ],
+  '/qc': [
+    { label: 'Dashboard', path: '/dashboard', icon: DashboardIcon },
+    { label: 'QC', path: '/qc', icon: VerifiedUserIcon },
+  ],
+  '/qc/inspection-report': [
+    { label: 'Dashboard', path: '/dashboard', icon: DashboardIcon },
+    { label: 'QC', path: '/qc', icon: VerifiedUserIcon },
+    { label: 'Inspection Report', path: '/qc/inspection-report', icon: VerifiedUserIcon },
+  ],
+  '/inventory': [
+    { label: 'Dashboard', path: '/dashboard', icon: DashboardIcon },
+    { label: 'Inventory', path: '/inventory', icon: InventoryIcon },
+  ],
+  '/users': [
+    { label: 'Dashboard', path: '/dashboard', icon: DashboardIcon },
+    { label: 'User Management', path: '/users', icon: PeopleIcon },
+  ],
+  '/job-logs': [
+    { label: 'Dashboard', path: '/dashboard', icon: DashboardIcon },
+    { label: 'Job Logs', path: '/job-logs', icon: PeopleIcon },
+  ],
+  '/admin-console': [
+    { label: 'Dashboard', path: '/dashboard', icon: DashboardIcon },
+    {
+      label: 'Admin Console',
+      path: '/admin-console',
+      icon: SettingsSuggestIcon,
+    },
+  ],
+};
+
 const Header = ({ title }: HeaderProps) => {
   const navigate = useNavigate();
   const location = useLocation();
   const displayName = getUserDisplayNameFromToken();
   const designation = getUserDesignationFromToken();
 
-  // Define breadcrumb paths
-  const breadcrumbMap: Record<string, BreadcrumbItem[]> = {
-    '/dashboard': [
-      { label: 'Dashboard', path: '/dashboard', icon: DashboardIcon },
-    ],
-    '/operator-dashboard': [
-      { label: 'Operator Dashboard', path: '/operator-dashboard', icon: BuildIcon },
-    ],
-    '/programmer': [
-      { label: 'Dashboard', path: '/dashboard', icon: DashboardIcon },
-      { label: 'Programmer', path: '/programmer', icon: CodeIcon },
-    ],
-    '/programmer/newjob': [
-      { label: 'Dashboard', path: '/dashboard', icon: DashboardIcon },
-      { label: 'Programmer', path: '/programmer', icon: CodeIcon },
-      {
-        label: 'New Job',
-        path: '/programmer/newjob',
-        icon: AddCircleOutlineIcon,
-      },
-    ],
-    '/programmer/clone': [
-      { label: 'Dashboard', path: '/dashboard', icon: DashboardIcon },
-      { label: 'Programmer', path: '/programmer', icon: CodeIcon },
-      {
-        label: 'Clone Job',
-        path: '/programmer/clone',
-        icon: AddCircleOutlineIcon,
-      },
-    ],
-    '/operator': [
-      { label: 'Dashboard', path: '/dashboard', icon: DashboardIcon },
-      { label: 'Operator', path: '/operator', icon: BuildIcon },
-    ],
-    '/operator/viewpage': [
-      { label: 'Dashboard', path: '/dashboard', icon: DashboardIcon },
-      { label: 'Operator', path: '/operator', icon: BuildIcon },
-      { label: 'Job Details', path: '/operator/viewpage', icon: BuildIcon },
-    ],
-    '/qc': [
-      { label: 'Dashboard', path: '/dashboard', icon: DashboardIcon },
-      { label: 'QC', path: '/qc', icon: VerifiedUserIcon },
-    ],
-    '/qc/inspection-report': [
-      { label: 'Dashboard', path: '/dashboard', icon: DashboardIcon },
-      { label: 'QC', path: '/qc', icon: VerifiedUserIcon },
-      { label: 'Inspection Report', path: '/qc/inspection-report', icon: VerifiedUserIcon },
-    ],
-    '/inventory': [
-      { label: 'Dashboard', path: '/dashboard', icon: DashboardIcon },
-      { label: 'Inventory', path: '/inventory', icon: InventoryIcon },
-    ],
-    '/users': [
-      { label: 'Dashboard', path: '/dashboard', icon: DashboardIcon },
-      { label: 'User Management', path: '/users', icon: PeopleIcon },
-    ],
-    '/job-logs': [
-      { label: 'Dashboard', path: '/dashboard', icon: DashboardIcon },
-      { label: 'Job Logs', path: '/job-logs', icon: PeopleIcon },
-    ],
-    '/admin-console': [
-      { label: 'Dashboard', path: '/dashboard', icon: DashboardIcon },
-      {
-        label: 'Admin Console',
-        path: '/admin-console',
-        icon: SettingsSuggestIcon,
-      },
-    ],
-  };
-
   // Handle dynamic routes for programmer
-  let breadcrumbs = breadcrumbMap[location.pathname];
+  let breadcrumbs = BREADCRUMB_MAP[location.pathname];
 
   if (!breadcrumbs) {
     // Check for edit route: /programmer/edit/:groupId
@@ -128,7 +127,7 @@ const Header = ({ title }: HeaderProps) => {
     else {
       breadcrumbs = title
         ? [{ label: title, path: location.pathname, icon: DashboardIcon }]
-        : breadcrumbMap['/dashboard'];
+        : BREADCRUMB_MAP['/dashboard'];
     }
   }
 

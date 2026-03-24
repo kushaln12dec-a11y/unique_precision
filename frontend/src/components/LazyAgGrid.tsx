@@ -65,7 +65,9 @@ function LazyAgGrid<T extends object>({
   const viewportRef = useRef<HTMLElement | null>(null);
   const loadingRef = useRef(false);
   const hasMoreRef = useRef(true);
+  const offsetRef = useRef(0);
   const fetchPageRef = useRef(fetchPage);
+  const loadPageRef = useRef<(reset?: boolean) => Promise<void>>(async () => {});
 
   const defaultColDef = useMemo<ColDef<T>>(
     () => ({
@@ -150,12 +152,14 @@ function LazyAgGrid<T extends object>({
     setLoading(true);
     syncOverlay();
 
-    const nextOffset = reset ? 0 : offset;
+    const nextOffset = reset ? 0 : offsetRef.current;
 
     try {
       const result = await fetchPageRef.current(nextOffset, pageSize);
       updateRows((prev) => (reset ? result.items : [...prev, ...result.items]));
-      setOffset(nextOffset + pageSize);
+      const nextPageOffset = nextOffset + pageSize;
+      offsetRef.current = nextPageOffset;
+      setOffset(nextPageOffset);
       setHasMore(result.hasMore);
       hasMoreRef.current = result.hasMore;
     } finally {
@@ -170,8 +174,16 @@ function LazyAgGrid<T extends object>({
   }, [hasMore]);
 
   useEffect(() => {
+    offsetRef.current = offset;
+  }, [offset]);
+
+  useEffect(() => {
     fetchPageRef.current = fetchPage;
   }, [fetchPage]);
+
+  useEffect(() => {
+    loadPageRef.current = loadPage;
+  }, [loadPage]);
 
   useEffect(() => {
     fetchPageRef.current = fetchPage;
@@ -180,6 +192,7 @@ function LazyAgGrid<T extends object>({
     } else {
       setInternalRows([]);
     }
+    offsetRef.current = 0;
     setOffset(0);
     setHasMore(true);
     hasMoreRef.current = true;
@@ -202,13 +215,13 @@ function LazyAgGrid<T extends object>({
     const handleScroll = () => {
       const remaining = viewport.scrollHeight - viewport.scrollTop - viewport.clientHeight;
       if (remaining < 180) {
-        void loadPage(false);
+        void loadPageRef.current(false);
       }
     };
 
-    viewport.addEventListener("scroll", handleScroll);
+    viewport.addEventListener("scroll", handleScroll, { passive: true });
     return () => viewport.removeEventListener("scroll", handleScroll);
-  }, [offset, pageSize]);
+  }, []);
 
   return (
     <div
