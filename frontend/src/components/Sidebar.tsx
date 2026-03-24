@@ -12,7 +12,7 @@ import type { SidebarProps } from '../types/sidebar';
 import { getUserRoleFromToken } from '../utils/auth';
 import './Sidebar.css';
 
-const Sidebar = (_props: SidebarProps) => {
+const Sidebar = ({ onNavigate }: SidebarProps) => {
   const navigate = useNavigate();
   const location = useLocation();
   const role = getUserRoleFromToken()?.toUpperCase();
@@ -48,14 +48,18 @@ const Sidebar = (_props: SidebarProps) => {
   };
 
   const handleNavigate = (path: string) => {
-    if (isPathActive(path)) return;
-    navigate(path, { flushSync: true });
+    if (location.pathname === path && !location.search) return;
+    if (onNavigate) {
+      onNavigate(path);
+    } else {
+      navigate(path);
+    }
     window.scrollTo(0, 0);
   };
 
   const handleLogout = () => {
     localStorage.removeItem('token');
-    navigate('/login', { replace: true, flushSync: true });
+    navigate('/login', { replace: true });
   };
 
   return (
