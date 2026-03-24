@@ -1,0 +1,276 @@
+.operator-table-no-scroll .data-table tr.operator-stage-row-dispatched td {
+  background: transparent;
+}
+
+/* Programmer flag controls left corner line color in Operator table */
+.operator-table-no-scroll
+  .data-table
+  tr.operator-stage-row-not-started.critical-row,
+.operator-table-no-scroll .data-table tr.operator-stage-row-logged.critical-row,
+.operator-table-no-scroll
+  .data-table
+  tr.operator-stage-row-dispatched.critical-row {
+  border-left: none;
+}
+
+.operator-table-no-scroll
+  .data-table
+  tr.operator-stage-row-not-started.critical-row
+  td:first-child,
+.operator-table-no-scroll
+  .data-table
+  tr.operator-stage-row-logged.critical-row
+  td:first-child,
+.operator-table-no-scroll
+  .data-table
+  tr.operator-stage-row-dispatched.critical-row
+  td:first-child {
+  box-shadow: none;
+}
+
+.operator-table-no-scroll
+  .data-table
+  tr.operator-stage-row-not-started.priority-row.priority-high,
+.operator-table-no-scroll
+  .data-table
+  tr.operator-stage-row-logged.priority-row.priority-high,
+.operator-table-no-scroll
+  .data-table
+  tr.operator-stage-row-dispatched.priority-row.priority-high {
+  border-left: none;
+}
+
+.operator-table-no-scroll
+  .data-table
+  tr.operator-stage-row-not-started.priority-row.priority-high
+  td:first-child,
+.operator-table-no-scroll
+  .data-table
+  tr.operator-stage-row-logged.priority-row.priority-high
+  td:first-child,
+.operator-table-no-scroll
+  .data-table
+  tr.operator-stage-row-dispatched.priority-row.priority-high
+  td:first-child {
+  box-shadow: none;
+}
+
+.operator-table-no-scroll
+  .data-table
+  tr.operator-stage-row-not-started.priority-row.priority-medium,
+.operator-table-no-scroll
+  .data-table
+  tr.operator-stage-row-logged.priority-row.priority-medium,
+.operator-table-no-scroll
+  .data-table
+  tr.operator-stage-row-dispatched.priority-row.priority-medium {
+  border-left: none;
+}
+
+.operator-table-no-scroll
+  .data-table
+  tr.operator-stage-row-not-started.priority-row.priority-medium
+  td:first-child,
+.operator-table-no-scroll
+  .data-table
+  tr.operator-stage-row-logged.priority-row.priority-medium
+  td:first-child,
+.operator-table-no-scroll
+  .data-table
+  tr.operator-stage-row-dispatched.priority-row.priority-medium
+  td:first-child {
+  box-shadow: none;
+}
+
+.operator-table-no-scroll
+  .data-table
+  tr.operator-stage-row-not-started.priority-row.priority-low,
+.operator-table-no-scroll
+  .data-table
+  tr.operator-stage-row-logged.priority-row.priority-low,
+.operator-table-no-scroll
+  .data-table
+  tr.operator-stage-row-dispatched.priority-row.priority-low {
+  border-left: none;
+}
+
+.operator-table-no-scroll
+  .data-table
+  tr.operator-stage-row-not-started.priority-row.priority-low
+  td:first-child,
+.operator-table-no-scroll
+  .data-table
+  tr.operator-stage-row-logged.priority-row.priority-low
+  td:first-child,
+.operator-table-no-scroll
+  .data-table
+  tr.operator-stage-row-dispatched.priority-row.priority-low
+  td:first-child {
+  box-shadow: none;
+}
+
+/* Fallback left indicator even when priority/critical is missing */
+.operator-table-no-scroll
+  .data-table
+  tr.operator-stage-row-not-started:not(.priority-row):not(.critical-row) {
+  border-left: none;
+}
+
+.operator-table-no-scroll
+  .data-table
+  tr.operator-stage-row-not-started:not(.priority-row):not(.critical-row)
+  td:first-child {
+  box-shadow: none;
+}
+
+.operator-table-no-scroll
+  .data-table
+  tr.operator-stage-row-logged:not(.priority-row):not(.critical-row) {
+  border-left: none;
+}
+
+.operator-table-no-scroll
+  .data-table
+  tr.operator-stage-row-logged:not(.priority-row):not(.critical-row)
+  td:first-child {
+  box-shadow: none;
+}
+
+.operator-table-no-scroll
+  .data-table
+  tr.operator-stage-row-dispatched:not(.priority-row):not(.critical-row) {
+  border-left: none;
+}
+
+.operator-table-no-scroll
+  .data-table
+  tr.operator-stage-row-dispatched:not(.priority-row):not(.critical-row)
+  td:first-child {
+  box-shadow: none;
+}
+
+/* Child rows: Stage legend controls background, flag controls left strip */
+.operator-table-no-scroll
+  .child-jobs-table
+  tr.child-row.operator-stage-row-not-started {
+  background-color: #ffefbf;
+}
+
+.operator-table-no-scroll
+  .child-jobs-table
+  tr.child-row.operator-stage-row-not-started:hover {
+  background-color: #ffe39a;
+}
+
+.operator-table-no-scroll
+  .child-jobs-table
+  tr.child-row.operator-stage-row-logged {
+  background-color: #dbeafe;
+}
+
+.operator-table-no-scroll
+  .child-jobs-table
+  tr.child-row.operator-stage-row-logged:hover {
+  background-color: #bfdbfe;
+}
+
+.operator-table-no-scroll
+  .child-jobs-table
+  tr.child-row.operator-stage-row-dispatched {
+  background-color: #ddd6fe;
+}
+
+.operator-table-no-scroll
+  .child-jobs-table
+  tr.child-row.operator-stage-row-dispatched:hover {
+  background-color: #c4b5fd;
+}
+
+.operator-subtabs {
+  display: inline-flex;
+  gap: 0.4rem;
+  margin-bottom: 0.7rem;
+}
+
+.operator-subtab {
+  border: 1px solid #cbd5e1;
+  background: #f8fafc;
+  color: #334155;
+  border-radius: 8px;
+  padding: 0.35rem 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.operator-subtab.active {
+  background: #1a1a2e;
+  border-color: #1a1a2e;
+  color: #ffffff;
+}
+
+.operator-logs-table .data-table td {
+  white-space: normal;
+  word-break: break-word;
+  text-align: center;
+}
+
+.data-table-wrapper.operator-logs-table {
+  max-height: calc(100vh - 250px);
+  overflow-y: auto;
+  overflow-x: auto;
+  position: relative;
+}
+
+.operator-logs-table .data-table {
+  overflow: visible;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.operator-logs-table .data-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 60;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+}
+
+.operator-logs-table .data-table th:nth-child(1),
+.operator-logs-table .data-table td:nth-child(1) {
+  width: 104px;
+  min-width: 104px;
+  max-width: 104px;
+}
+
+.operator-logs-table .data-table th:nth-child(3),
+.operator-logs-table .data-table td:nth-child(3) {
+  width: 164px;
+  min-width: 164px;
+  max-width: 164px;
+}
+
+.operator-logs-table .data-table th:nth-child(4),
+.operator-logs-table .data-table td:nth-child(4) {
+  width: 156px;
+  min-width: 156px;
+  max-width: 156px;
+}
+
+.operator-logs-table .data-table th:nth-child(6),
+.operator-logs-table .data-table td:nth-child(6) {
+  width: 118px;
+  min-width: 118px;
+  max-width: 118px;
+}
+
+.operator-logs-table .data-table th:nth-child(12),
+.operator-logs-table .data-table td:nth-child(12) {
+  width: 136px;
+  min-width: 136px;
+  max-width: 136px;
+}
+
+.operator-logs-table .data-table td:nth-child(4) {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

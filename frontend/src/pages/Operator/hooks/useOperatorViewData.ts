@@ -5,69 +5,7 @@ import type { JobEntry } from "../../../types/job";
 import type { CutInputData, QuantityInputData } from "../types/cutInput";
 import { createEmptyQuantityInputData } from "../types/cutInput";
 import { calculateMachineHrs } from "../utils/machineHrsCalculation";
-
-/**
- * Hook for fetching and managing operator view data
- */
-// Helper functions for localStorage persistence
-const getStorageKey = (groupId: string | null): string => {
-  // Shared per group so another operator can continue/resume the same in-progress capture.
-  return `operator_inputs_shared_${groupId || "default"}`;
-};
-
-const saveToLocalStorage = (groupId: string | null, cutInputs: Map<number | string, CutInputData>) => {
-  try {
-    const storageKey = getStorageKey(groupId);
-    // Convert Map to plain object for storage
-    const dataToSave: Record<string, CutInputData> = {};
-    cutInputs.forEach((value, key) => {
-      // Convert to plain object, excluding File objects (can't be serialized)
-      const serializableData: CutInputData = {
-        quantities: value.quantities.map((qty) => ({
-          ...qty,
-          lastImageFile: null, // Don't persist File objects
-        })),
-      };
-      dataToSave[String(key)] = serializableData;
-    });
-    localStorage.setItem(storageKey, JSON.stringify(dataToSave));
-  } catch (error) {
-    console.error("Failed to save to localStorage", error);
-  }
-};
-
-const loadFromLocalStorage = (groupId: string | null): Map<number | string, CutInputData> | null => {
-  try {
-    const storageKey = getStorageKey(groupId);
-    const savedData = localStorage.getItem(storageKey);
-    if (!savedData) return null;
-    
-    const parsedData = JSON.parse(savedData) as Record<string, CutInputData>;
-    const map = new Map<number | string, CutInputData>();
-    
-    Object.entries(parsedData).forEach(([key, value]) => {
-      // Ensure all required fields are present with defaults
-      const normalizedData: CutInputData = {
-        quantities: value.quantities.map((qty) => ({
-          ...qty,
-          pauseSessions: qty.pauseSessions || [],
-          currentPauseReason: qty.currentPauseReason || "",
-          isPaused: qty.isPaused || false,
-          pauseStartTime: qty.pauseStartTime || null,
-          totalPauseTime: qty.totalPauseTime || 0,
-          pausedElapsedTime: qty.pausedElapsedTime || 0,
-          lastImageFile: null, // File objects can't be restored
-        })),
-      };
-      map.set(key, normalizedData);
-    });
-    
-    return map;
-  } catch (error) {
-    console.error("Failed to load from localStorage", error);
-    return null;
-  }
-};
+import { loadOperatorInputsFromLocalStorage, saveOperatorInputsToLocalStorage } from "../utils/operatorViewStorage";
 
 export const useOperatorViewData = (groupId: string | null, cutIdParam: string | null) => {
   const [jobs, setJobs] = useState<JobEntry[]>([]);
@@ -124,7 +62,7 @@ export const useOperatorViewData = (groupId: string | null, cutIdParam: string |
         }
         
         // Try to load from localStorage first
-        const savedInputs = loadFromLocalStorage(groupId);
+        const savedInputs = loadOperatorInputsFromLocalStorage(groupId);
         
         // Initialize inputs for all cuts
         const initialInputs = new Map<number | string, CutInputData>();
@@ -280,7 +218,7 @@ export const useOperatorViewData = (groupId: string | null, cutIdParam: string |
   // Save to localStorage whenever cutInputs changes
   useEffect(() => {
     if (groupId && cutInputs.size > 0) {
-      saveToLocalStorage(groupId, cutInputs);
+      saveOperatorInputsToLocalStorage(groupId, cutInputs);
     }
   }, [cutInputs, groupId]);
 

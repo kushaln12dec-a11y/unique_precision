@@ -1,0 +1,132 @@
+@media (max-width: 1024px) {
+  .company-section,
+  .login-section {
+    height: 100vh;
+  }
+
+  .company-section {
+    width: 44%;
+    padding: 1.25rem 1rem;
+  }
+
+  .login-section {
+    width: 56%;
+    padding: 1.75rem;
+  }
+
+  .slide-container {
+    max-width: none;
+  }
+
+  .slide-title {
+    font-size: 1.8rem;
+    margin-bottom: 0.3rem;
+    padding-bottom: 0.5rem;
+  }
+
+  .slide-subtitle {
+    font-size: 0.95rem;
+    margin-bottom: 0.7rem;
+  }
+
+  .facilities-grid {
+    gap: 0.85rem;
+  }
+
+  .slide-item {
+    font-size: 0.88rem;
+    margin-bottom: 0.45rem;
+    line-height: 1.35;
+  }
+
+  .highlight-label {
+    font-size: 0.9rem;
+  }
+
+  .slide-highlight {
+    font-size: 0.7rem;
+    margin-top: 0.55rem;
+    padding: 0.45rem 0.6rem;
+  }
+
+  .login-form-container {
+    max-width: 380px;
+  }
+
+  .logo-container {
+    margin-bottom: 1.2rem;
+    gap: 0.6rem;
+  }
+
+  .login-logo {
+    width: 52px;
+    height: 52px;
+  }
+
+  .login-brand-line {
+    font-size: 1.45rem;
+  }
+
+  .login-title {
+    font-size: 2rem;
+  }
+
+  .login-subtitle {
+    margin-bottom: 1.3rem;
+  }
+}
+
+@media (max-width: 700px) {
+  .login-container {
+    flex-direction: column;
+    height: auto;
+    min-height: 100vh;
+    overflow-y: auto;
+  }
+
+  .company-section,
+  .login-section {
+    width: 100%;
+    height: auto;
+  }
+
+  .company-section {
+    min-height: 42vh;
+    padding: 1rem 0.9rem;
+  }
+
+  .login-section {
+    min-height: 58vh;
+    padding: 1.35rem 1rem 1.8rem;
+  }
+
+  .slide-title {
+    font-size: 1.45rem;
+  }
+
+  .slide-subtitle {
+    font-size: 0.88rem;
+  }
+
+  .slide-item {
+    font-size: 0.8rem;
+  }
+
+  .nav-btn {
+    width: 40px;
+    height: 40px;
+    font-size: 1.25rem;
+  }
+
+  .prev-btn {
+    left: 1rem;
+  }
+
+  .next-btn {
+    right: 1rem;
+  }
+
+  .login-title {
+    font-size: 1.8rem;
+  }
+}

@@ -1,175 +1,40 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { useMemo, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import Sidebar from "../../components/Sidebar";
 import Header from "../../components/Header";
-import type { Column } from "../../components/DataTable";
-import LazyAgGrid from "../../components/LazyAgGrid";
-import Toast from "../../components/Toast";
-import AppLoader from "../../components/AppLoader";
-import DownloadIcon from "@mui/icons-material/Download";
-import WbSunnyOutlinedIcon from "@mui/icons-material/WbSunnyOutlined";
-import DarkModeOutlinedIcon from "@mui/icons-material/DarkModeOutlined";
-import ConfirmDeleteModal from "../../components/ConfirmDeleteModal";
 import { getUserRoleFromToken } from "../../utils/auth";
 import "../../utils/tokenDebug";
-import { getUsers } from "../../services/userApi";
-import { getEmployeeLogsPage } from "../../services/employeeLogsApi";
-import { getMasterConfig } from "../../services/masterConfigApi";
-import { getJobsByGroupId, getProgrammerJobsPage } from "../../services/jobApi";
-import type { User } from "../../types/user";
-import type { MasterConfig } from "../../types/masterConfig";
-import type { EmployeeLog } from "../../types/employeeLog";
-import ProgrammerJobForm from "./ProgrammerJobForm.tsx";
-import JobDetailsModal from "./components/JobDetailsModal";
-import { ProgrammerFilters } from "./components/ProgrammerFilters";
-import { MassDeleteButton } from "./components/MassDeleteButton";
+import ProgrammerPageOverlays from "./components/ProgrammerPageOverlays";
+import ProgrammerJobsSection from "./components/ProgrammerJobsSection";
+import ProgrammerLogsSection from "./components/ProgrammerLogsSection";
+import ProgrammerFormSection from "./components/ProgrammerFormSection";
+import ProgrammerTabs from "./components/ProgrammerTabs";
 import { calculateTotals } from "./programmerUtils";
-import { countActiveFilters } from "../../utils/filterUtils";
 import type { JobEntry } from "../../types/job";
-import type { FilterValues } from "../../components/FilterModal";
 import { useJobHandlers } from "./hooks/useJobHandlers";
-import { useJobData } from "./hooks/useJobData";
-import { useTableColumns, type ProgrammerDisplayRow } from "./hooks/useTableColumns";
+import { useTableColumns } from "./hooks/useTableColumns";
 import { useProgrammerState } from "./hooks/useProgrammerState";
 import { exportJobsToCSV } from "./utils/csvExport";
-import type { TableRow } from "./utils/jobDataTransform";
-import { getParentRowClassName, getRowClassName } from "./utils/priorityUtils";
-import { formatDisplayDateTime, getDisplayDateTimeParts } from "../../utils/date";
 import { useAppDispatch, useAppSelector } from "../../store/hooks";
-import MarqueeCopyText from "../../components/MarqueeCopyText";
-import {
-  setProgrammerCreatedByFilter,
-  setProgrammerCriticalFilter,
-  setProgrammerCustomerFilter,
-  setProgrammerDescriptionFilter,
-  setProgrammerFilters,
-  setProgrammerShowFilterModal,
-} from "../../store/slices/filtersSlice";
-import {
-  estimatedTimeFromAmount,
-  formatJobRefDisplay,
-  getDisplayName,
-  getInitials,
-  getLogUserDisplayName,
-  toYN,
-} from "../../utils/jobFormatting";
-import { getThicknessDisplayValue } from "./programmerUtils";
-import { fetchAllPaginatedItems } from "../../utils/paginationUtils";
-import { matchesSearchQuery } from "../../utils/searchUtils";
-
-const getProgrammerHeaderName = (column: Column<ProgrammerDisplayRow>) => {
-  if (typeof column.label === "string") return column.label;
-  switch (column.key) {
-    case "programRef":
-      return "JOB REF";
-    case "programRefFileName":
-      return "PROGRAM REF FILE NAME";
-    case "estimatedTime":
-      return "ESTIMATED TIME";
-    case "totalHrs":
-      return "CUT LENGTH HRS";
-    case "totalAmount":
-      return "TOTAL AMOUNT (RS.)";
-    case "createdBy":
-      return "CREATED BY";
-    case "createdAt":
-      return "CREATED AT";
-    default:
-      return String(column.key);
-  }
-};
-
-const PROGRAMMER_GRID_COLUMN_WIDTHS: Record<string, number> = {
-  customer: 92,
-  programRef: 84,
-  programRefFileName: 112,
-  description: 116,
-  cut: 62,
-  thickness: 62,
-  passLevel: 50,
-  setting: 68,
-  qty: 42,
-  sedm: 48,
-  totalHrs: 84,
-  estimatedTime: 80,
-  totalAmount: 104,
-  createdBy: 72,
-  createdAt: 100,
-  action: 80,
-};
-
-const getProgrammerGridColumnWidth = (columnKey: string) =>
-  PROGRAMMER_GRID_COLUMN_WIDTHS[columnKey] ?? 64;
-
-const PROGRAMMER_LOG_COLUMN_WIDTHS: Record<string, number> = {
-  user: 96,
-  jobNumber: 96,
-  summary: 176,
-  startedAt: 108,
-  endedAt: 108,
-  shift: 72,
-  duration: 84,
-  status: 110,
-};
-
-const getProgrammerLogColumnWidth = (columnKey: string) =>
-  PROGRAMMER_LOG_COLUMN_WIDTHS[columnKey] ?? 88;
-
-const SEARCH_FETCH_PAGE_SIZE = 100;
-
-const formatProgrammerLogStatus = (status?: string) => {
-  const raw = String(status || "-").toUpperCase();
-  if (raw === "IN_PROGRESS") return "In Progress";
-  if (raw === "REJECTED") return "Stopped";
-  if (raw === "COMPLETED") return "Completed";
-  return raw
-    .split("_")
-    .map((part) => part.charAt(0) + part.slice(1).toLowerCase())
-    .join(" ");
-};
-
-const getProgrammerRowSearchValues = (row: TableRow, isAdmin: boolean) => {
-  const values: unknown[] = [
-    estimatedTimeFromAmount(
-      row.entries.reduce((sum, entry) => sum + (Number(entry.totalHrs || 0) * Number(entry.rate || 0)), 0)
-    ),
-  ];
-
-  if (isAdmin) {
-    values.push(row.groupTotalAmount ? `Rs. ${Math.round(row.groupTotalAmount)}` : "-");
-  }
-
-  row.entries.forEach((entry) => {
-    values.push(
-      entry.customer || "-",
-      formatJobRefDisplay(entry.refNumber || ""),
-      String((entry as any).programRefFile || (entry as any).programRefFileName || "-"),
-      entry.description || "-",
-      Math.round(Number(entry.cut || 0)),
-      getThicknessDisplayValue(entry.thickness),
-      entry.passLevel || "-",
-      entry.setting || "-",
-      Number(entry.qty || 0).toString(),
-      toYN(entry.sedm),
-      Number(entry.totalHrs || 0) ? Number(entry.totalHrs || 0).toFixed(2) : "-",
-      estimatedTimeFromAmount(Number(entry.totalHrs || 0) * Number(entry.rate || 0)),
-      entry.createdBy || "-",
-      formatDisplayDateTime(entry.createdAt),
-      ...(isAdmin ? [entry.totalAmount ? `Rs. ${Math.round(entry.totalAmount)}` : "-"] : [])
-    );
-  });
-
-  return values;
-};
+import { useProgrammerGrid } from "./hooks/useProgrammerGrid";
+import { useProgrammerLogs } from "./hooks/useProgrammerLogs";
+import { useProgrammerPageController } from "./hooks/useProgrammerPageController";
+import { useProgrammerReduxDispatchers } from "./hooks/useProgrammerReduxDispatchers";
 
 const Programmer = () => {
-  const location = useLocation();
   const navigate = useNavigate();
   const params = useParams<{ groupId?: string }>();
   const dispatch = useAppDispatch();
+
   const [sortField] = useState<keyof JobEntry | null>(null);
   const [sortDirection] = useState<"asc" | "desc">("asc");
-  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(() => new Set());
+  const [toast, setToast] = useState<{ message: string; variant: "success" | "error" | "info"; visible: boolean }>({
+    message: "",
+    variant: "success",
+    visible: false,
+  });
+  const [savingJob, setSavingJob] = useState(false);
+
   const {
     filters,
     showFilterModal,
@@ -178,41 +43,8 @@ const Programmer = () => {
     createdByFilter,
     criticalFilter,
   } = useAppSelector((state) => state.filters.programmer);
-  const [users, setUsers] = useState<User[]>([]);
-  const [toast, setToast] = useState<{ message: string; variant: "success" | "error" | "info"; visible: boolean }>({
-    message: "",
-    variant: "success",
-    visible: false,
-  });
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [jobToDelete, setJobToDelete] = useState<{ groupId: string; customer: string } | null>(null);
-  const [selectedJobIds, setSelectedJobIds] = useState<Set<string>>(new Set());
-  const [showJobViewModal, setShowJobViewModal] = useState(false);
-  const [viewingJob, setViewingJob] = useState<TableRow | null>(null);
-  const [selectedChildRows, setSelectedChildRows] = useState<Set<string | number>>(new Set());
-  const [programmerGridJobs, setProgrammerGridJobs] = useState<JobEntry[]>([]);
-  const [programmerGridRefreshKey, setProgrammerGridRefreshKey] = useState(0);
-  const [savingJob, setSavingJob] = useState(false);
-  const [masterConfig, setMasterConfig] = useState<MasterConfig | null>(null);
-  const [activeTab, setActiveTab] = useState<"jobs" | "logs">("jobs");
-  const [logSearch, setLogSearch] = useState("");
-  const [logStatus, setLogStatus] = useState<"" | "IN_PROGRESS" | "COMPLETED" | "REJECTED">("");
-  const [logUserId, setLogUserId] = useState("");
-  const previousProgrammerFormRouteRef = useRef(false);
 
   const isAdmin = getUserRoleFromToken() === "ADMIN";
-
-  const handleChildRowSelect = (rowKey: string | number, selected: boolean) => {
-    setSelectedChildRows((prev) => {
-      const next = new Set(prev);
-      if (selected) {
-        next.add(rowKey);
-      } else {
-        next.delete(rowKey);
-      }
-      return next;
-    });
-  };
 
   const {
     jobs,
@@ -232,6 +64,72 @@ const Programmer = () => {
     handleNewJob: handleNewJobState,
     handleCancel: handleCancelState,
   } = useProgrammerState(filters, customerFilter, descriptionFilter, createdByFilter, criticalFilter);
+
+  const routeEditGroupId = params.groupId ? String(params.groupId) : null;
+
+  const {
+    users,
+    showDeleteModal,
+    setShowDeleteModal,
+    jobToDelete,
+    setJobToDelete,
+    selectedJobIds,
+    setSelectedJobIds,
+    showJobViewModal,
+    setShowJobViewModal,
+    viewingJob,
+    setViewingJob,
+    selectedChildRows,
+    expandedGroups,
+    programmerGridJobs,
+    setProgrammerGridJobs,
+    programmerGridRefreshKey,
+    masterConfig,
+    activeTab,
+    setActiveTab,
+    logSearch,
+    setLogSearch,
+    logStatus,
+    setLogStatus,
+    logUserId,
+    setLogUserId,
+    activeFilterCount,
+    isProgrammerListRoute,
+    isProgrammerFormRoute,
+    shouldRenderJobForm,
+    shouldRenderEditLoadingState,
+    shouldRenderEditErrorState,
+    handleChildRowSelect,
+    toggleGroup,
+    handleDeleteClick,
+    handleViewEntry,
+    handleViewGroup,
+    handleCloneJob,
+    handleNewJob,
+    handleCancel,
+    jobsFetchPage,
+    logsFetchPage,
+  } = useProgrammerPageController({
+    filters,
+    customerFilter,
+    descriptionFilter,
+    createdByFilter,
+    criticalFilter,
+    isNewJobRoute,
+    isEditRoute,
+    isCloneRoute,
+    loadingJobs,
+    cutsLength: cuts.length,
+    editGroupError,
+    editingGroupId,
+    routeEditGroupId,
+    setShowForm,
+    handleNewJobState,
+    handleCancelState,
+    setToast,
+    savingJob,
+    setSavingJob,
+  });
 
   const totals = useMemo(
     () =>
@@ -262,89 +160,6 @@ const Programmer = () => {
     totals,
   });
 
-  const handleApplyFilters = (newFilters: FilterValues) => {
-    dispatch(setProgrammerFilters(newFilters));
-  };
-
-  const handleClearFilters = () => {
-    dispatch(setProgrammerFilters({}));
-  };
-
-  const handleRemoveFilter = (key: string, type: "inline" | "modal") => {
-    if (type === "inline") {
-      if (key === "customer") dispatch(setProgrammerCustomerFilter(""));
-      else if (key === "description") dispatch(setProgrammerDescriptionFilter(""));
-      else if (key === "createdBy") dispatch(setProgrammerCreatedByFilter(""));
-      return;
-    }
-
-    const updated = { ...filters };
-    delete updated[key];
-    dispatch(setProgrammerFilters(updated));
-  };
-
-  const toggleGroup = (groupId: string) => {
-    setExpandedGroups((prev) => {
-      const next = new Set(prev);
-      if (next.has(groupId)) {
-        next.delete(groupId);
-      } else {
-        next.add(groupId);
-      }
-      return next;
-    });
-  };
-
-  const handleDeleteClick = (groupId: string, customer: string) => {
-    setJobToDelete({ groupId, customer });
-    setShowDeleteModal(true);
-  };
-
-  const handleCloneJob = useCallback((groupId: string) => {
-    handleNewJobState();
-    navigate(`/programmer/clone/${groupId}`);
-  }, [handleNewJobState, navigate]);
-
-  const { tableData } = useJobData({
-    jobs: programmerGridJobs,
-    sortField,
-    sortDirection,
-    expandedGroups,
-    toggleGroup,
-    isAdmin,
-    onViewJob: async (entry) => {
-      try {
-        const fullEntries = await getJobsByGroupId(String(entry.groupId));
-        const targetEntry = fullEntries.find((job) => String(job.id) === String(entry.id)) || entry;
-        setViewingJob({
-          groupId: String(targetEntry.groupId),
-          parent: targetEntry,
-          entries: [targetEntry],
-          groupTotalHrs: Number(targetEntry.totalHrs || 0),
-          groupTotalAmount: Number(targetEntry.totalAmount || 0),
-        });
-        setShowJobViewModal(true);
-      } catch (error) {
-        console.error("Failed to fetch job details", error);
-        setToast({ message: "Failed to load job details.", variant: "error", visible: true });
-      }
-    },
-    onEdit: handleEditJob,
-    onDelete: handleDeleteClick,
-    showChildCheckboxes: true,
-    selectedChildRows,
-    onChildRowSelect: handleChildRowSelect,
-  });
-
-  const jobSearchQuery = String(customerFilter || descriptionFilter || "").trim();
-  const hasJobSearch = jobSearchQuery.length > 0;
-
-  const filteredProgrammerTableData = useMemo(
-    () =>
-      tableData.filter((row) => matchesSearchQuery(getProgrammerRowSearchValues(row, isAdmin), jobSearchQuery)),
-    [tableData, isAdmin, jobSearchQuery]
-  );
-
   const handleDeleteConfirm = async () => {
     if (!jobToDelete) return;
     try {
@@ -352,248 +167,9 @@ const Programmer = () => {
       setProgrammerGridJobs((prev) => prev.filter((job) => String(job.groupId) !== jobToDelete.groupId));
       setShowDeleteModal(false);
       setJobToDelete(null);
-    } catch (error) {
+    } catch {
+      // toast handled upstream
     }
-  };
-
-  const handleViewGroup = useCallback(async (groupId: string) => {
-    try {
-      const fullEntries = await getJobsByGroupId(groupId);
-      if (!fullEntries.length) return;
-      setViewingJob({
-        groupId,
-        parent: fullEntries[0],
-        entries: fullEntries,
-        groupTotalHrs: fullEntries.reduce((sum, entry) => sum + (Number(entry.totalHrs || 0) || 0), 0),
-        groupTotalAmount: fullEntries.reduce((sum, entry) => sum + (Number(entry.totalAmount || 0) || 0), 0),
-      });
-      setShowJobViewModal(true);
-    } catch (error) {
-      console.error("Failed to fetch job group details", error);
-      setToast({ message: "Failed to load job details.", variant: "error", visible: true });
-    }
-  }, []);
-
-  const columns = useTableColumns({
-    isAdmin,
-    handleViewGroup,
-    handleViewEntry: async (entry) => {
-      try {
-        const fullEntries = await getJobsByGroupId(String(entry.groupId));
-        const targetEntry = fullEntries.find((job) => String(job.id) === String(entry.id)) || entry;
-        setViewingJob({
-          groupId: String(targetEntry.groupId),
-          parent: targetEntry,
-          entries: [targetEntry],
-          groupTotalHrs: Number(targetEntry.totalHrs || 0),
-          groupTotalAmount: Number(targetEntry.totalAmount || 0),
-        });
-        setShowJobViewModal(true);
-      } catch (error) {
-        console.error("Failed to fetch job details", error);
-        setToast({ message: "Failed to load job details.", variant: "error", visible: true });
-      }
-    },
-    handleEditJob,
-    handleCloneJob,
-    handleDeleteClick,
-    toggleGroup,
-  });
-
-  const programmerGridRows = useMemo<ProgrammerDisplayRow[]>(
-    () =>
-      filteredProgrammerTableData.flatMap((row) => {
-        const hasChildren = row.entries.length > 1;
-        const isExpanded = expandedGroups.has(row.groupId);
-        const parentRow: ProgrammerDisplayRow = {
-          kind: "parent",
-          groupId: row.groupId,
-          tableRow: row,
-          entry: row.parent,
-          childIndex: null,
-          hasChildren,
-          isExpanded,
-        };
-        if (!hasChildren || !isExpanded) {
-          return [parentRow];
-        }
-        const childRows = row.entries.map((entry, index) => ({
-          kind: "child" as const,
-          groupId: row.groupId,
-          tableRow: row,
-          entry,
-          childIndex: index,
-          hasChildren: false,
-          isExpanded: false,
-        }));
-        return [parentRow, ...childRows];
-      }),
-    [filteredProgrammerTableData, expandedGroups]
-  );
-
-  const programmerJobColumnDefs = useMemo(
-    () => [
-      {
-        headerName: "",
-        field: "__select__",
-        width: 34,
-        minWidth: 34,
-        maxWidth: 34,
-        sortable: false,
-        resizable: false,
-        suppressSizeToFit: true,
-        suppressMovable: true,
-        headerComponent: () => (
-          <input
-            type="checkbox"
-            checked={
-              filteredProgrammerTableData.length > 0 &&
-              filteredProgrammerTableData.every((row) => selectedJobIds.has(row.groupId))
-            }
-            onChange={(event) => {
-              const checked = event.target.checked;
-              const nextSelected = checked
-                ? new Set(filteredProgrammerTableData.map((row) => row.groupId))
-                : new Set<string>();
-              setSelectedJobIds(nextSelected);
-            }}
-          />
-        ),
-        cellRenderer: (params: any) => {
-          if (params.data?.kind === "child") {
-            const entryId = params.data.entry?.id;
-            if (entryId === undefined || entryId === null) return null;
-            const rowKey = String(entryId);
-            return (
-              <input
-                type="checkbox"
-                checked={selectedChildRows.has(rowKey)}
-                onChange={(event) => {
-                  handleChildRowSelect(rowKey, event.target.checked);
-                }}
-                onClick={(event) => event.stopPropagation()}
-              />
-            );
-          }
-
-          if (params.data?.kind !== "parent") return null;
-          const groupId = String(params.data.groupId);
-          return (
-            <input
-              type="checkbox"
-              checked={selectedJobIds.has(groupId)}
-              onChange={(event) => {
-                const selected = event.target.checked;
-                setSelectedJobIds((prev) => {
-                  const next = new Set(prev);
-                  if (selected) next.add(groupId);
-                  else next.delete(groupId);
-                  return next;
-                });
-              }}
-              onClick={(event) => event.stopPropagation()}
-            />
-          );
-        },
-      },
-      ...columns.map((column) => {
-        const baseWidth = getProgrammerGridColumnWidth(column.key);
-        return {
-          headerName: getProgrammerHeaderName(column),
-          field: column.key,
-          width: baseWidth,
-          minWidth: baseWidth,
-          resizable: false,
-          suppressMovable: true,
-          cellClass: column.className,
-          headerClass: column.headerClassName,
-          cellRenderer:
-            column.render
-              ? (params: any) => column.render?.(params.data, params.node?.rowIndex || 0)
-              : (params: any) => String(params.data?.entry?.[column.key] ?? "-"),
-        };
-      }),
-    ],
-    [columns, filteredProgrammerTableData, handleChildRowSelect, selectedChildRows, selectedJobIds]
-  );
-
-  useEffect(() => {
-    const fetchMasterConfig = async () => {
-      try {
-        const cfg = await getMasterConfig();
-        setMasterConfig(cfg);
-      } catch (error) {
-        console.error("Failed to fetch master config", error);
-      }
-    };
-    fetchMasterConfig();
-  }, []);
-
-  useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        const userList = await getUsers(["ADMIN", "PROGRAMMER"]);
-        setUsers(userList);
-      } catch (error) {
-        console.error("Failed to fetch users", error);
-      }
-    };
-    fetchUsers();
-  }, []);
-
-  useEffect(() => {
-    if (isNewJobRoute || isEditRoute || isCloneRoute) {
-      setActiveTab("jobs");
-    }
-  }, [isNewJobRoute, isEditRoute, isCloneRoute]);
-
-  useEffect(() => {
-    const isFormRoute = isNewJobRoute || isEditRoute || isCloneRoute;
-    if (!savingJob || isFormRoute) return;
-
-    if (programmerGridJobs.length > 0) {
-      setSavingJob(false);
-      return;
-    }
-
-    if (!loadingJobs) {
-      const timeoutId = window.setTimeout(() => {
-        setSavingJob(false);
-      }, 900);
-      return () => window.clearTimeout(timeoutId);
-    }
-  }, [
-    savingJob,
-    isNewJobRoute,
-    isEditRoute,
-    isCloneRoute,
-    programmerGridJobs.length,
-    loadingJobs,
-  ]);
-
-  useEffect(() => {
-    const isFormRoute = isNewJobRoute || isEditRoute || isCloneRoute;
-    if (previousProgrammerFormRouteRef.current && !isFormRoute) {
-      setProgrammerGridJobs([]);
-      setExpandedGroups(new Set());
-      setSelectedJobIds(new Set());
-      setSelectedChildRows(new Set());
-      setProgrammerGridRefreshKey((prev) => prev + 1);
-    }
-    previousProgrammerFormRouteRef.current = isFormRoute;
-  }, [isCloneRoute, isEditRoute, isNewJobRoute]);
-
-  const handleNewJob = () => {
-    handleNewJobState();
-    navigate("/programmer/newjob");
-  };
-
-  const handleCancel = async () => {
-    handleCancelState();
-    if (isProgrammerFormRoute) {
-      navigate("/programmer", { replace: true });
-    }
-    setShowForm(false);
   };
 
   const handleMassDeleteClick = async () => {
@@ -601,273 +177,52 @@ const Programmer = () => {
     await handleMassDelete(selectedJobIds);
     setProgrammerGridJobs((prev) => prev.filter((job) => !selectedJobIds.has(String(job.groupId))));
     setSelectedJobIds(new Set());
-    setSelectedChildRows(new Set());
   };
 
-  const handleDeleteCancel = () => {
-    setShowDeleteModal(false);
-    setJobToDelete(null);
-  };
+  const columns = useTableColumns({
+    isAdmin,
+    handleViewGroup,
+    handleViewEntry,
+    handleEditJob,
+    handleCloneJob: (groupId) => handleCloneJob(groupId, navigate),
+    handleDeleteClick,
+    toggleGroup,
+  });
 
-  const handleDownloadCSV = () => {
-    exportJobsToCSV(filteredProgrammerTableData, isAdmin);
-  };
+  const {
+    filteredProgrammerTableData,
+    programmerGridRows,
+    programmerJobColumnDefs,
+    hasJobSearch,
+  } = useProgrammerGrid({
+    programmerGridJobs,
+    sortField,
+    sortDirection,
+    expandedGroups,
+    toggleGroup,
+    isAdmin,
+    selectedChildRows,
+    onChildRowSelect: handleChildRowSelect,
+    handleEditJob,
+    handleDeleteClick,
+    handleViewEntry,
+    selectedJobIds,
+    setSelectedJobIds,
+    customerFilter,
+    descriptionFilter,
+    columns,
+  });
 
-  const activeFilterCount = useMemo(() => countActiveFilters(filters), [filters]);
+  const {
+    filterProgrammerLogs,
+    handleExportProgrammerLogsCsv,
+    programmerLogColumnDefs,
+    hasLogSearch,
+    programmerUsers,
+  } = useProgrammerLogs({ users, logSearch, logStatus, logUserId, setToast });
 
-  const formatDuration = (seconds?: number): string => {
-    const total = Math.max(0, Number(seconds || 0));
-    const h = Math.floor(total / 3600);
-    const m = Math.floor((total % 3600) / 60);
-    const s = total % 60;
-    if (h > 0) return `${h}h ${m}m ${s}s`;
-    if (m > 0) return `${m}m ${s}s`;
-    return `${s}s`;
-  };
-
-  const getShiftLabel = (startedAt?: string): string => {
-    if (!startedAt) return "-";
-    const date = new Date(startedAt);
-    if (Number.isNaN(date.getTime())) return "-";
-    const hour = date.getHours();
-    return hour >= 6 && hour < 18 ? "Day" : "Night";
-  };
-
-  const designationByUserId = useMemo(() => {
-    const map = new Map<string, string>();
-    users.forEach((u) => {
-      const role = String(u.role || "").toUpperCase();
-      if (role === "ADMIN") map.set(String(u._id), "Admin");
-      else if (role === "PROGRAMMER") map.set(String(u._id), "Programmer");
-    });
-    return map;
-  }, [users]);
-
-  const programmerLogColumns = useMemo<Column<EmployeeLog>[]>(
-    () => [
-      {
-        key: "user",
-        label: "User",
-        sortable: false,
-        className: "programmer-log-user-col",
-        headerClassName: "programmer-log-user-col",
-        render: (row) => {
-          const designation = designationByUserId.get(String(row.userId)) || "Programmer";
-          const name = getLogUserDisplayName(row.userName, row.userEmail, "Programmer");
-          return (
-            <div className="log-user-stack log-user-badge-stack">
-              <span className="log-user-initial-badge" title={name.toUpperCase()}>
-                {getInitials(name)}
-              </span>
-              <span>{designation}</span>
-            </div>
-          );
-        },
-      },
-      {
-        key: "jobNumber",
-        label: "JOB #",
-        sortable: false,
-        render: (row) => {
-          const ref = String(row.refNumber || "").trim().replace(/^#/, "");
-          return ref ? `#${ref}` : "";
-        },
-      },
-      {
-        key: "summary",
-        label: "Summary",
-        sortable: false,
-        className: "programmer-log-summary-col",
-        headerClassName: "programmer-log-summary-col",
-        render: (row) => {
-          const full = String((row as any).workSummary || "-");
-          return <MarqueeCopyText text={full} />;
-        },
-      },
-      {
-        key: "startedAt",
-        label: "Started at",
-        sortable: false,
-        render: (row) => {
-          const parts = getDisplayDateTimeParts(row.startedAt);
-          return (
-            <div className="created-at-split">
-              <span>{parts.date}</span>
-              <span>{parts.time}</span>
-            </div>
-          );
-        },
-      },
-      {
-        key: "endedAt",
-        label: "Ended at",
-        sortable: false,
-        render: (row) => {
-          const parts = getDisplayDateTimeParts(row.endedAt || null);
-          return (
-            <div className="created-at-split">
-              <span>{parts.date}</span>
-              <span>{parts.time}</span>
-            </div>
-          );
-        },
-      },
-      {
-        key: "shift",
-        label: "Shift",
-        sortable: false,
-        render: (row) => {
-          const shift = getShiftLabel(row.startedAt);
-          if (shift === "Day") {
-            return (
-              <span className="shift-icon-badge day" title="Day Shift">
-                <WbSunnyOutlinedIcon sx={{ fontSize: "1rem" }} />
-              </span>
-            );
-          }
-          if (shift === "Night") {
-            return (
-              <span className="shift-icon-badge night" title="Night Shift">
-                <DarkModeOutlinedIcon sx={{ fontSize: "1rem" }} />
-              </span>
-            );
-          }
-          return "-";
-        },
-      },
-      { key: "duration", label: "Duration", sortable: false, render: (row) => formatDuration(row.durationSeconds) },
-      {
-        key: "status",
-        label: "Status",
-        sortable: false,
-        render: (row) => {
-          const raw = String(row.status || "-").toUpperCase();
-          const label =
-            raw === "IN_PROGRESS"
-              ? "In Progress"
-              : raw === "REJECTED"
-                ? "Stopped"
-              : raw
-                  .split("_")
-                  .map((part) => part.charAt(0) + part.slice(1).toLowerCase())
-                  .join(" ");
-          const statusClass =
-            raw === "IN_PROGRESS" ? "in-progress" : raw === "REJECTED" ? "stopped" : "completed";
-          return <span className={`log-status-badge ${statusClass}`}>{label}</span>;
-        },
-      },
-    ],
-    [designationByUserId]
-  );
-
-  const filterProgrammerLogs = useMemo(
-    () => (logs: EmployeeLog[]) =>
-      logs.filter((log) => {
-        if (logUserId && String(log.userId) !== String(logUserId)) {
-          return false;
-        }
-
-        const designation = designationByUserId.get(String(log.userId)) || "Programmer";
-        const name = getLogUserDisplayName(log.userName, log.userEmail, "Programmer");
-
-        return matchesSearchQuery(
-          [
-            name,
-            designation,
-            `${name} ${designation}`.trim(),
-            String(log.refNumber || "").trim() ? `#${String(log.refNumber || "").trim().replace(/^#/, "")}` : "",
-            String((log as any).workSummary || "-"),
-            formatDisplayDateTime(log.startedAt),
-            formatDisplayDateTime(log.endedAt || null),
-            getShiftLabel(log.startedAt),
-            formatDuration(log.durationSeconds),
-            formatProgrammerLogStatus(log.status),
-          ],
-          logSearch
-        );
-      }),
-    [designationByUserId, logSearch, logUserId]
-  );
-  const hasLogSearch = logSearch.trim().length > 0;
-
-  const handleExportProgrammerLogsCsv = () => {
-    void (async () => {
-      const allLogs = await fetchAllPaginatedItems<EmployeeLog>(
-        async (offset, limit) => {
-          const page = await getEmployeeLogsPage({
-            role: "PROGRAMMER",
-            status: logStatus || undefined,
-            offset,
-            limit,
-          });
-          return { items: page.items, hasMore: page.hasMore };
-        },
-        SEARCH_FETCH_PAGE_SIZE
-      );
-      const filteredProgrammerLogs = filterProgrammerLogs(allLogs);
-      const headers = ["User", "JOB #", "Summary", "Started at", "Ended at", "Shift", "Duration", "Status"];
-      const rows = filteredProgrammerLogs.map((row: EmployeeLog) => {
-        const designation = designationByUserId.get(String(row.userId)) || "Programmer";
-        const name = getLogUserDisplayName(row.userName, row.userEmail, "");
-        const userValue = name ? `${name} (${designation})` : designation;
-        const ref = String(row.refNumber || "").trim().replace(/^#/, "");
-        return [
-          userValue,
-          ref ? `#${ref}` : "",
-          String((row as any).workSummary || "-"),
-          formatDisplayDateTime(row.startedAt),
-          formatDisplayDateTime(row.endedAt || null),
-          getShiftLabel(row.startedAt),
-          formatDuration(row.durationSeconds),
-          formatProgrammerLogStatus(row.status),
-        ];
-      });
-
-      const csvContent = [
-        headers.join(","),
-        ...rows.map((r: string[]) => r.map((c: string) => `"${String(c).replace(/"/g, '""')}"`).join(",")),
-      ].join("\n");
-      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-      const link = document.createElement("a");
-      const url = URL.createObjectURL(blob);
-      link.setAttribute("href", url);
-      link.setAttribute("download", `programmer_logs_${new Date().toISOString().split("T")[0]}.csv`);
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    })().catch(() => {
-      setToast({ message: "Failed to export programmer logs.", variant: "error", visible: true });
-    });
-  };
-
-  const programmerLogColumnDefs = useMemo(
-    () =>
-      programmerLogColumns.map((column) => ({
-        headerName: typeof column.label === "string" ? column.label : String(column.key),
-        field: column.key,
-        width: getProgrammerLogColumnWidth(String(column.key)),
-        minWidth: getProgrammerLogColumnWidth(String(column.key)),
-        cellClass: column.className,
-        headerClass: column.headerClassName,
-        cellRenderer: column.render ? ((params: any) => column.render!(params.data, params.node?.rowIndex || 0)) : undefined,
-      })),
-    [programmerLogColumns]
-  );
-
-  const routeEditGroupId = params.groupId ? String(params.groupId) : null;
-  const isProgrammerListRoute = location.pathname === "/programmer";
-  const isProgrammerFormRoute = isNewJobRoute || isEditRoute || isCloneRoute;
-  const isEditFormReady =
-    isEditRoute &&
-    Boolean(routeEditGroupId) &&
-    editingGroupId === routeEditGroupId &&
-    cuts.length > 0;
-  const shouldRenderJobForm =
-    isNewJobRoute ||
-    isCloneRoute ||
-    (isEditRoute && isEditFormReady);
-  const shouldRenderEditLoadingState = isEditRoute && !isEditFormReady && !editGroupError;
-  const shouldRenderEditErrorState = isEditRoute && !loadingEditGroup && !isEditFormReady && Boolean(editGroupError);
+  const handleDownloadCSV = () => exportJobsToCSV(filteredProgrammerTableData, isAdmin);
+  const dispatchers = useProgrammerReduxDispatchers(dispatch, filters);
 
   return (
     <div className="programmer-container">
@@ -875,271 +230,89 @@ const Programmer = () => {
       <div className={`programmer-content ${isProgrammerFormRoute ? "programmer-content-scrollable" : ""}`}>
         <Header title="Programmer" />
         <div className={`programmer-panel ${isProgrammerFormRoute ? "programmer-panel-scrollable" : ""}`}>
-          {isProgrammerListRoute && (
-            <div className="programmer-subtabs">
-              <button
-                type="button"
-                className={`programmer-subtab ${activeTab === "jobs" ? "active" : ""}`}
-                onClick={() => setActiveTab("jobs")}
-              >
-                Jobs
-              </button>
-              <button
-                type="button"
-                className={`programmer-subtab ${activeTab === "logs" ? "active" : ""}`}
-                onClick={() => setActiveTab("logs")}
-              >
-                Logs
-              </button>
-            </div>
-          )}
+          {isProgrammerListRoute && <ProgrammerTabs activeTab={activeTab} setActiveTab={setActiveTab} />}
 
-          {shouldRenderJobForm && (
-            loadingEditGroup ? (
-              <AppLoader message="Loading job details..." />
-            ) : (
-              <ProgrammerJobForm
-                cuts={cuts}
-                setCuts={setCuts}
-                onSave={handleSaveJob}
-                onCancel={handleCancel}
-                totals={totals}
-                isAdmin={isAdmin}
-                isSaving={savingJob}
-                refNumber={refNumber}
-                masterConfig={masterConfig}
-                formMode={editingGroupId ? "edit" : "draft"}
-              />
-            )
-          )}
-
-          {shouldRenderEditLoadingState && (
-            <AppLoader message="Loading job details..." />
-          )}
-
-          {shouldRenderEditErrorState && (
-            <div className="job-form-card programmer-form-state">
-              <div className="programmer-form-state-copy">
-                <h2>Unable to open this job</h2>
-                <p>{editGroupError || "The requested edit group is not ready yet."}</p>
-              </div>
-              <div className="programmer-form-state-actions">
-                <button type="button" className="btn-secondary" onClick={() => navigate("/programmer", { replace: true })}>
-                  Back to Programmer
-                </button>
-              </div>
-            </div>
-          )}
+          <ProgrammerFormSection
+            shouldRenderJobForm={shouldRenderJobForm}
+            loadingEditGroup={loadingEditGroup}
+            cuts={cuts}
+            setCuts={setCuts}
+            handleSaveJob={handleSaveJob}
+            handleCancel={() => handleCancel(navigate)}
+            totals={totals}
+            isAdmin={isAdmin}
+            savingJob={savingJob}
+            refNumber={refNumber}
+            masterConfig={masterConfig}
+            editingGroupId={editingGroupId}
+            shouldRenderEditLoadingState={shouldRenderEditLoadingState}
+            shouldRenderEditErrorState={shouldRenderEditErrorState}
+            editGroupError={editGroupError}
+            onBack={() => navigate("/programmer", { replace: true })}
+          />
 
           {isProgrammerListRoute && activeTab === "jobs" && (
-            <>
-              {savingJob ? (
-                <AppLoader message="Saving job and loading programmer jobs..." />
-              ) : loadingJobs && programmerGridJobs.length === 0 ? (
-                <AppLoader message="Loading programmer jobs..." />
-              ) : (
-                <>
-                  <ProgrammerFilters
-                    filters={filters}
-                    jobSearchFilter={customerFilter}
-                    createdByFilter={createdByFilter}
-                    criticalFilter={criticalFilter}
-                    showFilterModal={showFilterModal}
-                    activeFilterCount={activeFilterCount}
-                    users={users}
-                    onShowFilterModal={(show) => dispatch(setProgrammerShowFilterModal(show))}
-                    onApplyFilters={handleApplyFilters}
-                    onClearFilters={handleClearFilters}
-                    onRemoveFilter={handleRemoveFilter}
-                    onJobSearchFilterChange={(value) => {
-                      dispatch(setProgrammerCustomerFilter(value));
-                      dispatch(setProgrammerDescriptionFilter(value));
-                    }}
-                    onCreatedByFilterChange={(value) => dispatch(setProgrammerCreatedByFilter(value))}
-                    onCriticalFilterChange={(value) => dispatch(setProgrammerCriticalFilter(value))}
-                    onDownloadCSV={handleDownloadCSV}
-                    onNewJob={handleNewJob}
-                  />
-                  <LazyAgGrid
-                    columnDefs={programmerJobColumnDefs as any}
-                    fetchPage={async (offset, limit) => {
-                      if (hasJobSearch) {
-                        const items = await fetchAllPaginatedItems<JobEntry>(
-                          async (pageOffset, pageLimit) => {
-                            const page = await getProgrammerJobsPage(
-                              filters,
-                              "",
-                              createdByFilter,
-                              criticalFilter ? true : undefined,
-                              "",
-                              { offset: pageOffset, limit: pageLimit }
-                            );
-                            return { items: page.items, hasMore: page.hasMore };
-                          },
-                          SEARCH_FETCH_PAGE_SIZE
-                        );
-                        return { items, hasMore: false };
-                      }
-
-                      const page = await getProgrammerJobsPage(
-                        filters,
-                        customerFilter,
-                        createdByFilter,
-                        criticalFilter ? true : undefined,
-                        descriptionFilter,
-                        { offset, limit }
-                      );
-                      return { items: page.items, hasMore: page.hasMore };
-                    }}
-                    rows={programmerGridJobs}
-                    onRowsChange={setProgrammerGridJobs}
-                    transformRows={() => programmerGridRows}
-                    getRowId={(row: ProgrammerDisplayRow) =>
-                      row.kind === "parent" ? `parent__${row.groupId}` : `child__${row.groupId}__${row.entry.id}`
-                    }
-                    emptyMessage='No entries added yet. Use "New" to add an entry.'
-                    getRowClass={(params) => {
-                      if (params.data?.kind === "child") {
-                        return getRowClassName([params.data.entry], false, true);
-                      }
-                      return getParentRowClassName(
-                        params.data.tableRow.parent,
-                        params.data.tableRow.entries,
-                        expandedGroups.has(params.data.groupId)
-                      );
-                    }}
-                    className="jobs-table-wrapper"
-                    rowHeight={38}
-                    fitColumns={true}
-                    refreshKey={`${hasJobSearch}|${createdByFilter}|${criticalFilter}|${JSON.stringify(filters)}|${programmerGridRefreshKey}`}
-                  />
-                </>
-              )}
-            </>
+            <ProgrammerJobsSection
+              savingJob={savingJob}
+              loadingJobs={loadingJobs}
+              programmerGridJobs={programmerGridJobs}
+              filters={filters}
+              customerFilter={customerFilter}
+              createdByFilter={createdByFilter}
+              criticalFilter={criticalFilter}
+              showFilterModal={showFilterModal}
+              activeFilterCount={activeFilterCount}
+              users={users}
+              dispatchers={dispatchers}
+              handleDownloadCSV={handleDownloadCSV}
+              handleNewJob={() => handleNewJob(navigate)}
+              fetchPage={jobsFetchPage}
+              rows={programmerGridRows}
+              columnDefs={programmerJobColumnDefs}
+              setProgrammerGridJobs={setProgrammerGridJobs}
+              expandedGroups={expandedGroups}
+              programmerGridRefreshKey={programmerGridRefreshKey}
+              hasJobSearch={hasJobSearch}
+            />
           )}
 
           {isProgrammerListRoute && activeTab === "logs" && (
-            <>
-              <div className="programmer-logs-filters">
-                <input
-                  type="text"
-                  value={logSearch}
-                  onChange={(e) => setLogSearch(e.target.value)}
-                  placeholder="Search any column..."
-                  className="filter-input programmer-logs-search"
-                />
-                <select
-                  value={logStatus}
-                  onChange={(e) => setLogStatus(e.target.value as "" | "IN_PROGRESS" | "COMPLETED" | "REJECTED")}
-                  className="filter-select"
-                >
-                  <option value="">All Status</option>
-                  <option value="IN_PROGRESS">In Progress</option>
-                  <option value="COMPLETED">Completed</option>
-                  <option value="REJECTED">Stopped</option>
-                </select>
-                <select
-                  value={logUserId}
-                  onChange={(e) => setLogUserId(e.target.value)}
-                  className="filter-select"
-                >
-                  <option value="">All Users</option>
-                  {users
-                    .filter((user) => user.role === "PROGRAMMER" || user.role === "ADMIN")
-                    .map((user) => {
-                      const displayName = getDisplayName(user.firstName, user.lastName, user.email);
-                      return (
-                        <option key={user._id} value={user._id}>
-                          {displayName.toUpperCase()}
-                        </option>
-                      );
-                    })}
-                </select>
-                <button className="btn-download-csv" onClick={handleExportProgrammerLogsCsv} title="Download Logs CSV">
-                  <DownloadIcon sx={{ fontSize: "1rem" }} />
-                  CSV
-                </button>
-              </div>
-              <LazyAgGrid
-                columnDefs={programmerLogColumnDefs as any}
-                transformRows={filterProgrammerLogs}
-                fetchPage={async (offset, limit) => {
-                  if (hasLogSearch) {
-                    const allLogs = await fetchAllPaginatedItems<EmployeeLog>(
-                      async (pageOffset, pageLimit) => {
-                        const page = await getEmployeeLogsPage({
-                          role: "PROGRAMMER",
-                          status: logStatus || undefined,
-                          offset: pageOffset,
-                          limit: pageLimit,
-                        });
-                        return { items: page.items, hasMore: page.hasMore };
-                      },
-                      SEARCH_FETCH_PAGE_SIZE
-                    );
-                    return {
-                      items: allLogs,
-                      hasMore: false,
-                    };
-                  }
-
-                  const page = await getEmployeeLogsPage({
-                    role: "PROGRAMMER",
-                    status: logStatus || undefined,
-                    offset,
-                    limit,
-                  });
-                  return {
-                    items: page.items,
-                    hasMore: page.hasMore,
-                  };
-                }}
-                emptyMessage="No programmer logs found."
-                getRowId={(row) => row._id}
-                className="jobs-table-wrapper programmer-logs-table logs-center"
-                refreshKey={`${hasLogSearch}|${logStatus}|${logUserId}`}
-              />
-            </>
+            <ProgrammerLogsSection
+              logSearch={logSearch}
+              setLogSearch={setLogSearch}
+              logStatus={logStatus}
+              setLogStatus={setLogStatus}
+              logUserId={logUserId}
+              setLogUserId={setLogUserId}
+              programmerUsers={programmerUsers}
+              handleExportProgrammerLogsCsv={handleExportProgrammerLogsCsv}
+              programmerLogColumnDefs={programmerLogColumnDefs}
+              filterProgrammerLogs={filterProgrammerLogs}
+              fetchPage={logsFetchPage}
+              hasLogSearch={hasLogSearch}
+            />
           )}
         </div>
       </div>
-      <Toast
-        message={toast.message}
-        visible={toast.visible}
-        variant={toast.variant}
-        onClose={() => setToast({ ...toast, visible: false })}
+
+      <ProgrammerPageOverlays
+        toast={toast}
+        setToast={setToast}
+        showDeleteModal={showDeleteModal}
+        setShowDeleteModal={setShowDeleteModal}
+        jobToDelete={jobToDelete}
+        setJobToDelete={setJobToDelete}
+        handleDeleteConfirm={handleDeleteConfirm}
+        showJobViewModal={showJobViewModal}
+        viewingJob={viewingJob}
+        setShowJobViewModal={setShowJobViewModal}
+        setViewingJob={setViewingJob}
+        getUserRole={getUserRoleFromToken}
+        showMassDelete={isProgrammerListRoute && activeTab === "jobs"}
+        selectedCount={selectedJobIds.size}
+        onMassDelete={handleMassDeleteClick}
+        onClearSelection={() => setSelectedJobIds(new Set())}
       />
-      {showDeleteModal && jobToDelete && (
-        <ConfirmDeleteModal
-          title="Confirm Delete"
-          message="Are you sure you want to delete this job?"
-          details={[
-            { label: "Customer", value: jobToDelete.customer },
-          ]}
-          confirmButtonText="Delete Job"
-          onConfirm={handleDeleteConfirm}
-          onCancel={handleDeleteCancel}
-        />
-      )}
-
-      {showJobViewModal && viewingJob && (
-        <JobDetailsModal
-          job={viewingJob}
-          userRole={getUserRoleFromToken()}
-          onClose={() => {
-            setShowJobViewModal(false);
-            setViewingJob(null);
-          }}
-        />
-      )}
-
-      {isProgrammerListRoute && activeTab === "jobs" && (
-        <MassDeleteButton
-          selectedCount={selectedJobIds.size}
-          onDelete={handleMassDeleteClick}
-          onClear={() => setSelectedJobIds(new Set())}
-        />
-      )}
     </div>
   );
 };

@@ -1,0 +1,104 @@
+.cut-image-side .image-slider-display {
+  border: 0;
+  border-radius: 8px;
+  box-shadow: none;
+}
+
+.cut-image-side .slider-image {
+  object-fit: contain;
+}
+
+.job-details-totals {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.8rem;
+  margin-top: 0.75rem;
+  padding: 0.5rem 0.7rem;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #1f2d44 0%, #2f3f59 100%);
+}
+
+.total-row {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.05rem;
+}
+
+.total-row label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #c7d2e3;
+  text-transform: none;
+}
+
+.total-row span {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.job-details-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.65rem;
+  padding: 0.8rem 1rem;
+  border-top: 1px solid #d9e1ec;
+  background: #edf2f8;
+}
+
+.job-details-close-btn {
+  border: none;
+  border-radius: 8px;
+  padding: 0.5rem 0.9rem;
+  background: #475569;
+  color: #ffffff;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.job-details-close-btn:hover {
+  background: #334155;
+}
+
+@media (max-width: 1024px) {
+
+  .job-details-modal,
+  .job-details-modal.cut-details-modal {
+    width: min(900px, 96vw) !important;
+    max-height: 90vh !important;
+  }
+
+  .job-details-table.compact-table .job-details-label,
+  .job-details-table.compact-table .job-details-value {
+    width: auto;
+  }
+
+  .job-details-table.compact-table tbody tr {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .job-details-table.compact-table .job-details-label,
+  .job-details-table.compact-table .job-details-value {
+    padding: 0.48rem 0.56rem;
+  }
+
+  .job-details-table.compact-table .job-details-label:nth-child(3),
+  .job-details-table.compact-table .job-details-value:nth-child(4) {
+    border-top: 1px solid #d9e1ec;
+  }
+
+  .cut-item-content-wrapper {
+    grid-template-columns: 1fr;
+  }
+
+  .cut-image-side {
+    min-width: 100%;
+    max-width: 100%;
+    flex-direction: row;
+    justify-content: flex-start;
+    padding: 0.45rem 0.55rem;
+  }
+}

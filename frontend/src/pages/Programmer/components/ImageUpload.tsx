@@ -1,11 +1,11 @@
-import { useState, useRef, useEffect } from "react";
-import ImageZoomModal from "../../../components/ImageZoomModal";
+import { useEffect, useRef, useState } from "react";
 import ZoomInIcon from "@mui/icons-material/ZoomIn";
 import AttachFileIcon from "@mui/icons-material/AttachFile";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
+import ImageZoomModal from "../../../components/ImageZoomModal";
+import ImageRemoveConfirmModal from "./ImageRemoveConfirmModal";
 import "./ImageUpload.css";
-import "../../../components/ConfirmDeleteModal.css";
 
 type ImageUploadProps = {
   images: string[];
@@ -15,13 +15,13 @@ type ImageUploadProps = {
   readOnly?: boolean;
 };
 
-const ImageUpload: React.FC<ImageUploadProps> = ({
+const ImageUpload = ({
   images,
   label,
   onImageChange,
   onRemove,
   readOnly = false,
-}) => {
+}: ImageUploadProps) => {
   const [zoomedImage, setZoomedImage] = useState<string | null>(null);
   const [isPasteFocused, setIsPasteFocused] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -30,96 +30,39 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const handleFiles = (files: File[]) => {
+    const imageFiles = Array.from(files).filter((file) => file.type.startsWith("image/"));
+    if (imageFiles.length > 0) onImageChange(imageFiles);
+  };
+
   useEffect(() => {
-    const handlePaste = async (e: ClipboardEvent) => {
+    const handlePaste = (event: ClipboardEvent) => {
       if (!isPasteFocused || readOnly) return;
-
-      const items = e.clipboardData?.items;
-      if (!items) return;
-
-      const files: File[] = [];
-      for (let i = 0; i < items.length; i++) {
-        const item = items[i];
-        if (item.type.indexOf("image") !== -1) {
-          const file = item.getAsFile();
-          if (file) {
-            files.push(file);
-          }
-        }
-      }
-
-      if (files.length > 0) {
-        e.preventDefault();
-        handleFiles(files);
-      }
+      const files = Array.from(event.clipboardData?.items || [])
+        .filter((item) => item.type.includes("image"))
+        .map((item) => item.getAsFile())
+        .filter((file): file is File => Boolean(file));
+      if (files.length === 0) return;
+      event.preventDefault();
+      handleFiles(files);
     };
 
     const container = containerRef.current;
-    if (container) {
-      container.addEventListener("paste", handlePaste);
-      return () => {
-        container.removeEventListener("paste", handlePaste);
-      };
-    }
+    if (!container) return;
+    container.addEventListener("paste", handlePaste);
+    return () => container.removeEventListener("paste", handlePaste);
   }, [isPasteFocused, readOnly]);
 
-  // Reset to first image when images array changes
   useEffect(() => {
     if (images.length > 0 && currentImageIndex >= images.length) {
       setCurrentImageIndex(0);
     }
   }, [images.length, currentImageIndex]);
 
-  const handleFiles = async (files: File[]) => {
-    const imageFiles = Array.from(files).filter((file) => file.type.startsWith("image/"));
-    if (imageFiles.length === 0) return;
-
-    onImageChange(imageFiles);
-  };
-
-  const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (files && files.length > 0) {
-      handleFiles(Array.from(files));
-    }
-    // Reset input so same file can be selected again
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-    }
-  };
-
-  const handleUploadClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (!readOnly && fileInputRef.current) {
-      fileInputRef.current.click();
-    }
-  };
-
-  const handleContainerFocus = () => {
-    if (!readOnly) {
-      setIsPasteFocused(true);
-    }
-  };
-
-  const handleContainerBlur = () => {
-    setIsPasteFocused(false);
-  };
-
-  const handlePrevious = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setCurrentImageIndex((prev) => (prev > 0 ? prev - 1 : images.length - 1));
-  };
-
-  const handleNext = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setCurrentImageIndex((prev) => (prev < images.length - 1 ? prev + 1 : 0));
-  };
-
-  const handleRemoveClick = (e: React.MouseEvent, index: number) => {
-    e.stopPropagation();
-    if (readOnly) return;
-    setPendingRemoveIndex(index);
-    setShowRemoveConfirm(true);
+  const handleFileInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (files?.length) handleFiles(Array.from(files));
+    if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
   const handleConfirmRemove = () => {
@@ -133,11 +76,6 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
     setPendingRemoveIndex(null);
   };
 
-  const handleCancelRemove = () => {
-    setShowRemoveConfirm(false);
-    setPendingRemoveIndex(null);
-  };
-
   const currentImage = images.length > 0 ? images[currentImageIndex] : null;
 
   return (
@@ -145,20 +83,19 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
       <div
         ref={containerRef}
         className="job-form-image-container"
-        onFocus={handleContainerFocus}
-        onBlur={handleContainerBlur}
+        onFocus={() => !readOnly && setIsPasteFocused(true)}
+        onBlur={() => setIsPasteFocused(false)}
         tabIndex={readOnly ? -1 : 0}
-        style={{
-          outline: isPasteFocused ? "2px solid #4a90e2" : "none",
-          outlineOffset: "2px",
-        }}
+        style={{ outline: isPasteFocused ? "2px solid #4a90e2" : "none", outlineOffset: "2px" }}
       >
-        {/* Small Upload Icon in Corner */}
         {!readOnly && (
           <button
             type="button"
             className="image-upload-corner-btn"
-            onClick={handleUploadClick}
+            onClick={(event) => {
+              event.stopPropagation();
+              fileInputRef.current?.click();
+            }}
             aria-label="Upload image"
             title="Click to upload image"
           >
@@ -168,43 +105,31 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
 
         {images.length > 0 ? (
           <div className="image-slider-wrapper">
-            {/* Navigation Arrows */}
             {images.length > 1 && (
               <>
-                <button
-                  type="button"
-                  className="slider-nav-btn slider-nav-left"
-                  onClick={handlePrevious}
-                  aria-label="Previous image"
-                  title="Previous image"
-                >
+                <button type="button" className="slider-nav-btn slider-nav-left" onClick={(e) => {
+                  e.stopPropagation();
+                  setCurrentImageIndex((prev) => (prev > 0 ? prev - 1 : images.length - 1));
+                }}>
                   <ChevronLeftIcon />
                 </button>
-                <button
-                  type="button"
-                  className="slider-nav-btn slider-nav-right"
-                  onClick={handleNext}
-                  aria-label="Next image"
-                  title="Next image"
-                >
+                <button type="button" className="slider-nav-btn slider-nav-right" onClick={(e) => {
+                  e.stopPropagation();
+                  setCurrentImageIndex((prev) => (prev < images.length - 1 ? prev + 1 : 0));
+                }}>
                   <ChevronRightIcon />
                 </button>
               </>
             )}
 
-            {/* Current Image Display */}
             <div className="image-slider-display">
-              <img 
-                src={currentImage!} 
-                alt={`${label} preview ${currentImageIndex + 1}`}
-                className="slider-image"
-              />
+              <img src={currentImage!} alt={`${label} preview ${currentImageIndex + 1}`} className="slider-image" />
               <div className="image-overlay">
                 <button
                   type="button"
                   className="image-zoom-btn"
-                  onClick={(e) => {
-                    e.stopPropagation();
+                  onClick={(event) => {
+                    event.stopPropagation();
                     setZoomedImage(currentImage!);
                   }}
                   aria-label={`Zoom image ${currentImageIndex + 1}`}
@@ -216,41 +141,29 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
                   <button
                     type="button"
                     className="image-remove-btn"
-                    onClick={(e) => handleRemoveClick(e, currentImageIndex)}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      setPendingRemoveIndex(currentImageIndex);
+                      setShowRemoveConfirm(true);
+                    }}
                     aria-label={`Remove image ${currentImageIndex + 1}`}
                     title="Remove image"
                   >
-                    ×
+                    x
                   </button>
                 )}
               </div>
             </div>
 
-            {/* Image Counter */}
-            {images.length > 1 && (
-              <div className="image-counter">
-                {currentImageIndex + 1} / {images.length}
-              </div>
-            )}
-
-            {/* Paste Hint */}
-            {!readOnly && (
-              <div className="paste-hint-container">
-                <span className="paste-hint-text">Press Ctrl+V to Drop image</span>
-              </div>
-            )}
+            {images.length > 1 && <div className="image-counter">{currentImageIndex + 1} / {images.length}</div>}
+            {!readOnly && <div className="paste-hint-container"><span className="paste-hint-text">Press Ctrl+V to Drop image</span></div>}
           </div>
         ) : (
           <div className="image-placeholder-empty">
-            {readOnly ? (
-              <span>No images</span>
-            ) : (
-              <div className="paste-area">
-                <span>Press Ctrl+V to Drop image</span>
-              </div>
-            )}
+            {readOnly ? <span>No images</span> : <div className="paste-area"><span>Press Ctrl+V to Drop image</span></div>}
           </div>
         )}
+
         {!readOnly && (
           <input
             ref={fileInputRef}
@@ -264,36 +177,16 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
           />
         )}
       </div>
-      {zoomedImage && (
-        <ImageZoomModal imageSrc={zoomedImage} onClose={() => setZoomedImage(null)} />
-      )}
-      {showRemoveConfirm && (
-        <>
-          <div className="modal-overlay" onClick={handleCancelRemove} />
-          <div className="delete-modal">
-            <div className="modal-header">
-              <h3>Remove Image</h3>
-              <button className="modal-close" onClick={handleCancelRemove} aria-label="Close">
-                ✕
-              </button>
-            </div>
-            <div className="modal-body">
-              <p className="delete-warning">
-                Are you sure you want to remove this image?
-              </p>
-              <p className="delete-note">This action cannot be undone.</p>
-            </div>
-            <div className="modal-footer">
-              <button className="btn-secondary" onClick={handleCancelRemove}>
-                Cancel
-              </button>
-              <button className="btn-delete-confirm" onClick={handleConfirmRemove}>
-                Remove
-              </button>
-            </div>
-          </div>
-        </>
-      )}
+
+      {zoomedImage && <ImageZoomModal imageSrc={zoomedImage} onClose={() => setZoomedImage(null)} />}
+      <ImageRemoveConfirmModal
+        isOpen={showRemoveConfirm}
+        onCancel={() => {
+          setShowRemoveConfirm(false);
+          setPendingRemoveIndex(null);
+        }}
+        onConfirm={handleConfirmRemove}
+      />
     </>
   );
 };

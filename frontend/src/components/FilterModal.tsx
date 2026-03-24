@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
+import FilterFieldRenderer from "./FilterFieldRenderer";
 import Modal from "./Modal";
-import RangeSlider from "./RangeSlider";
 import "./FilterModal.css";
 
 export type FilterField = {
@@ -34,7 +34,7 @@ type FilterModalProps = {
   categories?: FilterCategory[];
 };
 
-const FilterModal: React.FC<FilterModalProps> = ({
+const FilterModal = ({
   isOpen,
   onClose,
   fields,
@@ -42,37 +42,24 @@ const FilterModal: React.FC<FilterModalProps> = ({
   onApply,
   onClear,
   categories,
-}) => {
+}: FilterModalProps) => {
   const [filterValues, setFilterValues] = useState<FilterValues>(initialValues);
   const [activeCategory, setActiveCategory] = useState<string>("");
 
-  // Group fields by category
-  const groupedFields = React.useMemo(() => {
+  const groupedFields = useMemo(() => {
     const groups: Record<string, FilterField[]> = {};
     fields.forEach((field) => {
       const category = field.category || "general";
-      if (!groups[category]) {
-        groups[category] = [];
-      }
+      groups[category] ||= [];
       groups[category].push(field);
     });
     return groups;
   }, [fields]);
 
-  // Set default active category
-  React.useEffect(() => {
-    if (isOpen && Object.keys(groupedFields).length > 0) {
-      const firstCategory = categories?.[0]?.id || Object.keys(groupedFields)[0];
-      setActiveCategory(firstCategory);
-    }
-  }, [isOpen, groupedFields, categories]);
-
-  // Get category list
-  const categoryList = React.useMemo<FilterCategory[]>(() => {
-    if (categories && categories.length > 0) {
+  const categoryList = useMemo<FilterCategory[]>(() => {
+    if (categories?.length) {
       return categories.filter((cat) => groupedFields[cat.id]?.length > 0);
     }
-    // Auto-generate categories from field categories
     return Object.keys(groupedFields).map((id) => ({
       id,
       label: id.charAt(0).toUpperCase() + id.slice(1).replace(/([A-Z])/g, " $1"),
@@ -80,191 +67,42 @@ const FilterModal: React.FC<FilterModalProps> = ({
   }, [categories, groupedFields]);
 
   useEffect(() => {
-    if (isOpen) {
-      setFilterValues(initialValues);
-    }
+    if (isOpen) setFilterValues(initialValues);
   }, [isOpen, initialValues]);
 
+  useEffect(() => {
+    if (isOpen && Object.keys(groupedFields).length > 0) {
+      setActiveCategory(categories?.[0]?.id || Object.keys(groupedFields)[0]);
+    }
+  }, [isOpen, groupedFields, categories]);
+
   const handleFieldChange = (key: string, value: any) => {
-    setFilterValues((prev) => ({
-      ...prev,
-      [key]: value === "" ? undefined : value,
-    }));
+    setFilterValues((prev) => ({ ...prev, [key]: value === "" ? undefined : value }));
   };
 
   const handleRangeChange = (key: string, type: "min" | "max", value: string) => {
-    setFilterValues((prev) => ({
-      ...prev,
-      [key]: {
-        ...prev[key],
-        [type]: value === "" ? undefined : value,
-      },
-    }));
+    setFilterValues((prev) => ({ ...prev, [key]: { ...prev[key], [type]: value === "" ? undefined : value } }));
   };
 
   const handleApply = () => {
-    // Clean up empty values
     const cleanedFilters: FilterValues = {};
     Object.keys(filterValues).forEach((key) => {
       const value = filterValues[key];
-      if (value !== undefined && value !== null && value !== "") {
-        if (typeof value === "object" && !Array.isArray(value)) {
-          // Handle range objects
-          if (value.min !== undefined || value.max !== undefined) {
-            cleanedFilters[key] = value;
-          }
-        } else {
-          cleanedFilters[key] = value;
-        }
+      if (value === undefined || value === null || value === "") return;
+      if (typeof value === "object" && !Array.isArray(value)) {
+        if (value.min !== undefined || value.max !== undefined) cleanedFilters[key] = value;
+        return;
       }
+      cleanedFilters[key] = value;
     });
     onApply(cleanedFilters);
     onClose();
   };
 
-  const handleClear = () => {
-    setFilterValues({});
-    onClear();
-    onClose();
-  };
-
-  const renderField = (field: FilterField) => {
-    const value = filterValues[field.key];
-
-    switch (field.type) {
-      case "text":
-        return (
-          <div key={field.key} className="filter-field">
-            <label>{field.label}</label>
-            <input
-              type="text"
-              value={value || ""}
-              onChange={(e) => handleFieldChange(field.key, e.target.value)}
-              placeholder={field.placeholder || `Enter ${field.label.toLowerCase()}`}
-            />
-          </div>
-        );
-
-      case "number":
-        return (
-          <div key={field.key} className="filter-field">
-            <label>{field.label}</label>
-            <input
-              type="number"
-              value={value || ""}
-              onChange={(e) => handleFieldChange(field.key, e.target.value)}
-              placeholder={field.placeholder || `Enter ${field.label.toLowerCase()}`}
-            />
-          </div>
-        );
-
-      case "numberRange":
-        return (
-          <div key={field.key} className="filter-field filter-range">
-            <RangeSlider
-              min={field.min ?? 0}
-              max={field.max ?? 1000}
-              value={value || {}}
-              onChange={(rangeValue) => {
-                setFilterValues((prev) => ({
-                  ...prev,
-                  [field.key]: rangeValue,
-                }));
-              }}
-              step={field.step ?? 1}
-              label={field.label}
-              unit={field.unit}
-            />
-          </div>
-        );
-
-      case "date":
-        return (
-          <div key={field.key} className="filter-field">
-            <label>{field.label}</label>
-            <input
-              type="date"
-              value={value || ""}
-              onChange={(e) => handleFieldChange(field.key, e.target.value)}
-            />
-          </div>
-        );
-
-      case "dateRange":
-        return (
-          <div key={field.key} className="filter-field filter-range">
-            <label>{field.label}</label>
-            <div className="range-inputs">
-              <input
-                type="date"
-                value={value?.min || ""}
-                onChange={(e) => handleRangeChange(field.key, "min", e.target.value)}
-              />
-              <span>to</span>
-              <input
-                type="date"
-                value={value?.max || ""}
-                onChange={(e) => handleRangeChange(field.key, "max", e.target.value)}
-              />
-            </div>
-          </div>
-        );
-
-      case "select":
-        return (
-          <div key={field.key} className="filter-field">
-            <label>{field.label}</label>
-            <select
-              value={value || ""}
-              onChange={(e) => handleFieldChange(field.key, e.target.value)}
-            >
-              <option value="">All</option>
-              {field.options?.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </div>
-        );
-
-      case "boolean":
-        return (
-          <div key={field.key} className="filter-field filter-boolean">
-            <label>{field.label}</label>
-            <select
-              value={value === undefined ? "" : value ? "true" : "false"}
-              onChange={(e) =>
-                handleFieldChange(
-                  field.key,
-                  e.target.value === "" ? undefined : e.target.value === "true"
-                )
-              }
-            >
-              <option value="">All</option>
-              <option value="true">Yes</option>
-              <option value="false">No</option>
-            </select>
-          </div>
-        );
-
-      default:
-        return null;
-    }
-  };
-
-
   const currentFields = groupedFields[activeCategory] || [];
 
   return (
-    <Modal
-      isOpen={isOpen}
-      onClose={onClose}
-      title="Filter Jobs"
-      size="large"
-      className="filter-modal"
-      disableOverlayClick={true}
-    >
+    <Modal isOpen={isOpen} onClose={onClose} title="Filter Jobs" size="large" className="filter-modal" disableOverlayClick>
       <div className="filter-content">
         <div className="filter-layout">
           {categoryList.length > 1 && (
@@ -274,9 +112,7 @@ const FilterModal: React.FC<FilterModalProps> = ({
                   <button
                     key={category.id}
                     type="button"
-                    className={`filter-category-tab ${
-                      activeCategory === category.id ? "active" : ""
-                    }`}
+                    className={`filter-category-tab ${activeCategory === category.id ? "active" : ""}`}
                     onClick={() => setActiveCategory(category.id)}
                   >
                     {category.icon && <span className="category-icon">{category.icon}</span>}
@@ -288,12 +124,25 @@ const FilterModal: React.FC<FilterModalProps> = ({
           )}
           <div className="filter-main">
             <div className="filter-fields">
-              {currentFields.map((field) => renderField(field))}
+              {currentFields.map((field) => (
+                <FilterFieldRenderer
+                  key={field.key}
+                  field={field}
+                  value={filterValues[field.key]}
+                  onFieldChange={handleFieldChange}
+                  onRangeChange={handleRangeChange}
+                  setFilterValues={setFilterValues}
+                />
+              ))}
             </div>
           </div>
         </div>
         <div className="filter-actions">
-          <button type="button" className="btn-clear" onClick={handleClear}>
+          <button type="button" className="btn-clear" onClick={() => {
+            setFilterValues({});
+            onClear();
+            onClose();
+          }}>
             Clear All
           </button>
           <button type="button" className="btn-apply" onClick={handleApply}>

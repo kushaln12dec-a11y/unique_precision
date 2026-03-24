@@ -1,0 +1,271 @@
+.operator-table-no-scroll
+  .child-row-content
+  .child-jobs-table
+  th.estimated-time-col,
+.operator-table-no-scroll
+  .child-row-content
+  .child-jobs-table
+  td.estimated-time-col {
+  width: 82px;
+  min-width: 82px;
+  text-align: left;
+  padding-left: 0.4rem;
+  padding-right: 0.4rem;
+}
+
+/* Total Amount - Align with parent Total Amount - Ensure th and td match */
+.operator-table-no-scroll
+  .child-row-content
+  .child-jobs-table
+  th.total-amount-col,
+.operator-table-no-scroll
+  .child-row-content
+  .child-jobs-table
+  td.total-amount-col {
+  width: 82px;
+  min-width: 82px;
+  text-align: left;
+  padding-left: 0.4rem;
+  padding-right: 0.4rem;
+}
+
+.operator-table-no-scroll .data-table td:nth-child(11),
+.operator-table-no-scroll .child-row-content .child-jobs-table td.sedm-col {
+  white-space: nowrap;
+}
+
+.operator-table-no-scroll .sedm-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  padding: 0.14rem 0.44rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  line-height: 1;
+  border: 1px solid #cbd5e1;
+  color: #334155;
+  background: #f8fafc;
+}
+
+.operator-table-no-scroll .sedm-badge.yes {
+  color: #166534;
+  border-color: #86efac;
+  background: #dcfce7;
+}
+
+.operator-table-no-scroll .sedm-badge.no {
+  color: #92400e;
+  border-color: #fcd34d;
+  background: #fef3c7;
+}
+
+/* Status - Align with parent Status - Ensure th and td match - Reduced size */
+.operator-table-no-scroll .child-row-content .child-jobs-table th.status-col,
+.operator-table-no-scroll .child-row-content .child-jobs-table td.status-col {
+  width: 100px;
+  min-width: 100px;
+  white-space: normal;
+  text-align: left;
+  padding-left: 0.4rem;
+  padding-right: 0.4rem;
+}
+
+/* Action column - Ensure th and td match */
+.operator-table-no-scroll .child-row-content .child-jobs-table th.act-col,
+.operator-table-no-scroll .child-row-content .child-jobs-table td.act-col {
+  width: 110px;
+  min-width: 110px;
+  text-align: center;
+  padding-left: 0.4rem;
+  padding-right: 0.4rem;
+}
+
+/* ============================================
+   STATUS COLUMN STYLING
+   ============================================ */
+
+.operator-table-no-scroll .data-table td.status-cell .child-stage-summary,
+.child-jobs-table td .child-stage-summary {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  margin: 0;
+  text-align: center;
+  white-space: normal;
+}
+
+.child-stage-summary {
+  min-width: 0;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+/* ============================================
+   ACTION BUTTONS
+   ============================================ */
+
+.operator-table-no-scroll .data-table td.action-cell .action-icon-button,
+.operator-table-no-scroll .data-table td.action-cell .operator-action-button {
+  width: 1.5rem;
+  height: 1.5rem;
+  min-width: 1.5rem;
+  min-height: 1.5rem;
+  padding: 0.2rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 0.1rem;
+}
+
+.operator-table-no-scroll
+  .data-table
+  td.action-cell
+  .action-icon-button:disabled,
+.operator-table-no-scroll
+  .child-row-content
+  .child-jobs-table
+  .action-icon-button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  background: transparent;
+}
+
+.operator-table-no-scroll .data-table td.action-cell .action-icon-button svg,
+.operator-table-no-scroll
+  .data-table
+  td.action-cell
+  .operator-action-button
+  svg {
+  font-size: 1rem;
+  width: 1rem;
+  height: 1rem;
+}
+
+.operator-table-no-scroll
+  .data-table
+  td.action-cell
+  .operator-action-button
+  svg {
+  color: #dc2626;
+}
+
+/* ============================================
+   ACCORDION TOGGLE
+   ============================================ */
+
+.operator-table-no-scroll .data-table td .operator-accordion-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.operator-table-no-scroll .data-table td .operator-accordion-toggle svg {
+  font-size: 0.875rem;
+  width: 0.875rem;
+  height: 0.875rem;
+  color: #1e293b;
+}
+
+/* ============================================
+   SORT ICONS
+   ============================================ */
+
+.operator-table-no-scroll .data-table th .sort-icon {
+  font-size: 0.7rem;
+  margin-left: 0.2rem;
+  flex-shrink: 0;
+}
+
+/* ============================================
+   CREATED AT SPLIT DISPLAY
+   ============================================ */
+
+.created-at-split {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.125rem;
+  line-height: 1.2;
+}
+
+.created-at-split span {
+  white-space: nowrap;
+}
+
+/* ============================================
+   PANEL AND FILTER STYLES
+   ============================================ */
+
+.roleboard-content .programmer-panel {
+  overflow: visible;
+  max-width: 100%;
+  box-sizing: border-box;
+  margin: 0.5rem 0.25rem;
+  padding: 0.75rem;
+  width: calc(100% - 0.5rem);
+}
+
+.roleboard-content .programmer-panel .panel-header {
+  margin-bottom: 0.5rem;
+  gap: 0.5rem;
+}
+
+.roleboard-content .programmer-panel .filter-group {
+  min-width: 120px;
+  gap: 0.25rem;
+}
+
+.roleboard-content .programmer-panel .inline-filters {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.55rem;
+  flex-wrap: nowrap;
+}
+
+.roleboard-content .programmer-panel .panel-header-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.operator-filters-top-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.55rem;
+  flex-wrap: nowrap;
+  min-width: 0;
+}
+
+.roleboard-content .programmer-panel .operator-filters-top-row .filter-group {
+  min-width: 0;
+}
+
+.roleboard-content .programmer-panel .operator-filter-customer,
+.roleboard-content .programmer-panel .operator-filter-description {
+  flex: 0 1 205px;
+}
+
+.operator-filters-bottom-row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.operator-filters-legend-row {
+  flex: 1 1 auto;
+  display: flex;
+  justify-content: flex-start;
+}

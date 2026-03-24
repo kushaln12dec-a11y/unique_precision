@@ -1,6 +1,19 @@
 import type { CutInputData, QuantityInputData } from "../types/cutInput";
-import { createEmptyCutInputData, createEmptyQuantityInputData } from "../types/cutInput";
-import { calculateMachineHrs } from "../utils/machineHrsCalculation";
+import type { OperatorInputField } from "../types/inputFields";
+import {
+  clearOperatorCutValidationErrors,
+  clearOperatorFieldError,
+  clearOperatorPauseReasonError,
+  setOperatorPauseReasonError,
+} from "../utils/operatorInputErrors";
+import { applyOperatorCutImage, readOperatorImageAsDataUrl } from "../utils/operatorInputMedia";
+import { closePauseOnEndTime, pauseRunningQuantity, resumePausedQuantity } from "../utils/operatorPauseState";
+import {
+  buildCopiedQuantityFields,
+  buildResetQuantityState,
+  ensureCutInputState,
+  updateQuantityMachineHours,
+} from "../utils/operatorInputState";
 
 /**
  * Hook for managing operator input changes and calculations
@@ -12,8 +25,6 @@ export const useOperatorInputs = (
   validationErrors: Map<number | string, Record<string, Record<string, string>>>,
   setValidationErrors: React.Dispatch<React.SetStateAction<Map<number | string, Record<string, Record<string, string>>>>>
 ) => {
-  type InputField = keyof QuantityInputData | "recalculateMachineHrs" | "addIdleTimeToMachineHrs" | "togglePause" | "resetTimer" | "pauseReason";
-
   const copyQuantityToAll = (
     cutId: number | string,
     sourceQuantityIndex: number,
@@ -21,35 +32,10 @@ export const useOperatorInputs = (
   ) => {
     setCutInputs((prev) => {
       const newMap = new Map(prev);
-      let current = newMap.get(cutId);
-
-      if (!current || !Array.isArray(current.quantities)) {
-        current = createEmptyCutInputData(Math.max(1, totalQuantity));
-      }
-
-      const quantities = [...current.quantities];
-      while (quantities.length < totalQuantity) {
-        quantities.push(createEmptyQuantityInputData());
-      }
-
+      const { cut: current, quantities } = ensureCutInputState(newMap.get(cutId), totalQuantity);
       const source = quantities[sourceQuantityIndex];
-      if (!source) {
-        return newMap;
-      }
-
-      const copiedFields = {
-        startTime: source.startTime,
-        startTimeEpochMs: source.startTimeEpochMs || null,
-        endTime: source.endTime,
-        endTimeEpochMs: source.endTimeEpochMs || null,
-        machineHrs: source.machineHrs,
-        machineNumber: source.machineNumber,
-        opsName: [...(source.opsName || [])],
-        idleTime: source.idleTime,
-        idleTimeDuration: source.idleTimeDuration,
-        lastImage: source.lastImage,
-        lastImageFile: source.lastImageFile,
-      };
+      if (!source) return newMap;
+      const copiedFields = buildCopiedQuantityFields(source);
 
       for (let i = 0; i < totalQuantity; i += 1) {
         quantities[i] = {
@@ -71,13 +57,7 @@ export const useOperatorInputs = (
       });
 
       // Clear field-level validation errors after mass apply.
-      if (setValidationErrors) {
-        setValidationErrors((prevErrors) => {
-          const updated = new Map(prevErrors);
-          updated.delete(cutId);
-          return updated;
-        });
-      }
+      if (setValidationErrors) clearOperatorCutValidationErrors(setValidationErrors, cutId);
 
       return newMap;
     });
@@ -91,38 +71,12 @@ export const useOperatorInputs = (
   ) => {
     setCutInputs((prev) => {
       const newMap = new Map(prev);
-      let current = newMap.get(cutId);
-
-      if (!current || !Array.isArray(current.quantities)) {
-        current = createEmptyCutInputData(Math.max(1, totalQuantity));
-      }
-
-      const quantities = [...current.quantities];
-      while (quantities.length < totalQuantity) {
-        quantities.push(createEmptyQuantityInputData());
-      }
-
+      const { cut: current, quantities } = ensureCutInputState(newMap.get(cutId), totalQuantity);
       const source = quantities[sourceQuantityIndex];
-      if (!source) {
-        return newMap;
-      }
-
+      if (!source) return newMap;
       const safeCount = Math.max(1, Math.floor(quantityCount));
       const targetEndIndex = Math.min(totalQuantity, sourceQuantityIndex + safeCount);
-
-      const copiedFields = {
-        startTime: source.startTime,
-        startTimeEpochMs: source.startTimeEpochMs || null,
-        endTime: source.endTime,
-        endTimeEpochMs: source.endTimeEpochMs || null,
-        machineHrs: source.machineHrs,
-        machineNumber: source.machineNumber,
-        opsName: [...(source.opsName || [])],
-        idleTime: source.idleTime,
-        idleTimeDuration: source.idleTimeDuration,
-        lastImage: source.lastImage,
-        lastImageFile: source.lastImageFile,
-      };
+      const copiedFields = buildCopiedQuantityFields(source);
 
       for (let i = sourceQuantityIndex; i < targetEndIndex; i += 1) {
         quantities[i] = {
@@ -142,13 +96,7 @@ export const useOperatorInputs = (
         quantities,
       });
 
-      if (setValidationErrors) {
-        setValidationErrors((prevErrors) => {
-          const updated = new Map(prevErrors);
-          updated.delete(cutId);
-          return updated;
-        });
-      }
+      if (setValidationErrors) clearOperatorCutValidationErrors(setValidationErrors, cutId);
 
       return newMap;
     });
@@ -156,102 +104,24 @@ export const useOperatorInputs = (
 
   const handleCutImageChange = async (cutId: number | string, files: File[]) => {
     if (files.length === 0) {
-      setCutInputs((prev) => {
-        const newMap = new Map(prev);
-        const current = newMap.get(cutId);
-        if (!current) return newMap;
-        
-        // Update first quantity's lastImage - handle backward compatibility
-        const quantities = Array.isArray(current.quantities) ? current.quantities : [];
-        const updatedQuantities = quantities.length > 0 ? [...quantities] : [createEmptyQuantityInputData()];
-        if (updatedQuantities.length > 0) {
-          updatedQuantities[0] = {
-            ...updatedQuantities[0],
-            lastImage: null,
-            lastImageFile: null,
-          };
-        }
-        
-        newMap.set(cutId, {
-          ...current,
-          quantities: updatedQuantities,
-        });
-        return newMap;
-      });
+      applyOperatorCutImage(setCutInputs, cutId, null, null);
       return;
     }
 
-    // For operator, we only use the first image
     const file = files[0];
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setCutInputs((prev) => {
-        const newMap = new Map(prev);
-        const current = newMap.get(cutId) || createEmptyCutInputData(1);
-        
-        // Update first quantity's lastImage - handle backward compatibility
-        const quantities = Array.isArray(current.quantities) ? current.quantities : [];
-        const updatedQuantities = quantities.length > 0 ? [...quantities] : [createEmptyQuantityInputData()];
-        if (updatedQuantities.length > 0) {
-          updatedQuantities[0] = {
-            ...updatedQuantities[0],
-            lastImage: reader.result as string,
-            lastImageFile: file,
-          };
-        }
-        
-        newMap.set(cutId, {
-          ...current,
-          quantities: updatedQuantities,
-        });
-        return newMap;
-      });
-    };
-    reader.readAsDataURL(file);
-  };
-
-  // Helper function to parse start time string to timestamp
-  const parseStartTime = (timeStr: string): number | null => {
-    if (!timeStr) return null;
-    const parts = timeStr.split(" ");
-    if (parts.length === 2) {
-      const datePart = parts[0].split("/");
-      const timePart = parts[1].split(":");
-      if (datePart.length === 3 && timePart.length === 2) {
-        const day = parseInt(datePart[0], 10) || 0;
-        const month = parseInt(datePart[1], 10) || 0;
-        const year = parseInt(datePart[2], 10) || 0;
-        const hours = parseInt(timePart[0], 10) || 0;
-        const minutes = parseInt(timePart[1], 10) || 0;
-        const date = new Date(year, month - 1, day, hours, minutes);
-        return date.getTime();
-      }
-    }
-    return null;
+    const image = await readOperatorImageAsDataUrl(file);
+    applyOperatorCutImage(setCutInputs, cutId, image, file);
   };
 
   const handleInputChange = (
     cutId: number | string,
     quantityIndex: number,
-    field: InputField,
+    field: OperatorInputField,
     value: string | string[]
   ) => {
     setCutInputs((prev) => {
       const newMap = new Map(prev);
-      let current = newMap.get(cutId);
-      
-      // Handle backward compatibility - ensure we have a valid CutInputData with quantities array
-      if (!current || !Array.isArray(current.quantities)) {
-        current = createEmptyCutInputData(Math.max(1, quantityIndex + 1));
-        newMap.set(cutId, current);
-      }
-      
-      // Ensure we have enough quantities
-      const quantities = [...current.quantities];
-      while (quantities.length <= quantityIndex) {
-        quantities.push(createEmptyQuantityInputData());
-      }
-      
+      const { cut: current, quantities } = ensureCutInputState(newMap.get(cutId), Math.max(1, quantityIndex + 1));
       const qtyData = quantities[quantityIndex];
       
       // Handle idle/resume toggle
@@ -261,80 +131,18 @@ export const useOperatorInputs = (
           // Resuming: calculate idle duration and add to sessions
           // Require idle reason before resuming
           if (!qtyData.currentPauseReason || qtyData.currentPauseReason.trim() === "") {
-            // Show error if reason is not provided
-            if (setValidationErrors) {
-              setValidationErrors((prev) => {
-                const newErrors = new Map(prev);
-                const cutErrors = newErrors.get(cutId) || {};
-                const qtyErrors = cutErrors[quantityIndex] || {};
-                qtyErrors.pauseReason = "Please enter an idle reason before resuming";
-                cutErrors[quantityIndex] = qtyErrors;
-                newErrors.set(cutId, cutErrors);
-                return newErrors;
-              });
-            }
+            if (setValidationErrors) setOperatorPauseReasonError(setValidationErrors, cutId, quantityIndex);
             return newMap;
           }
           
           if (qtyData.pauseStartTime) {
-            const pauseDuration = Math.floor((now - qtyData.pauseStartTime) / 1000);
-            const newTotalPauseTime = qtyData.totalPauseTime + pauseDuration;
-            
-            // Add completed idle session to array
-            const pauseSessions = [...(qtyData.pauseSessions || [])];
-            pauseSessions.push({
-              pauseStartTime: qtyData.pauseStartTime,
-              pauseEndTime: now,
-              pauseDuration: pauseDuration,
-              reason: qtyData.currentPauseReason || "",
-            });
-            
-            // Clear validation error
-            if (setValidationErrors) {
-              setValidationErrors((prev) => {
-                const newErrors = new Map(prev);
-                const cutErrors = newErrors.get(cutId) || {};
-                const qtyErrors = { ...cutErrors[quantityIndex] };
-                delete qtyErrors.pauseReason;
-                cutErrors[quantityIndex] = qtyErrors;
-                newErrors.set(cutId, cutErrors);
-                return newErrors;
-              });
-            }
-            
-            const updatedQtyData: QuantityInputData = {
-              ...qtyData,
-              isPaused: false,
-              pauseStartTime: null,
-              totalPauseTime: newTotalPauseTime,
-              pauseSessions: pauseSessions,
-              currentPauseReason: "",
-            };
-            quantities[quantityIndex] = updatedQtyData;
+            if (setValidationErrors) clearOperatorPauseReasonError(setValidationErrors, cutId, quantityIndex);
+            quantities[quantityIndex] = resumePausedQuantity(qtyData, now);
             newMap.set(cutId, { ...current, quantities });
             return newMap;
           }
         } else {
-          // Pausing: save current elapsed time and start pause timer
-          // Get current elapsed time from the timer state
-          // We'll calculate it based on start time and total pause time
-          const startTimestamp = qtyData.startTimeEpochMs || parseStartTime(qtyData.startTime);
-          let currentElapsed = qtyData.pausedElapsedTime;
-          
-          if (startTimestamp) {
-            // Calculate current elapsed time before pausing
-            const elapsedMs = now - startTimestamp - (qtyData.totalPauseTime * 1000);
-            currentElapsed = Math.max(0, Math.floor(elapsedMs / 1000));
-          }
-          
-          const updatedQtyData: QuantityInputData = {
-            ...qtyData,
-            isPaused: true,
-            pauseStartTime: now,
-            pausedElapsedTime: currentElapsed,
-            currentPauseReason: "", // Will be set by user
-          };
-          quantities[quantityIndex] = updatedQtyData;
+          quantities[quantityIndex] = pauseRunningQuantity(qtyData, now);
           newMap.set(cutId, { ...current, quantities });
           return newMap;
         }
@@ -366,21 +174,7 @@ export const useOperatorInputs = (
 
       // Handle reset - reset timer, idle data, and clear start/end times to allow recalculation
       if (field === "resetTimer") {
-        const updatedQtyData: QuantityInputData = {
-          ...qtyData,
-          startTime: "",
-          startTimeEpochMs: null,
-          endTime: "",
-          endTimeEpochMs: null,
-          machineHrs: "",
-          isPaused: false,
-          pauseStartTime: null,
-          totalPauseTime: 0,
-          pausedElapsedTime: 0,
-          pauseSessions: [],
-          currentPauseReason: "",
-        };
-        quantities[quantityIndex] = updatedQtyData;
+        quantities[quantityIndex] = buildResetQuantityState(qtyData);
         newMap.set(cutId, { ...current, quantities });
         return newMap;
       }
@@ -415,57 +209,16 @@ export const useOperatorInputs = (
       // Account for idle time in calculation
       if (field === "startTime" || field === "endTime") {
         if (field === "endTime" && typeof value === "string" && value && qtyData.isPaused && qtyData.pauseStartTime) {
-          const now = Date.now();
-          const pauseDuration = Math.max(0, Math.floor((now - qtyData.pauseStartTime) / 1000));
-          const pauseSessions = [...(qtyData.pauseSessions || [])];
-          pauseSessions.push({
-            pauseStartTime: qtyData.pauseStartTime,
-            pauseEndTime: now,
-            pauseDuration,
-            reason: (qtyData.currentPauseReason || "").trim() || "Ended while idle",
-          });
-
-          updatedQtyData.isPaused = false;
-          updatedQtyData.pauseStartTime = null;
-          updatedQtyData.totalPauseTime = (qtyData.totalPauseTime || 0) + pauseDuration;
-          updatedQtyData.pauseSessions = pauseSessions;
-          updatedQtyData.currentPauseReason = "";
+          Object.assign(updatedQtyData, closePauseOnEndTime(updatedQtyData, Date.now()));
         }
 
-        if (updatedQtyData.startTime && updatedQtyData.endTime) {
-          const baseMachineHrs = calculateMachineHrs(
-            updatedQtyData.startTime,
-            updatedQtyData.endTime,
-            ""
-          );
-          // Subtract idle time from machine hours
-          const pauseTimeInHours = (updatedQtyData.totalPauseTime || 0) / 3600;
-          const adjustedMachineHrs = Math.max(0, parseFloat(baseMachineHrs) - pauseTimeInHours);
-          updatedQtyData.machineHrs = adjustedMachineHrs.toFixed(3);
-        }
+        if (updatedQtyData.startTime && updatedQtyData.endTime) Object.assign(updatedQtyData, updateQuantityMachineHours(updatedQtyData, "auto"));
       }
       
       // Add idle time to machine hours when icon is clicked
       if (field === "addIdleTimeToMachineHrs") {
         if (updatedQtyData.startTime && updatedQtyData.endTime && updatedQtyData.idleTimeDuration) {
-          // Calculate base machine hours
-          const baseMachineHrs = calculateMachineHrs(
-            updatedQtyData.startTime,
-            updatedQtyData.endTime,
-            ""
-          );
-          
-          // Parse idle time duration (HH:MM format)
-          const idleParts = updatedQtyData.idleTimeDuration.split(":");
-          if (idleParts.length === 2) {
-            const idleHours = parseInt(idleParts[0], 10) || 0;
-            const idleMinutes = parseInt(idleParts[1], 10) || 0;
-            const idleTimeInHours = idleHours + idleMinutes / 60;
-            
-            // Add idle time to machine hours
-            const totalMachineHrs = parseFloat(baseMachineHrs) + idleTimeInHours;
-            updatedQtyData.machineHrs = totalMachineHrs.toFixed(3);
-          }
+          Object.assign(updatedQtyData, updateQuantityMachineHours(updatedQtyData, "add_idle"));
         }
       }
       
@@ -473,15 +226,7 @@ export const useOperatorInputs = (
       // Account for idle time in calculation
       if (field === "recalculateMachineHrs") {
         if (updatedQtyData.startTime && updatedQtyData.endTime) {
-          const baseMachineHrs = calculateMachineHrs(
-            updatedQtyData.startTime,
-            updatedQtyData.endTime,
-            updatedQtyData.idleTimeDuration || ""
-          );
-          // Subtract idle time from machine hours
-          const pauseTimeInHours = (updatedQtyData.totalPauseTime || 0) / 3600;
-          const adjustedMachineHrs = Math.max(0, parseFloat(baseMachineHrs) - pauseTimeInHours);
-          updatedQtyData.machineHrs = adjustedMachineHrs.toFixed(3);
+          Object.assign(updatedQtyData, updateQuantityMachineHours(updatedQtyData, "recalculate"));
         }
       }
       
@@ -493,30 +238,8 @@ export const useOperatorInputs = (
       });
       
       // Clear error for this field when user starts typing
-      if (field !== "recalculateMachineHrs" && validationErrors.has(cutId)) {
-        const cutErrors = validationErrors.get(cutId)!;
-        if (cutErrors && cutErrors[String(quantityIndex)]?.[field]) {
-          setValidationErrors((prev) => {
-            const newErrors = new Map(prev);
-            const qtyErrors = { ...cutErrors[String(quantityIndex)] };
-            delete qtyErrors[field];
-            const updatedCutErrors: Record<string, Record<string, string>> = {
-              ...cutErrors,
-              [String(quantityIndex)]: qtyErrors,
-            };
-            if (Object.keys(qtyErrors).length === 0) {
-              const { [String(quantityIndex)]: _, ...rest } = updatedCutErrors;
-              if (Object.keys(rest).length === 0) {
-                newErrors.delete(cutId);
-              } else {
-                newErrors.set(cutId, rest);
-              }
-            } else {
-              newErrors.set(cutId, updatedCutErrors);
-            }
-            return newErrors;
-          });
-        }
+      if (field !== "recalculateMachineHrs") {
+        clearOperatorFieldError(validationErrors, setValidationErrors, cutId, quantityIndex, field);
       }
       
       return newMap;

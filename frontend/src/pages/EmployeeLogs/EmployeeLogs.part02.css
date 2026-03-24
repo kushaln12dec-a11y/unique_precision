@@ -1,0 +1,116 @@
+.employee-logs-table .data-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 60;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+}
+
+.employee-logs-table .description-marquee {
+  position: relative;
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  cursor: text;
+}
+
+.employee-logs-table .description-marquee .marquee-animated {
+  display: inline-block;
+  min-width: 100%;
+  animation: description-marquee-scroll 2.8s linear infinite;
+  will-change: transform;
+  user-select: none;
+  pointer-events: none;
+}
+
+.employee-logs-table .description-marquee .marquee-static {
+  position: absolute;
+  inset: 0;
+  display: none;
+  white-space: nowrap;
+  overflow-x: auto;
+  overflow-y: hidden;
+  user-select: text;
+  pointer-events: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.employee-logs-table .description-marquee .marquee-static::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+.employee-logs-table .data-table tbody tr .description-marquee:hover .marquee-static,
+.employee-logs-table .data-table tbody tr .description-marquee:focus-within .marquee-static {
+  display: block;
+}
+
+.employee-logs-table .data-table tbody tr .description-marquee:hover .marquee-animated,
+.employee-logs-table .data-table tbody tr .description-marquee:focus-within .marquee-animated {
+  visibility: hidden;
+}
+
+@keyframes description-marquee-scroll {
+  0% {
+    transform: translateX(100%);
+  }
+  100% {
+    transform: translateX(-100%);
+  }
+}
+
+.qa-placeholder-card {
+  border-radius: 16px;
+  border: 1px dashed #93c5fd;
+  background: linear-gradient(135deg, #eff6ff 0%, #eef2ff 100%);
+  padding: 1.1rem 1.2rem;
+}
+
+.qa-placeholder-card h3 {
+  margin: 0 0 0.45rem;
+  color: #1e3a8a;
+}
+
+.qa-placeholder-card p {
+  margin: 0;
+  color: #334155;
+
+
+}
+
+@media (max-width: 1200px) {
+  .employee-logs-container {
+    padding: 1rem;
+    border-radius: 16px;
+  }
+
+  .employee-logs-header {
+    flex-wrap: wrap;
+    gap: 0.6rem;
+  }
+
+  .employee-log-filters {
+    flex-wrap: wrap;
+  }
+
+  .employee-search-input {
+    width: 100%;
+  }
+}
+
+@media (max-width: 1024px) {
+  .employee-logs-page-content {
+    margin-left: 56px;
+  }
+}
+
+@media (max-width: 768px) {
+  .employee-logs-page-content {
+    margin-left: 56px;
+  }
+
+  .employee-logs-page-shell {
+    margin: 0.5rem 0.35rem 0.8rem;
+  }
+}

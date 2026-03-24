@@ -1,4 +1,4 @@
-import type { CutForm } from "../pages/Programmer/programmerUtils";
+import type { CutForm } from "../pages/Programmer/types/programmer";
 
 export type OperatorCaptureEntry = {
   captureMode: "SINGLE" | "RANGE";
