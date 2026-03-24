@@ -144,7 +144,7 @@ router.post("/programmer/complete", async (req, res) => {
       refNumber: resolvedRefNumber,
       jobCustomer: String(customer || ""),
       jobDescription: String(description || ""),
-      workItemTitle: resolvedRefNumber ? `Job #${resolvedRefNumber}` : `Job #-`,
+      workItemTitle: resolvedRefNumber ? `Job # ${resolvedRefNumber}` : `Job # -`,
       workSummary: `Created ${Number(settingsCount || 0) || 1} setting(s)`,
       quantityCount: Number(quantityCount || 0) || null,
       endedAt,
@@ -262,6 +262,23 @@ router.post("/operator/complete", async (req, res) => {
     }
 
     const durationSeconds = Math.max(0, Math.floor((parsedEnd.getTime() - parsedStart.getTime()) / 1000));
+    const resolvedGroupId = toBigInt(jobGroupId) ?? null;
+    const groupJobs = resolvedGroupId
+      ? await prisma.job.findMany({
+          where: { groupId: resolvedGroupId },
+          select: { totalHrs: true, rate: true },
+        })
+      : [];
+    const groupWedmAmount = groupJobs.reduce(
+      (sum, job) => sum + (Number(job.totalHrs || 0) * Number(job.rate || 0)),
+      0
+    );
+    const currentJobRevenue = resolvedJobId
+      ? await prisma.job.findUnique({
+          where: { id: resolvedJobId },
+          select: { totalHrs: true, rate: true },
+        }).then((job) => Number(job?.totalHrs || 0) * Number(job?.rate || 0))
+      : 0;
 
     const log = await prisma.employeeLog.create({
       data: {
@@ -272,7 +289,7 @@ router.post("/operator/complete", async (req, res) => {
         userEmail: String(reqUser?.email || ""),
         userName: resolveReqUserName(reqUser),
         ...withJobId(resolvedJobId),
-        jobGroupId: toBigInt(jobGroupId) ?? null,
+        jobGroupId: resolvedGroupId,
         refNumber: String(refNumber || ""),
         settingLabel: String(settingLabel || ""),
         quantityFrom: Number(fromQty || 0) || null,
@@ -282,7 +299,7 @@ router.post("/operator/complete", async (req, res) => {
           (Number(toQty || 0) && Number(fromQty || 0) ? Number(toQty) - Number(fromQty) + 1 : null),
         jobCustomer: String(customer || ""),
         jobDescription: String(description || ""),
-        workItemTitle: `Job #${String(refNumber || "-")}`,
+        workItemTitle: `Job # ${String(refNumber || "-")}`,
         workSummary: `Machine ${machineNumber || "-"} | Ops ${opsName || "-"} | Hrs ${machineHrs || "-"}`,
         startedAt: parsedStart,
         endedAt: parsedEnd,
@@ -293,6 +310,8 @@ router.post("/operator/complete", async (req, res) => {
           machineHrs: String(machineHrs || ""),
           idleTime: String(idleTime || ""),
           idleTimeDuration: String(idleTimeDuration || ""),
+          wedmAmount: groupWedmAmount,
+          revenue: currentJobRevenue > 0 ? currentJobRevenue : undefined,
         },
       },
     });
@@ -345,7 +364,7 @@ router.post("/operator/start", async (req, res) => {
           (Number(toQty || 0) && Number(fromQty || 0) ? Number(toQty) - Number(fromQty) + 1 : null),
         jobCustomer: String(customer || ""),
         jobDescription: String(description || ""),
-        workItemTitle: `Job #${String(refNumber || "-")}`,
+        workItemTitle: `Job # ${String(refNumber || "-")}`,
         workSummary: "Operator started production input",
         startedAt: safeStartedAt,
       },

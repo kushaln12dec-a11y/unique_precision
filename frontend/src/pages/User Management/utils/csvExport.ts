@@ -4,6 +4,7 @@ import type { User } from "../../../types/user";
  * Export users to CSV
  */
 export const exportUsersToCSV = (users: User[]): void => {
+  const escapeCsvCell = (value: unknown) => `"${String(value ?? "").replace(/"/g, '""')}"`;
   const headers = ["Name", "Email", "Phone", "Emp ID", "Role"];
   const rows = users.map((user) => [
     `${user.firstName} ${user.lastName}`,
@@ -14,8 +15,8 @@ export const exportUsersToCSV = (users: User[]): void => {
   ]);
 
   const csvContent = [
-    headers.join(","),
-    ...rows.map((row) => row.map((cell) => `"${cell}"`).join(",")),
+    headers.map(escapeCsvCell).join(","),
+    ...rows.map((row) => row.map(escapeCsvCell).join(",")),
   ].join("\n");
 
   const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });

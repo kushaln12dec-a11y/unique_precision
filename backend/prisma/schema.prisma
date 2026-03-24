@@ -47,6 +47,7 @@ model Job {
   material         String?
   priority         String?
   description      String?
+  remark           String?
   programRefFile   String?
   cutImage         String?
   critical         Boolean  @default(false)

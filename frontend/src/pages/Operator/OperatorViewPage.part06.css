@@ -1,0 +1,175 @@
+.pause-history-sidebar {
+  min-width: 210px;
+  max-width: 230px;
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  border-radius: 10px;
+  border: 2px solid #e2e8f0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.pause-history-sidebar:hover {
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+  border-color: #cbd5e1;
+}
+
+.pause-history-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.55rem 0.7rem;
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  border-bottom: 2px solid #fcd34d;
+}
+
+.pause-history-icon {
+  color: #d97706;
+  flex-shrink: 0;
+}
+
+.pause-history-title {
+  flex: 1;
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #92400e;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.pause-history-count {
+  background: #ffffff;
+  color: #d97706;
+  font-weight: 700;
+  font-size: 0.72rem;
+  padding: 0.1rem 0.45rem;
+  border-radius: 12px;
+  border: 2px solid #fcd34d;
+  min-width: 22px;
+  text-align: center;
+}
+
+.pause-sessions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  padding: 0.55rem;
+  max-height: 160px;
+  overflow-y: auto;
+}
+
+.pause-sessions-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.pause-sessions-list::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 3px;
+}
+
+.pause-sessions-list::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+.pause-sessions-list::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+.pause-session-item {
+  display: flex;
+  gap: 0.45rem;
+  background: white;
+  padding: 0.45rem;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.pause-session-item::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: linear-gradient(180deg, #f59e0b 0%, #d97706 100%);
+}
+
+.pause-session-item:hover {
+  border-color: #fcd34d;
+  box-shadow: 0 4px 8px rgba(245, 158, 11, 0.15);
+  transform: translateX(-2px);
+}
+
+.pause-session-badge {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  border-radius: 8px;
+  border: 2px solid #fcd34d;
+}
+
+.pause-session-number {
+  font-weight: 700;
+  color: #92400e;
+  font-size: 0.68rem;
+}
+
+.pause-session-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.pause-session-duration-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-weight: 600;
+  color: #d97706;
+  font-size: 0.68rem;
+  background: #fef3c7;
+  padding: 0.15rem 0.4rem;
+  border-radius: 6px;
+  width: fit-content;
+  border: 1px solid #fcd34d;
+}
+
+.pause-session-duration-badge svg {
+  color: #d97706;
+  flex-shrink: 0;
+}
+
+.pause-session-reason {
+  font-size: 0.72rem;
+  color: #475569;
+  line-height: 1.25;
+  font-weight: 500;
+  padding-left: 0.15rem;
+}
+
+@media (max-width: 768px) {
+  .operator-viewpage-panel {
+    padding: 1rem;
+    gap: 1rem;
+  }
+  
+  .operator-job-info-grid,
+  .operator-cut-details-grid,
+  .operator-inputs-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .operator-totals-section {
+    grid-template-columns: 1fr;
+  }
+}

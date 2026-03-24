@@ -26,6 +26,7 @@ export type EmployeeLog = {
   jobDescription?: string;
   workItemTitle?: string;
   workSummary?: string;
+  revenue?: string | number;
   startedAt: string;
   endedAt?: string | null;
   durationSeconds?: number;

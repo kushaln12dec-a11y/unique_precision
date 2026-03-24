@@ -1,0 +1,272 @@
+@media only screen and (min-width: 768px) and (max-width: 1024px) and (orientation: portrait) {
+  .programmer-panel {
+    margin: 0.75rem 0.4rem;
+  }
+
+  .cut-section-body {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.85rem;
+  }
+
+  .job-form-image {
+    grid-row: auto;
+    min-height: 120px;
+    width: 100%;
+    height: 120px;
+  }
+
+  .job-form-image .job-form-image-container,
+  .job-form-image .image-slider-wrapper,
+  .job-form-image .image-slider-display,
+  .job-form-image .image-placeholder-empty,
+  .job-form-image .slider-image {
+    min-height: 120px;
+    height: 120px;
+  }
+
+  .cut-section-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-areas:
+      "customer rate"
+      "material programref"
+      "description description"
+      "cut thickness"
+      "pass setting"
+      "qty sedm"
+      "totalhrs estimated"
+      "totalamount totalamount";
+    gap: 0.75rem;
+  }
+
+  .description-box {
+    grid-column: 1 / -1;
+    grid-row: auto;
+  }
+
+  .operation-row-item,
+  .grid-sedm,
+  .grid-total-hrs,
+  .grid-estimated-time,
+  .grid-total-amount {
+    grid-column: auto !important;
+    grid-row: auto !important;
+  }
+
+  .cut-section-actions {
+    position: static;
+    justify-content: flex-end;
+    margin-top: 0.5rem;
+    padding-top: 0.25rem;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .form-actions {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.65rem;
+  }
+
+  .form-totals {
+    position: static;
+    left: auto;
+    transform: none;
+    justify-content: space-between;
+    gap: 0.85rem;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 0.55rem 0.7rem;
+  }
+
+  .form-total-label {
+    font-size: 0.72rem;
+  }
+
+  .form-total-value {
+    font-size: 0.95rem;
+  }
+
+  .form-action-buttons {
+    width: 100%;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .form-action-buttons .btn-clear-all,
+  .form-action-buttons .btn-success,
+  .form-action-buttons .btn-secondary {
+    padding: 0.5rem 0.8rem;
+    font-size: 0.78rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .programmer-container {
+    padding-left: 56px;
+  }
+}
+
+@media (max-width: 1024px) {
+  .programmer-container {
+    padding-left: 56px;
+  }
+
+  .programmer-panel {
+    margin: 0.65rem 0.35rem;
+    width: calc(100% - 0.7rem);
+    max-width: calc(100% - 0.7rem);
+    padding: 0.75rem;
+    max-height: calc(100vh - 96px);
+  }
+
+  .panel-header {
+    flex-wrap: wrap;
+    align-items: flex-start;
+  }
+
+  .inline-filters {
+    flex-wrap: wrap;
+    gap: 0.55rem;
+    width: 100%;
+  }
+
+  .panel-header-actions {
+    width: 100%;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 1200px) {
+  .cut-section-body {
+    grid-template-columns: clamp(150px, 22vw, 190px) minmax(0, 1fr);
+    gap: 0.9rem;
+  }
+
+  .cut-section-body > .job-form-image-container {
+    justify-self: start;
+    width: 100%;
+    max-width: clamp(150px, 22vw, 190px);
+  }
+
+  .job-form-image {
+    width: 100%;
+    height: 140px;
+    min-height: 140px;
+  }
+
+  .job-form-image .job-form-image-container,
+  .job-form-image .image-slider-wrapper,
+  .job-form-image .image-slider-display,
+  .job-form-image .image-placeholder-empty,
+  .job-form-image .slider-image {
+    min-height: 140px;
+    height: 140px;
+  }
+
+  .cut-section-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-areas:
+      "customer rate"
+      "material programref"
+      "description description"
+      "cut thickness"
+      "pass setting"
+      "qty sedm"
+      "totalhrs estimated"
+      "totalamount totalamount";
+    gap: 0.7rem;
+  }
+
+  .operation-row-item,
+  .grid-sedm,
+  .grid-total-hrs,
+  .grid-estimated-time,
+  .grid-total-amount,
+  .calculation-formula-panel {
+    grid-column: auto !important;
+    grid-row: auto !important;
+  }
+
+  .calculation-formula-panel {
+    grid-column: 1 / -1 !important;
+  }
+
+  .cut-section-actions {
+    position: static;
+    justify-content: flex-end;
+    margin-top: 0.6rem;
+    padding-top: 0.2rem;
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 640px) {
+  .cut-section-body {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.75rem;
+  }
+
+  .cut-section-body > .job-form-image-container {
+    justify-self: start;
+    width: min(170px, 48vw);
+    max-width: 170px;
+  }
+
+  .cut-section-grid {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "customer"
+      "rate"
+      "material"
+      "programref"
+      "description"
+      "cut"
+      "thickness"
+      "pass"
+      "setting"
+      "qty"
+      "sedm"
+      "totalhrs"
+      "estimated"
+      "totalamount";
+    gap: 0.65rem;
+  }
+
+  .operation-row-item,
+  .grid-sedm,
+  .grid-total-hrs,
+  .grid-estimated-time,
+  .grid-total-amount,
+  .calculation-formula-panel {
+    grid-column: auto !important;
+    grid-row: auto !important;
+  }
+
+  .calculation-formula-panel {
+    grid-column: 1 / -1 !important;
+  }
+}
+
+/* Keep child table headers centered across Programmer/Operator shared child table. */
+.child-jobs-table thead th,
+.child-jobs-table thead th[class] {
+  text-align: center;
+}
+
+.child-jobs-table thead th .th-content,
+.child-jobs-table thead th[class] .th-content {
+  justify-content: center;
+}
+
+/* Keep Programmer table headers centered. */
+.jobs-table-wrapper .data-table thead th,
+.jobs-table-wrapper .data-table thead th[class] {
+  text-align: center;
+}
+
+.jobs-table-wrapper .data-table thead th .th-content,
+.jobs-table-wrapper .data-table thead th[class] .th-content {
+  justify-content: center;
+}

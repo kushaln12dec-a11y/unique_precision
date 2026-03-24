@@ -1,0 +1,278 @@
+.created-by-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  background: #e2e8f0;
+  color: #1e293b;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  cursor: default;
+}
+
+.created-by-text {
+  display: inline-block;
+  max-width: 100%;
+  color: #1e293b;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+@media (max-width: 1400px) {
+  .operator-filters-top-row {
+    flex-wrap: wrap;
+  }
+}
+
+@media only screen and (min-width: 1024px) and (max-width: 1366px) and (orientation: landscape) {
+  .roleboard-content .programmer-panel .panel-header {
+    flex-wrap: wrap;
+    align-items: flex-start;
+  }
+
+  .roleboard-content .programmer-panel .inline-filters {
+    flex: 1 1 100%;
+  }
+
+  .roleboard-content .programmer-panel .panel-header-actions {
+    width: 100%;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+  }
+
+  .operator-filters-bottom-row .panel-header-actions {
+    width: auto;
+  }
+
+  .operator-status-legend-group {
+    flex-wrap: wrap;
+    min-width: 250px;
+    justify-content: flex-start;
+  }
+
+  .operator-stage-legend-inline {
+    margin-bottom: 0;
+  }
+
+  .operator-timer-right-slot {
+    justify-content: flex-end;
+  }
+
+  .operator-actions-row {
+    width: auto;
+    margin-left: auto;
+    justify-content: flex-end;
+  }
+}
+
+@media only screen and (min-width: 768px) and (max-width: 1024px) and (orientation: portrait) {
+  .roleboard-content .programmer-panel {
+    margin: 0.75rem 0.4rem;
+    padding: 0.85rem;
+    width: calc(100% - 0.8rem);
+  }
+
+  .operator-table-no-scroll .data-table {
+    width: max-content;
+    min-width: 1680px;
+    max-width: none;
+  }
+
+  .roleboard-content .programmer-panel .panel-header {
+    flex-wrap: wrap;
+    align-items: flex-start;
+  }
+
+  .roleboard-content .programmer-panel .panel-header-actions {
+    width: 100%;
+    align-items: flex-end;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+  }
+
+  .operator-timer-right-slot {
+    justify-content: flex-end;
+  }
+
+  .operator-actions-row {
+    width: auto;
+    margin-left: auto;
+    justify-content: flex-end;
+  }
+}
+
+@media (max-width: 768px) {
+  .roleboard-content .programmer-panel .panel-header-actions {
+    justify-content: flex-start;
+  }
+
+  .operator-table-no-scroll .data-table {
+    min-width: 1680px;
+  }
+
+  .operator-table-no-scroll .child-row-content .child-jobs-table {
+    min-width: 1320px;
+  }
+}
+
+.operator-stage-legend-title {
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: #334155;
+}
+
+.operator-stage-chip {
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 0.14rem 0.4rem;
+  border-radius: 999px;
+  border: 1px solid transparent;
+}
+
+.operator-stage-chip.saved {
+  color: #075985;
+  background: #e0f2fe;
+  border-color: #7dd3fc;
+}
+
+.operator-stage-chip.ready {
+  color: #166534;
+  background: #ecfdf5;
+  border-color: #86efac;
+}
+
+.operator-stage-chip.sent {
+  color: #4338ca;
+  background: #eef2ff;
+  border-color: #c7d2fe;
+}
+
+.operator-stage-chip.empty {
+  color: #92400e;
+  background: #fffbeb;
+  border-color: #fcd34d;
+}
+
+/* ============================================
+   FILTER SELECT STYLES
+   ============================================ */
+
+.operator-machine-input {
+  width: 100%;
+  min-width: 0;
+  max-width: 52px;
+  height: 30px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 0 0.35rem;
+  font-size: 0.78rem;
+  color: #0f172a;
+  background: #ffffff;
+}
+
+.operator-machine-dropdown-wrapper {
+  width: 100%;
+  min-width: 0;
+}
+
+.operator-machine-dropdown-wrapper .option-dropdown-trigger {
+  width: 100%;
+  min-width: 0;
+  max-width: 64px;
+  height: 28px;
+  border: 1px solid #cbd5e1;
+  border-radius: 14px;
+  background: #ffffff;
+  color: #0f172a;
+  font-size: 0.74rem;
+  padding: 0 0.25rem;
+}
+
+.operator-machine-dropdown-wrapper .option-dropdown-value {
+  text-align: left;
+}
+
+@media only screen and (min-width: 1367px) {
+  .operator-table-no-scroll .data-table {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    table-layout: auto;
+  }
+
+  .operator-table-no-scroll .data-table th:nth-child(n),
+  .operator-table-no-scroll .data-table td:nth-child(n) {
+    width: auto;
+    min-width: 0;
+    max-width: none;
+  }
+
+  .operator-table-no-scroll .data-table .checkbox-header-cell,
+  .operator-table-no-scroll .data-table .checkbox-cell {
+    width: 40px;
+    min-width: 40px;
+    max-width: 40px;
+  }
+}
+
+/* ============================================
+   PRIORITY-BASED ROW COLORS
+   ============================================ */
+
+.operator-stage-row-not-started {
+  background-color: #ffefbf;
+}
+
+.operator-stage-row-not-started:hover {
+  background-color: #ffe39a;
+}
+
+.operator-stage-row-logged {
+  background-color: #dbeafe;
+}
+
+.operator-stage-row-logged:hover {
+  background-color: #bfdbfe;
+}
+
+.operator-stage-row-dispatched {
+  background-color: #ddd6fe;
+}
+
+.operator-stage-row-dispatched:hover {
+  background-color: #c4b5fd;
+}
+
+.operator-table-no-scroll
+  .data-table
+  tbody
+  tr.operator-stage-row-not-started:hover {
+  background-color: #ffe39a;
+}
+
+.operator-table-no-scroll .data-table tbody tr.operator-stage-row-logged:hover {
+  background-color: #bfdbfe;
+}
+
+.operator-table-no-scroll
+  .data-table
+  tbody
+  tr.operator-stage-row-dispatched:hover {
+  background-color: #c4b5fd;
+}
+
+/* Stage legend controls row background in Operator table */
+.operator-table-no-scroll .data-table tr.operator-stage-row-not-started td {
+  background: transparent;
+}
+
+.operator-table-no-scroll .data-table tr.operator-stage-row-logged td {
+  background: transparent;
+}

@@ -1,298 +1,51 @@
-import { useMemo, useState } from 'react';
-import { type Column } from '../../../components/DataTable';
-import LazyAgGrid from '../../../components/LazyAgGrid';
-import { getEmployeeLogsPage } from '../../../services/employeeLogsApi';
-import DownloadIcon from '@mui/icons-material/Download';
-import type { EmployeeLog } from '../../../types/employeeLog';
-import { getDisplayDateTimeParts } from '../../../utils/date';
-import MarqueeCopyText from '../../../components/MarqueeCopyText';
-import { getUserRoleFromToken } from '../../../utils/auth';
-import { fetchAllPaginatedItems } from '../../../utils/paginationUtils';
-import { matchesSearchQuery } from '../../../utils/searchUtils';
-
-type RoleTab = 'PROGRAMMER' | 'OPERATOR' | 'QC';
-
-const formatRoleLabel = (role?: string) => {
-  const value = String(role || '').toUpperCase();
-  if (value === 'PROGRAMMER') return 'Programmer';
-  if (value === 'OPERATOR') return 'Operator';
-  if (value === 'QC') return 'QC';
-  if (value === 'ADMIN') return 'Admin';
-  return value || '-';
-};
-
-const formatDuration = (seconds?: number) => {
-  const safe = Math.max(0, Number(seconds || 0));
-  const hrs = Math.floor(safe / 3600);
-  const mins = Math.floor((safe % 3600) / 60);
-  const secs = safe % 60;
-  if (hrs > 0) return `${hrs}h ${mins}m ${secs}s`;
-  if (mins > 0) return `${mins}m ${secs}s`;
-  return `${secs}s`;
-};
-
-const formatLogStatus = (status?: string) => {
-  const value = String(status || '').toUpperCase();
-  if (value === 'IN_PROGRESS') return 'In Progress';
-  if (value === 'REJECTED') return 'Rejected';
-  if (value === 'COMPLETED') return 'Completed';
-  return value || '-';
-};
+import { useMemo, useState } from "react";
+import DownloadIcon from "@mui/icons-material/Download";
+import LazyAgGrid from "../../../components/LazyAgGrid";
+import { getEmployeeLogsPage } from "../../../services/employeeLogsApi";
+import type { EmployeeLog } from "../../../types/employeeLog";
+import { getUserRoleFromToken } from "../../../utils/auth";
+import { getDisplayDateTimeParts } from "../../../utils/date";
+import { fetchAllPaginatedItems } from "../../../utils/paginationUtils";
+import { matchesSearchQuery } from "../../../utils/searchUtils";
+import {
+  type RoleTab,
+  createEmployeeLogColumns,
+  formatDuration,
+  formatLogStatus,
+  formatRoleLabel,
+  formatWorkItemTitle,
+  getQuantityLabel,
+  getWorkedSecondsForLog,
+} from "./employeeLogsPanelUtils";
 
 export const EmployeeLogsPanel = () => {
-  const isAdmin = getUserRoleFromToken() === 'ADMIN';
-  const [activeRole, setActiveRole] = useState<RoleTab>('PROGRAMMER');
-  const [statusFilter, setStatusFilter] = useState<
-    '' | 'COMPLETED' | 'IN_PROGRESS' | 'REJECTED'
-  >('');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [error, setError] = useState('');
+  const isAdmin = getUserRoleFromToken() === "ADMIN";
+  const [activeRole, setActiveRole] = useState<RoleTab>("PROGRAMMER");
+  const [statusFilter, setStatusFilter] = useState<"" | "COMPLETED" | "IN_PROGRESS" | "REJECTED">("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [error, setError] = useState("");
 
-  const getInitials = (value: string) => {
-    const full = String(value || '').trim();
-    if (!full) return '--';
-    const parts = full.split(/\s+/).filter(Boolean);
-    if (parts.length >= 2) return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
-    return full.slice(0, 2).toUpperCase();
-  };
-
-  const getWorkedSecondsForLog = (log: EmployeeLog): number => {
-    const metadata = (log.metadata || {}) as Record<string, any>;
-    const machineHrs = Number(metadata.machineHrs || 0);
-    if (Number.isFinite(machineHrs) && machineHrs > 0) {
-      return Math.max(0, Math.round(machineHrs * 3600));
-    }
-    return Math.max(0, Number(log.durationSeconds || 0));
-  };
-
-  const groupWorkedSecondsByGroupId = useMemo(() => {
-    const map = new Map<string, number>();
-    return map;
-  }, []);
-
-  const columns = useMemo<Column<EmployeeLog>[]>(() => {
-    if (activeRole === 'OPERATOR') {
-      return [
-        {
-          key: 'employee',
-          label: 'Employee',
-          sortable: false,
-          render: (row) => (
-            <div className="employee-log-user employee-log-user-badge">
-              <span
-                className="employee-log-user-initial-badge"
-                title={String(row.userName || 'Unknown User').toUpperCase()}
-              >
-                {getInitials(String(row.userName || 'Unknown User'))}
-              </span>
-              <span>{formatRoleLabel((row.metadata as any)?.userRole || row.role)}</span>
-            </div>
-          ),
-        },
-        {
-          key: 'workItemTitle',
-          label: 'Work Item',
-          sortable: false,
-          render: (row) => row.workItemTitle || '-',
-        },
-        {
-          key: 'workSummary',
-          label: 'Summary',
-          sortable: false,
-          render: (row) => {
-            const full = String(row.workSummary || '-');
-            return <MarqueeCopyText text={full} />;
-          },
-        },
-        {
-          key: 'idleTime',
-          label: 'Idle Time',
-          sortable: false,
-          render: (row) => String((row.metadata as any)?.idleTime || '-'),
-        },
-        {
-          key: 'remark',
-          label: 'Remark',
-          sortable: false,
-          render: (row) => String((row.metadata as any)?.remark || '-'),
-        },
-        ...(isAdmin
-          ? [{
-              key: 'revenue',
-              label: 'Revenue',
-              sortable: false,
-              render: (row: EmployeeLog) => {
-                const metadata = (row.metadata || {}) as Record<string, any>;
-                const explicit = metadata.revenue;
-                if (
-                  explicit !== undefined &&
-                  explicit !== null &&
-                  String(explicit).trim() !== ''
-                )
-                  return String(explicit);
-                const wedm = Number(metadata.wedmAmount || 0);
-                if (!wedm) return '-';
-                const groupId = String(row.jobGroupId || '').trim();
-                const totalWorkedSeconds = groupId ? groupWorkedSecondsByGroupId.get(groupId) || 0 : 0;
-                if (!totalWorkedSeconds) return '-';
-                const workedSeconds = getWorkedSecondsForLog(row);
-                const share = Math.max(0, workedSeconds) / totalWorkedSeconds;
-                return `Rs. ${(wedm * share).toFixed(2)}`;
-              },
-            } as Column<EmployeeLog>]
-          : []),
-        {
-          key: 'startedAt',
-          label: 'Started At',
-          sortable: false,
-          render: (row) => {
-            const parts = getDisplayDateTimeParts(row.startedAt);
-            return (
-              <div className="created-at-split">
-                <span>{parts.date}</span>
-                <span>{parts.time}</span>
-              </div>
-            );
-          },
-        },
-        {
-          key: 'endedAt',
-          label: 'Ended At',
-          sortable: false,
-          render: (row) => {
-            const parts = getDisplayDateTimeParts(row.endedAt || null);
-            return (
-              <div className="created-at-split">
-                <span>{parts.date}</span>
-                <span>{parts.time}</span>
-              </div>
-            );
-          },
-        },
-        {
-          key: 'durationSeconds',
-          label: 'Time Taken',
-          sortable: false,
-          render: (row) => formatDuration(row.durationSeconds),
-        },
-        {
-          key: 'status',
-          label: 'Status',
-          sortable: false,
-          className: 'employee-status-cell',
-          headerClassName: 'employee-status-col',
-          render: (row) => (
-            <span
-              className={`employee-log-status status-${row.status.toLowerCase()}`}
-            >
-              {row.status === 'IN_PROGRESS' ? 'In Progress' : row.status === 'REJECTED' ? 'Rejected' : 'Completed'}
-            </span>
-          ),
-        },
-      ] as Column<EmployeeLog>[];
+  const getRevenueLabel = (row: EmployeeLog) => {
+    const metadata = (row.metadata || {}) as Record<string, any>;
+    const explicit = row.revenue ?? metadata.revenue;
+    if (explicit !== undefined && explicit !== null && String(explicit).trim() !== "") {
+      const numeric = Number(explicit);
+      return Number.isFinite(numeric) ? `Rs. ${numeric.toFixed(2)}` : String(explicit);
     }
 
-    return [
-      {
-        key: 'employee',
-        label: 'Employee',
-        sortable: false,
-        render: (row) => (
-          <div className="employee-log-user employee-log-user-badge">
-            <span
-              className="employee-log-user-initial-badge"
-              title={String(row.userName || 'Unknown User').toUpperCase()}
-            >
-              {getInitials(String(row.userName || 'Unknown User'))}
-            </span>
-            <span>{formatRoleLabel((row.metadata as any)?.userRole || row.role)}</span>
-          </div>
-        ),
-      },
-      {
-        key: 'workItemTitle',
-        label: 'Work Item',
-        sortable: false,
-        className: 'employee-work-item-cell',
-        render: (row) => (
-          <div className="employee-work-item">
-            <span className="ref-badge">Job #{row.refNumber || ""}</span>
-          </div>
-        ),
-      },
-      {
-        key: 'jobDescription',
-        label: 'Description',
-        sortable: false,
-        render: (row) => {
-          const full = String(row.jobDescription || '-');
-          return <MarqueeCopyText text={full} />;
-        },
-      },
-      {
-        key: 'quantityCount',
-        label: 'Quantities',
-        sortable: false,
-        render: (row) => {
-          const computed =
-            Number(row.quantityCount || 0) ||
-            Number((row.metadata as any)?.quantityCount || 0) ||
-            (Number(row.quantityTo || 0) && Number(row.quantityFrom || 0)
-              ? Number(row.quantityTo) - Number(row.quantityFrom) + 1
-              : 0);
-          return computed > 0 ? computed : '-';
-        },
-      },
-      {
-        key: 'startedAt',
-        label: 'Started At',
-        sortable: false,
-        render: (row) => {
-          const parts = getDisplayDateTimeParts(row.startedAt);
-          return (
-            <div className="created-at-split">
-              <span>{parts.date}</span>
-              <span>{parts.time}</span>
-            </div>
-          );
-        },
-      },
-      {
-        key: 'endedAt',
-        label: 'Ended At',
-        sortable: false,
-        render: (row) => {
-          const parts = getDisplayDateTimeParts(row.endedAt || null);
-          return (
-            <div className="created-at-split">
-              <span>{parts.date}</span>
-              <span>{parts.time}</span>
-            </div>
-          );
-        },
-      },
-      {
-        key: 'durationSeconds',
-        label: 'Time Taken',
-        sortable: false,
-        render: (row) => formatDuration(row.durationSeconds),
-      },
-      {
-        key: 'status',
-        label: 'Status',
-        sortable: false,
-        className: 'employee-status-cell',
-        headerClassName: 'employee-status-col',
-        render: (row) => (
-          <span
-            className={`employee-log-status status-${row.status.toLowerCase()}`}
-          >
-            {row.status === 'IN_PROGRESS' ? 'In Progress' : row.status === 'REJECTED' ? 'Rejected' : 'Completed'}
-          </span>
-        ),
-      },
-    ] as Column<EmployeeLog>[];
-  }, [activeRole, groupWorkedSecondsByGroupId, isAdmin]);
+    const wedm = Number(metadata.wedmAmount || 0);
+    if (!wedm) return "-";
+
+    const groupWorkedSecondsByGroupId = new Map<string, number>();
+    const groupId = String(row.jobGroupId || "").trim();
+    const totalWorkedSeconds = groupId ? groupWorkedSecondsByGroupId.get(groupId) || 0 : 0;
+    if (!totalWorkedSeconds) return `Rs. ${wedm.toFixed(2)}`;
+
+    const share = Math.max(0, getWorkedSecondsForLog(row)) / totalWorkedSeconds;
+    return `Rs. ${(wedm * share).toFixed(2)}`;
+  };
+
+  const columns = useMemo(() => createEmployeeLogColumns({ activeRole, isAdmin, getRevenueLabel }), [activeRole, isAdmin]);
 
   const filterVisibleLogs = useMemo(
     () => (logs: EmployeeLog[]) =>
@@ -300,7 +53,7 @@ export const EmployeeLogsPanel = () => {
         const startedAtParts = getDisplayDateTimeParts(log.startedAt);
         const endedAtParts = getDisplayDateTimeParts(log.endedAt || null);
         const commonValues = [
-          String(log.userName || 'Unknown User'),
+          String(log.userName || "Unknown User"),
           formatRoleLabel((log.metadata as any)?.userRole || log.role),
           startedAtParts.date,
           startedAtParts.time,
@@ -313,144 +66,90 @@ export const EmployeeLogsPanel = () => {
         ];
 
         const roleSpecificValues =
-          activeRole === 'OPERATOR'
-            ? [
-                String(log.workItemTitle || '-'),
-                String(log.workSummary || '-'),
-                String((log.metadata as any)?.idleTime || '-'),
-                String((log.metadata as any)?.remark || '-'),
-              ]
-            : [
-                `Job #${String(log.refNumber || '')}`,
-                String(log.jobDescription || '-'),
-                Number(log.quantityCount || 0) ||
-                Number((log.metadata as any)?.quantityCount || 0) ||
-                (Number(log.quantityTo || 0) && Number(log.quantityFrom || 0)
-                  ? Number(log.quantityTo) - Number(log.quantityFrom) + 1
-                  : '-'),
-              ];
+          activeRole === "OPERATOR"
+            ? [formatWorkItemTitle(log.workItemTitle), String(log.jobDescription || "-"), String(log.workSummary || "-"), String((log.metadata as any)?.idleTime || "-"), String((log.metadata as any)?.remark || "-"), ...(isAdmin ? [getRevenueLabel(log)] : [])]
+            : [`Job #${String(log.refNumber || "")}`, String(log.jobDescription || "-"), getQuantityLabel(log) || "-"];
 
         return matchesSearchQuery([...commonValues, ...roleSpecificValues], searchQuery);
       }),
-    [activeRole, searchQuery]
+    [activeRole, isAdmin, searchQuery]
   );
-  const hasSearchQuery = searchQuery.trim().length > 0;
-
-  const handleExportCsv = () => {
-    void (async () => {
-      const logs = await fetchAllPaginatedItems<EmployeeLog>(
-        async (offset, limit) => {
-          const page = await getEmployeeLogsPage({
-            role: activeRole,
-            status: statusFilter || undefined,
-            offset,
-            limit,
-          });
-          return { items: page.items, hasMore: page.hasMore };
-        }
-      );
-      const filteredLogs = filterVisibleLogs(logs);
-      const headers = columns.map((col) => String(col.label));
-      const rows = filteredLogs.map((row, index) =>
-        columns.map((col) => {
-          try {
-            const rendered = col.render
-              ? col.render(row, index)
-              : (row as any)[col.key];
-            if (typeof rendered === 'string' || typeof rendered === 'number')
-              return String(rendered);
-            if (!rendered) return '';
-            return String((row as any)[col.key] ?? '');
-          } catch {
-            return String((row as any)[col.key] ?? '');
-          }
-        }),
-      );
-
-      const csvContent = [
-        headers.join(','),
-        ...rows.map((r) =>
-          r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(','),
-        ),
-      ].join('\n');
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-      const link = document.createElement('a');
-      const url = URL.createObjectURL(blob);
-      link.setAttribute('href', url);
-      link.setAttribute(
-        'download',
-        `job_logs_${activeRole.toLowerCase()}_${new Date().toISOString().split('T')[0]}.csv`,
-      );
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    })().catch((fetchError: any) => {
-      setError(fetchError?.message || 'Failed to export employee logs');
-    });
-  };
 
   const columnDefs = useMemo(
     () =>
       columns.map((column) => ({
-        headerName: typeof column.label === 'string' ? column.label : String(column.key),
+        headerName: typeof column.label === "string" ? column.label : String(column.key),
         field: column.key,
-        minWidth: column.key === 'jobDescription' || column.key === 'workSummary' ? 190 : 118,
+        minWidth: column.key === "jobDescription" || column.key === "workSummary" ? 190 : 118,
         cellClass: column.className,
         headerClass: column.headerClassName,
         cellRenderer: column.render ? ((params: any) => column.render!(params.data, params.node?.rowIndex || 0)) : undefined,
       })),
-    [columns],
+    [columns]
   );
+
+  const exportLogs = async () => {
+    const logs = await fetchAllPaginatedItems<EmployeeLog>(async (offset, limit) => {
+      const page = await getEmployeeLogsPage({ role: activeRole, status: statusFilter || undefined, offset, limit });
+      return { items: page.items, hasMore: page.hasMore };
+    });
+
+    const filteredLogs = filterVisibleLogs(logs);
+    const headers =
+      activeRole === "OPERATOR"
+        ? ["Employee", "Work Item", "Description", "Summary", "Idle Time", "Remark", ...(isAdmin ? ["Revenue"] : []), "Started At", "Ended At", "Time Taken", "Status"]
+        : ["Employee", "Work Item", "Description", "Quantities", "Started At", "Ended At", "Time Taken", "Status"];
+    const rows = filteredLogs.map((row) =>
+      activeRole === "OPERATOR"
+        ? [
+            `${String(row.userName || "Unknown User")} (${formatRoleLabel((row.metadata as any)?.userRole || row.role)})`,
+            formatWorkItemTitle(row.workItemTitle),
+            String(row.jobDescription || "-"),
+            String(row.workSummary || "-"),
+            String((row.metadata as any)?.idleTime || "-"),
+            String((row.metadata as any)?.remark || "-"),
+            ...(isAdmin ? [getRevenueLabel(row)] : []),
+            `${getDisplayDateTimeParts(row.startedAt).date} ${getDisplayDateTimeParts(row.startedAt).time}`.trim(),
+            `${getDisplayDateTimeParts(row.endedAt || null).date} ${getDisplayDateTimeParts(row.endedAt || null).time}`.trim(),
+            formatDuration(row.durationSeconds),
+            formatLogStatus(row.status),
+          ]
+        : [
+            `${String(row.userName || "Unknown User")} (${formatRoleLabel((row.metadata as any)?.userRole || row.role)})`,
+            `Job #${String(row.refNumber || "")}`,
+            String(row.jobDescription || "-"),
+            String(getQuantityLabel(row) || "-"),
+            `${getDisplayDateTimeParts(row.startedAt).date} ${getDisplayDateTimeParts(row.startedAt).time}`.trim(),
+            `${getDisplayDateTimeParts(row.endedAt || null).date} ${getDisplayDateTimeParts(row.endedAt || null).time}`.trim(),
+            formatDuration(row.durationSeconds),
+            formatLogStatus(row.status),
+          ]
+    );
+
+    const csvContent = [headers.join(","), ...rows.map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(","))].join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", `job_logs_${activeRole.toLowerCase()}_${new Date().toISOString().split("T")[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   return (
     <div className="employee-logs-container">
       <div className="employee-role-tabs">
-        <button
-          type="button"
-          className={`employee-role-tab ${activeRole === 'PROGRAMMER' ? 'active' : ''}`}
-          onClick={() => {
-            setActiveRole('PROGRAMMER');
-          }}
-        >
-          Programmer
-        </button>
-        <button
-          type="button"
-          className={`employee-role-tab ${activeRole === 'OPERATOR' ? 'active' : ''}`}
-          onClick={() => {
-            setActiveRole('OPERATOR');
-          }}
-        >
-          Operator
-        </button>
-        <button
-          type="button"
-          className={`employee-role-tab ${activeRole === 'QC' ? 'active' : ''}`}
-          onClick={() => {
-            setActiveRole('QC');
-          }}
-        >
-          QC
-        </button>
+        {(["PROGRAMMER", "OPERATOR", "QC"] as RoleTab[]).map((role) => (
+          <button key={role} type="button" className={`employee-role-tab ${activeRole === role ? "active" : ""}`} onClick={() => setActiveRole(role)}>
+            {role === "PROGRAMMER" ? "Programmer" : role === "OPERATOR" ? "Operator" : "QC"}
+          </button>
+        ))}
       </div>
 
       <div className="employee-log-filters">
-        <input
-          type="text"
-          className="employee-search-input"
-          placeholder="Search any column..."
-          value={searchQuery}
-          onChange={(e) => {
-            setSearchQuery(e.target.value);
-          }}
-        />
-        <select
-          className="employee-status-select"
-          value={statusFilter}
-          onChange={(e) => {
-            setStatusFilter(e.target.value as '' | 'COMPLETED' | 'IN_PROGRESS' | 'REJECTED');
-          }}
-        >
+        <input type="text" className="employee-search-input" placeholder="Search any column..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+        <select className="employee-status-select" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as "" | "COMPLETED" | "IN_PROGRESS" | "REJECTED")}>
           <option value="">All Status</option>
           <option value="COMPLETED">Completed</option>
           <option value="IN_PROGRESS">In Progress</option>
@@ -459,21 +158,18 @@ export const EmployeeLogsPanel = () => {
         <button
           type="button"
           className="employee-csv-btn"
-          onClick={handleExportCsv}
+          onClick={() => void exportLogs().catch((fetchError: any) => setError(fetchError?.message || "Failed to export employee logs"))}
           title="Download CSV"
         >
-          <DownloadIcon sx={{ fontSize: '1rem' }} />
+          <DownloadIcon sx={{ fontSize: "1rem" }} />
           CSV
         </button>
       </div>
 
-      {activeRole === 'QC' ? (
+      {activeRole === "QC" ? (
         <div className="qa-placeholder-card">
           <h3>QC Logs</h3>
-          <p>
-            QC logging tab is ready. QC event capture wiring can be added in the
-            next step.
-          </p>
+          <p>QC logging tab is ready. QC event capture wiring can be added in the next step.</p>
         </div>
       ) : error ? (
         <div className="error-message">{error}</div>
@@ -482,34 +178,22 @@ export const EmployeeLogsPanel = () => {
           columnDefs={columnDefs as any}
           transformRows={filterVisibleLogs}
           fetchPage={async (offset, limit) => {
-            setError('');
-            if (hasSearchQuery) {
-              const allLogs = await fetchAllPaginatedItems<EmployeeLog>(
-                async (pageOffset, pageLimit) => {
-                  const page = await getEmployeeLogsPage({
-                    role: activeRole,
-                    status: statusFilter || undefined,
-                    offset: pageOffset,
-                    limit: pageLimit,
-                  });
-                  return { items: page.items, hasMore: page.hasMore };
-                }
-              );
+            setError("");
+            if (searchQuery.trim()) {
+              const allLogs = await fetchAllPaginatedItems<EmployeeLog>(async (pageOffset, pageLimit) => {
+                const page = await getEmployeeLogsPage({ role: activeRole, status: statusFilter || undefined, offset: pageOffset, limit: pageLimit });
+                return { items: page.items, hasMore: page.hasMore };
+              });
               return { items: allLogs, hasMore: false };
             }
 
-            const page = await getEmployeeLogsPage({
-              role: activeRole,
-              status: statusFilter || undefined,
-              offset,
-              limit,
-            });
+            const page = await getEmployeeLogsPage({ role: activeRole, status: statusFilter || undefined, offset, limit });
             return { items: page.items, hasMore: page.hasMore };
           }}
           emptyMessage="No logs found for the current filters."
           getRowId={(row) => row._id}
           className="employee-logs-table logs-center"
-          refreshKey={`${activeRole}|${statusFilter}|${hasSearchQuery}`}
+          refreshKey={`${activeRole}|${statusFilter}|${searchQuery.trim().length > 0}`}
         />
       )}
     </div>

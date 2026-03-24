@@ -1,0 +1,148 @@
+import type { Column } from "../../../components/DataTable";
+import ActionButtons from "../../Programmer/components/ActionButtons";
+import CreatedByBadge from "../../../components/CreatedByBadge";
+import MarqueeCopyText from "../../../components/MarqueeCopyText";
+import SelectDropdown from "../../Programmer/components/SelectDropdown";
+import { MultiSelectOperators } from "../components/MultiSelectOperators";
+import type { OperatorDisplayRow } from "../hooks/useOperatorTable";
+import { formatJobRefDisplay, formatMachineLabel, toYN } from "../../../utils/jobFormatting";
+import { getDispatchableQuantityNumbers, getGroupQaProgressCounts, getQaProgressCounts } from "./qaProgress";
+import { getThicknessDisplayValue } from "../../Programmer/programmerUtils";
+import {
+  getOperatorMachineNumber,
+  normalizeAssignedOperators,
+  renderEstimatedTime,
+  renderOperatorCustomerCell,
+} from "./operatorTableHelpers";
+
+export const buildBaseOperatorColumns = ({
+  toggleGroup,
+  operatorNameLookup,
+  canAssign,
+  operatorUsers,
+  handleAssignChange,
+  currentUserName,
+  machineDropdownOptions,
+  handleMachineNumberChange,
+  handleChildMachineNumberChange,
+  isAdmin,
+  handleViewEntry,
+  handleViewJob,
+  handleImageInput,
+  handleSubmit,
+  handleOpenQaModal,
+  isImageInputDisabled,
+}: {
+  toggleGroup: (groupId: string) => void;
+  operatorNameLookup: Map<string, string>;
+  canAssign: boolean;
+  operatorUsers: Array<{ id: string | number; name: string }>;
+  handleAssignChange: (jobId: number | string, value: string) => void;
+  currentUserName: string;
+  machineDropdownOptions: string[];
+  handleMachineNumberChange: (groupId: string, machineNumber: string) => void;
+  handleChildMachineNumberChange: (jobId: number | string, machineNumber: string) => void;
+  isAdmin: boolean;
+  handleViewJob: (row: any) => void;
+  handleViewEntry: (entry: any) => void;
+  handleSubmit: (groupId: string) => void;
+  handleImageInput: (groupId: string, cutId?: string | number) => void;
+  handleOpenQaModal: (entries: any[]) => void;
+  isImageInputDisabled: boolean;
+}): Column<OperatorDisplayRow>[] => [
+  { key: "customer", label: "Customer", sortable: false, sortKey: "customer", className: "customer-cell", headerClassName: "customer-header", render: (row) => renderOperatorCustomerCell(row, toggleGroup) },
+  { key: "programRef", label: "Job ref", sortable: false, render: (row) => formatJobRefDisplay(row.entry.refNumber || "") },
+  { key: "programRefFileName", label: <>Program Ref<br />File Name</>, sortable: false, render: (row) => <MarqueeCopyText text={String((row.entry as any).programRefFile || (row.entry as any).programRefFileName || "-")} /> },
+  { key: "description", label: "Description", sortable: false, sortKey: "description", render: (row) => <MarqueeCopyText text={row.entry.description || "-"} /> },
+  { key: "cut", label: "Cut (mm)", sortable: false, sortKey: "cut", render: (row) => Math.round(Number(row.entry.cut || 0)) },
+  { key: "thickness", label: "TH (MM)", sortable: false, sortKey: "thickness", render: (row) => getThicknessDisplayValue(row.entry.thickness) },
+  { key: "passLevel", label: "Pass", sortable: false, sortKey: "passLevel", render: (row) => row.entry.passLevel },
+  { key: "setting", label: "Setting", sortable: false, sortKey: "setting", render: (row) => row.entry.setting },
+  { key: "qty", label: "Qty", sortable: false, sortKey: "qty", render: (row) => Number(row.entry.qty || 0).toString() },
+  { key: "sedm", label: "SEDM", sortable: false, render: (row) => <span className={`sedm-badge ${toYN(row.entry.sedm) === "Y" ? "yes" : toYN(row.entry.sedm) === "N" ? "no" : ""}`}>{toYN(row.entry.sedm)}</span> },
+  {
+    key: "assignedTo",
+    label: "Operator",
+    sortable: false,
+    className: "operator-assigned-cell",
+    render: (row) => {
+      const assignedOperators = normalizeAssignedOperators(row.entry.assignedTo || "", operatorNameLookup);
+      return canAssign ? (
+        <MultiSelectOperators
+          selectedOperators={assignedOperators}
+          availableOperators={operatorUsers}
+          className="operator-assigned-dropdown"
+          onChange={(operators) => handleAssignChange(row.entry.id, operators.length > 0 ? [...new Set(operators.map((name) => name.trim()).filter(Boolean))].join(", ") : "Unassign")}
+          assignToSelfName={currentUserName || undefined}
+          placeholder="Unassign"
+          compact
+        />
+      ) : (
+        <div className="assigned-operators-readonly">
+          {assignedOperators.length > 1 ? <span className="compact-display-readonly" title={assignedOperators.join(", ")}><span className="multi-select-display-track">{assignedOperators.join(", ")}</span></span> : assignedOperators.length === 1 ? <span className="operator-badge-readonly">{assignedOperators[0]}</span> : <span className="unassigned-text">Unassign</span>}
+        </div>
+      );
+    },
+  },
+  {
+    key: "machineNumber",
+    label: "Mach #",
+    sortable: false,
+    className: "operator-machine-cell",
+    render: (row) => (
+      <SelectDropdown
+        className="operator-machine-dropdown-wrapper"
+        value={machineDropdownOptions.includes(getOperatorMachineNumber(row.entry)) ? getOperatorMachineNumber(row.entry) : ""}
+        onChange={(nextValue) => row.kind === "parent" ? handleMachineNumberChange(row.groupId, nextValue) : handleChildMachineNumberChange(row.entry.id, nextValue)}
+        options={machineDropdownOptions.map((machine) => ({ label: formatMachineLabel(machine), value: machine }))}
+        placeholder="Select"
+        align="left"
+      />
+    ),
+  },
+  { key: "estimatedTime", label: <>Estimated<br />Time</>, sortable: false, render: renderEstimatedTime },
+  ...(isAdmin ? [{ key: "totalAmount", label: "Amount (Rs.)", sortable: false, sortKey: "totalAmount", className: "operator-amount-cell", headerClassName: "operator-amount-header", render: (row: OperatorDisplayRow) => row.kind === "parent" ? row.tableRow.groupTotalAmount ? `Rs. ${Math.round(row.tableRow.groupTotalAmount)}` : "-" : row.entry.totalAmount ? `Rs. ${Math.round(row.entry.totalAmount)}` : "-" } as Column<OperatorDisplayRow>] : []),
+  {
+    key: "productionStage",
+    label: "Status",
+    sortable: false,
+    className: "status-cell",
+    headerClassName: "status-header",
+    render: (row) => {
+      const counts = row.kind === "parent" ? getGroupQaProgressCounts(row.tableRow.entries) : getQaProgressCounts(row.entry, Math.max(1, Number(row.entry.qty || 1)));
+      const badges = [
+        { className: "empty", label: `Yet to Start ${counts.empty}` },
+        { className: "ready", label: `In Progress ${counts.ready}` },
+        { className: "saved", label: `Logged ${counts.saved}` },
+        { className: "sent", label: `QC ${counts.sent}` },
+      ];
+      return <div className="child-stage-summary"><div className="qa-badge-ticker" title={badges.map((badge) => badge.label).join(" | ")}><div className="qa-badge-track">{[...badges, ...badges].map((badge, index) => <span key={`${badge.className}-${index}`} className={`qa-mini ${badge.className}`}>{badge.label}</span>)}</div></div></div>;
+    },
+  },
+  { key: "createdBy", label: "Created By", sortable: false, sortKey: "createdBy", className: "created-by-cell", headerClassName: "created-by-header", render: (row) => <CreatedByBadge value={row.entry.createdBy} /> },
+  {
+    key: "action",
+    label: "Action",
+    sortable: false,
+    className: "action-cell",
+    headerClassName: "action-header",
+    render: (row) => {
+      const isChild = row.kind === "child";
+      const targetEntries = isChild ? [row.entry] : row.tableRow.entries;
+      const canSendToQa = targetEntries.some((entry) => getDispatchableQuantityNumbers(entry).length > 0);
+      return (
+        <ActionButtons
+          onView={() => (isChild ? handleViewEntry(row.entry) : handleViewJob(row.tableRow))}
+          onImage={isChild ? () => handleImageInput(row.groupId, row.entry.id) : !row.hasChildren ? () => handleSubmit(row.groupId) : undefined}
+          onSubmit={() => handleOpenQaModal(targetEntries)}
+          viewLabel={`View ${row.entry.customer || "entry"}`}
+          imageLabel={`Open ${row.entry.customer || "entry"}`}
+          submitLabel="Send to QC"
+          isOperator={true}
+          disableImageButton={isImageInputDisabled}
+          disableSubmitButton={!canSendToQa}
+        />
+      );
+    },
+  },
+];

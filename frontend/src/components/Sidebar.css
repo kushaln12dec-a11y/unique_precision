@@ -103,13 +103,16 @@
 }
 
 .sidebar-company-name {
-  font-family: "Lucida Calligraphy", "Lucida Handwriting", cursive;
-  font-size: 1.48rem;
-  line-height: 1.04;
+  font-family: var(--brand-script-font) !important;
+  font-size: 1.56rem;
+  line-height: 1.02;
   color: #102a63;
-  letter-spacing: 0.2px;
-  font-weight: 700;
-  text-shadow: 0.35px 0 0 currentColor, 0 0 0.2px currentColor;
+  letter-spacing: 0.18px;
+  font-weight: 800;
+  text-shadow:
+    0.45px 0 0 currentColor,
+    0 0 0.35px currentColor;
+  font-style: normal;
   display: inline-flex;
   flex-direction: column;
   align-items: flex-start;
@@ -119,6 +122,8 @@
 .sidebar-company-name-line {
   display: block;
   white-space: nowrap;
+  font-family: inherit;
+  font-weight: inherit;
 }
 
 /* Show full logo on hover */

@@ -2,6 +2,7 @@ import express from "express";
 import path from "path";
 import fs from "fs";
 import cors from "cors";
+import helmet from "helmet";
 import authRoutes from "./routes/auth";
 import userRoutes from "./routes/users";
 import jobRoutes from "./routes/jobs";
@@ -13,23 +14,23 @@ import inspectionReportsRoutes from "./routes/inspectionReports";
 import uploadRoutes from "./routes/upload";
 import dashboardRoutes from "./routes/dashboard";
 import { authMiddleware } from "./middleware/auth";
+import { errorHandler, jsonErrorHandler } from "./middleware/error.middleware";
+
+const compression = require("compression");
+const morgan = require("morgan");
 
 const app = express();
 
-// Minimal middleware for debugging connectivity
+// Keep BigInt values serializable across Prisma responses.
 app.set("json replacer", (_key: string, value: any) =>
   typeof value === "bigint" ? value.toString() : value
 );
 app.use(cors());
+app.use(helmet());
+app.use(compression());
+app.use(morgan("dev"));
 app.use(express.json({ limit: "10mb" }));
-
-// Error handling middleware for JSON parsing errors
-app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
-  if (err instanceof SyntaxError && "body" in err) {
-    return res.status(400).json({ message: "Invalid JSON" });
-  }
-  next();
-});
+app.use(jsonErrorHandler);
 
 // Health check (always available)
 app.get("/api/health", (_req, res) => {
@@ -96,10 +97,6 @@ if (hasFrontend) {
   });
 }
 
-// Global error handler
-app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
-  console.error("Unhandled error:", err);
-  res.status(500).json({ message: "Internal server error" });
-});
+app.use(errorHandler);
 
 export default app;

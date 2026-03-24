@@ -1,0 +1,272 @@
+.operator-table-no-scroll .data-table th.action-header,
+.operator-table-no-scroll .data-table td.action-cell,
+.operator-table-no-scroll .data-table th:last-child:not(.accordion-header-cell),
+.operator-table-no-scroll
+  .data-table
+  td:last-child:not(.accordion-toggle-cell) {
+  width: 112px;
+  min-width: 112px;
+  max-width: 112px;
+  white-space: nowrap;
+  padding: 0.5rem 0.25rem;
+  text-align: center;
+}
+
+.operator-table-no-scroll .data-table th.action-header .th-content {
+  justify-content: center;
+}
+
+/* ============================================
+   CHILD TABLE STYLES
+   Column order: Spacer, Customer, Desc, Program Ref File Name, Cut, TH, Pass, Set, Qty, SEDM, Operator, Mach #, Total Hrs, Estimated Time, Total Amount, Status, Action
+   ============================================ */
+
+.operator-table-no-scroll .child-row-content {
+  width: 100%;
+  max-width: 100%;
+  padding: 0;
+  box-sizing: border-box;
+  background: transparent;
+}
+
+.operator-table-no-scroll .child-row-content .child-jobs-table {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: separate;
+  border-spacing: 0;
+  border-radius: 12px;
+  overflow: visible;
+  background: #ffffff;
+  box-sizing: border-box;
+  margin-bottom: 0;
+}
+
+.operator-table-no-scroll .child-row-content .child-jobs-table th,
+.operator-table-no-scroll .child-row-content .child-jobs-table td {
+  padding: 0.5rem 0.4rem;
+  font-size: 0.8rem;
+  text-align: left;
+  vertical-align: middle;
+  border-top: 1px solid #e5e7eb;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: normal;
+  word-break: break-word;
+  box-sizing: border-box;
+}
+
+/* Ensure matching padding for headers and cells */
+.operator-table-no-scroll .child-row-content .child-jobs-table th {
+  padding: 0.5rem 0.4rem;
+  text-align: left;
+}
+
+.operator-table-no-scroll .child-row-content .child-jobs-table th {
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  color: #ffffff;
+  font-weight: 600;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.35px;
+  white-space: nowrap;
+  word-wrap: normal;
+  word-break: normal;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.2;
+  max-height: 3.6em;
+  padding: 0.5rem 0.35rem;
+  hyphens: auto;
+  text-align: left;
+}
+
+/* Ensure child table header content wraps properly */
+.operator-table-no-scroll .child-row-content .child-jobs-table th .th-content {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.2rem;
+  width: 100%;
+  flex-wrap: nowrap;
+  line-height: 1.2;
+  word-break: normal;
+}
+
+/* Child Table Column Widths - Align with Parent Table */
+/* Checkbox column in child table */
+.operator-table-no-scroll
+  .child-row-content
+  .child-jobs-table
+  th.checkbox-header-cell,
+.operator-table-no-scroll
+  .child-row-content
+  .child-jobs-table
+  td.checkbox-cell {
+  width: 40px;
+  min-width: 40px;
+  max-width: 40px;
+  padding: 0.5rem 0.25rem;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.operator-table-no-scroll
+  .child-row-content
+  .child-jobs-table
+  th.checkbox-header-cell
+  input[type='checkbox'],
+.operator-table-no-scroll
+  .child-row-content
+  .child-jobs-table
+  td.checkbox-cell
+  input[type='checkbox'] {
+  width: 14px;
+  height: 14px;
+  margin: 0;
+  cursor: pointer;
+}
+
+/* Spacer for checkbox alignment - matches checkbox width */
+.operator-table-no-scroll
+  .child-row-content
+  .child-jobs-table
+  th.child-table-spacer,
+.operator-table-no-scroll
+  .child-row-content
+  .child-jobs-table
+  td.child-table-spacer {
+  width: 40px;
+  min-width: 40px;
+  max-width: 40px;
+  padding: 0;
+  border: none;
+}
+
+/* Customer - Align with parent Customer - Ensure th and td match */
+.operator-table-no-scroll .child-row-content .child-jobs-table th.customer-col,
+.operator-table-no-scroll .child-row-content .child-jobs-table td.customer-col {
+  width: 100px;
+  min-width: 100px;
+  text-align: left;
+  padding-left: 0.75rem;
+  padding-right: 0.75rem;
+}
+
+/* Description - Align with parent Description - Ensure th and td match */
+.operator-table-no-scroll
+  .child-row-content
+  .child-jobs-table
+  th.description-col,
+.operator-table-no-scroll
+  .child-row-content
+  .child-jobs-table
+  td.description-col {
+  width: 120px;
+  min-width: 120px;
+  text-align: left;
+  padding-left: 0.75rem;
+  padding-right: 0.75rem;
+}
+
+.operator-table-no-scroll .child-row-content .child-jobs-table th.program-ref-file-col,
+.operator-table-no-scroll .child-row-content .child-jobs-table td.program-ref-file-col {
+  width: 95px;
+  min-width: 95px;
+  text-align: left;
+  padding-left: 0.75rem;
+  padding-right: 0.75rem;
+}
+
+/* Cut - Align with parent Cut - Ensure th and td match */
+.operator-table-no-scroll .child-row-content .child-jobs-table th.cut-col,
+.operator-table-no-scroll .child-row-content .child-jobs-table td.cut-col {
+  width: 80px;
+  min-width: 80px;
+  text-align: left;
+  padding-left: 0.75rem;
+  padding-right: 0.75rem;
+}
+
+/* TH - Align with parent TH - Ensure th and td match */
+.operator-table-no-scroll .child-row-content .child-jobs-table th.th-col,
+.operator-table-no-scroll .child-row-content .child-jobs-table td.th-col {
+  width: 80px;
+  min-width: 80px;
+  text-align: left;
+  padding-left: 0.75rem;
+  padding-right: 0.75rem;
+}
+
+/* Pass - Align with parent Pass - Ensure th and td match */
+.operator-table-no-scroll .child-row-content .child-jobs-table th.pass-col,
+.operator-table-no-scroll .child-row-content .child-jobs-table td.pass-col {
+  width: 60px;
+  min-width: 60px;
+  text-align: left;
+  padding-left: 0.75rem;
+  padding-right: 0.75rem;
+}
+
+/* Setting - Align with parent Setting - Ensure th and td match */
+.operator-table-no-scroll .child-row-content .child-jobs-table th.setting-col,
+.operator-table-no-scroll .child-row-content .child-jobs-table td.setting-col {
+  width: 70px;
+  min-width: 70px;
+  text-align: left;
+  padding-left: 0.75rem;
+  padding-right: 0.75rem;
+}
+
+/* Qty - Align with parent Qty - Ensure th and td match */
+.operator-table-no-scroll .child-row-content .child-jobs-table th.qty-col,
+.operator-table-no-scroll .child-row-content .child-jobs-table td.qty-col {
+  width: 50px;
+  min-width: 50px;
+  text-align: left;
+  padding-left: 0.75rem;
+  padding-right: 0.75rem;
+}
+
+/* SEDM - Extra column - Ensure th and td match */
+.operator-table-no-scroll .child-row-content .child-jobs-table th.sedm-col,
+.operator-table-no-scroll .child-row-content .child-jobs-table td.sedm-col {
+  width: 50px;
+  min-width: 50px;
+  text-align: left;
+  padding-left: 0.4rem;
+  padding-right: 0.4rem;
+}
+
+/* Assigned To - Align with parent Assigned To - Ensure th and td match */
+.operator-table-no-scroll .child-row-content .child-jobs-table th.assigned-col,
+.operator-table-no-scroll .child-row-content .child-jobs-table td.assigned-col {
+  width: 120px;
+  min-width: 120px;
+  text-align: center;
+  padding-left: 0.4rem;
+  padding-right: 0.4rem;
+}
+
+.operator-table-no-scroll .child-row-content .child-jobs-table th.mach-col,
+.operator-table-no-scroll .child-row-content .child-jobs-table td.mach-col {
+  width: 88px;
+  min-width: 88px;
+  text-align: center;
+  padding-left: 0.4rem;
+  padding-right: 0.4rem;
+}
+
+/* Total Time Needed - Align with parent Total Hrs - Ensure th and td match */
+.operator-table-no-scroll .child-row-content .child-jobs-table th.total-hrs-col,
+.operator-table-no-scroll
+  .child-row-content
+  .child-jobs-table
+  td.total-hrs-col {
+  width: 90px;
+  min-width: 90px;
+  text-align: left;
+  padding-left: 0.4rem;
+  padding-right: 0.4rem;
+}
+
+/* Total Amount - Align with parent Total Amount - Ensure th and td match */

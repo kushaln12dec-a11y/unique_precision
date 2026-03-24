@@ -1,0 +1,137 @@
+.admin-option-list {
+  margin-top: 0.7rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  max-height: 260px;
+  overflow-y: auto;
+  padding-right: 0.2rem;
+}
+
+.admin-option-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 0.46rem 0.6rem;
+  background: #f8fafc;
+}
+
+.admin-option-row span {
+  font-size: 0.84rem;
+  color: #1e293b;
+  word-break: break-word;
+}
+
+.admin-empty-text {
+  margin: 0.25rem 0 0;
+  font-size: 0.82rem;
+  color: #64748b;
+}
+
+.admin-help {
+  margin: 0 0 0.75rem;
+  font-size: 0.82rem;
+  color: #64748b;
+  line-height: 1.55;
+}
+
+.admin-customer-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.admin-customer-row {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.admin-customer-row-simple {
+  grid-template-columns:
+    minmax(150px, 1.25fr)
+    minmax(100px, 0.8fr)
+    minmax(118px, 0.9fr)
+    minmax(118px, 0.9fr)
+    minmax(118px, 0.9fr)
+    auto;
+}
+
+.admin-add-btn,
+.admin-remove-btn {
+  height: 36px;
+  border-radius: 10px;
+  border: 1px solid #cbd5e1;
+  background: #f8fafc;
+  color: #0f172a;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.admin-add-btn {
+  width: fit-content;
+  padding: 0 0.9rem;
+}
+
+.admin-modal-secondary {
+  margin-right: auto;
+}
+
+.admin-remove-btn {
+  padding: 0 0.75rem;
+  color: #b91c1c;
+  border-color: #fecaca;
+  background: #fef2f2;
+}
+
+.admin-hours-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.55rem;
+}
+
+.admin-modal-actions {
+  margin-top: 0.9rem;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.65rem;
+}
+
+.admin-modal-actions-end {
+  justify-content: flex-end;
+}
+
+@media (max-width: 1180px) {
+  .admin-console-intro {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-status-highlight-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .admin-customer-row-simple {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 720px) {
+  .admin-mini-card-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-status-highlight-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-customer-row-simple {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-option-input-row {
+    grid-template-columns: 1fr;
+  }
+}

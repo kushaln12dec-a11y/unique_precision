@@ -1,0 +1,274 @@
+.qa-mini {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.1rem 0.4rem;
+  border-radius: 999px;
+  font-size: 0.6rem;
+  font-weight: 700;
+  border: 1px solid transparent;
+  line-height: 1.2;
+  min-height: 20px;
+  width: 100%;
+  box-sizing: border-box;
+  white-space: nowrap;
+  letter-spacing: 0.02em;
+}
+
+.qa-mini.saved {
+  background: #e0f2fe;
+  border-color: #7dd3fc;
+  color: #075985;
+}
+
+.qa-mini.ready {
+  background: #ecfdf5;
+  border-color: #86efac;
+  color: #166534;
+}
+
+.qa-mini.sent {
+  background: #eef2ff;
+  border-color: #c7d2fe;
+  color: #4338ca;
+}
+
+.qa-mini.empty {
+  background: #fffbeb;
+  border-color: #fcd34d;
+  color: #92400e;
+}
+
+.qa-badge-ticker {
+  position: relative;
+  width: 92px;
+  height: 22px;
+  overflow: hidden;
+  border-radius: 999px;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  background: transparent;
+  box-shadow: none;
+}
+
+.qa-badge-ticker::before {
+  display: none;
+}
+
+.qa-badge-ticker::after {
+  display: none;
+}
+
+.qa-badge-track {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+  z-index: 1;
+  animation: qa-badge-scroll 4.2s linear infinite;
+  will-change: transform;
+}
+
+.qa-badge-ticker:hover .qa-badge-track,
+.qa-badge-ticker:focus-within .qa-badge-track {
+  animation-duration: 1.9s;
+}
+
+.qa-badge-ticker:hover .qa-mini,
+.qa-badge-ticker:focus-within .qa-mini {
+  transform: none;
+  filter: none;
+}
+
+@keyframes qa-badge-scroll {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(calc(-50% - 2px));
+  }
+}
+
+@keyframes qa-badge-highlight {
+  0% {
+    transform: translateY(-110%) rotate(18deg);
+    opacity: 0;
+  }
+  15% {
+    opacity: 0.82;
+  }
+  50% {
+    opacity: 0.92;
+  }
+  100% {
+    transform: translateY(115%) rotate(18deg);
+    opacity: 0;
+  }
+}
+
+.child-assigned-to-select {
+  padding: 0.25rem 0.5rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  background: #ffffff;
+  color: #1e293b;
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 12 12'%3E%3Cpath fill='%2364748b' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.4rem center;
+  padding-right: 1.5rem;
+  min-width: 100px;
+}
+
+.child-assigned-to-select:hover {
+  border-color: #94a3b8;
+  background-color: #f8fafc;
+}
+
+.child-assigned-to-select:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+}
+
+/* Child row color coding - scoped to Programmer table */
+.programmer-container .jobs-table-wrapper .child-row.child-critical-row {
+  border-left: 3px solid #dc2626 !important;
+  background-image:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.54) 0%, rgba(255, 255, 255, 0.08) 48%, rgba(255, 255, 255, 0) 100%),
+    linear-gradient(90deg, rgba(220, 38, 38, 0.2) 0%, rgba(220, 38, 38, 0.07) 38%, rgba(255, 255, 255, 0.95) 100%);
+}
+.programmer-container .jobs-table-wrapper .child-row.child-critical-row td:first-child {
+  box-shadow: inset 3px 0 0 #dc2626;
+}
+
+.programmer-container .jobs-table-wrapper .child-row.child-critical-row td {
+  background: transparent !important;
+  color: #0f172a !important;
+}
+
+/* Child row priority colors (only when not complex) */
+.programmer-container .jobs-table-wrapper .child-row.child-priority-row.child-priority-high {
+  border-left: 3px solid #ef4444;
+  background-image:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0.08) 48%, rgba(255, 255, 255, 0) 100%),
+    linear-gradient(90deg, rgba(239, 68, 68, 0.18) 0%, rgba(239, 68, 68, 0.06) 38%, rgba(255, 255, 255, 0.96) 100%);
+}
+.programmer-container .jobs-table-wrapper .child-row.child-priority-row.child-priority-high td:first-child {
+  box-shadow: inset 3px 0 0 #ef4444;
+}
+
+.programmer-container .jobs-table-wrapper .child-row.child-priority-row.child-priority-high td {
+  background: transparent !important;
+  color: #0f172a !important;
+}
+
+.programmer-container .jobs-table-wrapper .child-row.child-priority-row.child-priority-high:hover td {
+  background: transparent !important;
+  color: #0f172a !important;
+}
+
+.programmer-container .jobs-table-wrapper .child-row.child-priority-row.child-priority-medium {
+  border-left: 3px solid #f59e0b;
+  background-image:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.52) 0%, rgba(255, 255, 255, 0.08) 48%, rgba(255, 255, 255, 0) 100%),
+    linear-gradient(90deg, rgba(245, 158, 11, 0.2) 0%, rgba(245, 158, 11, 0.07) 38%, rgba(255, 255, 255, 0.96) 100%);
+}
+.programmer-container .jobs-table-wrapper .child-row.child-priority-row.child-priority-medium td:first-child {
+  box-shadow: inset 3px 0 0 #f59e0b;
+}
+
+.programmer-container .jobs-table-wrapper .child-row.child-priority-row.child-priority-medium td {
+  background: transparent !important;
+  color: #0f172a !important;
+}
+
+.programmer-container .jobs-table-wrapper .child-row.child-priority-row.child-priority-medium:hover td {
+  background: transparent !important;
+  color: #0f172a !important;
+}
+
+.programmer-container .jobs-table-wrapper .child-row.child-priority-row.child-priority-low {
+  border-left: 3px solid #10b981;
+  background-image:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0.08) 48%, rgba(255, 255, 255, 0) 100%),
+    linear-gradient(90deg, rgba(16, 185, 129, 0.19) 0%, rgba(16, 185, 129, 0.065) 38%, rgba(255, 255, 255, 0.96) 100%);
+}
+.programmer-container .jobs-table-wrapper .child-row.child-priority-row.child-priority-low td:first-child {
+  box-shadow: inset 3px 0 0 #10b981;
+}
+
+.programmer-container .jobs-table-wrapper .child-row.child-priority-row.child-priority-low td {
+  background: transparent !important;
+  color: #0f172a !important;
+}
+
+.programmer-container .jobs-table-wrapper .child-row.child-priority-row.child-priority-low:hover td {
+  background: transparent !important;
+  color: #0f172a !important;
+}
+
+.programmer-container .jobs-table-wrapper .child-row.operator-stage-row-not-started:not(.child-priority-row):not(.child-critical-row) {
+  border-left: 3px solid #f59e0b;
+  background-image:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.54) 0%, rgba(255, 255, 255, 0.1) 48%, rgba(255, 255, 255, 0) 100%),
+    linear-gradient(90deg, rgba(245, 158, 11, 0.2) 0%, rgba(245, 158, 11, 0.07) 38%, rgba(255, 255, 255, 0.96) 100%);
+}
+
+.programmer-container .jobs-table-wrapper .child-row.operator-stage-row-not-started:not(.child-priority-row):not(.child-critical-row) td:first-child {
+  box-shadow: inset 3px 0 0 #f59e0b;
+}
+
+.programmer-container .jobs-table-wrapper .child-row.operator-stage-row-logged:not(.child-priority-row):not(.child-critical-row) {
+  border-left: 3px solid #38bdf8;
+  background-image:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.54) 0%, rgba(255, 255, 255, 0.1) 48%, rgba(255, 255, 255, 0) 100%),
+    linear-gradient(90deg, rgba(56, 189, 248, 0.18) 0%, rgba(56, 189, 248, 0.06) 38%, rgba(255, 255, 255, 0.96) 100%);
+}
+
+.programmer-container .jobs-table-wrapper .child-row.operator-stage-row-logged:not(.child-priority-row):not(.child-critical-row) td:first-child {
+  box-shadow: inset 3px 0 0 #38bdf8;
+}
+
+.programmer-container .jobs-table-wrapper .child-row.operator-stage-row-dispatched:not(.child-priority-row):not(.child-critical-row) {
+  border-left: 3px solid #818cf8;
+  background-image:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.54) 0%, rgba(255, 255, 255, 0.1) 48%, rgba(255, 255, 255, 0) 100%),
+    linear-gradient(90deg, rgba(129, 140, 248, 0.18) 0%, rgba(129, 140, 248, 0.06) 38%, rgba(255, 255, 255, 0.96) 100%);
+}
+
+.programmer-container .jobs-table-wrapper .child-row.operator-stage-row-dispatched:not(.child-priority-row):not(.child-critical-row) td:first-child {
+  box-shadow: inset 3px 0 0 #818cf8;
+}
+
+.btn-danger.small {
+  padding: 0.35rem 0.8rem;
+  font-size: 0.75rem;
+  border-radius: 6px;
+  background: #dc2626;
+  color: white;
+}
+
+.btn-secondary.small {
+  padding: 0.35rem 0.8rem;
+  font-size: 0.75rem;
+  border-radius: 6px;
+  background: #475569;
+  color: white;
+  margin-left: 0.5rem;
+}
+
+.pagination {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  margin-top: 0.5rem;
+  gap: 1rem;
+}

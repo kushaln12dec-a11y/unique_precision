@@ -1,0 +1,76 @@
+@media (max-width: 1600px) {
+  .operator-table-no-scroll .data-table th,
+  .operator-table-no-scroll .data-table td {
+    padding: 0.45rem 0.35rem;
+    font-size: 0.78rem;
+  }
+
+  .operator-table-no-scroll .child-row-content .child-jobs-table th,
+  .operator-table-no-scroll .child-row-content .child-jobs-table td {
+    padding: 0.45rem 0.35rem;
+    font-size: 0.78rem;
+  }
+}
+
+@media (max-width: 1400px) {
+  .operator-table-no-scroll .data-table th,
+  .operator-table-no-scroll .data-table td {
+    padding: 0.4rem 0.3rem;
+    font-size: 0.75rem;
+  }
+
+  .operator-table-no-scroll .child-row-content .child-jobs-table th,
+  .operator-table-no-scroll .child-row-content .child-jobs-table td {
+    padding: 0.4rem 0.3rem;
+    font-size: 0.75rem;
+  }
+}
+
+@media only screen and (min-width: 1024px) and (max-width: 1366px) and (orientation: landscape) {
+  .operator-table-no-scroll .data-table th,
+  .operator-table-no-scroll .data-table td {
+    padding: 0.35rem 0.25rem;
+    font-size: 0.7rem;
+  }
+
+  .operator-table-no-scroll .child-row-content .child-jobs-table th,
+  .operator-table-no-scroll .child-row-content .child-jobs-table td {
+    padding: 0.35rem 0.25rem;
+    font-size: 0.7rem;
+  }
+
+  .operator-table-no-scroll .data-table {
+    width: max-content;
+    min-width: 1520px;
+    max-width: none;
+  }
+}
+
+/* Keep all table headers centered (parent + child). */
+.operator-table-no-scroll .data-table thead th,
+.operator-table-no-scroll .data-table thead th:nth-child(n),
+.operator-table-no-scroll .data-table thead th[class] {
+  text-align: center;
+}
+
+.operator-table-no-scroll .data-table thead th .th-content,
+.operator-table-no-scroll .data-table thead th[class] .th-content {
+  justify-content: center;
+}
+
+.operator-table-no-scroll .child-row-content .child-jobs-table thead th,
+.operator-table-no-scroll .child-row-content .child-jobs-table thead th[class] {
+  text-align: center;
+}
+
+.operator-table-no-scroll .child-row-content .child-jobs-table thead th .th-content,
+.operator-table-no-scroll .child-row-content .child-jobs-table thead th[class] .th-content {
+  justify-content: center;
+}
+
+/* Keep all table body cells centered (parent + child). */
+.operator-table-no-scroll .data-table tbody td,
+.operator-table-no-scroll .child-row-content .child-jobs-table tbody td {
+  text-align: center !important;
+  vertical-align: middle;
+}

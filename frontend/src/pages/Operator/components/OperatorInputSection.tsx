@@ -1,52 +1,27 @@
 import React, { useEffect, useState } from "react";
-import PauseIcon from "@mui/icons-material/Pause";
-import PlayArrowIcon from "@mui/icons-material/PlayArrow";
-import DateTimeInput from "./DateTimeInput";
-import { MultiSelectOperators } from "./MultiSelectOperators";
-import type { CutInputData, QuantityInputData } from "../types/cutInput";
-import { decimalHoursToHHMM } from "../utils/machineHrsCalculation";
-import { useQuantityTimer } from "../hooks/useQuantityTimer";
+import type { CutInputData } from "../types/cutInput";
 import type { QuantityProgressStatus } from "../utils/qaProgress";
-import { getQaStageLabel } from "../utils/qaProgress";
-import { formatMachineLabel } from "../../../utils/jobFormatting";
+import type { OperatorInputField } from "../types/inputFields";
+import OperatorInputRangeControls from "./OperatorInputRangeControls";
+import OperatorQaSelectionStrip from "./OperatorQaSelectionStrip";
+import OperatorQuantityCard from "./OperatorQuantityCard";
 import "../OperatorViewPage.css";
-
-type InputField = keyof QuantityInputData | "recalculateMachineHrs" | "addIdleTimeToMachineHrs" | "togglePause" | "resetTimer" | "pauseReason";
 
 type OperatorInputSectionProps = {
   cutData: CutInputData;
   cutId: number | string;
   quantity: number;
   operatorUsers: Array<{ id: string | number; name: string }>;
-  onInputChange: (
-    cutId: number | string,
-    quantityIndex: number,
-    field: InputField,
-    value: string | string[]
-  ) => void;
-  onApplyToAllQuantities: (
-    cutId: number | string,
-    sourceQuantityIndex: number,
-    totalQuantity: number
-  ) => void;
-  onApplyToCountQuantities: (
-    cutId: number | string,
-    sourceQuantityIndex: number,
-    totalQuantity: number,
-    quantityCount: number
-  ) => void;
+  onInputChange: (cutId: number | string, quantityIndex: number, field: OperatorInputField, value: string | string[]) => void;
+  onApplyToAllQuantities: (cutId: number | string, sourceQuantityIndex: number, totalQuantity: number) => void;
+  onApplyToCountQuantities: (cutId: number | string, sourceQuantityIndex: number, totalQuantity: number, quantityCount: number) => void;
   onSaveQuantity?: (cutId: number | string, quantityIndex: number) => void;
-  onSaveRange?: (
-    cutId: number | string,
-    sourceQuantityIndex: number,
-    fromQty: number,
-    toQty: number
-  ) => void;
+  onSaveRange?: (cutId: number | string, sourceQuantityIndex: number, fromQty: number, toQty: number) => void;
   qaStatuses?: Record<number, QuantityProgressStatus>;
   onSendToQa?: (cutId: number | string, quantityNumbers: number[]) => void;
-  savedQuantities?: Set<number>; // Track which quantities are saved
+  savedQuantities?: Set<number>;
   savedRanges?: Set<string>;
-  validationErrors?: Record<string, Record<string, string>>; // quantityIndex -> field -> error
+  validationErrors?: Record<string, Record<string, string>>;
   onShowToast?: (message: string, variant?: "success" | "error" | "info") => void;
   onRequestResetTimer?: (cutId: number | string, quantityIndex: number) => void;
   onStartTimeCaptured?: (cutId: number | string, quantityIndex: number) => void;
@@ -54,29 +29,25 @@ type OperatorInputSectionProps = {
   requiredHoursPerQuantity?: number;
 };
 
-// Helper function to format idle duration
-const formatIdleDuration = (seconds: number): string => {
-  const hours = Math.floor(seconds / 3600);
-  const minutes = Math.floor((seconds % 3600) / 60);
-  const secs = seconds % 60;
-  if (hours > 0) {
-    return `${hours}h ${minutes}m ${secs}s`;
-  } else if (minutes > 0) {
-    return `${minutes}m ${secs}s`;
-  } else {
-    return `${secs}s`;
-  }
-};
-
-const IDLE_REASON_OPTIONS = [
-  "Shift Over",
-  "Power Break",
-  "Machine Breakdown",
-  "Vertical Dial",
-  "Cleaning",
-  "Consumables Change",
-  "Others",
-];
+const createFallbackQuantity = () => ({
+  startTime: "",
+  startTimeEpochMs: null,
+  endTime: "",
+  endTimeEpochMs: null,
+  machineHrs: "",
+  machineNumber: "",
+  opsName: [],
+  idleTime: "",
+  idleTimeDuration: "",
+  lastImage: null,
+  lastImageFile: null,
+  isPaused: false,
+  pauseStartTime: null,
+  totalPauseTime: 0,
+  pausedElapsedTime: 0,
+  pauseSessions: [],
+  currentPauseReason: "",
+});
 
 export const OperatorInputSection: React.FC<OperatorInputSectionProps> = ({
   cutData,
@@ -99,45 +70,21 @@ export const OperatorInputSection: React.FC<OperatorInputSectionProps> = ({
   requiredHoursPerQuantity = 0,
 }) => {
   const [captureMode, setCaptureMode] = useState<"PER_QUANTITY" | "RANGE">("PER_QUANTITY");
-  const [rangeFrom, setRangeFrom] = useState<string>("1");
-  const [rangeTo, setRangeTo] = useState<string>("2");
-  const [isRangeApproved, setIsRangeApproved] = useState<boolean>(false);
+  const [rangeFrom, setRangeFrom] = useState("1");
+  const [rangeTo, setRangeTo] = useState("2");
+  const [isRangeApproved, setIsRangeApproved] = useState(false);
   const [selectedQaQuantities, setSelectedQaQuantities] = useState<Set<number>>(new Set());
 
-  // Ensure we have the right number of quantity inputs
   const quantities = cutData.quantities || [];
-  const displayQuantities = Array.from({ length: Math.max(quantity, quantities.length) }, (_, i) =>
-    quantities[i] || {
-      startTime: "",
-      startTimeEpochMs: null,
-      endTime: "",
-      endTimeEpochMs: null,
-      machineHrs: "",
-      machineNumber: "",
-      opsName: [],
-      idleTime: "",
-      idleTimeDuration: "",
-      lastImage: null,
-      lastImageFile: null,
-      isPaused: false,
-      pauseStartTime: null,
-      totalPauseTime: 0,
-      pausedElapsedTime: 0,
-      pauseSessions: [],
-      currentPauseReason: "",
-    }
-  );
+  const displayQuantities = Array.from({ length: Math.max(quantity, quantities.length) }, (_, i) => quantities[i] || createFallbackQuantity());
   const totalQuantity = Math.max(1, quantity);
   const parsedFrom = Number.parseInt(rangeFrom || "", 10);
   const parsedTo = Number.parseInt(rangeTo || "", 10);
-  const isRangeFromValid = Number.isInteger(parsedFrom) && parsedFrom >= 1 && parsedFrom <= totalQuantity;
-  const isRangeToValid = Number.isInteger(parsedTo) && parsedTo >= 2 && parsedTo <= totalQuantity;
-  const isRangeValid = isRangeFromValid && isRangeToValid && parsedFrom <= parsedTo;
+  const isRangeValid = Number.isInteger(parsedFrom) && Number.isInteger(parsedTo) && parsedFrom >= 1 && parsedFrom <= totalQuantity && parsedTo >= 2 && parsedTo <= totalQuantity && parsedFrom <= parsedTo;
   const rangeStartQty = isRangeValid ? parsedFrom : 1;
   const rangeEndQty = isRangeValid ? parsedTo : rangeStartQty;
   const activeRangeSourceIndex = rangeStartQty - 1;
   const isRangeMode = captureMode === "RANGE";
-  const rangeBadgeKey = `${rangeStartQty}-${rangeEndQty}`;
   const allQuantityNumbers = Array.from({ length: totalQuantity }, (_, i) => i + 1);
   const getStatus = (qty: number): QuantityProgressStatus => qaStatuses[qty] || "EMPTY";
 
@@ -160,26 +107,20 @@ export const OperatorInputSection: React.FC<OperatorInputSectionProps> = ({
       });
       return next;
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [qaStatuses]);
 
   const selectableQuantityNumbers = allQuantityNumbers.filter((qty) => getStatus(qty) !== "SENT_TO_QA");
   const qaCounts = allQuantityNumbers.reduce(
     (acc, qty) => {
       const status = getStatus(qty);
-      if (status === "SENT_TO_QA") {
-        acc.sent += 1;
-      } else if (status === "SAVED" || status === "READY_FOR_QA") {
-        acc.logged += 1;
-      } else {
-        acc.empty += 1;
-      }
+      if (status === "SENT_TO_QA") acc.sent += 1;
+      else if (status === "SAVED" || status === "READY_FOR_QA") acc.logged += 1;
+      else acc.empty += 1;
       return acc;
     },
     { logged: 0, sent: 0, empty: 0 }
   );
-  const selectedNumbers = Array.from(selectedQaQuantities);
-  const sendEligible = selectedNumbers.filter((qty) => {
+  const sendEligible = Array.from(selectedQaQuantities).filter((qty) => {
     const status = getStatus(qty);
     return status === "SAVED" || status === "READY_FOR_QA";
   });
@@ -195,494 +136,67 @@ export const OperatorInputSection: React.FC<OperatorInputSectionProps> = ({
           <span className="qa-legend-item empty">Yet to Start = values not entered yet</span>
         </div>
       </div>
+
       {quantity > 1 && (
-        <div className="capture-mode-toggle">
-          <button
-            type="button"
-            className={`capture-mode-button ${captureMode === "PER_QUANTITY" ? "active" : ""}`}
-            onClick={() => {
-              setCaptureMode("PER_QUANTITY");
-              setIsRangeApproved(false);
-            }}
-          >
-            Per Quantity
-          </button>
-          <button
-            type="button"
-            className={`capture-mode-button ${captureMode === "RANGE" ? "active" : ""}`}
-            onClick={() => {
-              setCaptureMode("RANGE");
-              setIsRangeApproved(false);
-            }}
-          >
-            Range
-          </button>
-          {captureMode === "RANGE" && (
-            <div className="capture-range-controls">
-              <input
-                type="number"
-                min={1}
-                max={totalQuantity}
-                value={rangeFrom}
-                onChange={(e) => setRangeFrom(e.target.value)}
-                onBlur={(e) => {
-                  const v = Number.parseInt(e.target.value || "", 10);
-                  if (!Number.isInteger(v)) return;
-                  const bounded = Math.max(1, Math.min(totalQuantity, v));
-                  setRangeFrom(String(bounded));
-                }}
-                placeholder="From"
-                className="apply-count-input"
-              />
-              <span className="capture-range-separator">to</span>
-              <input
-                type="number"
-                min={2}
-                max={totalQuantity}
-                value={rangeTo}
-                onChange={(e) => setRangeTo(e.target.value)}
-                onBlur={(e) => {
-                  const v = Number.parseInt(e.target.value || "", 10);
-                  if (!Number.isInteger(v)) return;
-                  const bounded = Math.max(2, Math.min(totalQuantity, v));
-                  setRangeTo(String(bounded));
-                }}
-                placeholder="To"
-                className="apply-count-input"
-              />
-              <span className="capture-range-hint">
-                {isRangeValid
-                  ? `Qty ${rangeStartQty}-${rangeEndQty} (${rangeEndQty - rangeStartQty + 1})`
-                  : `Select range 1-${totalQuantity}`}
-              </span>
-              <button
-                type="button"
-                className={`range-approve-button ${isRangeApproved ? "approved" : ""}`}
-                disabled={!isRangeValid}
-                onClick={() => {
-                  setIsRangeApproved(true);
-                  if (onShowToast) {
-                    onShowToast(`Range ${rangeStartQty}-${rangeEndQty} accepted.`, "success");
-                  }
-                }}
-                title="Approve selected range"
-                aria-label="Approve selected range"
-              >
-                {false && (
-                  <>
-                {isRangeApproved ? <><span className="tick-mark">✓</span> Accepted</> : <>Check <span className="tick-mark">✓</span></>}
-                  </>
-                )}
-                {isRangeApproved ? (
-                  <>
-                    <span className="tick-mark">✓</span>
-                    Accepted
-                  </>
-                ) : (
-                  <>
-                    <span className="tick-mark">✓</span>
-                    Accept Range
-                  </>
-                )}
-              </button>
-            </div>
-          )}
-          <div className="qa-inline-status-block">
-            <div className="qa-overall-summary qa-inline-summary">
-              <span className="qa-summary-chip saved">Logged: {qaCounts.logged}</span>
-              <span className="qa-summary-chip sent">QC: {qaCounts.sent}</span>
-              <span className="qa-summary-chip empty">Yet to Start: {qaCounts.empty}</span>
-            </div>
-          </div>
-        </div>
+        <OperatorInputRangeControls
+          totalQuantity={totalQuantity}
+          captureMode={captureMode}
+          setCaptureMode={setCaptureMode}
+          rangeFrom={rangeFrom}
+          setRangeFrom={setRangeFrom}
+          rangeTo={rangeTo}
+          setRangeTo={setRangeTo}
+          isRangeValid={isRangeValid}
+          rangeStartQty={rangeStartQty}
+          rangeEndQty={rangeEndQty}
+          isRangeApproved={isRangeApproved}
+          setIsRangeApproved={setIsRangeApproved}
+          qaCounts={qaCounts}
+          onShowToast={onShowToast}
+        />
       )}
-      <div className="qa-selection-strip">
-        <div className="qa-strip-head">
-          <label className="qa-select-all">
-            <input
-              type="checkbox"
-              checked={
-                selectableQuantityNumbers.length > 0 &&
-                selectableQuantityNumbers.every((qty) => selectedQaQuantities.has(qty))
-              }
-              onChange={(e) => {
-                if (e.target.checked) {
-                  setSelectedQaQuantities(new Set(selectableQuantityNumbers));
-                } else {
-                  setSelectedQaQuantities(new Set());
-                }
-              }}
-            />
-            <span>Select All</span>
-          </label>
-          <div className="qa-strip-actions">
-            <button
-              type="button"
-              className="qa-action-button sent"
-              disabled={sendEligible.length === 0}
-              onClick={() => {
-                if (onSendToQa) onSendToQa(cutId, sendEligible);
-              }}
-            >
-              Dispatch To QC
-            </button>
-          </div>
-        </div>
-        <div className="qa-quantity-list">
-          {allQuantityNumbers.map((qtyNo) => (
-            <label key={qtyNo} className={`qa-qty-pill status-${getStatus(qtyNo).toLowerCase()}`}>
-              <input
-                type="checkbox"
-                disabled={getStatus(qtyNo) === "SENT_TO_QA"}
-                checked={selectedQaQuantities.has(qtyNo)}
-                onChange={(e) => {
-                  if (getStatus(qtyNo) === "SENT_TO_QA") return;
-                  setSelectedQaQuantities((prev) => {
-                    const next = new Set(prev);
-                    if (e.target.checked) next.add(qtyNo);
-                    else next.delete(qtyNo);
-                    return next;
-                  });
-                }}
-              />
-              <span>Q{qtyNo}</span>
-            </label>
-          ))}
-        </div>
-      </div>
+
+      <OperatorQaSelectionStrip
+        allQuantityNumbers={allQuantityNumbers}
+        getStatus={getStatus}
+        selectableQuantityNumbers={selectableQuantityNumbers}
+        selectedQaQuantities={selectedQaQuantities}
+        setSelectedQaQuantities={setSelectedQaQuantities}
+        sendEligible={sendEligible}
+        onSendToQa={onSendToQa}
+        cutId={cutId}
+      />
 
       {displayQuantities.map((qtyData, qtyIndex) => {
-        const quantityRequiredSeconds = Math.max(0, Math.round((Number(requiredHoursPerQuantity || 0) || 0) * 3600));
-        const { elapsedTime, pauseTime, remainingTime, overtimeTime, hasOvertime, isRunning } = useQuantityTimer(
-          qtyData.startTime,
-          qtyData.endTime,
-          qtyData.isPaused || false,
-          qtyData.pauseStartTime || null,
-          qtyData.totalPauseTime || 0,
-          qtyData.pausedElapsedTime || 0,
-          qtyData.startTimeEpochMs || null,
-          qtyData.endTimeEpochMs || null,
-          quantityRequiredSeconds
-        );
-
-        if (isRangeMode && qtyIndex !== activeRangeSourceIndex) {
-          return null;
-        }
-
+        if (isRangeMode && qtyIndex !== activeRangeSourceIndex) return null;
         return (
-          <div key={qtyIndex} className="quantity-input-group">
-            <div className="quantity-header">
-              <div className="quantity-title-row">
-                <h6 className="quantity-label">
-                  {isRangeMode && isRangeValid
-                    ? `Quantity ${rangeStartQty}-${rangeEndQty}`
-                    : `Quantity ${qtyIndex + 1}`}
-                </h6>
-                {!isRangeMode && (
-                  <span className={`range-status-badge status-${getStatus(qtyIndex + 1).toLowerCase()}`}>
-                    {getQaStageLabel(getStatus(qtyIndex + 1))}
-                  </span>
-                )}
-                {isRangeMode && isRangeValid && (
-                  <span className={`range-status-badge ${isRangeApproved ? "approved" : "pending"}`}>
-                    {isRangeApproved ? "Confirmed" : "Selected"}
-                  </span>
-                )}
-              </div>
-              {qtyData.startTime && (
-                <div className="quantity-timers">
-                  {((qtyData.isPaused || Number(qtyData.totalPauseTime || 0) > 0) && pauseTime && pauseTime !== "00:00:00") && (
-                    <div className="quantity-timer idle-timer">
-                      <span className="timer-label">Idle Time:</span>
-                      <span className={`timer-value ${isRunning ? "running" : ""}`}>
-                        {pauseTime}
-                      </span>
-                    </div>
-                  )}
-                  <div className={`quantity-timer required-timer ${hasOvertime ? "overtime-timer" : ""}`.trim()}>
-                    <span className="timer-label">{hasOvertime ? "Overtime:" : "Estimated Time:"}</span>
-                    <span className={`timer-value ${hasOvertime ? "overtime" : isRunning ? "running" : ""}`.trim()}>
-                      {hasOvertime ? overtimeTime : remainingTime}
-                    </span>
-                  </div>
-                  <div className="quantity-timer">
-                    <span className="timer-label">Running Time:</span>
-                    <span className={`timer-value ${isRunning ? "running" : ""}`}>
-                      {elapsedTime}
-                    </span>
-                  </div>
-                </div>
-              )}
-            </div>
-            <div className="quantity-content-wrapper">
-              <div className="operator-inputs-grid">
-                <div className="operator-input-card">
-                  <label className="start-time-label-row">
-                    <span>Start Time</span>
-                    {qtyData.startTime && (
-                      <span className="start-time-pause-meta">
-                        <button
-                          type="button"
-                          className="start-time-pause-toggle"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            if (!qtyData.endTime) {
-                              onInputChange(cutId, qtyIndex, "togglePause", "");
-                            }
-                          }}
-                          disabled={!!qtyData.endTime}
-                          aria-label={qtyData.isPaused ? "Resume timer" : "Idle timer"}
-                          title={qtyData.isPaused ? "Resume timer" : "Idle timer"}
-                        >
-                          {qtyData.isPaused ? <PlayArrowIcon fontSize="small" /> : <PauseIcon fontSize="small" />}
-                        </button>
-                      </span>
-                    )}
-                  </label>
-                  <DateTimeInput
-                    value={qtyData.startTime}
-                    onChange={(value) => {
-                      // Only allow changes if start time is not set yet and end time is not set
-                      if (!qtyData.startTime && !qtyData.endTime) {
-                        onInputChange(cutId, qtyIndex, "startTime", value);
-                      }
-                    }}
-                    onTimeCapture={(timestampMs) => {
-                      // Only allow capture if start time is not set yet and end time is not set
-                      if (!qtyData.startTime && !qtyData.endTime) {
-                        onInputChange(cutId, qtyIndex, "startTimeEpochMs", String(timestampMs));
-                        onStartTimeCaptured?.(cutId, qtyIndex);
-                        // Timer will automatically start when startTime is set
-                        if (onShowToast) {
-                          onShowToast("Start time captured successfully!", "success");
-                        }
-                      } else {
-                        if (onShowToast) {
-                          onShowToast("Start time can only be set once!", "error");
-                        }
-                      }
-                    }}
-                    placeholder="DD/MM/YYYY HH:MM"
-                    error={validationErrors[qtyIndex]?.startTime}
-                    showPauseButton={true}
-                    showPauseButtonInInput={false}
-                    isPaused={qtyData.isPaused || false}
-                    onPauseToggle={() => {
-                      // Don't allow pause toggle if end time is set
-                      if (!qtyData.endTime) {
-                        onInputChange(cutId, qtyIndex, "togglePause", "");
-                      }
-                    }}
-                    disablePauseButton={!!qtyData.endTime}
-                    disabled={!!qtyData.startTime || !!qtyData.endTime}
-                  />
-                </div>
-                <div className="operator-input-card">
-                  <label>End Time</label>
-                  <DateTimeInput
-                    value={qtyData.endTime}
-                    onChange={(value) => {
-                      // End time can only be set once
-                      if (!qtyData.endTime) {
-                        onInputChange(cutId, qtyIndex, "endTime", value);
-                        // Auto-calculate machine hours when end time is set
-                        if (qtyData.startTime && value) {
-                          // Trigger recalculation
-                          setTimeout(() => {
-                            onInputChange(cutId, qtyIndex, "recalculateMachineHrs", "");
-                          }, 100);
-                        }
-                      }
-                    }}
-                    onTimeCapture={(timestampMs) => {
-                      // End time can only be set once
-                      if (!qtyData.endTime) {
-                        onInputChange(cutId, qtyIndex, "endTimeEpochMs", String(timestampMs));
-                        if (onShowToast) {
-                          onShowToast("End time captured successfully!", "success");
-                        }
-                      } else {
-                        if (onShowToast) {
-                          onShowToast("End time can only be set once!", "error");
-                        }
-                      }
-                    }}
-                    placeholder="DD/MM/YYYY HH:MM"
-                    error={validationErrors[qtyIndex]?.endTime}
-                    disabled={!!qtyData.endTime}
-                  />
-                </div>
-                <div className="operator-input-card">
-                  <label>Machine Hrs</label>
-                  <input
-                    type="text"
-                    value={
-                      qtyData.machineHrs
-                        ? decimalHoursToHHMM(parseFloat(qtyData.machineHrs))
-                        : "00:00"
-                    }
-                    readOnly
-                    placeholder="00:00"
-                    className="readonly-input machine-hrs-input"
-                  />
-                  {validationErrors[qtyIndex]?.machineHrs && (
-                    <p className="field-error">{validationErrors[qtyIndex].machineHrs}</p>
-                  )}
-                </div>
-                <div className="operator-input-card">
-                  <label>Mach #</label>
-                  <input
-                    type="text"
-                    value={formatMachineLabel(qtyData.machineNumber)}
-                    placeholder="Machine Number"
-                    readOnly
-                    className={validationErrors[qtyIndex]?.machineNumber ? "input-error" : ""}
-                  />
-                  {validationErrors[qtyIndex]?.machineNumber && (
-                    <p className="field-error">{validationErrors[qtyIndex].machineNumber}</p>
-                  )}
-                </div>
-                <div className="operator-input-card">
-                  <label>Ops Name</label>
-                  <MultiSelectOperators
-                    selectedOperators={qtyData.opsName || []}
-                    availableOperators={operatorUsers}
-                    onChange={(operators) => onInputChange(cutId, qtyIndex, "opsName", operators)}
-                    placeholder="Select operators..."
-                    compact={true}
-                    className={validationErrors[qtyIndex]?.opsName ? "input-error" : ""}
-                  />
-                  {validationErrors[qtyIndex]?.opsName && (
-                    <p className="field-error">{validationErrors[qtyIndex].opsName}</p>
-                  )}
-                </div>
-                {/* Idle Reason Input - Show when idle */}
-                {qtyData.isPaused && !qtyData.endTime && (
-                  <div className="operator-input-card pause-reason-card">
-                    <label>Idle Reason <span style={{ color: "#ef4444" }}>*</span></label>
-                    <select
-                      value={qtyData.currentPauseReason || ""}
-                      onChange={(e) => onInputChange(cutId, qtyIndex, "pauseReason", e.target.value)}
-                      className={`pause-reason-input ${validationErrors[qtyIndex]?.pauseReason ? "input-error" : ""}`}
-                    >
-                      <option value="">Select reason</option>
-                      {IDLE_REASON_OPTIONS.map((reason) => (
-                        <option key={reason} value={reason}>
-                          {reason}
-                        </option>
-                      ))}
-                    </select>
-                    {validationErrors[qtyIndex]?.pauseReason && (
-                      <p className="field-error">{validationErrors[qtyIndex].pauseReason}</p>
-                    )}
-                  </div>
-                )}
-
-              </div>
-
-              {/* Display Idle Sessions History - Right Side */}
-              {qtyData.pauseSessions && qtyData.pauseSessions.length > 0 && (
-                <div className="pause-history-sidebar">
-                  <div className="pause-history-header">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="pause-history-icon">
-                      <rect x="6" y="4" width="4" height="16" rx="1" fill="currentColor" />
-                      <rect x="14" y="4" width="4" height="16" rx="1" fill="currentColor" />
-                    </svg>
-                    <h6 className="pause-history-title">Idel Time</h6>
-                    <span className="pause-history-count">{qtyData.pauseSessions.length}</span>
-                  </div>
-                  <div className="pause-sessions-list">
-                    {qtyData.pauseSessions.map((session, sessionIndex) => (
-                      <div key={sessionIndex} className="pause-session-item">
-                        <div className="pause-session-badge">
-                          <span className="pause-session-number">#{sessionIndex + 1}</span>
-                        </div>
-                        <div className="pause-session-content">
-                          <div className="pause-session-duration-badge">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                              <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
-                              <path d="M12 6v6l4 2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                            </svg>
-                            {formatIdleDuration(session.pauseDuration)}
-                          </div>
-                          {session.reason && (
-                            <div className="pause-session-reason">
-                              {session.reason}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {(onSaveQuantity || onSaveRange) && (
-              <div className="quantity-save-section">
-                {isRangeMode ? (
-                  <button
-                    type="button"
-                    className={`btn-save-quantity ${savedRanges.has(rangeBadgeKey) ? "saved" : ""}`}
-                    disabled={!isRangeValid || !isRangeApproved}
-                    onClick={() => {
-                      if (!isRangeValid) {
-                        if (onShowToast) {
-                          onShowToast(`Enter range between 1 and ${totalQuantity}.`, "error");
-                        }
-                        return;
-                      }
-                      if (!isRangeApproved) {
-                        if (onShowToast) {
-                          onShowToast("Please click Check to accept the range.", "error");
-                        }
-                        return;
-                      }
-                      if (onSaveRange) {
-                        onSaveRange(cutId, qtyIndex, rangeStartQty, rangeEndQty);
-                      }
-                    }}
-                  >
-                    {savedRanges.has(rangeBadgeKey) ? "Saved" : `Save Range ${rangeStartQty}-${rangeEndQty}`}
-                  </button>
-                ) : (
-                  <>
-                    {isAdmin && qtyData.startTime && (
-                      <button
-                        type="button"
-                        className="reset-timer-button"
-                        onClick={() => {
-                          if (onRequestResetTimer) {
-                            onRequestResetTimer(cutId, qtyIndex);
-                          } else {
-                            onInputChange(cutId, qtyIndex, "resetTimer", "");
-                          }
-                        }}
-                        aria-label="Reset timer"
-                        title="Reset timer"
-                      >
-                        Reset Quantity {qtyIndex + 1}
-                      </button>
-                    )}
-                    <button
-                      type="button"
-                      className="btn-save-quantity"
-                      onClick={() => {
-                        if (onSaveQuantity) {
-                          onSaveQuantity(cutId, qtyIndex);
-                        }
-                      }}
-                    >
-                      {"Save Quantity " + (qtyIndex + 1)}
-                    </button>
-                  </>
-                )}
-              </div>
-            )}
-          </div>
+          <OperatorQuantityCard
+            key={qtyIndex}
+            qtyData={qtyData}
+            qtyIndex={qtyIndex}
+            cutId={cutId}
+            isRangeMode={isRangeMode}
+            isRangeValid={isRangeValid}
+            rangeStartQty={rangeStartQty}
+            rangeEndQty={rangeEndQty}
+            isRangeApproved={isRangeApproved}
+            getStatus={getStatus}
+            operatorUsers={operatorUsers}
+            onInputChange={onInputChange}
+            onShowToast={onShowToast}
+            onStartTimeCaptured={onStartTimeCaptured}
+            validationErrors={validationErrors[qtyIndex] || {}}
+            requiredHoursPerQuantity={requiredHoursPerQuantity}
+            onRequestResetTimer={onRequestResetTimer}
+            onSaveQuantity={onSaveQuantity}
+            onSaveRange={onSaveRange}
+            savedRanges={savedRanges}
+            isAdmin={isAdmin}
+          />
         );
       })}
     </div>
   );
 };
+
+export default OperatorInputSection;

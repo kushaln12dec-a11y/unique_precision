@@ -1,0 +1,276 @@
+.jobs-table th,
+.jobs-table td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #e5e7eb;
+  text-align: center;
+  color: #0f172a;
+  white-space: nowrap;
+  overflow: visible;
+  text-overflow: clip;
+}
+
+.jobs-table thead {
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  border-radius: 18px 18px 0 0;
+}
+
+.jobs-table th {
+  color: white;
+  font-weight: 600;
+  font-size: 0.8125rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 2px solid #16213e;
+}
+
+.jobs-table .th-content {
+  justify-content: center;
+  width: 100%;
+}
+
+.jobs-table td:last-child {
+  text-align: center;
+}
+
+.jobs-table th.action-header,
+.jobs-table td.action-cell {
+  min-width: 120px;
+}
+
+.jobs-table td.action-cell {
+  white-space: nowrap;
+}
+
+.action-buttons {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.inline-row-branch {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1rem;
+  color: #94a3b8;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.action-icon-button {
+  border: none;
+  background: transparent;
+  color: #2563eb !important;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.action-icon-button.danger {
+  color: #dc2626 !important;
+}
+
+.action-icon-button.submit-icon {
+  color: #0f766e !important;
+  background: radial-gradient(circle at center, rgba(16, 185, 129, 0.14), transparent 70%);
+  border-radius: 999px;
+}
+
+.action-icon-button:hover {
+  color: #1d4ed8 !important;
+  background: rgba(37, 99, 235, 0.15);
+  border-radius: 6px;
+}
+
+.action-icon-button.submit-icon:hover {
+  color: #047857 !important;
+  background: rgba(16, 185, 129, 0.16);
+}
+
+.action-icon-button.danger:hover {
+  color: #b91c1c !important;
+  background: rgba(220, 38, 38, 0.15);
+}
+
+.action-buttons .btn-secondary.small {
+  margin-left: 0;
+}
+
+.jobs-table td input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+.jobs-table td select {
+  padding: 0.35rem 1.5rem 0.35rem 0.6rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #1e293b;
+  font-size: 0.8125rem;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 12 12'%3E%3Cpath fill='%2364748b' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.5rem center;
+}
+
+.jobs-table th.sortable {
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.2s ease;
+}
+
+.jobs-table th.sortable:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.th-content {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.sort-icon {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  margin-left: 0.35rem;
+  gap: 5px;
+}
+
+.sort-arrow {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.4);
+  display: block;
+  height: 0.45rem;
+  line-height: 1;
+  transition: color 0.2s ease, transform 0.2s ease;
+}
+
+.sort-arrow.up {
+  margin-bottom: -0.125rem;
+}
+
+.sort-arrow.down {
+  margin-top: -0.125rem;
+}
+
+.sort-arrow.active {
+  color: #ffffff;
+  transform: scale(1.1);
+}
+
+.jobs-table tbody tr:hover {
+  background: #f8fafc;
+}
+
+/* Override hover for colored rows to maintain visibility (Programmer only) */
+.programmer-container .jobs-table-wrapper .group-row.critical-row:hover td,
+.programmer-container .jobs-table-wrapper .group-row.priority-row.priority-high:hover td,
+.programmer-container .jobs-table-wrapper .group-row.priority-row.priority-medium:hover td,
+.programmer-container .jobs-table-wrapper .group-row.priority-row.priority-low:hover td {
+  color: #0f172a !important;
+}
+
+.empty-state-row {
+  padding: 3rem 0;
+  color: #475569;
+}
+
+.accordion-header-cell {
+  width: 42px;
+}
+
+.accordion-toggle-cell {
+  text-align: center;
+}
+
+.accordion-toggle-button {
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.accordion-toggle-button:hover {
+  background: #eef2ff;
+  border-color: #c7d2fe;
+}
+
+.accordion-toggle-icon {
+  font-size: 1rem;
+  line-height: 1;
+  color: #1e293b;
+  font-weight: 700;
+}
+
+/* Style for Programmer accordion toggle icon within Customer column */
+.programmer-accordion-toggle {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.programmer-accordion-toggle svg {
+  font-size: 0.7rem !important;
+  width: 0.7rem !important;
+  height: 0.7rem !important;
+  color: #1e293b !important;
+}
+
+.group-row {
+  background: #ffffff;
+}
+
+.programmer-container .jobs-table-wrapper .group-row.critical-row {
+  border-left: 1px solid #dc2626 !important;
+  background-image:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.54) 0%, rgba(255, 255, 255, 0.08) 48%, rgba(255, 255, 255, 0) 100%),
+    linear-gradient(90deg, rgba(220, 38, 38, 0.2) 0%, rgba(220, 38, 38, 0.07) 38%, rgba(255, 255, 255, 0.95) 100%);
+}
+.programmer-container .jobs-table-wrapper .group-row.critical-row td:first-child {
+  box-shadow: none;
+}
+
+.programmer-container .jobs-table-wrapper .group-row.critical-row td {
+  background: transparent !important;
+  color: #0f172a !important;
+}
+
+/* Priority-based row colors (only when not complex) */
+.programmer-container .jobs-table-wrapper .group-row.priority-row.priority-high {
+  border-left: 3px solid #ef4444;
+  background-image:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0.08) 48%, rgba(255, 255, 255, 0) 100%),
+    linear-gradient(90deg, rgba(239, 68, 68, 0.18) 0%, rgba(239, 68, 68, 0.06) 38%, rgba(255, 255, 255, 0.96) 100%);
+}
+.programmer-container .jobs-table-wrapper .group-row.priority-row.priority-high td:first-child {
+  box-shadow: none;
+}
+
+.programmer-container .jobs-table-wrapper .group-row.priority-row.priority-high td {
+  background: transparent !important;
+  color: #0f172a;
+}
+
+.programmer-container .jobs-table-wrapper .group-row.priority-row.priority-medium {
+  border-left: 3px solid #f59e0b;
+  background-image:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.52) 0%, rgba(255, 255, 255, 0.08) 48%, rgba(255, 255, 255, 0) 100%),
+    linear-gradient(90deg, rgba(245, 158, 11, 0.2) 0%, rgba(245, 158, 11, 0.07) 38%, rgba(255, 255, 255, 0.96) 100%);
+}
+.programmer-container .jobs-table-wrapper .group-row.priority-row.priority-medium td:first-child {
+  box-shadow: none;
+}
