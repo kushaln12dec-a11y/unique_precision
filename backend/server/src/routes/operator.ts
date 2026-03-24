@@ -1,70 +1,26 @@
 import { Router } from "express";
-import { Prisma } from "@prisma/client";
 import { authMiddleware } from "../middleware/auth";
 import { prisma } from "../lib/prisma";
-import { formatDbDateTime, parseOperatorDateTime } from "../utils/dateTime";
-import { toBigInt } from "../utils/bigint";
+import { parseOperatorDateTime } from "../utils/dateTime";
 import { mapJob } from "../utils/prismaMappers";
 import { resolveStoredFile } from "../utils/objectStorage";
+import {
+  buildCaptureEntry,
+  buildOperatorLogPayload,
+  createPaginatedResponse,
+  getOverlappingCaptureIds,
+  getPagination,
+  getUpdatedByName,
+  hasCaptureRangeOverlap,
+  operatorJobInclude,
+  parseGroupIdOrNull,
+  resolveCaptureRange,
+} from "./operatorShared";
 
 const router = Router();
-const jobInclude: Prisma.JobInclude = {
-  operatorCaptures: { orderBy: { createdAt: "asc" } },
-  qaStates: true,
-};
 
 router.use(authMiddleware);
 
-const getUpdatedByName = (req: any): string => {
-  if (req.user && (req.user as any).fullName) {
-    return String((req.user as any).fullName);
-  }
-  return "";
-};
-
-const toUuid = (value: unknown): string | undefined => {
-  if (value === null || value === undefined) return undefined;
-  const str = String(value).trim();
-  return str ? str : undefined;
-};
-
-const withUserId = (userId?: string) => (userId ? { userId } : {});
-
-const toNumber = (value: unknown): number | null => {
-  if (value === null || value === undefined || value === "") return null;
-  const n = Number(value);
-  return Number.isFinite(n) ? n : null;
-};
-
-const parsePositiveInt = (value: unknown, fallback: number) => {
-  const parsed = Number(value);
-  if (!Number.isFinite(parsed)) return fallback;
-  const normalized = Math.trunc(parsed);
-  return normalized > 0 ? normalized : fallback;
-};
-
-const parseNonNegativeInt = (value: unknown, fallback: number) => {
-  const parsed = Number(value);
-  if (!Number.isFinite(parsed)) return fallback;
-  const normalized = Math.trunc(parsed);
-  return normalized >= 0 ? normalized : fallback;
-};
-
-const getPagination = (req: any, defaultLimit = 15, maxLimit = 100) => {
-  const limit = Math.min(parsePositiveInt(req.query.limit, defaultLimit), maxLimit);
-  const offset = parseNonNegativeInt(req.query.offset, 0);
-  return { limit, offset };
-};
-
-const createPaginatedResponse = <T,>(items: T[], total: number, offset: number, limit: number) => ({
-  items,
-  total,
-  offset,
-  limit,
-  hasMore: offset + items.length < total,
-});
-
-// Get operator jobs with filters
 router.get("/jobs", async (req, res) => {
   try {
     const where: any = {};
@@ -92,7 +48,7 @@ router.get("/jobs", async (req, res) => {
         orderBy: { createdAt: "desc" },
         skip: offset,
         take: limit,
-        include: jobInclude,
+        include: operatorJobInclude,
       }),
     ]);
     res.json(createPaginatedResponse(jobs.map(mapJob), total, offset, limit));
@@ -102,12 +58,11 @@ router.get("/jobs", async (req, res) => {
   }
 });
 
-// Get single operator job
 router.get("/jobs/:id", async (req, res) => {
   try {
     const job = await prisma.job.findUnique({
       where: { id: req.params.id },
-      include: jobInclude,
+      include: operatorJobInclude,
     });
     if (!job) {
       return res.status(404).json({ message: "Job not found" });
@@ -118,17 +73,16 @@ router.get("/jobs/:id", async (req, res) => {
   }
 });
 
-// Get jobs by groupId
 router.get("/jobs/group/:groupId", async (req, res) => {
   try {
-    const groupId = toBigInt(req.params.groupId);
+    const groupId = parseGroupIdOrNull(req.params.groupId);
     if (groupId === null) {
       return res.status(400).json({ message: "Invalid groupId" });
     }
     const jobs = await prisma.job.findMany({
       where: { groupId },
       orderBy: { createdAt: "asc" },
-      include: jobInclude,
+      include: operatorJobInclude,
     });
     res.json(jobs.map(mapJob));
   } catch (error: any) {
@@ -137,7 +91,6 @@ router.get("/jobs/group/:groupId", async (req, res) => {
   }
 });
 
-// Update operator job fields
 router.put("/jobs/:id", async (req, res) => {
   try {
     const { id, _id, operatorCaptures, quantityQaStates, qaStates, ...updateData } = req.body;
@@ -156,7 +109,7 @@ router.put("/jobs/:id", async (req, res) => {
         updatedAt,
         updatedBy: updatedBy || updateData.updatedBy || "",
       },
-      include: jobInclude,
+      include: operatorJobInclude,
     });
 
     res.json(mapJob(job));
@@ -169,7 +122,6 @@ router.put("/jobs/:id", async (req, res) => {
   }
 });
 
-// Capture operator input (POST)
 router.post("/jobs/:id/capture-input", async (req, res) => {
   try {
     const {
@@ -210,32 +162,27 @@ router.post("/jobs/:id/capture-input", async (req, res) => {
 
     const job = await prisma.job.findUnique({
       where: { id: req.params.id },
-      include: jobInclude,
+      include: operatorJobInclude,
     });
     if (!job) {
       return res.status(404).json({ message: "Job not found" });
     }
 
     const totalQty = Math.max(1, Number((job as any).qty || 1));
-    const mode = captureMode === "RANGE" ? "RANGE" : "SINGLE";
-    const fallbackFromQty = typeof quantityIndex === "number" ? quantityIndex + 1 : 1;
-    const resolvedFromQty = Math.max(1, Number(fromQty || fallbackFromQty));
-    const resolvedToQty =
-      mode === "RANGE"
-        ? Math.min(totalQty, Math.max(resolvedFromQty, Number(toQty || resolvedFromQty)))
-        : Math.min(totalQty, resolvedFromQty);
+    const { mode, resolvedFromQty, resolvedToQty, quantityCount } = resolveCaptureRange({
+      totalQty,
+      captureMode,
+      quantityIndex,
+      fromQty,
+      toQty,
+    });
 
     if (resolvedFromQty > totalQty || resolvedToQty < 1 || resolvedFromQty > resolvedToQty) {
       return res.status(400).json({ message: `Invalid quantity range. Allowed range is 1 to ${totalQty}.` });
     }
 
-    const quantityCount = resolvedToQty - resolvedFromQty + 1;
     const existingCaptures = Array.isArray(job.operatorCaptures) ? [...job.operatorCaptures] : [];
-    const hasOverlap = existingCaptures.some((entry: any) => {
-      const entryFrom = Number(entry.fromQty || 1);
-      const entryTo = Number(entry.toQty || entryFrom);
-      return resolvedFromQty <= entryTo && resolvedToQty >= entryFrom;
-    });
+    const hasOverlap = hasCaptureRangeOverlap(existingCaptures, resolvedFromQty, resolvedToQty);
 
     if (hasOverlap && !overwriteExisting) {
       return res.status(409).json({
@@ -244,30 +191,22 @@ router.post("/jobs/:id/capture-input", async (req, res) => {
       });
     }
 
-    const overlappingCaptureIds = existingCaptures
-      .filter((entry: any) => {
-        const entryFrom = Number(entry.fromQty || 1);
-        const entryTo = Number(entry.toQty || entryFrom);
-        return resolvedFromQty <= entryTo && resolvedToQty >= entryFrom;
-      })
-      .map((entry: any) => entry.id);
-
-    const captureEntry = {
-      captureMode: mode,
-      fromQty: resolvedFromQty,
-      toQty: resolvedToQty,
+    const overlappingCaptureIds = getOverlappingCaptureIds(existingCaptures, resolvedFromQty, resolvedToQty);
+    const captureEntry = buildCaptureEntry({
+      mode,
+      resolvedFromQty,
+      resolvedToQty,
       quantityCount,
-      startTime: startTime || "",
-      endTime: endTime || "",
-      machineHrs: machineHrs || "",
-      machineNumber: machineNumber || "",
-      opsName: opsName || "",
-      idleTime: idleTime || "",
-      idleTimeDuration: idleTimeDuration || "",
-      lastImage: lastImageUrl || null,
-      createdAt: formatDbDateTime(),
-      createdBy: updateData.updatedBy || "",
-    };
+      startTime,
+      endTime,
+      machineHrs,
+      machineNumber,
+      opsName,
+      idleTime,
+      idleTimeDuration,
+      lastImageUrl,
+      updatedBy: updateData.updatedBy || "",
+    });
 
     await prisma.$transaction(async (tx) => {
       if (overlappingCaptureIds.length > 0) {
@@ -299,29 +238,17 @@ router.post("/jobs/:id/capture-input", async (req, res) => {
 
     const refreshedJob = await prisma.job.findUnique({
       where: { id: job.id },
-      include: jobInclude,
+      include: operatorJobInclude,
     });
 
     if (!refreshedJob) {
       return res.status(404).json({ message: "Job not found" });
     }
 
-    // Create operator productivity log when both timestamps exist
     const parsedStart = parseOperatorDateTime(startTime);
     const parsedEnd = parseOperatorDateTime(endTime);
     if (parsedStart && parsedEnd) {
       const reqUser = req.user as any;
-      const userId = toUuid(reqUser?.userId);
-      const durationSeconds = Math.max(0, Math.floor((parsedEnd.getTime() - parsedStart.getTime()) / 1000));
-      const settingNumber = (() => {
-        const foundIndex = Array.isArray(refreshedJob.operatorCaptures)
-          ? refreshedJob.operatorCaptures.findIndex(
-              (entry: any) => entry.fromQty === captureEntry.fromQty && entry.toQty === captureEntry.toQty
-            )
-          : -1;
-        return foundIndex >= 0 ? foundIndex + 1 : toNumber((refreshedJob as any).setting) || null;
-      })();
-
       const existingLog = operatorLogId
         ? await prisma.employeeLog.findFirst({
             where: {
@@ -333,36 +260,23 @@ router.post("/jobs/:id/capture-input", async (req, res) => {
           })
         : null;
 
-      const basePayload: any = {
-        role: "OPERATOR",
-        activityType: "OPERATOR_PRODUCTION",
-        status: "COMPLETED",
-        ...withUserId(userId),
-        userEmail: String(reqUser?.email || ""),
-        userName: String(reqUser?.fullName || "").trim(),
-        jobId: String(refreshedJob.id || ""),
-        jobGroupId: toBigInt(refreshedJob.groupId) ?? null,
-        refNumber: String(refreshedJob.refNumber || ""),
-        settingLabel: settingNumber ? String(settingNumber) : String((refreshedJob as any).setting || ""),
-        quantityFrom: resolvedFromQty,
-        quantityTo: resolvedToQty,
-        quantityCount: quantityCount,
-        jobCustomer: String((refreshedJob as any).customer || ""),
-        jobDescription: String((refreshedJob as any).description || ""),
-        workItemTitle: `Job #${String((refreshedJob as any).refNumber || "-")}`,
-        workSummary: `Machine ${machineNumber || "-"} | Ops ${opsName || "-"} | Hrs ${machineHrs || "-"}`,
-        startedAt: parsedStart,
-        endedAt: parsedEnd,
-        durationSeconds,
-        metadata: {
-          machineNumber: String(machineNumber || ""),
-          opsName: String(opsName || ""),
-          machineHrs: String(machineHrs || ""),
-          idleTime: String(idleTime || ""),
-          idleTimeDuration: String(idleTimeDuration || ""),
-          captureMode: mode,
-        },
-      };
+      const { payload: basePayload } = buildOperatorLogPayload({
+        existingLogId: existingLog?.id,
+        reqUser,
+        refreshedJob,
+        parsedStart,
+        parsedEnd,
+        mode,
+        machineNumber,
+        opsName,
+        machineHrs,
+        idleTime,
+        idleTimeDuration,
+        resolvedFromQty,
+        resolvedToQty,
+        quantityCount,
+        captureEntry,
+      });
 
       if (existingLog) {
         await prisma.employeeLog.update({
@@ -381,7 +295,6 @@ router.post("/jobs/:id/capture-input", async (req, res) => {
   }
 });
 
-// Update QA status for selected quantities in a job
 router.post("/jobs/:id/qa-status", async (req, res) => {
   try {
     const { quantityNumbers, status } = req.body as {
@@ -450,7 +363,6 @@ router.post("/jobs/:id/qa-status", async (req, res) => {
   }
 });
 
-// Update multiple jobs (for bulk operations)
 router.put("/jobs/bulk", async (req, res) => {
   try {
     const { jobIds, updateData } = req.body;
