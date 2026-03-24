@@ -265,9 +265,10 @@ const Operator = () => {
     }
   };
 
-  const handleImageInput = (groupId: string, cutId?: number): void => {
-    if (cutId) {
-      navigate(`/operator/viewpage?groupId=${groupId}&cutId=${cutId}`);
+  const handleImageInput = (groupId: string, cutId?: string | number): void => {
+    const normalizedCutId = String(cutId ?? "").trim();
+    if (normalizedCutId) {
+      navigate(`/operator/viewpage?groupId=${groupId}&cutId=${encodeURIComponent(normalizedCutId)}`);
     } else {
       navigate(`/operator/viewpage?groupId=${groupId}`);
     }

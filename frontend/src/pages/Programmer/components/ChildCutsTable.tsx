@@ -16,7 +16,7 @@ type ChildCutsTableProps = {
   showSetNumberColumn?: boolean;
   onEdit?: (groupId: string) => void;
   onDelete?: (groupId: string, customer: string) => void;
-  onImage?: (groupId: string, cutId?: number) => void;
+  onImage?: (groupId: string, cutId?: string | number) => void;
   onAssignChange?: (jobId: number | string, value: string) => void;
   onMachineNumberChange?: (jobId: number | string, value: string) => void;
   operatorUsers?: Array<{ id: number | string; name: string }>;
@@ -389,7 +389,7 @@ const ChildCutsTable: React.FC<ChildCutsTableProps> = ({
                 <ActionButtons
                   onView={() => handleViewCut(entry)}
                   onEdit={!isOperator && onEdit ? () => handleEdit(entry) : undefined}
-                  onImage={isOperator && onImage ? () => onImage(String(entry.groupId), entry.id as number) : undefined}
+                  onImage={isOperator && onImage ? () => onImage(String(entry.groupId), entry.id) : undefined}
                   onDelete={onDelete ? () => handleDelete(entry) : undefined}
                   viewLabel={`View cut ${index + 1} details`}
                   editLabel={`Edit cut ${index + 1}`}

@@ -81,6 +81,7 @@ model Job {
 
   @@index([groupId])
   @@index([createdAt])
+  @@index([groupId, createdAt(sort: Desc)])
   @@index([customer])
   @@index([description])
   @@index([createdBy])

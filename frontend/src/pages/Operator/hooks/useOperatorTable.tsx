@@ -48,7 +48,7 @@ type UseOperatorTableProps = {
   handleViewJob: (row: TableRow) => void;
   handleViewEntry: (entry: JobEntry) => void;
   handleSubmit: (groupId: string) => void;
-  handleImageInput: (groupId: string, cutId?: number) => void;
+  handleImageInput: (groupId: string, cutId?: string | number) => void;
   handleOpenQaModal: (entries: JobEntry[]) => void;
   isAdmin: boolean;
   isImageInputDisabled: boolean;
@@ -454,7 +454,7 @@ export const useOperatorTable = ({
           return (
             <ActionButtons
               onView={() => (isChild ? handleViewEntry(row.entry) : handleViewJob(row.tableRow))}
-              onImage={isChild ? () => handleImageInput(row.groupId, Number(row.entry.id)) : !row.hasChildren ? () => handleSubmit(row.groupId) : undefined}
+              onImage={isChild ? () => handleImageInput(row.groupId, row.entry.id) : !row.hasChildren ? () => handleSubmit(row.groupId) : undefined}
               onSubmit={() => handleOpenQaModal(targetEntries)}
               viewLabel={`View ${row.entry.customer || "entry"}`}
               imageLabel={`Open ${row.entry.customer || "entry"}`}

@@ -1,23 +1,25 @@
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
-import Login from "./pages/Login page/Login";
-import SharedDashboard from "./pages/Dashboard/SharedDashboard";
-import OperatorDashboard from "./pages/OperatorDashboard/OperatorDashboard";
-import Programmer from "./pages/Programmer/Programmer";
-import Operator from "./pages/Operator/Operator";
-import OperatorViewPage from "./pages/Operator/OperatorViewPage.tsx";
-import QC from "./pages/QC/QC";
-import InspectionReportPage from "./pages/QC/InspectionReportPage";
-import Inventory from "./pages/Inventory/Inventory";
-import UserManagement from "./pages/User Management/UserManagement";
-import EmployeeLogs from "./pages/EmployeeLogs/EmployeeLogs";
-import AdminConsole from "./pages/AdminConsole/AdminConsole";
+import { lazy, Suspense } from "react";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import AppLoader from "./components/AppLoader";
 import ProtectedRoute from "./components/ProtectedRoute";
 
-function AppRoutes() {
-  const location = useLocation();
+const Login = lazy(() => import("./pages/Login page/Login"));
+const SharedDashboard = lazy(() => import("./pages/Dashboard/SharedDashboard"));
+const OperatorDashboard = lazy(() => import("./pages/OperatorDashboard/OperatorDashboard"));
+const Programmer = lazy(() => import("./pages/Programmer/Programmer"));
+const Operator = lazy(() => import("./pages/Operator/Operator"));
+const OperatorViewPage = lazy(() => import("./pages/Operator/OperatorViewPage.tsx"));
+const QC = lazy(() => import("./pages/QC/QC"));
+const InspectionReportPage = lazy(() => import("./pages/QC/InspectionReportPage"));
+const Inventory = lazy(() => import("./pages/Inventory/Inventory"));
+const UserManagement = lazy(() => import("./pages/User Management/UserManagement"));
+const EmployeeLogs = lazy(() => import("./pages/EmployeeLogs/EmployeeLogs"));
+const AdminConsole = lazy(() => import("./pages/AdminConsole/AdminConsole"));
 
+function AppRoutes() {
   return (
-    <Routes location={location} key={`${location.pathname}${location.search}`}>
+    <Suspense fallback={<AppLoader message="Loading page..." />}>
+      <Routes>
       <Route path="/login" element={<Login />} />
       <Route
         path="/dashboard"
@@ -39,7 +41,7 @@ function AppRoutes() {
         path="/programmer"
         element={
           <ProtectedRoute>
-            <Programmer key="programmer-list" />
+            <Programmer />
           </ProtectedRoute>
         }
       />
@@ -47,7 +49,7 @@ function AppRoutes() {
         path="/programmer/newjob"
         element={
           <ProtectedRoute>
-            <Programmer key="programmer-newjob" />
+            <Programmer />
           </ProtectedRoute>
         }
       />
@@ -55,7 +57,7 @@ function AppRoutes() {
         path="/programmer/clone/:groupId"
         element={
           <ProtectedRoute>
-            <Programmer key="programmer-clone" />
+            <Programmer />
           </ProtectedRoute>
         }
       />
@@ -63,7 +65,7 @@ function AppRoutes() {
         path="/programmer/edit/:groupId"
         element={
           <ProtectedRoute>
-            <Programmer key="programmer-edit" />
+            <Programmer />
           </ProtectedRoute>
         }
       />
@@ -134,7 +136,8 @@ function AppRoutes() {
       />
       <Route path="/" element={<Navigate to="/dashboard" replace />} />
       <Route path="*" element={<Navigate to="/dashboard" replace />} />
-    </Routes>
+      </Routes>
+    </Suspense>
   );
 }
 

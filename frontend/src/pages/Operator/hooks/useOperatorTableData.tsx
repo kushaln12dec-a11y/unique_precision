@@ -27,7 +27,7 @@ export const useOperatorTableData = (
   sortDirection: "asc" | "desc",
   expandedGroups: Set<string>,
   toggleGroup: (groupId: string) => void,
-  handleImageInput: (groupId: string, cutId?: number) => void,
+  handleImageInput: (groupId: string, cutId?: string | number) => void,
   handleAssignChange: (jobId: number | string, value: string) => void,
   handleChildMachineNumberChange: (jobId: number | string, machineNumber: string) => void,
   operatorUsers: Array<{ id: string | number; name: string }>,
@@ -136,7 +136,7 @@ export const useOperatorTableData = (
               parentSetting={String(row.parent.setting || "").trim()}
               showSetNumberColumn={false}
               onEdit={undefined}
-              onImage={(groupId: string, cutId?: number) => handleImageInput(groupId, cutId)}
+              onImage={(groupId: string, cutId?: string | number) => handleImageInput(groupId, cutId)}
               onAssignChange={handleAssignChange}
               onMachineNumberChange={handleChildMachineNumberChange}
               operatorUsers={operatorUsers}
