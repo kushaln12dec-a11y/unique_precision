@@ -251,6 +251,7 @@ const schemaStatements: string[] = [
 
   `CREATE INDEX IF NOT EXISTS "Job_groupId_idx" ON "Job" ("groupId");`,
   `CREATE INDEX IF NOT EXISTS "Job_createdAt_idx" ON "Job" ("createdAt");`,
+  `CREATE INDEX IF NOT EXISTS "Job_groupId_createdAt_desc_idx" ON "Job" ("groupId", "createdAt" DESC);`,
   `CREATE INDEX IF NOT EXISTS "Job_customer_idx" ON "Job" ("customer");`,
   `CREATE INDEX IF NOT EXISTS "Job_description_idx" ON "Job" ("description");`,
   `CREATE INDEX IF NOT EXISTS "Job_createdBy_idx" ON "Job" ("createdBy");`,

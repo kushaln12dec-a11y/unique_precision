@@ -342,14 +342,20 @@ const createPaginatedResponse = <T,>(items: T[], total: number, offset: number, 
 });
 
 const getPagedGroupIds = async (where: Prisma.JobWhereInput, offset: number, limit: number) => {
-  const allGroups = await prisma.job.groupBy({
-    by: ["groupId"],
-    where,
-    _max: { createdAt: true },
-    orderBy: { _max: { createdAt: "desc" } },
-  });
-
-  const pagedGroups = allGroups.slice(offset, offset + limit);
+  const [allGroups, pagedGroups] = await Promise.all([
+    prisma.job.groupBy({
+      by: ["groupId"],
+      where,
+    }),
+    prisma.job.groupBy({
+      by: ["groupId"],
+      where,
+      _max: { createdAt: true },
+      orderBy: { _max: { createdAt: "desc" } },
+      skip: offset,
+      take: limit,
+    }),
+  ]);
   return {
     totalGroups: allGroups.length,
     groupIds: pagedGroups.map((group) => group.groupId),
@@ -363,12 +369,18 @@ router.use(authMiddleware);
 router.get("/", async (req, res) => {
   try {
     const where = buildJobWhere(req);
-    const jobs = await prisma.job.findMany({
-      where,
-      orderBy: { createdAt: "desc" },
-      include: jobInclude,
-    });
-    res.json(jobs.map(mapJob));
+    const { limit, offset } = getPagination(req);
+    const [total, jobs] = await Promise.all([
+      prisma.job.count({ where }),
+      prisma.job.findMany({
+        where,
+        skip: offset,
+        take: limit,
+        orderBy: { createdAt: "desc" },
+        include: jobInclude,
+      }),
+    ]);
+    res.json(createPaginatedResponse(jobs.map(mapJob), total, offset, limit));
   } catch (error: any) {
     console.error("Error fetching jobs:", error);
     res.status(500).json({ message: "Error fetching jobs" });
