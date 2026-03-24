@@ -268,7 +268,22 @@ export const OperatorInputSection: React.FC<OperatorInputSectionProps> = ({
                 title="Approve selected range"
                 aria-label="Approve selected range"
               >
+                {false && (
+                  <>
                 {isRangeApproved ? <><span className="tick-mark">✓</span> Accepted</> : <>Check <span className="tick-mark">✓</span></>}
+                  </>
+                )}
+                {isRangeApproved ? (
+                  <>
+                    <span className="tick-mark">✓</span>
+                    Accepted
+                  </>
+                ) : (
+                  <>
+                    <span className="tick-mark">✓</span>
+                    Accept Range
+                  </>
+                )}
               </button>
             </div>
           )}
@@ -338,7 +353,7 @@ export const OperatorInputSection: React.FC<OperatorInputSectionProps> = ({
 
       {displayQuantities.map((qtyData, qtyIndex) => {
         const quantityRequiredSeconds = Math.max(0, Math.round((Number(requiredHoursPerQuantity || 0) || 0) * 3600));
-        const { elapsedTime, pauseTime, remainingTime, isRunning } = useQuantityTimer(
+        const { elapsedTime, pauseTime, remainingTime, overtimeTime, hasOvertime, isRunning } = useQuantityTimer(
           qtyData.startTime,
           qtyData.endTime,
           qtyData.isPaused || false,
@@ -378,16 +393,16 @@ export const OperatorInputSection: React.FC<OperatorInputSectionProps> = ({
                 <div className="quantity-timers">
                   {((qtyData.isPaused || Number(qtyData.totalPauseTime || 0) > 0) && pauseTime && pauseTime !== "00:00:00") && (
                     <div className="quantity-timer idle-timer">
-                      <span className="timer-label">Idel Time:</span>
+                      <span className="timer-label">Idle Time:</span>
                       <span className={`timer-value ${isRunning ? "running" : ""}`}>
                         {pauseTime}
                       </span>
                     </div>
                   )}
-                  <div className="quantity-timer required-timer">
-                    <span className="timer-label">Estimated Time:</span>
-                    <span className={`timer-value ${isRunning ? "running" : ""}`}>
-                      {remainingTime}
+                  <div className={`quantity-timer required-timer ${hasOvertime ? "overtime-timer" : ""}`.trim()}>
+                    <span className="timer-label">{hasOvertime ? "Overtime:" : "Estimated Time:"}</span>
+                    <span className={`timer-value ${hasOvertime ? "overtime" : isRunning ? "running" : ""}`.trim()}>
+                      {hasOvertime ? overtimeTime : remainingTime}
                     </span>
                   </div>
                   <div className="quantity-timer">

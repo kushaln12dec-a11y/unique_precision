@@ -1,27 +1,29 @@
-.modal-overlay {
+.confirm-delete-overlay {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  z-index: 1000;
+  background: rgba(15, 23, 42, 0.58);
+  backdrop-filter: blur(2px);
+  z-index: 1300;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-.delete-modal {
+.confirm-delete-modal {
   position: fixed;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  background: #ffffff;
-  border-radius: 12px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-  z-index: 1001;
   width: 90%;
   max-width: 500px;
+  background: #ffffff;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  border-radius: 16px;
+  box-shadow: 0 28px 80px rgba(15, 23, 42, 0.26);
+  z-index: 1301;
   animation: modal-fade-in 0.2s ease-out;
 }
 
@@ -36,7 +38,7 @@
   }
 }
 
-.modal-header {
+.confirm-delete-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -44,14 +46,14 @@
   border-bottom: 1px solid #e2e8f0;
 }
 
-.modal-header h3 {
+.confirm-delete-header h3 {
   margin: 0;
   font-size: 1.25rem;
   font-weight: 700;
   color: #1e293b;
 }
 
-.modal-close {
+.confirm-delete-close {
   background: transparent;
   border: none;
   font-size: 1.5rem;
@@ -67,12 +69,12 @@
   transition: all 0.2s ease;
 }
 
-.modal-close:hover {
+.confirm-delete-close:hover {
   background: #f1f5f9;
   color: #1e293b;
 }
 
-.modal-body {
+.confirm-delete-body {
   padding: 1.5rem;
 }
 
@@ -116,7 +118,7 @@
   margin: 0;
 }
 
-.modal-footer {
+.confirm-delete-footer {
   display: flex;
   justify-content: flex-end;
   gap: 0.75rem;

@@ -166,10 +166,6 @@ export const MultiSelectOperators: React.FC<MultiSelectOperatorsProps> = ({
 
   const getCompactDisplay = () => {
     if (normalizedSelectedOperators.length === 0) return placeholder;
-    if (normalizedSelectedOperators.length === 1) return normalizedSelectedOperators[0];
-    if (compact && normalizedSelectedOperators.length > 1) {
-      return `${normalizedSelectedOperators[0]} +${normalizedSelectedOperators.length - 1}`;
-    }
     return normalizedSelectedOperators.join(", ");
   };
 

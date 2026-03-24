@@ -84,10 +84,18 @@ export const useQuantityTimer = (
     return Math.max(0, required - computedElapsedSeconds);
   }, [requiredDurationSeconds, computedElapsedSeconds]);
 
+  const computedOvertimeSeconds = useMemo(() => {
+    const required = Math.max(0, Math.floor(Number(requiredDurationSeconds || 0)));
+    if (required <= 0) return 0;
+    return Math.max(0, computedElapsedSeconds - required);
+  }, [requiredDurationSeconds, computedElapsedSeconds]);
+
   return {
     elapsedTime: formatHMS(computedElapsedSeconds),
     pauseTime: formatHMS(computedPauseSeconds),
     remainingTime: formatHMS(computedRemainingSeconds),
+    overtimeTime: formatHMS(computedOvertimeSeconds),
+    hasOvertime: computedOvertimeSeconds > 0,
     isRunning: running && !isPaused,
   };
 };

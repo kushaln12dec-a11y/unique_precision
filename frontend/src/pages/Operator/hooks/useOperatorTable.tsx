@@ -308,7 +308,7 @@ export const useOperatorTable = ({
               {assignedOperators.length > 0 ? (
                 assignedOperators.length > 1 ? (
                   <span className="compact-display-readonly" title={assignedOperators.join(", ")}>
-                    {assignedOperators[0]}+{assignedOperators.length - 1}
+                    <span className="multi-select-display-track">{assignedOperators.join(", ")}</span>
                   </span>
                 ) : (
                   <span className="operator-badge-readonly">{assignedOperators[0]}</span>

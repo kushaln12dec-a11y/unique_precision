@@ -311,7 +311,7 @@ const ChildCutsTable: React.FC<ChildCutsTableProps> = ({
                             : entry.assignedTo.split(", ").filter(Boolean);
                           return assignedOps.length > 1 ? (
                             <span className="compact-display-readonly" title={assignedOps.join(", ")}>
-                              {assignedOps[0]}+{assignedOps.length - 1}
+                              <span className="multi-select-display-track">{assignedOps.join(", ")}</span>
                             </span>
                           ) : (
                             <span className="operator-badge-readonly">{assignedOps[0]}</span>

@@ -12,7 +12,7 @@ import { OperatorJobInfo } from "./components/OperatorJobInfo";
 import { OperatorCutCard } from "./components/OperatorCutCard";
 import { OperatorTotalsSection } from "./components/OperatorTotalsSection";
 import { calculateTotals, type CutForm } from "../Programmer/programmerUtils";
-import type { CutInputData } from "./types/cutInput";
+import type { CutInputData, QuantityInputData } from "./types/cutInput";
 import { createEmptyCutInputData } from "./types/cutInput";
 import { getUsers } from "../../services/userApi";
 import { startOperatorProductionLog } from "../../services/employeeLogsApi";
@@ -28,6 +28,48 @@ import "../Programmer/components/JobDetailsModal.css";
 import "./OperatorViewPage.css";
 import "./components/DateTimeInput.css";
 
+const parseOperatorDateTime = (value?: string): number | null => {
+  if (!value || typeof value !== "string") return null;
+  const match = value.trim().match(/^(\d{2})\/(\d{2})\/(\d{4})\s+(\d{2}):(\d{2})$/);
+  if (!match) return null;
+  const day = Number(match[1]);
+  const month = Number(match[2]);
+  const year = Number(match[3]);
+  const hour = Number(match[4]);
+  const minute = Number(match[5]);
+  const date = new Date(year, month - 1, day, hour, minute, 0, 0);
+  return Number.isNaN(date.getTime()) ? null : date.getTime();
+};
+
+const getQuantityElapsedSeconds = (quantity: QuantityInputData, nowMs: number): number => {
+  const startMs =
+    quantity.startTimeEpochMs && Number.isFinite(Number(quantity.startTimeEpochMs))
+      ? Number(quantity.startTimeEpochMs)
+      : parseOperatorDateTime(quantity.startTime);
+  if (!startMs) return 0;
+
+  const endMs =
+    quantity.endTimeEpochMs && Number.isFinite(Number(quantity.endTimeEpochMs))
+      ? Number(quantity.endTimeEpochMs)
+      : parseOperatorDateTime(quantity.endTime);
+
+  if (endMs) {
+    const base = Math.max(0, Math.floor((endMs - startMs) / 1000));
+    return Math.max(0, base - Math.floor(quantity.totalPauseTime || 0));
+  }
+
+  if (quantity.isPaused) {
+    return Math.max(0, Math.floor(quantity.pausedElapsedTime || 0));
+  }
+
+  const runningPauseSeconds =
+    quantity.pauseStartTime && quantity.isPaused
+      ? Math.max(0, Math.floor((nowMs - quantity.pauseStartTime) / 1000))
+      : 0;
+  const raw = Math.max(0, Math.floor((nowMs - startMs) / 1000));
+  return Math.max(0, raw - Math.floor((quantity.totalPauseTime || 0) + runningPauseSeconds));
+};
+
 const OperatorViewPage = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -41,6 +83,7 @@ const OperatorViewPage = () => {
   const [savedRanges, setSavedRanges] = useState<Map<number | string, Set<string>>>(new Map());
   const [qaStatusesByCut, setQaStatusesByCut] = useState<Map<number | string, Record<number, QuantityQaStatus>>>(new Map());
   const [activeOperatorLogIds, setActiveOperatorLogIds] = useState<Map<string, string>>(new Map());
+  const [liveNowMs, setLiveNowMs] = useState<number>(Date.now());
 
   const {
     jobs,
@@ -471,6 +514,46 @@ const OperatorViewPage = () => {
   const groupTotalAmount = jobs.reduce((sum, job) => sum + (job.totalAmount || 0), 0);
   const groupEstimatedHrs = estimatedHoursFromAmount(amounts.totalWedmAmount || 0);
 
+  const hasActiveQuantityTimer = useMemo(
+    () =>
+      Array.from(cutInputs.values()).some((cut) =>
+        (cut.quantities || []).some((quantity) => {
+          const hasStart = Boolean(
+            (quantity.startTimeEpochMs && Number.isFinite(Number(quantity.startTimeEpochMs))) ||
+              parseOperatorDateTime(quantity.startTime)
+          );
+          const hasEnd = Boolean(
+            (quantity.endTimeEpochMs && Number.isFinite(Number(quantity.endTimeEpochMs))) ||
+              parseOperatorDateTime(quantity.endTime)
+          );
+          return hasStart && !hasEnd;
+        })
+      ),
+    [cutInputs]
+  );
+
+  useEffect(() => {
+    if (!hasActiveQuantityTimer) return;
+    const timerId = window.setInterval(() => {
+      setLiveNowMs(Date.now());
+    }, 1000);
+    return () => window.clearInterval(timerId);
+  }, [hasActiveQuantityTimer]);
+
+  const groupOvertimeSeconds = useMemo(() => {
+    const expectedSeconds = Math.max(0, Math.round(groupEstimatedHrs * 3600));
+    if (expectedSeconds <= 0) return 0;
+
+    let maxElapsedSeconds = 0;
+    cutInputs.forEach((cut) => {
+      (cut.quantities || []).forEach((quantity) => {
+        maxElapsedSeconds = Math.max(maxElapsedSeconds, getQuantityElapsedSeconds(quantity, liveNowMs));
+      });
+    });
+
+    return Math.max(0, maxElapsedSeconds - expectedSeconds);
+  }, [cutInputs, groupEstimatedHrs, liveNowMs]);
+
   const getCutInputData = (cutId: number | string, quantity: number = 1): CutInputData => {
     return cutInputs.get(cutId) || createEmptyCutInputData(quantity);
   };
@@ -606,6 +689,7 @@ const OperatorViewPage = () => {
                 totalSedmAmount={amounts.totalSedmAmount}
                 groupTotalAmount={groupTotalAmount}
                 isAdmin={isAdmin}
+                overtimeSeconds={groupOvertimeSeconds}
               />
 
               {/* Action Buttons */}
