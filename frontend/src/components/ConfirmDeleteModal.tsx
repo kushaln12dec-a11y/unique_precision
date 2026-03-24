@@ -21,16 +21,21 @@ const ConfirmDeleteModal = ({
 }: ConfirmDeleteModalProps) => {
   return (
     <>
-      <div className="modal-overlay" onClick={isProcessing ? undefined : onCancel} />
-      <div className="delete-modal">
-        <div className="modal-header">
+      <div className="confirm-delete-overlay" onClick={isProcessing ? undefined : onCancel} />
+      <div className="confirm-delete-modal">
+        <div className="confirm-delete-header">
           <h3>{title}</h3>
-          <button className="modal-close" onClick={onCancel} aria-label="Close" disabled={isProcessing}>
-            ✕
+          <button
+            className="confirm-delete-close"
+            onClick={onCancel}
+            aria-label="Close"
+            disabled={isProcessing}
+          >
+            ×
           </button>
         </div>
 
-        <div className="modal-body">
+        <div className="confirm-delete-body">
           <p className="delete-warning">{message}</p>
           {details.length > 0 && (
             <div className="user-details">
@@ -44,7 +49,7 @@ const ConfirmDeleteModal = ({
           <p className="delete-note">This action cannot be undone.</p>
         </div>
 
-        <div className="modal-footer">
+        <div className="confirm-delete-footer">
           <button className="btn-secondary" onClick={onCancel} disabled={isProcessing}>
             Cancel
           </button>

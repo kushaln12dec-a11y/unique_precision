@@ -89,6 +89,18 @@
   min-width: 100%;
 }
 
+.multi-select-operators.compact .compact-display .multi-select-display-track {
+  min-width: max-content;
+  padding-right: 1rem;
+  animation: operator-name-marquee 6.8s linear infinite;
+  will-change: transform;
+}
+
+.multi-select-operators.compact:hover .compact-display .multi-select-display-track,
+.multi-select-operators.compact:focus-within .compact-display .multi-select-display-track {
+  animation-duration: 4.9s;
+}
+
 .multi-select-dropdown {
   position: fixed;
   min-width: 150px;
@@ -190,11 +202,11 @@
 
 /* Read-only badge styles (when canAssign is false) */
 .assigned-operators-readonly {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
   width: 100%;
   max-width: 100%;
   overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .operator-badge-readonly {
@@ -215,7 +227,21 @@
   overflow: hidden;
   text-overflow: ellipsis;
   display: inline-block;
+  width: 100%;
   max-width: 100%;
+}
+
+.compact-display-readonly .multi-select-display-track {
+  display: inline-block;
+  min-width: max-content;
+  padding-right: 1rem;
+  animation: operator-name-marquee 6.8s linear infinite;
+  will-change: transform;
+}
+
+.assigned-operators-readonly:hover .compact-display-readonly .multi-select-display-track,
+.assigned-operators-readonly:focus-within .compact-display-readonly .multi-select-display-track {
+  animation-duration: 4.9s;
 }
 
 .unassigned-text {
@@ -263,18 +289,6 @@
   padding-right: 0.7rem;
   overflow: hidden;
   position: relative;
-}
-
-.multi-select-operators.operator-assigned-dropdown .multi-select-display-track {
-  min-width: max-content;
-  padding-right: 1rem;
-  animation: operator-name-marquee 6.4s linear infinite;
-  will-change: transform;
-}
-
-.multi-select-operators.operator-assigned-dropdown:hover .multi-select-display-track,
-.multi-select-operators.operator-assigned-dropdown:focus-within .multi-select-display-track {
-  animation-duration: 4.6s;
 }
 
 @keyframes operator-name-marquee {

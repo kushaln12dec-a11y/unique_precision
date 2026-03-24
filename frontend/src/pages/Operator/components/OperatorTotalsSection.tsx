@@ -8,6 +8,7 @@ type OperatorTotalsSectionProps = {
   totalSedmAmount: number;
   groupTotalAmount: number;
   isAdmin: boolean;
+  overtimeSeconds?: number;
 };
 
 export const OperatorTotalsSection: React.FC<OperatorTotalsSectionProps> = ({
@@ -16,12 +17,16 @@ export const OperatorTotalsSection: React.FC<OperatorTotalsSectionProps> = ({
   totalSedmAmount,
   groupTotalAmount,
   isAdmin,
+  overtimeSeconds = 0,
 }) => {
+  const hasOvertime = overtimeSeconds > 0;
+
   return (
     <div className="operator-totals-section">
-      <div className="operator-total-card">
-        <label>Estimated Time</label>
-        <span>{formatEstimatedTime(groupEstimatedHrs)}</span>
+      <div className={`operator-total-card ${hasOvertime ? "overtime-card" : ""}`.trim()}>
+        <label>{hasOvertime ? "Overtime" : "Estimated Time"}</label>
+        <span>{hasOvertime ? formatEstimatedTime(overtimeSeconds / 3600) : formatEstimatedTime(groupEstimatedHrs)}</span>
+        {hasOvertime && <small className="operator-total-meta">Estimated {formatEstimatedTime(groupEstimatedHrs)}</small>}
       </div>
       {isAdmin && (
         <>
