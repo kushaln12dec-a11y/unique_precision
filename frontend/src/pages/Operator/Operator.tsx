@@ -642,7 +642,7 @@ const Operator = () => {
         if (!hasChildren || !isExpanded) {
           return [parentRow];
         }
-        const childRows = row.entries.slice(1).map((entry, index) => ({
+        const childRows = row.entries.map((entry, index) => ({
           kind: "child" as const,
           groupId: row.groupId,
           tableRow: row,
