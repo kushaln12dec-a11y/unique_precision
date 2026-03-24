@@ -46,15 +46,14 @@ export const useJobData = ({
   const expandableRows = useMemo(() => {
     const map = new Map<string, any>();
     tableData.forEach((row) => {
-      const childEntries = row.entries.slice(1);
-      const hasChildren = childEntries.length > 0;
+      const hasChildren = row.entries.length > 1;
       if (hasChildren) {
         map.set(row.groupId, {
           isExpanded: expandedGroups.has(row.groupId),
           onToggle: () => toggleGroup(row.groupId),
           expandedContent: (
             <ChildCutsTable 
-              entries={childEntries} 
+              entries={row.entries} 
               parentSetting={String(row.parent.setting || "").trim()}
               showSetNumberColumn={false}
               onViewJob={onViewJob}

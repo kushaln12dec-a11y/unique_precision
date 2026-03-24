@@ -1,10 +1,9 @@
 import { useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { getUserDisplayNameFromToken } from "../../../utils/auth";
-import { formatDateLabel } from "../../../utils/date";
 import { createJobs, updateJobsByGroupId, deleteJobsByGroupId } from "../../../services/jobApi";
 import { completeProgrammerJobLog } from "../../../services/employeeLogsApi";
-import { calculateTotals, DEFAULT_CUT, type CalculationResult, type CutForm } from "../programmerUtils";
+import { calculateTotals, DEFAULT_CUT, sortGroupEntriesParentFirst, type CalculationResult, type CutForm } from "../programmerUtils";
 import type { JobEntry } from "../../../types/job";
 
 type UseJobHandlersProps = {
@@ -43,15 +42,18 @@ export const useJobHandlers = ({
     try {
       const displayName = getUserDisplayNameFromToken();
       const createdBy = displayName || "Unknown User";
-      const createdAt = formatDateLabel(new Date());
       const groupId = editingGroupId || String(Date.now());
+      const existingGroupJobs = editingGroupId
+        ? sortGroupEntriesParentFirst(jobs.filter((job) => String(job.groupId) === String(editingGroupId)))
+        : [];
 
       const entries: JobEntry[] = cuts.map((cut, index) => {
         const cutTotals = totals[index] ?? calculateTotals(cut);
         const normalizedCutImage = Array.isArray(cut.cutImage)
           ? (cut.cutImage[0] || "")
           : ((cut as any).cutImage || "");
-        return {
+        const existingJob = editingGroupId ? existingGroupJobs[index] : undefined;
+        const baseEntry = {
           ...cut,
           cutImage: normalizedCutImage as any,
           refNumber: editingGroupId ? refNumber || cut.refNumber || "" : "",
@@ -59,12 +61,12 @@ export const useJobHandlers = ({
           groupId,
           totalHrs: cutTotals.totalHrs,
           totalAmount: cutTotals.totalAmount,
-          createdAt,
-          createdBy,
+          createdBy: String(existingJob?.createdBy || createdBy).trim() || createdBy,
           assignedTo: editingGroupId
             ? jobs.find((job) => String(job.groupId) === editingGroupId)?.assignedTo || "Unassign"
             : "Unassign",
-        };
+        } as JobEntry;
+        return baseEntry;
       });
 
       if (editingGroupId) {

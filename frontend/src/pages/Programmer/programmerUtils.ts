@@ -173,32 +173,30 @@ export const sortGroupEntriesParentFirst = <T extends {
   setting?: string | number;
   createdAt?: string;
 }>(entries: T[]): T[] => {
-  return [...entries].sort((a, b) => {
-    const createdAtA = parseDateValue(String(a.createdAt || ""));
-    const createdAtB = parseDateValue(String(b.createdAt || ""));
-    const hasCreatedAtA = createdAtA > 0;
-    const hasCreatedAtB = createdAtB > 0;
-    if (hasCreatedAtA && hasCreatedAtB && createdAtA !== createdAtB) {
-      return createdAtA - createdAtB;
-    }
-    if (hasCreatedAtA && !hasCreatedAtB) return -1;
-    if (!hasCreatedAtA && hasCreatedAtB) return 1;
+  return entries
+    .map((entry, index) => ({ entry, index }))
+    .sort((left, right) => {
+      const createdAtA = parseDateValue(String(left.entry.createdAt || ""));
+      const createdAtB = parseDateValue(String(right.entry.createdAt || ""));
+      const hasCreatedAtA = createdAtA > 0;
+      const hasCreatedAtB = createdAtB > 0;
+      if (hasCreatedAtA && hasCreatedAtB && createdAtA !== createdAtB) {
+        return createdAtA - createdAtB;
+      }
+      if (hasCreatedAtA && !hasCreatedAtB) return -1;
+      if (!hasCreatedAtA && hasCreatedAtB) return 1;
 
-    const idA = typeof a.id === "number" ? a.id : Number(a.id) || 0;
-    const idB = typeof b.id === "number" ? b.id : Number(b.id) || 0;
-    if (idA !== idB) {
-      return idA - idB;
-    }
+      const settingA = toSortableNumber(left.entry.setting);
+      const settingB = toSortableNumber(right.entry.setting);
+      if (!hasCreatedAtA && !hasCreatedAtB && settingA !== null && settingB !== null && settingA !== settingB) {
+        return settingA - settingB;
+      }
+      if (!hasCreatedAtA && !hasCreatedAtB && settingA !== null && settingB === null) return -1;
+      if (!hasCreatedAtA && !hasCreatedAtB && settingA === null && settingB !== null) return 1;
 
-    const settingA = toSortableNumber(a.setting);
-    const settingB = toSortableNumber(b.setting);
-    if (settingA !== null && settingB !== null && settingA !== settingB) {
-      return settingA - settingB;
-    }
-    if (settingA !== null && settingB === null) return -1;
-    if (settingA === null && settingB !== null) return 1;
-    return 0;
-  });
+      return left.index - right.index;
+    })
+    .map(({ entry }) => entry);
 };
 
 export const normalizeThicknessInput = (rawValue: string, previousValue = ""): string => {
