@@ -509,9 +509,13 @@ router.post("/", async (req, res) => {
       refNumber = await getNextJobRef();
     }
 
+    const createdAtBase = Date.now();
     const normalizedJobsData = await Promise.all(
-      cleanedJobsData.map(async (job: any) => ({
-        ...(await normalizeJobInput(job)),
+      cleanedJobsData.map(async (job: any, index: number) => ({
+        ...(await normalizeJobInput({
+          ...job,
+          createdAt: job?.createdAt ?? new Date(createdAtBase + index * 1000).toISOString(),
+        })),
         refNumber,
       }))
     );
