@@ -5,6 +5,9 @@ import { formatJobRefDisplay } from "../../utils/jobFormatting";
 export type QcRow = {
   qcItemId: string;
   quantityLabel: string;
+  quantityFrom: number;
+  quantityTo: number;
+  quantityCount: number;
   groupId: string;
   jobId: string;
   quantityNumber: number;
@@ -67,19 +70,41 @@ export const buildQcRows = (qcGridJobs: JobEntry[]) => {
       return entries.flatMap((entry) => {
         const qaStates = getQuantityQaStates(entry);
         const totalQty = Math.max(1, Number(entry.qty || 1));
+        const sentQuantities = Array.from({ length: totalQty }, (_, index) => index + 1).filter(
+          (quantityNumber) => qaStates[String(quantityNumber)] === "SENT_TO_QA"
+        );
 
-        return Array.from({ length: totalQty }, (_, index) => index + 1)
-          .filter((quantityNumber) => qaStates[String(quantityNumber)] === "SENT_TO_QA")
-          .map((quantityNumber) => ({
-            qcItemId: `${String(entry.id)}:${quantityNumber}`,
-            quantityLabel: formatOrdinal(quantityNumber),
+        const quantityRanges = sentQuantities.reduce<Array<{ from: number; to: number }>>((acc, qty) => {
+          const lastRange = acc[acc.length - 1];
+          if (!lastRange || qty > lastRange.to + 1) {
+            acc.push({ from: qty, to: qty });
+          } else {
+            lastRange.to = qty;
+          }
+          return acc;
+        }, []);
+
+        return quantityRanges.map((range) => {
+          const quantityCount = range.to - range.from + 1;
+          const label =
+            quantityCount <= 1
+              ? formatOrdinal(range.from)
+              : `Qty ${range.from}-${range.to} (${quantityCount})`;
+
+          return {
+            qcItemId: `${String(entry.id)}:${range.from}-${range.to}`,
+            quantityLabel: label,
+            quantityFrom: range.from,
+            quantityTo: range.to,
+            quantityCount,
             groupId,
             jobId: String(entry.id),
-            quantityNumber,
+            quantityNumber: range.from,
             parent,
             entry,
             entries,
-          }));
+          };
+        });
       });
     })
     .sort((a, b) => parseDateValue(b.entry.createdAt || b.parent.createdAt) - parseDateValue(a.entry.createdAt || a.parent.createdAt));

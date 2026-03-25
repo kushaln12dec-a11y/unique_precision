@@ -5,5 +5,6 @@ export type OperatorInputField =
   | "recalculateMachineHrs"
   | "addIdleTimeToMachineHrs"
   | "togglePause"
+  | "markShiftOver"
   | "resetTimer"
   | "pauseReason";

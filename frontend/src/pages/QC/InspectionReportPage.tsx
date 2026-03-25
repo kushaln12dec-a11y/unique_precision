@@ -5,33 +5,24 @@ import Header from "../../components/Header";
 import Toast from "../../components/Toast";
 import AppLoader from "../../components/AppLoader";
 import { getJobsByGroupId } from "../../services/jobApi";
-import {
-  generateInspectionReport,
-  getInspectionReportPreviewHtml,
-  type InspectionReportPayload,
-  type InspectionReportRowPayload,
-  type InstrumentSelection,
-} from "../../services/inspectionReportApi";
+import { generateInspectionReport, getInspectionReportPreviewHtml, type InspectionReportPayload, type InspectionReportRowPayload, type InstrumentSelection } from "../../services/inspectionReportApi";
 import { getUserDisplayNameFromToken } from "../../utils/auth";
 import InspectionReportDamageChecks from "./components/InspectionReportDamageChecks";
 import InspectionReportMeasurements from "./components/InspectionReportMeasurements";
 import InspectionReportPreview from "./components/InspectionReportPreview";
-import {
-  type DamageField,
-  type Decision,
-  type YesNo,
-  MAX_ROWS,
-  createEmptyRow,
-  formatDateForTemplate,
-  getTodayIsoDate,
-  hasRowValue,
-} from "./inspectionReportUtils";
+import { type DamageField, type Decision, type YesNo, MAX_ROWS, createEmptyRow, formatDateForTemplate, getTodayIsoDate, hasRowValue } from "./inspectionReportUtils";
 import "./InspectionReportPage.css";
 
 const InspectionReportPage = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const groupId = searchParams.get("groupId")?.trim() || undefined;
+  const jobId = searchParams.get("jobId")?.trim() || undefined;
+  const quantityNumber = Number(searchParams.get("quantityNumber") || 0) || undefined;
+  const quantityFrom = Number(searchParams.get("quantityFrom") || 0) || undefined;
+  const quantityTo = Number(searchParams.get("quantityTo") || 0) || undefined;
+  const quantityCount = Number(searchParams.get("quantityCount") || 0) || undefined;
+  const templateVariant = searchParams.get("templateVariant") === "TOOLING_SPARE" ? "TOOLING_SPARE" : "DEFAULT";
   const previewRequestRef = useRef(0);
 
   const [loading, setLoading] = useState(false);
@@ -41,6 +32,11 @@ const InspectionReportPage = () => {
   const [date, setDate] = useState(getTodayIsoDate());
   const [drawingName, setDrawingName] = useState("");
   const [drawingNo, setDrawingNo] = useState("");
+  const [toolingDetails, setToolingDetails] = useState({
+    toolIdentificationNo: "",
+    consumablePartIdentificationNo: "",
+    consumablePartName: "",
+  });
   const [quantity, setQuantity] = useState("");
   const [decision, setDecision] = useState<Decision>("ACCEPTED");
   const [remarks, setRemarks] = useState("");
@@ -52,11 +48,9 @@ const InspectionReportPage = () => {
   const [previewHtml, setPreviewHtml] = useState("");
   const [previewLoading, setPreviewLoading] = useState(false);
   const [previewError, setPreviewError] = useState("");
-  const [toast, setToast] = useState<{ message: string; variant: "success" | "error" | "info"; visible: boolean }>({
-    message: "",
-    variant: "info",
-    visible: false,
-  });
+  const [toast, setToast] = useState<{ message: string; variant: "success" | "error" | "info"; visible: boolean }>({ message: "", variant: "info", visible: false });
+  const setToolingField = (field: "toolIdentificationNo" | "consumablePartIdentificationNo" | "consumablePartName", value: string) =>
+    setToolingDetails((prev) => ({ ...prev, [field]: value }));
 
   useEffect(() => {
     if (!localStorage.getItem("token")) navigate("/login");
@@ -72,13 +66,28 @@ const InspectionReportPage = () => {
         const jobs = await getJobsByGroupId(groupId);
         if (!isMounted || jobs.length === 0) return;
 
-        const parent = jobs[0];
-        const totalQty = jobs.reduce((sum, job) => sum + Number(job.qty || 0), 0);
-        setCustomerId(String(parent.customer || ""));
-        setDrawingName(String(parent.description || ""));
-        setDrawingNo(String((parent as any).programRefFile || parent.refNumber || ""));
-        setQuantity(totalQty > 0 ? String(totalQty) : "");
-        setRows(jobs.slice(0, MAX_ROWS).map((job) => ({ ...createEmptyRow(), actualDimension: String(job.cut || "") })) || [createEmptyRow()]);
+        const selectedJob = (jobId ? jobs.find((job) => String(job.id) === jobId) : null) || jobs[0];
+        const targetQuantityCount =
+          quantityCount ||
+          (quantityFrom && quantityTo ? Math.max(1, quantityTo - quantityFrom + 1) : 0) ||
+          (quantityNumber ? 1 : 0) ||
+          Math.max(1, Number(selectedJob.qty || 1));
+
+        setCustomerId(String(selectedJob.customer || ""));
+        setDrawingName(String(selectedJob.description || ""));
+        setDrawingNo(String((selectedJob as any).programRefFile || selectedJob.refNumber || ""));
+        setToolingDetails({
+          toolIdentificationNo: String((selectedJob as any).programRefFile || selectedJob.refNumber || ""),
+          consumablePartIdentificationNo: String((selectedJob as any).programRefFile || selectedJob.refNumber || ""),
+          consumablePartName: String(selectedJob.description || ""),
+        });
+        setQuantity(targetQuantityCount > 0 ? String(targetQuantityCount) : "1");
+
+        const templateRows = templateVariant === "TOOLING_SPARE"
+          ? Array.from({ length: Math.min(MAX_ROWS, Math.max(1, targetQuantityCount)) }, () => ({ ...createEmptyRow(), actualDimension: String(selectedJob.cut || "") }))
+          : [{ ...createEmptyRow(), actualDimension: String(selectedJob.cut || "") }];
+
+        setRows(templateRows);
       } catch {
         setToast({ message: "Failed to load group details for inspection report.", variant: "error", visible: true });
       } finally {
@@ -90,15 +99,24 @@ const InspectionReportPage = () => {
     return () => {
       isMounted = false;
     };
-  }, [groupId]);
+  }, [groupId, jobId, quantityCount, quantityFrom, quantityNumber, quantityTo, templateVariant]);
 
   const reportPayload = useMemo<InspectionReportPayload>(
     () => ({
       groupId,
+      jobId,
+      quantityNumber,
+      quantityFrom,
+      quantityTo,
+      quantityCount,
+      templateVariant,
       customerId: customerId.trim(),
       date: formatDateForTemplate(date),
       drawingName: drawingName.trim(),
       drawingNo: drawingNo.trim(),
+      toolIdentificationNo: toolingDetails.toolIdentificationNo.trim(),
+      consumablePartIdentificationNo: toolingDetails.consumablePartIdentificationNo.trim(),
+      consumablePartName: toolingDetails.consumablePartName.trim(),
       quantity: quantity.trim(),
       decision,
       rows,
@@ -109,7 +127,7 @@ const InspectionReportPage = () => {
       inspectedBy: inspectedBy.trim().toUpperCase(),
       approvedBy: approvedBy.trim().toUpperCase(),
     }),
-    [approvedBy, customerId, date, decision, drawingName, drawingNo, groupId, inspectedBy, materialProblem, quantity, remarks, rightAngleProblem, rows, workPieceDamage]
+    [approvedBy, customerId, date, decision, drawingName, drawingNo, groupId, inspectedBy, jobId, materialProblem, quantity, quantityCount, quantityFrom, quantityNumber, quantityTo, remarks, rightAngleProblem, rows, templateVariant, toolingDetails, workPieceDamage]
   );
 
   const refreshPreview = useCallback(async (payload: InspectionReportPayload = reportPayload) => {
@@ -210,6 +228,13 @@ const InspectionReportPage = () => {
 
               <label>Drawing Name<input value={drawingName} onChange={(e) => setDrawingName(e.target.value)} /></label>
               <label>Drawing No.<input value={drawingNo} onChange={(e) => setDrawingNo(e.target.value)} /></label>
+              {templateVariant === "TOOLING_SPARE" && (
+                <div className="qc-report-tooling-fields">
+                  <label>Tool Identification No.<input value={toolingDetails.toolIdentificationNo} onChange={(e) => setToolingField("toolIdentificationNo", e.target.value)} /></label>
+                  <label>Consumable Part Identification No.<input value={toolingDetails.consumablePartIdentificationNo} onChange={(e) => setToolingField("consumablePartIdentificationNo", e.target.value)} /></label>
+                  <label>Consumable Part Name<input value={toolingDetails.consumablePartName} onChange={(e) => setToolingField("consumablePartName", e.target.value)} /></label>
+                </div>
+              )}
 
               <InspectionReportMeasurements
                 rows={rows}

@@ -8,10 +8,8 @@ import {
   buildCaptureEntry,
   buildOperatorLogPayload,
   createPaginatedResponse,
-  getOverlappingCaptureIds,
   getPagination,
   getUpdatedByName,
-  hasCaptureRangeOverlap,
   operatorJobInclude,
   parseGroupIdOrNull,
   resolveCaptureRange,
@@ -20,6 +18,89 @@ import {
 const router = Router();
 
 router.use(authMiddleware);
+
+const toNumber = (value: unknown, fallback = 0): number => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+};
+
+const getQuantityNumbersFromLog = (log: {
+  quantityFrom?: number | null;
+  quantityTo?: number | null;
+  quantityCount?: number | null;
+  metadata?: any;
+}): number[] => {
+  const metadata = (log.metadata || {}) as Record<string, any>;
+  const fromMeta = Array.isArray(metadata.quantityNumbers)
+    ? metadata.quantityNumbers
+        .map((qty) => Number(qty))
+        .filter((qty) => Number.isInteger(qty) && qty >= 1)
+    : [];
+  if (fromMeta.length > 0) return fromMeta;
+
+  const from = Number(log.quantityFrom || 0);
+  const to = Number(log.quantityTo || 0);
+  if (from >= 1 && to >= from) {
+    return Array.from({ length: to - from + 1 }, (_, index) => from + index);
+  }
+
+  const count = Number(log.quantityCount || 0);
+  if (count >= 1) return Array.from({ length: count }, (_, index) => index + 1);
+  return [];
+};
+
+const getRevenueByQuantityForLog = (log: {
+  quantityFrom?: number | null;
+  quantityTo?: number | null;
+  quantityCount?: number | null;
+  metadata?: any;
+}): Map<number, number> => {
+  const metadata = (log.metadata || {}) as Record<string, any>;
+  const quantities = getQuantityNumbersFromLog(log);
+  const revenueByQty = new Map<number, number>();
+
+  if (metadata.revenueByQuantity && typeof metadata.revenueByQuantity === "object") {
+    Object.entries(metadata.revenueByQuantity).forEach(([qtyKey, amount]) => {
+      const qty = Number(qtyKey);
+      const value = toNumber(amount, 0);
+      if (Number.isInteger(qty) && qty >= 1 && value > 0) {
+        revenueByQty.set(qty, (revenueByQty.get(qty) || 0) + value);
+      }
+    });
+    if (revenueByQty.size > 0) return revenueByQty;
+  }
+
+  const totalRevenue = toNumber(metadata.revenue, 0);
+  if (totalRevenue <= 0 || quantities.length === 0) return revenueByQty;
+
+  const perQuantity = totalRevenue / quantities.length;
+  quantities.forEach((qty) => revenueByQty.set(qty, (revenueByQty.get(qty) || 0) + perQuantity));
+  return revenueByQty;
+};
+
+const getAllocatedRevenueByQuantity = (
+  logs: Array<{
+    quantityFrom?: number | null;
+    quantityTo?: number | null;
+    quantityCount?: number | null;
+    metadata?: any;
+  }>,
+  quantityNumbers: number[]
+) => {
+  const target = new Set(quantityNumbers);
+  const allocated = new Map<number, number>();
+  quantityNumbers.forEach((qty) => allocated.set(qty, 0));
+
+  logs.forEach((log) => {
+    const revenueByQty = getRevenueByQuantityForLog(log);
+    revenueByQty.forEach((amount, qty) => {
+      if (!target.has(qty)) return;
+      allocated.set(qty, (allocated.get(qty) || 0) + amount);
+    });
+  });
+
+  return allocated;
+};
 
 router.get("/jobs", async (req, res) => {
   try {
@@ -137,7 +218,6 @@ router.post("/jobs/:id/capture-input", async (req, res) => {
       captureMode,
       fromQty,
       toQty,
-      overwriteExisting,
       operatorLogId,
     } = req.body;
 
@@ -181,17 +261,6 @@ router.post("/jobs/:id/capture-input", async (req, res) => {
       return res.status(400).json({ message: `Invalid quantity range. Allowed range is 1 to ${totalQty}.` });
     }
 
-    const existingCaptures = Array.isArray(job.operatorCaptures) ? [...job.operatorCaptures] : [];
-    const hasOverlap = hasCaptureRangeOverlap(existingCaptures, resolvedFromQty, resolvedToQty);
-
-    if (hasOverlap && !overwriteExisting) {
-      return res.status(409).json({
-        message: "Selected quantity range overlaps with an existing capture. Confirm overwrite to replace it.",
-        code: "CAPTURE_RANGE_OVERLAP",
-      });
-    }
-
-    const overlappingCaptureIds = getOverlappingCaptureIds(existingCaptures, resolvedFromQty, resolvedToQty);
     const captureEntry = buildCaptureEntry({
       mode,
       resolvedFromQty,
@@ -209,12 +278,6 @@ router.post("/jobs/:id/capture-input", async (req, res) => {
     });
 
     await prisma.$transaction(async (tx) => {
-      if (overlappingCaptureIds.length > 0) {
-        await tx.jobOperatorCapture.deleteMany({
-          where: { id: { in: overlappingCaptureIds } },
-        });
-      }
-
       await tx.jobOperatorCapture.create({
         data: {
           ...captureEntry,
@@ -278,13 +341,66 @@ router.post("/jobs/:id/capture-input", async (req, res) => {
         captureEntry,
       });
 
+      const metadata = (basePayload.metadata || {}) as Record<string, any>;
+      const quantityNumbers = Array.isArray(metadata.quantityNumbers)
+        ? metadata.quantityNumbers
+            .map((qty) => Number(qty))
+            .filter((qty) => Number.isInteger(qty) && qty >= 1)
+        : Array.from({ length: quantityCount }, (_, index) => resolvedFromQty + index);
+      const perQuantityRevenue = Math.max(0, toNumber(metadata.perQuantityRevenue, 0));
+      const workedToEstimatedRatio = Math.max(0, toNumber(metadata.workedToEstimatedRatio, 0));
+      const proposedRevenuePerQuantity = perQuantityRevenue * workedToEstimatedRatio;
+
+      const priorLogs = await prisma.employeeLog.findMany({
+        where: {
+          jobId: String(refreshedJob.id),
+          role: "OPERATOR",
+          activityType: "OPERATOR_PRODUCTION",
+          status: "COMPLETED",
+          ...(existingLog ? { id: { not: existingLog.id } } : {}),
+        },
+        select: {
+          quantityFrom: true,
+          quantityTo: true,
+          quantityCount: true,
+          metadata: true,
+        },
+      });
+
+      const allocatedByQuantity = getAllocatedRevenueByQuantity(priorLogs, quantityNumbers);
+      const revenueByQuantity: Record<string, number> = {};
+      let totalRevenue = 0;
+
+      quantityNumbers.forEach((qty) => {
+        const alreadyAllocated = Math.max(0, allocatedByQuantity.get(qty) || 0);
+        const remaining = Math.max(0, perQuantityRevenue - alreadyAllocated);
+        const qtyRevenue = Math.max(0, Math.min(remaining, proposedRevenuePerQuantity));
+        const roundedQtyRevenue = Number(qtyRevenue.toFixed(2));
+        revenueByQuantity[String(qty)] = roundedQtyRevenue;
+        totalRevenue += roundedQtyRevenue;
+      });
+
+      const finalRevenue = Number(totalRevenue.toFixed(2));
+      const finalPayload = {
+        ...basePayload,
+        metadata: {
+          ...metadata,
+          quantityNumbers,
+          revenueByQuantity,
+          revenue: finalRevenue,
+          estimatedMinutes: Math.max(0, Math.round(toNumber(metadata.estimatedSeconds, 0) / 60)),
+          overtimeMinutes: Math.max(0, Math.round(toNumber(metadata.overtimeSeconds, 0) / 60)),
+          quantityRevenueModel: "WEDM_PROPORTIONAL",
+        },
+      };
+
       if (existingLog) {
         await prisma.employeeLog.update({
           where: { id: existingLog.id },
-          data: basePayload,
+          data: finalPayload,
         });
       } else {
-        await prisma.employeeLog.create({ data: basePayload });
+        await prisma.employeeLog.create({ data: finalPayload });
       }
     }
 

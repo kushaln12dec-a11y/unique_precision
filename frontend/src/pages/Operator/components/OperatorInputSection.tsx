@@ -24,8 +24,8 @@ type OperatorInputSectionProps = {
   validationErrors?: Record<string, Record<string, string>>;
   onShowToast?: (message: string, variant?: "success" | "error" | "info") => void;
   onRequestResetTimer?: (cutId: number | string, quantityIndex: number) => void;
+  onRequestShiftOver?: (cutId: number | string, quantityIndex: number) => void;
   onStartTimeCaptured?: (cutId: number | string, quantityIndex: number) => void;
-  isAdmin: boolean;
   requiredHoursPerQuantity?: number;
 };
 
@@ -65,8 +65,8 @@ export const OperatorInputSection: React.FC<OperatorInputSectionProps> = ({
   validationErrors = {},
   onShowToast,
   onRequestResetTimer,
+  onRequestShiftOver,
   onStartTimeCaptured,
-  isAdmin,
   requiredHoursPerQuantity = 0,
 }) => {
   const [captureMode, setCaptureMode] = useState<"PER_QUANTITY" | "RANGE">("PER_QUANTITY");
@@ -188,10 +188,10 @@ export const OperatorInputSection: React.FC<OperatorInputSectionProps> = ({
             validationErrors={validationErrors[qtyIndex] || {}}
             requiredHoursPerQuantity={requiredHoursPerQuantity}
             onRequestResetTimer={onRequestResetTimer}
+            onRequestShiftOver={onRequestShiftOver}
             onSaveQuantity={onSaveQuantity}
             onSaveRange={onSaveRange}
             savedRanges={savedRanges}
-            isAdmin={isAdmin}
           />
         );
       })}

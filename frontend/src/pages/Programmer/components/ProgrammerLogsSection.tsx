@@ -72,6 +72,7 @@ export const ProgrammerLogsSection: React.FC<Props> = ({
         emptyMessage="No programmer logs found."
         getRowId={(row) => row._id}
         className="jobs-table-wrapper programmer-logs-table logs-center"
+        rowHeight={84}
         refreshKey={`${hasLogSearch}|${logStatus}|${logUserId}`}
       />
     </>

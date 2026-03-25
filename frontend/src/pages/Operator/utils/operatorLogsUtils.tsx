@@ -34,15 +34,16 @@ export const buildOperatorLogsColumns = ({
       return (
         <div className="log-user-stack log-user-badge-stack">
           <span className="log-user-initial-badge" title={name.toUpperCase()}>{getInitials(name)}</span>
+          <strong title={name.toUpperCase()}>{name}</strong>
           <span>{designation}</span>
         </div>
       );
     },
   },
   { key: "machineNumber", label: "MACH #", sortable: false, render: (row) => formatMachineLabel(getMachineNumberForLog(row)) },
-  { key: "workItemTitle", label: "Work Item", sortable: false, render: (row) => formatOperatorWorkItem(row.workItemTitle) },
-  { key: "jobDescription", label: "Description", sortable: false, render: (row) => <MarqueeCopyText text={String(row.jobDescription || "-")} /> },
-  { key: "workSummary", label: "Summary", sortable: false, render: (row) => <MarqueeCopyText text={String(row.workSummary || "-")} /> },
+  { key: "workItemTitle", label: "Work Item", sortable: false, className: "operator-log-text-col", render: (row) => formatOperatorWorkItem(row.workItemTitle) },
+  { key: "jobDescription", label: "Description", sortable: false, className: "operator-log-text-col", render: (row) => <MarqueeCopyText text={String(row.jobDescription || "-")} /> },
+  { key: "workSummary", label: "Summary", sortable: false, className: "operator-log-text-col", render: (row) => <MarqueeCopyText text={String(row.workSummary || "-")} /> },
   {
     key: "startedAt",
     label: "Started at",
@@ -63,6 +64,8 @@ export const buildOperatorLogsColumns = ({
   },
   { key: "shift", label: "Shift", sortable: false, render: (row) => renderOperatorShiftBadge(row.startedAt) },
   { key: "durationSeconds", label: "Duration", sortable: false, render: (row) => formatOperatorDuration(row.durationSeconds) },
+  { key: "estimatedSeconds", label: "Estimated", sortable: false, render: (row) => formatOperatorDuration(Number((row.metadata as any)?.estimatedSeconds || 0)) },
+  { key: "overtimeSeconds", label: "Overtime", sortable: false, render: (row) => formatOperatorDuration(Number((row.metadata as any)?.overtimeSeconds || 0)) },
   { key: "idleTime", label: "Idle Time", sortable: false, render: (row) => String((row.metadata as any)?.idleTime || "-") },
   { key: "remark", label: "Remark", sortable: false, render: (row) => String((row.metadata as any)?.remark || "-") },
   ...(isAdmin ? [{
@@ -122,6 +125,8 @@ export const buildOperatorLogFilter =
           formatDisplayDateTime(log.endedAt || null),
           getOperatorShiftLabel(log.startedAt),
           formatOperatorDuration(log.durationSeconds),
+          formatOperatorDuration(Number((log.metadata as any)?.estimatedSeconds || 0)),
+          formatOperatorDuration(Number((log.metadata as any)?.overtimeSeconds || 0)),
           String((log.metadata as any)?.idleTime || "-"),
           String((log.metadata as any)?.remark || "-"),
           ...(isAdmin ? [getRevenueForLog(log)] : []),

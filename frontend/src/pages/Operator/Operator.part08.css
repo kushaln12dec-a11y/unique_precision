@@ -26,6 +26,27 @@
   display: inline-block;
 }
 
+.operator-logs-table .ag-cell.operator-log-text-col .ag-cell-value {
+  justify-content: flex-start;
+  text-align: left;
+}
+
+.operator-logs-table .description-marquee .marquee-animated {
+  display: none;
+}
+
+.operator-logs-table .description-marquee .marquee-static {
+  position: static;
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.operator-logs-table .description-marquee .marquee-copy-btn {
+  display: none;
+}
+
 .operator-table-no-scroll
   .child-jobs-table
   tr.child-row.operator-stage-row-not-started

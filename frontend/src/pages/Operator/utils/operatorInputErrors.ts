@@ -37,6 +37,24 @@ export const clearOperatorPauseReasonError = (
   });
 };
 
+export const setOperatorFieldError = (
+  setValidationErrors: React.Dispatch<React.SetStateAction<Map<number | string, Record<string, Record<string, string>>>>>,
+  cutId: number | string,
+  quantityIndex: number,
+  field: string,
+  message: string
+) => {
+  setValidationErrors((prev) => {
+    const newErrors = new Map(prev);
+    const cutErrors = newErrors.get(cutId) || {};
+    const qtyErrors = cutErrors[quantityIndex] || {};
+    qtyErrors[field] = message;
+    cutErrors[quantityIndex] = qtyErrors;
+    newErrors.set(cutId, cutErrors);
+    return newErrors;
+  });
+};
+
 export const clearOperatorFieldError = (
   validationErrors: Map<number | string, Record<string, Record<string, string>>>,
   setValidationErrors: React.Dispatch<React.SetStateAction<Map<number | string, Record<string, Record<string, string>>>>>,

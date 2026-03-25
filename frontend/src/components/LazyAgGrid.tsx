@@ -42,7 +42,7 @@ function LazyAgGrid<T extends object>({
   columnDefs,
   fetchPage,
   getRowId,
-  emptyMessage = "No rows found.",
+  emptyMessage = "No data available.",
   className = "",
   pageSize = 15,
   refreshKey,

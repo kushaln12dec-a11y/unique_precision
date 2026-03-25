@@ -214,6 +214,50 @@ export const useOperatorViewData = (groupId: string | null, cutIdParam: string |
     };
     fetchJobs();
   }, [groupId, cutIdParam, idleTimeConfigs]);
+
+  useEffect(() => {
+    if (!groupId) return;
+
+    const syncSharedFields = async () => {
+      try {
+        const fetchedJobs = await getOperatorJobsByGroupId(groupId);
+        const filteredJobs = cutIdParam
+          ? fetchedJobs.filter((job) => String(job.id) === String(cutIdParam))
+          : fetchedJobs;
+
+        setJobs(filteredJobs);
+        setCutInputs((prev) => {
+          if (prev.size === 0) return prev;
+          const next = new Map(prev);
+          filteredJobs.forEach((job) => {
+            const existingCut = next.get(job.id);
+            if (!existingCut) return;
+            const assignedToArray = parseAssignedOperators((job as any).assignedTo || "");
+            const sharedMachine = String((job as any).machineNumber || "").trim();
+            next.set(job.id, {
+              ...existingCut,
+              quantities: (existingCut.quantities || []).map((quantity) => ({
+                ...quantity,
+                machineNumber: sharedMachine || quantity.machineNumber,
+                opsName: assignedToArray.length > 0 ? assignedToArray : quantity.opsName,
+              })),
+            });
+          });
+          return next;
+        });
+      } catch {
+        // Background sync should not block operator flow.
+      }
+    };
+
+    const intervalId = window.setInterval(() => {
+      void syncSharedFields();
+    }, 8000);
+
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, [groupId, cutIdParam]);
   
   // Save to localStorage whenever cutInputs changes
   useEffect(() => {

@@ -8,10 +8,15 @@ export const operatorJobInclude: Prisma.JobInclude = {
 };
 
 export const getUpdatedByName = (req: any): string => {
-  if (req.user && (req.user as any).fullName) {
-    return String((req.user as any).fullName);
-  }
-  return "";
+  const reqUser = req?.user as any;
+  const fullName = String(reqUser?.fullName || "").trim();
+  if (fullName) return fullName;
+  const firstName = String(reqUser?.firstName || "").trim();
+  const lastName = String(reqUser?.lastName || "").trim();
+  const joined = `${firstName} ${lastName}`.trim();
+  if (joined) return joined;
+  const email = String(reqUser?.email || "").trim();
+  return email.split("@")[0]?.trim() || "";
 };
 
 export const toUuid = (value: unknown): string | undefined => {
@@ -57,6 +62,21 @@ export const createPaginatedResponse = <T,>(items: T[], total: number, offset: n
 });
 
 export const parseGroupIdOrNull = (value: string) => toBigInt(value);
+
+const parseMachineHoursToSeconds = (value: unknown): number | null => {
+  const raw = String(value || "").trim();
+  if (!raw) return null;
+  if (raw.includes(":")) {
+    const [hoursRaw, minutesRaw] = raw.split(":");
+    const hours = Number(hoursRaw);
+    const minutes = Number(minutesRaw);
+    if (!Number.isFinite(hours) || !Number.isFinite(minutes)) return null;
+    return Math.max(0, Math.round((hours * 60 + minutes) * 60));
+  }
+  const numeric = Number(raw);
+  if (!Number.isFinite(numeric) || numeric < 0) return null;
+  return Math.round(numeric * 3600);
+};
 
 export const resolveCaptureRange = ({
   totalQty,
@@ -183,6 +203,16 @@ export const buildOperatorLogPayload = ({
 }) => {
   const userId = toUuid(reqUser?.userId);
   const durationSeconds = Math.max(0, Math.floor((parsedEnd.getTime() - parsedStart.getTime()) / 1000));
+  const workedSeconds = parseMachineHoursToSeconds(machineHrs) ?? durationSeconds;
+  const jobWedmAmount = Math.max(0, Number((refreshedJob as any).totalHrs || 0) * Number((refreshedJob as any).rate || 0));
+  const totalQuantity = Math.max(1, Number((refreshedJob as any).qty || quantityCount || 1));
+  const perQuantityRevenue = jobWedmAmount / totalQuantity;
+  const estimatedHoursPerQuantity = perQuantityRevenue / 625;
+  const estimatedSecondsPerQuantity = Math.max(0, Math.round(estimatedHoursPerQuantity * 3600));
+  const estimatedSeconds = estimatedSecondsPerQuantity * Math.max(1, quantityCount);
+  const overtimeSeconds = Math.max(0, workedSeconds - estimatedSeconds);
+  const quantityNumbers = Array.from({ length: Math.max(1, quantityCount) }, (_, index) => resolvedFromQty + index);
+  const workedToEstimatedRatio = estimatedSeconds > 0 ? Math.max(0, Math.min(1, workedSeconds / estimatedSeconds)) : 0;
   const settingNumber = (() => {
     const foundIndex = Array.isArray(refreshedJob.operatorCaptures)
       ? refreshedJob.operatorCaptures.findIndex(
@@ -200,7 +230,7 @@ export const buildOperatorLogPayload = ({
       status: "COMPLETED",
       ...withUserId(userId),
       userEmail: String(reqUser?.email || ""),
-      userName: String(reqUser?.fullName || "").trim(),
+      userName: getUpdatedByName({ user: reqUser }),
       jobId: String(refreshedJob.id || ""),
       jobGroupId: toBigInt(refreshedJob.groupId) ?? null,
       refNumber: String(refreshedJob.refNumber || ""),
@@ -214,7 +244,7 @@ export const buildOperatorLogPayload = ({
       workSummary: `Machine ${machineNumber || "-"} | Ops ${opsName || "-"} | Hrs ${machineHrs || "-"}`,
       startedAt: parsedStart,
       endedAt: parsedEnd,
-      durationSeconds,
+      durationSeconds: workedSeconds,
       metadata: {
         machineNumber: String(machineNumber || ""),
         opsName: String(opsName || ""),
@@ -222,6 +252,15 @@ export const buildOperatorLogPayload = ({
         idleTime: String(idleTime || ""),
         idleTimeDuration: String(idleTimeDuration || ""),
         captureMode: mode,
+        quantityNumbers,
+        workedSeconds,
+        estimatedSeconds,
+        estimatedSecondsPerQuantity,
+        overtimeSeconds,
+        workedToEstimatedRatio,
+        wedmAmount: jobWedmAmount,
+        perQuantityRevenue,
+        revenue: 0,
       },
     },
   };

@@ -93,7 +93,7 @@ export const ProgrammerJobsSection: React.FC<Props> = ({
         getRowId={(row: ProgrammerDisplayRow) =>
           row.kind === "parent" ? `parent__${row.groupId}` : `child__${row.groupId}__${row.entry.id}`
         }
-        emptyMessage='No entries added yet. Use "New" to add an entry.'
+        emptyMessage="No data available."
         getRowClass={(params) => {
           if (params.data?.kind === "child") return getRowClassName([params.data.entry], false, true);
           return getParentRowClassName(

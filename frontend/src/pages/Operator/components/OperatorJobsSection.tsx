@@ -136,7 +136,7 @@ export const OperatorJobsSection: React.FC<Props> = ({
         getRowId={(row: OperatorDisplayRow) =>
           row.kind === "parent" ? `parent__${row.groupId}` : `child__${row.groupId}__${row.entry.id}`
         }
-        emptyMessage="No entries added yet."
+        emptyMessage="No data available."
         getRowClass={(params) => {
           if (params.data?.kind === "child") {
             const childFlagClass = getRowClassName([params.data.entry], false, true);

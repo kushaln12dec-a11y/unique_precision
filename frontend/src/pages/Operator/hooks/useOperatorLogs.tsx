@@ -113,7 +113,7 @@ export const useOperatorLogs = ({
   const getRevenueForLog = useCallback(
     (log: EmployeeLog, workedSecondsMap: Map<string, number> = new Map<string, number>()) => {
       const metadata = (log.metadata || {}) as Record<string, any>;
-      const explicitRevenue = metadata.revenue;
+      const explicitRevenue = log.revenue ?? metadata.revenue;
       if (explicitRevenue !== undefined && explicitRevenue !== null && String(explicitRevenue).trim() !== "") {
         const numericValue = Number(explicitRevenue);
         if (Number.isFinite(numericValue)) return `Rs. ${Math.round(numericValue)}`;
@@ -171,7 +171,7 @@ export const useOperatorLogs = ({
       );
       const filteredLogs = filterOperatorLogs(allLogs);
       const workedSecondsMap = calculateWorkedSecondsByLogs(filteredLogs);
-      const headers = ["User", "MACH #", "Work Item", "Description", "Summary", "Started at", "Ended at", "Shift", "Duration", "Idle Time", "Remark", "Status"];
+      const headers = ["User", "MACH #", "Work Item", "Description", "Summary", "Started at", "Ended at", "Shift", "Duration", "Estimated", "Overtime", "Idle Time", "Remark", "Status"];
       if (isAdmin) headers.splice(headers.length - 1, 0, "Revenue");
       const rows = filteredLogs.map((row) => {
         const name = getLogUserDisplayName(row.userName, row.userEmail, "");
@@ -186,6 +186,8 @@ export const useOperatorLogs = ({
           formatDisplayDateTime(row.endedAt || null),
           getOperatorShiftLabel(row.startedAt),
           formatOperatorDuration(row.durationSeconds),
+          formatOperatorDuration(Number((row.metadata as any)?.estimatedSeconds || 0)),
+          formatOperatorDuration(Number((row.metadata as any)?.overtimeSeconds || 0)),
           String((row.metadata as any)?.idleTime || "-"),
           String((row.metadata as any)?.remark || "-"),
           ...(isAdmin ? [getRevenueForLog(row, workedSecondsMap)] : []),
