@@ -1,5 +1,6 @@
 import fs from "fs";
 import path from "path";
+import { buildToolingSpareInspectionReportHtml } from "./inspectionReportToolingTemplate";
 
 export type InstrumentKey = "hm" | "sg" | "pg" | "vc" | "dm";
 export type YesNo = "YES" | "NO" | "";
@@ -16,10 +17,14 @@ export type InspectionRowPayload = {
 
 export type GenerateInspectionReportPayload = {
   groupId?: bigint | number | string;
+  templateVariant?: "DEFAULT" | "TOOLING_SPARE";
   customerId?: string;
   date?: string;
   drawingName?: string;
   drawingNo?: string;
+  toolIdentificationNo?: string;
+  consumablePartIdentificationNo?: string;
+  consumablePartName?: string;
   quantity?: string;
   decision?: "ACCEPTED" | "REJECTED" | "PENDING";
   rows?: InspectionRowPayload[];
@@ -112,6 +117,10 @@ const instrumentPack = (source: InstrumentSelection | undefined) => `
 `;
 
 export const buildInspectionReportHtml = (payload: GenerateInspectionReportPayload): string => {
+  if (String(payload.templateVariant || "").toUpperCase() === "TOOLING_SPARE") {
+    return buildToolingSpareInspectionReportHtml(payload);
+  }
+
   const logoDataUri = getLogoDataUri();
   const inputRows = Array.isArray(payload.rows) ? payload.rows.slice(0, MAX_ROWS) : [];
   const rowsToRender: InspectionRowPayload[] = Array.from(
