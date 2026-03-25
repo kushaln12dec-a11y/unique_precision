@@ -6,8 +6,8 @@ import { OperatorInputSection } from "./OperatorInputSection";
 import { estimatedHoursFromAmount, formatEstimatedTime } from "../../../utils/jobFormatting";
 import "../OperatorViewPage.css";
 
-import type { QuantityInputData } from "../types/cutInput";
 import type { QuantityProgressStatus } from "../utils/qaProgress";
+import type { OperatorInputField } from "../types/inputFields";
 import { calculateTotals, getThicknessDisplayValue } from "../../Programmer/programmerUtils";
 
 type OperatorCutCardProps = {
@@ -21,7 +21,7 @@ type OperatorCutCardProps = {
   onInputChange: (
     cutId: number | string,
     quantityIndex: number,
-    field: keyof QuantityInputData | "recalculateMachineHrs" | "addIdleTimeToMachineHrs" | "togglePause" | "resetTimer" | "pauseReason",
+    field: OperatorInputField,
     value: string | string[]
   ) => void;
   onApplyToAllQuantities: (
@@ -49,6 +49,7 @@ type OperatorCutCardProps = {
   validationErrors?: Record<string, Record<string, string>>;
   onShowToast?: (message: string, variant?: "success" | "error" | "info") => void;
   onRequestResetTimer?: (cutId: number | string, quantityIndex: number) => void;
+  onRequestShiftOver?: (cutId: number | string, quantityIndex: number) => void;
   onStartTimeCaptured?: (cutId: number | string, quantityIndex: number) => void;
   isAdmin: boolean;
 };
@@ -73,6 +74,7 @@ export const OperatorCutCard: React.FC<OperatorCutCardProps> = ({
   validationErrors = {},
   onShowToast,
   onRequestResetTimer,
+  onRequestShiftOver,
   onStartTimeCaptured,
   isAdmin,
 }) => {
@@ -151,8 +153,8 @@ export const OperatorCutCard: React.FC<OperatorCutCardProps> = ({
             validationErrors={validationErrors}
             onShowToast={onShowToast}
             onRequestResetTimer={onRequestResetTimer}
+            onRequestShiftOver={onRequestShiftOver}
             onStartTimeCaptured={onStartTimeCaptured}
-            isAdmin={isAdmin}
           />
         </>
       )}

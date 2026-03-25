@@ -6,6 +6,7 @@ import LazyAgGrid from "../../components/LazyAgGrid";
 import Toast from "../../components/Toast";
 import AppLoader from "../../components/AppLoader";
 import ConfirmDeleteModal from "../../components/ConfirmDeleteModal";
+import type { JobEntry } from "../../types/job";
 import { getQcJobsPage, setQcReportClosedByGroupId, updateQcDecisionByGroupId } from "../../services/jobApi";
 import { generateInspectionReport, type InspectionReportPayload } from "../../services/inspectionReportApi";
 import { useAppDispatch, useAppSelector } from "../../store/hooks";
@@ -13,11 +14,13 @@ import { setQcCustomerFilter, setQcDescriptionFilter, setQcOperatorFilter } from
 import { matchesSearchQuery } from "../../utils/searchUtils";
 import { getParentRowClassName } from "../Programmer/utils/priorityUtils";
 import QcFilters from "./components/QcFilters";
+import QcReportTemplateModal from "./components/QcReportTemplateModal";
 import { createQcColumns } from "./qcColumns";
-import { buildQcRows, getPrimaryOperatorName, getQcRowSearchValues, type QcRow } from "./qcUtils";
+import { buildQcRows, formatDateForTemplate, getDrawingNo, getPrimaryOperatorName, getQcRowSearchValues, type QcRow } from "./qcUtils";
 import "../RoleBoard.css";
 import "../Programmer/Programmer.css";
 import "./QC.css";
+import "./components/QcReportTemplateModal.css";
 
 const QC = () => {
   const navigate = useNavigate();
@@ -27,6 +30,10 @@ const QC = () => {
   const [loading, setLoading] = useState(true);
   const [reportCloseCandidate, setReportCloseCandidate] = useState<QcRow | null>(null);
   const [isCloseConfirmOpen, setIsCloseConfirmOpen] = useState(false);
+  const [templateSelection, setTemplateSelection] = useState<{
+    row: QcRow;
+    action: "OPEN" | "DOWNLOAD";
+  } | null>(null);
   const [toast, setToast] = useState<{ message: string; variant: "success" | "error" | "info"; visible: boolean }>({
     message: "",
     variant: "info",
@@ -91,6 +98,41 @@ const QC = () => {
     }
   };
 
+  const buildReportPayload = useCallback(
+    (row: QcRow, templateVariant: "DEFAULT" | "TOOLING_SPARE"): InspectionReportPayload => ({
+      groupId: row.groupId,
+      jobId: row.jobId,
+      quantityNumber: row.quantityNumber,
+      quantityFrom: row.quantityFrom,
+      quantityTo: row.quantityTo,
+      quantityCount: row.quantityCount,
+      templateVariant,
+      customerId: String(row.entry.customer || row.parent.customer || ""),
+      date: formatDateForTemplate(new Date()),
+      drawingName: String(row.entry.description || row.parent.description || ""),
+      drawingNo: getDrawingNo(row.entry) || getDrawingNo(row.parent),
+      toolIdentificationNo: getDrawingNo(row.entry) || getDrawingNo(row.parent),
+      consumablePartIdentificationNo: getDrawingNo(row.entry) || getDrawingNo(row.parent),
+      consumablePartName: String(row.entry.description || row.parent.description || ""),
+      quantity: String(Math.max(1, row.quantityCount || 1)),
+      decision: row.parent.qcDecision === "APPROVED" ? "ACCEPTED" : row.parent.qcDecision === "REJECTED" ? "REJECTED" : "PENDING",
+      rows: Array.from({ length: Math.max(1, row.quantityCount || 1) }, () => ({
+        actualDimension: String(row.entry.cut ?? ""),
+        tolerance: "",
+        measuringDimension: "",
+        deviation: "",
+        instruments: { hm: false, sg: false, pg: false, vc: false, dm: false },
+      })),
+      remarks: "",
+      workPieceDamage: "",
+      rightAngleProblem: "",
+      materialProblem: "",
+      inspectedBy: "",
+      approvedBy: "",
+    }),
+    []
+  );
+
   const downloadInspectionReport = async (payload: InspectionReportPayload, filename: string) => {
     const blob = await generateInspectionReport(payload);
     const link = document.createElement("a");
@@ -103,19 +145,44 @@ const QC = () => {
     URL.revokeObjectURL(url);
   };
 
+  const handleTemplateSelection = async (variant: "DEFAULT" | "TOOLING_SPARE") => {
+    if (!templateSelection) return;
+    const { row, action } = templateSelection;
+    const payload = buildReportPayload(row, variant);
+    try {
+      if (action === "OPEN") {
+        const params = new URLSearchParams({
+          groupId: row.groupId,
+          jobId: row.jobId,
+          quantityNumber: String(row.quantityNumber),
+          quantityFrom: String(row.quantityFrom),
+          quantityTo: String(row.quantityTo),
+          quantityCount: String(row.quantityCount),
+          templateVariant: variant,
+        });
+        navigate(`/qc/inspection-report?${params.toString()}`);
+      } else {
+        await downloadInspectionReport(payload, `inspection-report-${row.quantityLabel}.pdf`);
+      }
+    } catch {
+      showToast("Failed to process inspection report action.", "error");
+    } finally {
+      setTemplateSelection(null);
+    }
+  };
+
   const columns = useMemo(
     () =>
       createQcColumns({
-        navigate: (path) => navigate(path),
-        showToast,
         updateDecision,
-        downloadInspectionReport,
+        onOpenReport: (row) => setTemplateSelection({ row, action: "OPEN" }),
+        onDownloadReport: (row) => setTemplateSelection({ row, action: "DOWNLOAD" }),
         openClosePrompt: (row) => {
           setReportCloseCandidate(row);
           setIsCloseConfirmOpen(true);
         },
       }),
-    [navigate, showToast]
+    [updateDecision]
   );
 
   const qcColumnDefs = useMemo(
@@ -163,7 +230,7 @@ const QC = () => {
                 transformRows={() => filteredTableData}
                 getRowId={(row: QcRow) => row.qcItemId}
                 getRowClass={(params) => getParentRowClassName(params.data.parent, params.data.entries, false)}
-                emptyMessage="No rows dispatched to QC yet."
+                emptyMessage="No data available."
                 className="jobs-table-wrapper"
               />
             </>
@@ -199,10 +266,18 @@ const QC = () => {
         />
       )}
 
+      {templateSelection && (
+        <QcReportTemplateModal
+          isOpen={true}
+          onClose={() => setTemplateSelection(null)}
+          actionLabel={templateSelection.action === "OPEN" ? "Open" : "Download"}
+          onSelectTemplate={(variant) => void handleTemplateSelection(variant)}
+        />
+      )}
+
       <Toast message={toast.message} visible={toast.visible} variant={toast.variant} onClose={() => setToast((prev) => ({ ...prev, visible: false }))} />
     </div>
   );
 };
 
 export default QC;
-import type { JobEntry } from "../../types/job";

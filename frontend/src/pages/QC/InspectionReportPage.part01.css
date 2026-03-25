@@ -23,7 +23,7 @@
 
 .qc-report-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
   gap: 1rem;
   min-height: 0;
   height: 100%;
@@ -76,6 +76,12 @@
 
 .qc-report-left textarea {
   resize: vertical;
+}
+
+.qc-report-tooling-fields {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.7rem;
 }
 
 .qc-report-decision {

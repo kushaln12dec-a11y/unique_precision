@@ -70,9 +70,10 @@ export const OperatorLogsSection: React.FC<Props> = ({
         columnDefs={operatorLogColumnDefs as any}
         transformRows={filterOperatorLogs}
         fetchPage={logsFetchPage}
-        emptyMessage="No operator logs found."
+        emptyMessage="No data available."
         getRowId={(row) => row._id}
         className="operator-logs-table logs-center"
+        rowHeight={84}
         refreshKey={`${hasOperatorLogSearch}|${operatorLogStatus}|${operatorLogMachine}`}
       />
     </>

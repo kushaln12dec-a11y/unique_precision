@@ -20,10 +20,17 @@ export type InspectionReportPayload = {
   groupId?: string;
   jobId?: string;
   quantityNumber?: number;
+  quantityFrom?: number;
+  quantityTo?: number;
+  quantityCount?: number;
+  templateVariant?: "DEFAULT" | "TOOLING_SPARE";
   customerId: string;
   date: string;
   drawingName: string;
   drawingNo: string;
+  toolIdentificationNo?: string;
+  consumablePartIdentificationNo?: string;
+  consumablePartName?: string;
   quantity: string;
   decision: "ACCEPTED" | "REJECTED" | "PENDING";
   rows: InspectionReportRowPayload[];

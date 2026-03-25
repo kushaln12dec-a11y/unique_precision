@@ -56,8 +56,24 @@ const ChildCutsTableRow = ({
   onImage,
   disableImageButton,
 }: ChildCutsTableRowProps) => {
+  const operatorNameLookup = operatorUsers.reduce((lookup, user) => {
+    const fullName = String(user.name || "").trim();
+    if (!fullName) return lookup;
+    lookup.set(fullName.toLowerCase(), fullName);
+    const firstToken = fullName.split(/\s+/).filter(Boolean)[0];
+    if (firstToken) lookup.set(firstToken.toLowerCase(), fullName);
+    return lookup;
+  }, new Map<string, string>());
+
   const assignedOperators = !isUnassignedValue(entry.assignedTo)
-    ? [...new Set((Array.isArray(entry.assignedTo) ? entry.assignedTo : String(entry.assignedTo).split(",")).map((name) => String(name).trim()).filter(Boolean))]
+    ? [
+        ...new Set(
+          (Array.isArray(entry.assignedTo) ? entry.assignedTo : String(entry.assignedTo).split(","))
+            .map((name) => String(name).trim())
+            .filter(Boolean)
+            .map((name) => operatorNameLookup.get(name.toLowerCase()) || name)
+        ),
+      ]
     : [];
 
   return (

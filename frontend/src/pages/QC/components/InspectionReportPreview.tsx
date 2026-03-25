@@ -21,7 +21,12 @@ const InspectionReportPreview = ({
       {previewError ? (
         <div className="qc-report-preview-state error">{previewError}</div>
       ) : previewHtml ? (
-        <iframe title="Inspection Report Preview" className="qc-report-preview-frame" srcDoc={previewHtml} />
+        <iframe
+          key={`${previewHtml.length}:${previewHtml.slice(0, 64)}`}
+          title="Inspection Report Preview"
+          className="qc-report-preview-frame"
+          srcDoc={previewHtml}
+        />
       ) : (
         <div className="qc-report-preview-state">Preview will appear here.</div>
       )}

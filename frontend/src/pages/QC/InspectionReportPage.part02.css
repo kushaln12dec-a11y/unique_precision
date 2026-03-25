@@ -87,6 +87,10 @@
     grid-template-columns: 1fr;
   }
 
+  .qc-report-tooling-fields {
+    grid-template-columns: 1fr;
+  }
+
   .qc-report-layout {
     grid-template-columns: 1fr;
   }

@@ -4,6 +4,7 @@ import {
   clearOperatorCutValidationErrors,
   clearOperatorFieldError,
   clearOperatorPauseReasonError,
+  setOperatorFieldError,
   setOperatorPauseReasonError,
 } from "../utils/operatorInputErrors";
 import { applyOperatorCutImage, readOperatorImageAsDataUrl } from "../utils/operatorInputMedia";
@@ -15,15 +16,13 @@ import {
   updateQuantityMachineHours,
 } from "../utils/operatorInputState";
 
-/**
- * Hook for managing operator input changes and calculations
- */
 export const useOperatorInputs = (
   _cutInputs: Map<number | string, CutInputData>,
   setCutInputs: React.Dispatch<React.SetStateAction<Map<number | string, CutInputData>>>,
   idleTimeConfigs: Map<string, number>,
   validationErrors: Map<number | string, Record<string, Record<string, string>>>,
-  setValidationErrors: React.Dispatch<React.SetStateAction<Map<number | string, Record<string, Record<string, string>>>>>
+  setValidationErrors: React.Dispatch<React.SetStateAction<Map<number | string, Record<string, Record<string, string>>>>>,
+  currentUserDisplayName: string
 ) => {
   const copyQuantityToAll = (
     cutId: number | string,
@@ -36,12 +35,10 @@ export const useOperatorInputs = (
       const source = quantities[sourceQuantityIndex];
       if (!source) return newMap;
       const copiedFields = buildCopiedQuantityFields(source);
-
       for (let i = 0; i < totalQuantity; i += 1) {
         quantities[i] = {
           ...quantities[i],
           ...copiedFields,
-          // Each quantity keeps independent timer/pause state
           isPaused: false,
           pauseStartTime: null,
           totalPauseTime: 0,
@@ -55,10 +52,7 @@ export const useOperatorInputs = (
         ...current,
         quantities,
       });
-
-      // Clear field-level validation errors after mass apply.
       if (setValidationErrors) clearOperatorCutValidationErrors(setValidationErrors, cutId);
-
       return newMap;
     });
   };
@@ -77,7 +71,6 @@ export const useOperatorInputs = (
       const safeCount = Math.max(1, Math.floor(quantityCount));
       const targetEndIndex = Math.min(totalQuantity, sourceQuantityIndex + safeCount);
       const copiedFields = buildCopiedQuantityFields(source);
-
       for (let i = sourceQuantityIndex; i < targetEndIndex; i += 1) {
         quantities[i] = {
           ...quantities[i],
@@ -95,9 +88,7 @@ export const useOperatorInputs = (
         ...current,
         quantities,
       });
-
       if (setValidationErrors) clearOperatorCutValidationErrors(setValidationErrors, cutId);
-
       return newMap;
     });
   };
@@ -123,20 +114,54 @@ export const useOperatorInputs = (
       const newMap = new Map(prev);
       const { cut: current, quantities } = ensureCutInputState(newMap.get(cutId), Math.max(1, quantityIndex + 1));
       const qtyData = quantities[quantityIndex];
-      
-      // Handle idle/resume toggle
       if (field === "togglePause") {
         const now = Date.now();
         if (qtyData.isPaused) {
-          // Resuming: calculate idle duration and add to sessions
-          // Require idle reason before resuming
           if (!qtyData.currentPauseReason || qtyData.currentPauseReason.trim() === "") {
             if (setValidationErrors) setOperatorPauseReasonError(setValidationErrors, cutId, quantityIndex);
             return newMap;
           }
           
+          const selectedOps = Array.isArray(qtyData.opsName)
+            ? qtyData.opsName.map((name) => String(name || "").trim()).filter(Boolean)
+            : [];
+          const normalizedCurrentUser = String(currentUserDisplayName || "").trim().toLowerCase();
+          const hasCurrentUserName =
+            !normalizedCurrentUser ||
+            selectedOps.some((name) => name.toLowerCase() === normalizedCurrentUser);
+
+          if (!selectedOps.length || !hasCurrentUserName) {
+            if (setValidationErrors) {
+              setOperatorFieldError(
+                setValidationErrors,
+                cutId,
+                quantityIndex,
+                "opsName",
+                normalizedCurrentUser
+                  ? `Add ${currentUserDisplayName} in Ops Name before resuming`
+                  : "Select Ops Name before resuming"
+              );
+            }
+            return newMap;
+          }
+
+          if (!String(qtyData.machineNumber || "").trim()) {
+            if (setValidationErrors) {
+              setOperatorFieldError(
+                setValidationErrors,
+                cutId,
+                quantityIndex,
+                "machineNumber",
+                "Select machine number before resuming"
+              );
+            }
+            return newMap;
+          }
+
           if (qtyData.pauseStartTime) {
             if (setValidationErrors) clearOperatorPauseReasonError(setValidationErrors, cutId, quantityIndex);
+            if (setValidationErrors) clearOperatorFieldError(validationErrors, setValidationErrors, cutId, quantityIndex, "opsName");
+            if (setValidationErrors) clearOperatorFieldError(validationErrors, setValidationErrors, cutId, quantityIndex, "machineNumber");
             quantities[quantityIndex] = resumePausedQuantity(qtyData, now);
             newMap.set(cutId, { ...current, quantities });
             return newMap;
@@ -148,8 +173,17 @@ export const useOperatorInputs = (
         }
         return newMap;
       }
-      
-      // Handle idle reason update
+      if (field === "markShiftOver") {
+        if (!qtyData.startTime || qtyData.endTime || qtyData.isPaused) return newMap;
+        const now = Date.now();
+        const paused = pauseRunningQuantity(qtyData, now);
+        quantities[quantityIndex] = {
+          ...paused,
+          currentPauseReason: "Shift Over",
+        };
+        newMap.set(cutId, { ...current, quantities });
+        return newMap;
+      }
       if (field === "pauseReason") {
         const updatedQtyData: QuantityInputData = {
           ...qtyData,
@@ -171,20 +205,14 @@ export const useOperatorInputs = (
         newMap.set(cutId, { ...current, quantities });
         return newMap;
       }
-
-      // Handle reset - reset timer, idle data, and clear start/end times to allow recalculation
       if (field === "resetTimer") {
         quantities[quantityIndex] = buildResetQuantityState(qtyData);
         newMap.set(cutId, { ...current, quantities });
         return newMap;
       }
-      
-      // Handle end time - can only be set once
       if (field === "endTime" && qtyData.endTime) {
-        // End time already set, don't allow changes
         return newMap;
       }
-      
       const updatedQtyData: QuantityInputData = {
         ...qtyData,
         ...(field !== "recalculateMachineHrs" && field !== "addIdleTimeToMachineHrs" ? { [field]: value } : {}),
@@ -196,52 +224,36 @@ export const useOperatorInputs = (
       if (field === "endTime") {
         updatedQtyData.endTimeEpochMs = null;
       }
-
-      // If idleTime is changed to "Vertical Dial" and config exists, set duration
       if (field === "idleTime" && value === "Vertical Dial" && idleTimeConfigs.has("Vertical Dial")) {
         const durationMinutes = idleTimeConfigs.get("Vertical Dial") || 20;
         const hours = Math.floor(durationMinutes / 60);
         const minutes = durationMinutes % 60;
         updatedQtyData.idleTimeDuration = `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}`;
       }
-      
-      // Auto-calculate machine hours when start time or end time changes
-      // Account for idle time in calculation
       if (field === "startTime" || field === "endTime") {
         if (field === "endTime" && typeof value === "string" && value && qtyData.isPaused && qtyData.pauseStartTime) {
           Object.assign(updatedQtyData, closePauseOnEndTime(updatedQtyData, Date.now()));
         }
-
         if (updatedQtyData.startTime && updatedQtyData.endTime) Object.assign(updatedQtyData, updateQuantityMachineHours(updatedQtyData, "auto"));
       }
-      
-      // Add idle time to machine hours when icon is clicked
       if (field === "addIdleTimeToMachineHrs") {
         if (updatedQtyData.startTime && updatedQtyData.endTime && updatedQtyData.idleTimeDuration) {
           Object.assign(updatedQtyData, updateQuantityMachineHours(updatedQtyData, "add_idle"));
         }
       }
-      
-      // Recalculate machine hours when icon is clicked (legacy support)
-      // Account for idle time in calculation
       if (field === "recalculateMachineHrs") {
         if (updatedQtyData.startTime && updatedQtyData.endTime) {
           Object.assign(updatedQtyData, updateQuantityMachineHours(updatedQtyData, "recalculate"));
         }
       }
-      
       quantities[quantityIndex] = updatedQtyData;
-      
       newMap.set(cutId, {
         ...current,
         quantities,
       });
-      
-      // Clear error for this field when user starts typing
       if (field !== "recalculateMachineHrs") {
         clearOperatorFieldError(validationErrors, setValidationErrors, cutId, quantityIndex, field);
       }
-      
       return newMap;
     });
   };

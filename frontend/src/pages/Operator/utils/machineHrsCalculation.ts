@@ -70,8 +70,7 @@ if (diff < 0 && !startTime.includes("/")) {
   diff += 24;
 }
 
-// ADD idle time instead of subtracting
-const machineHrs = Math.max(0, diff + idle);
+const machineHrs = Math.max(0, diff - idle);
 
 return machineHrs.toFixed(3);
 

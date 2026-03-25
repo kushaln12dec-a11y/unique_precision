@@ -11,7 +11,7 @@ import { formatIdleDuration } from "../utils/operatorTimeUtils";
 import type { QuantityInputData } from "../types/cutInput";
 import type { OperatorInputField } from "../types/inputFields";
 
-const IDLE_REASON_OPTIONS = ["Shift Over", "Power Break", "Machine Breakdown", "Vertical Dial", "Cleaning", "Consumables Change", "Others"];
+const IDLE_REASON_OPTIONS = ["Power Break", "Machine Breakdown", "Vertical Dial", "Cleaning", "Consumables Change", "Others"];
 
 type Props = {
   qtyData: QuantityInputData;
@@ -30,10 +30,10 @@ type Props = {
   validationErrors?: Record<string, string>;
   requiredHoursPerQuantity: number;
   onRequestResetTimer?: (cutId: number | string, quantityIndex: number) => void;
+  onRequestShiftOver?: (cutId: number | string, quantityIndex: number) => void;
   onSaveQuantity?: (cutId: number | string, quantityIndex: number) => void;
   onSaveRange?: (cutId: number | string, sourceQuantityIndex: number, fromQty: number, toQty: number) => void;
   savedRanges: Set<string>;
-  isAdmin: boolean;
 };
 
 export const OperatorQuantityCard: React.FC<Props> = ({
@@ -53,12 +53,16 @@ export const OperatorQuantityCard: React.FC<Props> = ({
   validationErrors = {},
   requiredHoursPerQuantity,
   onRequestResetTimer,
+  onRequestShiftOver,
   onSaveQuantity,
   onSaveRange,
   savedRanges,
-  isAdmin,
 }) => {
-  const quantityRequiredSeconds = Math.max(0, Math.round((Number(requiredHoursPerQuantity || 0) || 0) * 3600));
+  const rangeQuantityCount = isRangeMode && isRangeValid ? Math.max(1, rangeEndQty - rangeStartQty + 1) : 1;
+  const quantityRequiredSeconds = Math.max(
+    0,
+    Math.round((Number(requiredHoursPerQuantity || 0) || 0) * 3600 * rangeQuantityCount)
+  );
   const { elapsedTime, pauseTime, remainingTime, overtimeTime, hasOvertime, isRunning } = useQuantityTimer(
     qtyData.startTime,
     qtyData.endTime,
@@ -71,6 +75,7 @@ export const OperatorQuantityCard: React.FC<Props> = ({
     quantityRequiredSeconds
   );
   const rangeBadgeKey = `${rangeStartQty}-${rangeEndQty}`;
+  const isShiftOverPause = qtyData.isPaused && qtyData.currentPauseReason === "Shift Over";
 
   return (
     <div className="quantity-input-group">
@@ -165,10 +170,14 @@ export const OperatorQuantityCard: React.FC<Props> = ({
           {qtyData.isPaused && !qtyData.endTime && (
             <div className="operator-input-card pause-reason-card">
               <label>Idle Reason <span style={{ color: "#ef4444" }}>*</span></label>
-              <select value={qtyData.currentPauseReason || ""} onChange={(e) => onInputChange(cutId, qtyIndex, "pauseReason", e.target.value)} className={`pause-reason-input ${validationErrors.pauseReason ? "input-error" : ""}`}>
-                <option value="">Select reason</option>
-                {IDLE_REASON_OPTIONS.map((reason) => <option key={reason} value={reason}>{reason}</option>)}
-              </select>
+              {isShiftOverPause ? (
+                <div className="pause-reason-fixed-tag">Shift Over</div>
+              ) : (
+                <select value={qtyData.currentPauseReason || ""} onChange={(e) => onInputChange(cutId, qtyIndex, "pauseReason", e.target.value)} className={`pause-reason-input ${validationErrors.pauseReason ? "input-error" : ""}`}>
+                  <option value="">Select reason</option>
+                  {IDLE_REASON_OPTIONS.map((reason) => <option key={reason} value={reason}>{reason}</option>)}
+                </select>
+              )}
               {validationErrors.pauseReason && <p className="field-error">{validationErrors.pauseReason}</p>}
             </div>
           )}
@@ -215,7 +224,16 @@ export const OperatorQuantityCard: React.FC<Props> = ({
           </button>
         ) : (
           <>
-            {isAdmin && qtyData.startTime && (
+            {!isRangeMode && qtyData.startTime && !qtyData.endTime && !qtyData.isPaused && (
+              <button
+                type="button"
+                className="mark-shift-over-button"
+                onClick={() => onRequestShiftOver?.(cutId, qtyIndex)}
+              >
+                Shift Over
+              </button>
+            )}
+            {qtyData.startTime && (
               <button type="button" className="reset-timer-button" onClick={() => onRequestResetTimer ? onRequestResetTimer(cutId, qtyIndex) : onInputChange(cutId, qtyIndex, "resetTimer", "")} aria-label="Reset timer" title="Reset timer">
                 Reset Quantity {qtyIndex + 1}
               </button>

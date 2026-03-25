@@ -4,7 +4,6 @@ import Sidebar from "../../components/Sidebar";
 import Header from "../../components/Header";
 import Toast from "../../components/Toast";
 import AppLoader from "../../components/AppLoader";
-import ConfirmDeleteModal from "../../components/ConfirmDeleteModal";
 import { useOperatorViewData } from "./hooks/useOperatorViewData";
 import { useOperatorInputs } from "./hooks/useOperatorInputs";
 import { useOperatorViewActions } from "./hooks/useOperatorViewActions";
@@ -12,9 +11,10 @@ import { useOperatorSubmit } from "./hooks/useOperatorSubmit";
 import { OperatorJobInfo } from "./components/OperatorJobInfo";
 import { OperatorCutCard } from "./components/OperatorCutCard";
 import { OperatorTotalsSection } from "./components/OperatorTotalsSection";
+import OperatorViewModals from "./components/OperatorViewModals";
 import type { CutInputData } from "./types/cutInput";
 import { createEmptyCutInputData } from "./types/cutInput";
-import { getUserRoleFromToken } from "../../utils/auth";
+import { getUserDisplayNameFromToken, getUserRoleFromToken } from "../../utils/auth";
 import { estimatedHoursFromAmount } from "../../utils/jobFormatting";
 import { getQuantityElapsedSeconds, parseOperatorDateTime } from "./utils/operatorTimeUtils";
 import "../RoleBoard.css";
@@ -29,9 +29,11 @@ const OperatorViewPage = () => {
   const groupId = searchParams.get("groupId");
   const cutIdParam = searchParams.get("cutId");
   const isAdmin = getUserRoleFromToken() === "ADMIN";
+  const currentUserDisplayName = getUserDisplayNameFromToken() || "";
 
   const [validationErrors, setValidationErrors] = useState<Map<number | string, Record<string, Record<string, string>>>>(new Map());
   const [liveNowMs, setLiveNowMs] = useState<number>(Date.now());
+  const [pendingShiftOver, setPendingShiftOver] = useState<{ cutId: number | string; quantityIndex: number } | null>(null);
 
   const {
     jobs,
@@ -49,7 +51,8 @@ const OperatorViewPage = () => {
     setCutInputs,
     idleTimeConfigs,
     validationErrors,
-    setValidationErrors
+    setValidationErrors,
+    currentUserDisplayName
   );
 
   const { handleSubmit, toast, setToast } = useOperatorSubmit(
@@ -129,7 +132,6 @@ const OperatorViewPage = () => {
     return cutInputs.get(cutId) || createEmptyCutInputData(quantity);
   };
 
-  const pendingDispatchJob = pendingDispatch ? jobs.find((job) => String(job.id) === String(pendingDispatch.cutId)) : null;
   return (
     <div className="roleboard-container">
       <Sidebar currentPath="/operator" onNavigate={(path) => navigate(path)} />
@@ -208,6 +210,9 @@ const OperatorViewPage = () => {
                         onRequestResetTimer={(cutId, quantityIndex) => {
                           setPendingReset({ cutId, quantityIndex });
                         }}
+                        onRequestShiftOver={(cutId, quantityIndex) => {
+                          setPendingShiftOver({ cutId, quantityIndex });
+                        }}
                         onStartTimeCaptured={handleStartTimeCaptured}
                         isAdmin={isAdmin}
                       />
@@ -238,7 +243,7 @@ const OperatorViewPage = () => {
             </>
           ) : (
             <div className="roleboard-body">
-              <AppLoader variant="inline" message="No operator job data found for this view." />
+              <AppLoader variant="inline" message="No data available." />
             </div>
           )}
         </div>
@@ -261,38 +266,18 @@ const OperatorViewPage = () => {
         variant={actionToast.variant}
         onClose={() => setActionToast((prev) => ({ ...prev, visible: false }))}
       />
-      {pendingDispatch && (
-        <ConfirmDeleteModal
-          title="Confirm Dispatch"
-          message="Are you sure you want to dispatch selected quantity to QC?"
-          details={[
-            { label: "Setting", value: pendingDispatchJob ? String(jobs.findIndex((j) => String(j.id) === String(pendingDispatch.cutId)) + 1) : "N/A" },
-            { label: "Quantities", value: pendingDispatch.quantityNumbers.join(", ") },
-          ]}
-          confirmButtonText="Dispatch To QC"
-          onConfirm={async () => {
-            await handleUpdateQaStatus(pendingDispatch.cutId, pendingDispatch.quantityNumbers, "SENT_TO_QA");
-            setPendingDispatch(null);
-          }}
-          onCancel={() => setPendingDispatch(null)}
-        />
-      )}
-      {pendingReset && (
-        <ConfirmDeleteModal
-          title="Confirm Reset"
-          message="Are you sure you want to reset this quantity timer?"
-          details={[
-            { label: "Setting", value: String(jobs.findIndex((j) => String(j.id) === String(pendingReset.cutId)) + 1) },
-            { label: "Quantity", value: String(pendingReset.quantityIndex + 1) },
-          ]}
-          confirmButtonText="Reset Timer"
-          onConfirm={() => {
-            handleInputChange(pendingReset.cutId, pendingReset.quantityIndex, "resetTimer", "");
-            setPendingReset(null);
-          }}
-          onCancel={() => setPendingReset(null)}
-        />
-      )}
+      <OperatorViewModals
+        jobs={jobs}
+        pendingDispatch={pendingDispatch}
+        setPendingDispatch={setPendingDispatch}
+        pendingReset={pendingReset}
+        setPendingReset={setPendingReset}
+        pendingShiftOver={pendingShiftOver}
+        setPendingShiftOver={setPendingShiftOver}
+        handleUpdateQaStatus={handleUpdateQaStatus}
+        handleInputChange={handleInputChange}
+        setActionToast={setActionToast}
+      />
     </div>
   );
 };
