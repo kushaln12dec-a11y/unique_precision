@@ -88,7 +88,7 @@ export const createEmployeeLogColumns = ({
   if (activeRole === "OPERATOR") {
     return [
       employeeColumn,
-      { key: "workItemTitle", label: "Work Item", sortable: false, render: (row) => formatWorkItemTitle(row.workItemTitle) },
+      { key: "workItemTitle", label: "Job Ref", sortable: false, render: (row) => formatWorkItemTitle(row.workItemTitle) },
       { key: "jobDescription", label: "Description", sortable: false, render: (row) => <MarqueeCopyText text={String(row.jobDescription || "-")} /> },
       { key: "workSummary", label: "Summary", sortable: false, render: (row) => <MarqueeCopyText text={String(row.workSummary || "-")} /> },
       { key: "idleTime", label: "Idle Time", sortable: false, render: (row) => String((row.metadata as any)?.idleTime || "-") },
@@ -103,7 +103,7 @@ export const createEmployeeLogColumns = ({
 
   return [
     employeeColumn,
-    { key: "workItemTitle", label: "Work Item", sortable: false, className: "employee-work-item-cell", render: (row) => <div className="employee-work-item"><span className="ref-badge">{normalizeJobReference(row.refNumber)}</span></div> },
+    { key: "workItemTitle", label: "Job Ref", sortable: false, className: "employee-work-item-cell", render: (row) => <div className="employee-work-item"><span className="ref-badge">{normalizeJobReference(row.refNumber)}</span></div> },
     { key: "jobDescription", label: "Description", sortable: false, render: (row) => <MarqueeCopyText text={String(row.jobDescription || "-")} /> },
     { key: "quantityCount", label: "Quantities", sortable: false, render: (row) => getQuantityLabel(row) || "-" },
     createDateColumn("startedAt", "Started At"),

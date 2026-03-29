@@ -41,7 +41,7 @@ export const buildOperatorLogsColumns = ({
     },
   },
   { key: "machineNumber", label: "MACH #", sortable: false, render: (row) => formatMachineLabel(getMachineNumberForLog(row)) },
-  { key: "workItemTitle", label: "Work Item", sortable: false, className: "operator-log-text-col", render: (row) => formatOperatorWorkItem(row.workItemTitle) },
+  { key: "workItemTitle", label: "Job Ref", sortable: false, className: "operator-log-text-col", render: (row) => formatOperatorWorkItem(row.workItemTitle) },
   { key: "jobDescription", label: "Description", sortable: false, className: "operator-log-text-col", render: (row) => <MarqueeCopyText text={String(row.jobDescription || "-")} /> },
   { key: "workSummary", label: "Summary", sortable: false, className: "operator-log-text-col", render: (row) => <MarqueeCopyText text={String(row.workSummary || "-")} /> },
   {

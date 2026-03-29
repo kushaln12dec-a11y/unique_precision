@@ -111,8 +111,8 @@ export const EmployeeLogsPanel = () => {
     const filteredLogs = filterVisibleLogs(logs);
     const headers =
       activeRole === "OPERATOR"
-        ? ["Employee", "Work Item", "Description", "Summary", "Idle Time", "Remark", ...(isAdmin ? ["Revenue"] : []), "Started At", "Ended At", "Time Taken", "Status"]
-        : ["Employee", "Work Item", "Description", "Quantities", "Started At", "Ended At", "Time Taken", "Status"];
+        ? ["Employee", "Job Ref", "Description", "Summary", "Idle Time", "Remark", ...(isAdmin ? ["Revenue"] : []), "Started At", "Ended At", "Time Taken", "Status"]
+        : ["Employee", "Job Ref", "Description", "Quantities", "Started At", "Ended At", "Time Taken", "Status"];
     const rows = filteredLogs.map((row) =>
       activeRole === "OPERATOR"
         ? [
@@ -207,6 +207,7 @@ export const EmployeeLogsPanel = () => {
           emptyMessage="No logs found for the current filters."
           getRowId={(row) => row._id}
           className="employee-logs-table logs-center"
+          rowHeight={66}
           refreshKey={`${activeRole}|${statusFilter}|${searchQuery.trim().length > 0}`}
         />
       )}
