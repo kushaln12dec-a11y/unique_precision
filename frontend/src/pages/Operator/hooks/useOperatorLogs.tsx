@@ -171,7 +171,7 @@ export const useOperatorLogs = ({
       );
       const filteredLogs = filterOperatorLogs(allLogs);
       const workedSecondsMap = calculateWorkedSecondsByLogs(filteredLogs);
-      const headers = ["User", "MACH #", "Work Item", "Description", "Summary", "Started at", "Ended at", "Shift", "Duration", "Estimated", "Overtime", "Idle Time", "Remark", "Status"];
+      const headers = ["User", "MACH #", "Job Ref", "Description", "Summary", "Started at", "Ended at", "Shift", "Duration", "Estimated", "Overtime", "Idle Time", "Remark", "Status"];
       if (isAdmin) headers.splice(headers.length - 1, 0, "Revenue");
       const rows = filteredLogs.map((row) => {
         const name = getLogUserDisplayName(row.userName, row.userEmail, "");

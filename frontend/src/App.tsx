@@ -118,14 +118,15 @@ function AppRoutes() {
         }
       />
       <Route
-        path="/job-logs"
+        path="/jobLogs"
         element={
           <ProtectedRoute>
             <EmployeeLogs />
           </ProtectedRoute>
         }
       />
-      <Route path="/employee-logs" element={<Navigate to="/job-logs" replace />} />
+      <Route path="/job-logs" element={<Navigate to="/jobLogs" replace />} />
+      <Route path="/employee-logs" element={<Navigate to="/jobLogs" replace />} />
       <Route
         path="/admin-console"
         element={

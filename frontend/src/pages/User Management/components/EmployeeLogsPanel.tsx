@@ -14,6 +14,7 @@ import {
   formatLogStatus,
   formatRoleLabel,
   formatWorkItemTitle,
+  normalizeJobReference,
   getQuantityLabel,
   getWorkedSecondsForLog,
 } from "./employeeLogsPanelUtils";
@@ -47,6 +48,19 @@ export const EmployeeLogsPanel = () => {
 
   const columns = useMemo(() => createEmployeeLogColumns({ activeRole, isAdmin, getRevenueLabel }), [activeRole, isAdmin]);
 
+  const getColumnMinWidth = (columnKey: string) => {
+    if (columnKey === "employee") return 96;
+    if (columnKey === "workItemTitle") return 106;
+    if (columnKey === "jobDescription" || columnKey === "workSummary") return 128;
+    if (columnKey === "quantityCount") return 84;
+    if (columnKey === "startedAt" || columnKey === "endedAt") return 104;
+    if (columnKey === "durationSeconds") return 92;
+    if (columnKey === "status") return 118;
+    if (columnKey === "idleTime" || columnKey === "remark") return 88;
+    if (columnKey === "revenue") return 90;
+    return 80;
+  };
+
   const filterVisibleLogs = useMemo(
     () => (logs: EmployeeLog[]) =>
       logs.filter((log) => {
@@ -68,7 +82,7 @@ export const EmployeeLogsPanel = () => {
         const roleSpecificValues =
           activeRole === "OPERATOR"
             ? [formatWorkItemTitle(log.workItemTitle), String(log.jobDescription || "-"), String(log.workSummary || "-"), String((log.metadata as any)?.idleTime || "-"), String((log.metadata as any)?.remark || "-"), ...(isAdmin ? [getRevenueLabel(log)] : [])]
-            : [`Job #${String(log.refNumber || "")}`, String(log.jobDescription || "-"), getQuantityLabel(log) || "-"];
+            : [normalizeJobReference(log.refNumber), String(log.jobDescription || "-"), getQuantityLabel(log) || "-"];
 
         return matchesSearchQuery([...commonValues, ...roleSpecificValues], searchQuery);
       }),
@@ -80,7 +94,7 @@ export const EmployeeLogsPanel = () => {
       columns.map((column) => ({
         headerName: typeof column.label === "string" ? column.label : String(column.key),
         field: column.key,
-        minWidth: column.key === "jobDescription" || column.key === "workSummary" ? 190 : 118,
+        minWidth: getColumnMinWidth(String(column.key)),
         cellClass: column.className,
         headerClass: column.headerClassName,
         cellRenderer: column.render ? ((params: any) => column.render!(params.data, params.node?.rowIndex || 0)) : undefined,
@@ -97,8 +111,8 @@ export const EmployeeLogsPanel = () => {
     const filteredLogs = filterVisibleLogs(logs);
     const headers =
       activeRole === "OPERATOR"
-        ? ["Employee", "Work Item", "Description", "Summary", "Idle Time", "Remark", ...(isAdmin ? ["Revenue"] : []), "Started At", "Ended At", "Time Taken", "Status"]
-        : ["Employee", "Work Item", "Description", "Quantities", "Started At", "Ended At", "Time Taken", "Status"];
+        ? ["Employee", "Job Ref", "Description", "Summary", "Idle Time", "Remark", ...(isAdmin ? ["Revenue"] : []), "Started At", "Ended At", "Time Taken", "Status"]
+        : ["Employee", "Job Ref", "Description", "Quantities", "Started At", "Ended At", "Time Taken", "Status"];
     const rows = filteredLogs.map((row) =>
       activeRole === "OPERATOR"
         ? [
@@ -116,7 +130,7 @@ export const EmployeeLogsPanel = () => {
           ]
         : [
             `${String(row.userName || "Unknown User")} (${formatRoleLabel((row.metadata as any)?.userRole || row.role)})`,
-            `Job #${String(row.refNumber || "")}`,
+            normalizeJobReference(row.refNumber),
             String(row.jobDescription || "-"),
             String(getQuantityLabel(row) || "-"),
             `${getDisplayDateTimeParts(row.startedAt).date} ${getDisplayDateTimeParts(row.startedAt).time}`.trim(),
@@ -193,6 +207,7 @@ export const EmployeeLogsPanel = () => {
           emptyMessage="No logs found for the current filters."
           getRowId={(row) => row._id}
           className="employee-logs-table logs-center"
+          rowHeight={66}
           refreshKey={`${activeRole}|${statusFilter}|${searchQuery.trim().length > 0}`}
         />
       )}

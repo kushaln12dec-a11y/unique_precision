@@ -76,9 +76,9 @@ const BREADCRUMB_MAP: Record<string, BreadcrumbItem[]> = {
     { label: 'Dashboard', path: '/dashboard', icon: DashboardIcon },
     { label: 'User Management', path: '/users', icon: PeopleIcon },
   ],
-  '/job-logs': [
+  '/jobLogs': [
     { label: 'Dashboard', path: '/dashboard', icon: DashboardIcon },
-    { label: 'Job Logs', path: '/job-logs', icon: PeopleIcon },
+    { label: 'Job Logs', path: '/jobLogs', icon: PeopleIcon },
   ],
   '/admin-console': [
     { label: 'Dashboard', path: '/dashboard', icon: DashboardIcon },

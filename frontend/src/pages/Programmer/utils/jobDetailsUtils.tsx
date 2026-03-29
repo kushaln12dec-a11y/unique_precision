@@ -47,9 +47,9 @@ export const buildCutDetailPairs = ({
 }): DetailPair[] => {
   const basePairs: DetailPair[] = [
     { label: "Customer", value: cutItem.customer || "-" },
-    { label: "Program Ref File Name", value: (cutItem as any).programRefFile || (cutItem as any).programRefFileName || "-" },
-    { label: "Description", value: cutItem.description || "-" },
     { label: "Cut Length (mm)", value: Number(cutItem.cut || 0).toFixed(2) },
+    { label: "Description", value: cutItem.description || "-" },
+    { label: "Program Ref File Name", value: (cutItem as any).programRefFile || (cutItem as any).programRefFileName || "-" },
     { label: "TH (MM)", value: getThicknessDisplayValue(cutItem.thickness) },
     { label: "Pass", value: cutItem.passLevel || "-" },
     { label: "Setting", value: cutItem.setting || "-" },
