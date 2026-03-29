@@ -87,15 +87,28 @@ export const buildOperatorLogsColumns = ({
 ];
 
 export const buildOperatorLogColumnDefs = (columns: Column<EmployeeLog>[]) =>
-  columns.map((column) => ({
-    headerName: typeof column.label === "string" ? column.label : String(column.key),
-    field: column.key,
-    width: getOperatorLogColumnWidth(String(column.key)),
-    minWidth: getOperatorLogColumnWidth(String(column.key)),
-    cellClass: column.className,
-    headerClass: column.headerClassName,
-    cellRenderer: column.render ? ((params: any) => column.render!(params.data, params.node?.rowIndex || 0)) : undefined,
-  }));
+  columns.map((column) => {
+    const key = String(column.key);
+    const preferredWidth = getOperatorLogColumnWidth(key);
+    const minWidth =
+      key === "jobDescription" || key === "workSummary"
+        ? 110
+        : key === "status"
+          ? 96
+          : key === "userName"
+            ? 86
+            : 68;
+
+    return {
+      headerName: typeof column.label === "string" ? column.label : key,
+      field: column.key,
+      width: preferredWidth,
+      minWidth,
+      cellClass: column.className,
+      headerClass: column.headerClassName,
+      cellRenderer: column.render ? ((params: any) => column.render!(params.data, params.node?.rowIndex || 0)) : undefined,
+    };
+  });
 
 export const buildOperatorLogFilter =
   ({

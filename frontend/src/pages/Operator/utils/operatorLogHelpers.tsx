@@ -4,21 +4,21 @@ import DarkModeOutlinedIcon from "@mui/icons-material/DarkModeOutlined";
 export const OPERATOR_LOG_SEARCH_FETCH_PAGE_SIZE = 100;
 
 const OPERATOR_LOG_COLUMN_WIDTHS: Record<string, number> = {
-  userName: 94,
-  machineNumber: 70,
-  workItemTitle: 112,
-  jobDescription: 156,
-  workSummary: 142,
-  startedAt: 100,
-  endedAt: 100,
-  shift: 70,
-  durationSeconds: 82,
-  estimatedSeconds: 82,
-  overtimeSeconds: 82,
-  idleTime: 78,
-  remark: 82,
-  revenue: 86,
-  status: 104,
+  userName: 88,
+  machineNumber: 62,
+  workItemTitle: 98,
+  jobDescription: 132,
+  workSummary: 126,
+  startedAt: 94,
+  endedAt: 94,
+  shift: 62,
+  durationSeconds: 74,
+  estimatedSeconds: 74,
+  overtimeSeconds: 74,
+  idleTime: 72,
+  remark: 72,
+  revenue: 80,
+  status: 96,
 };
 
 export const getOperatorLogColumnWidth = (columnKey: string) => OPERATOR_LOG_COLUMN_WIDTHS[columnKey] ?? 84;
@@ -37,7 +37,7 @@ export const formatOperatorLogStatus = (status?: string) => {
 export const formatOperatorWorkItem = (value?: string) => {
   const raw = String(value || "").trim();
   if (!raw) return "-";
-  return raw.replace(/^Job\s*#\s*/i, "Job # ");
+  return raw.replace(/^Job\s*#?\s*/i, "").trim() || "-";
 };
 
 export const formatOperatorDuration = (seconds?: number): string => {

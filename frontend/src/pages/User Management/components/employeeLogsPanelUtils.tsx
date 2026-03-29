@@ -32,10 +32,14 @@ export const formatLogStatus = (status?: string) => {
   return value || "-";
 };
 
-export const formatWorkItemTitle = (value?: string) => {
+export const normalizeJobReference = (value?: string | number) => {
   const raw = String(value || "").trim();
   if (!raw) return "-";
-  return raw.replace(/^Job\s*#\s*/i, "Job # ");
+  return raw.replace(/^Job\s*#?\s*/i, "").trim() || "-";
+};
+
+export const formatWorkItemTitle = (value?: string) => {
+  return normalizeJobReference(value);
 };
 
 export const getInitials = (value: string) => {
@@ -99,7 +103,7 @@ export const createEmployeeLogColumns = ({
 
   return [
     employeeColumn,
-    { key: "workItemTitle", label: "Work Item", sortable: false, className: "employee-work-item-cell", render: (row) => <div className="employee-work-item"><span className="ref-badge">Job #{row.refNumber || ""}</span></div> },
+    { key: "workItemTitle", label: "Work Item", sortable: false, className: "employee-work-item-cell", render: (row) => <div className="employee-work-item"><span className="ref-badge">{normalizeJobReference(row.refNumber)}</span></div> },
     { key: "jobDescription", label: "Description", sortable: false, render: (row) => <MarqueeCopyText text={String(row.jobDescription || "-")} /> },
     { key: "quantityCount", label: "Quantities", sortable: false, render: (row) => getQuantityLabel(row) || "-" },
     createDateColumn("startedAt", "Started At"),

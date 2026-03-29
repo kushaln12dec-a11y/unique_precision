@@ -29,14 +29,14 @@ const Sidebar = ({ onNavigate }: SidebarProps) => {
     },
     { icon: InventoryIcon, label: 'Inventory', path: '/inventory' },
     { icon: PeopleIcon, label: 'User Management', path: '/users' },
-    { icon: GroupsIcon, label: 'Job Logs', path: '/job-logs' },
+    { icon: GroupsIcon, label: 'Job Logs', path: '/jobLogs' },
   ];
   const filteredMenuItems =
     role && role !== 'ADMIN'
       ? menuItems.filter(
           (item) =>
             item.path === dashboardPath ||
-            item.path === '/job-logs' ||
+            item.path === '/jobLogs' ||
             item.label === 'Dashboard' ||
             item.label.toUpperCase() === role,
         )
