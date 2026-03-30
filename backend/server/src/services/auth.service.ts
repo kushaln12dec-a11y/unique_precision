@@ -10,12 +10,14 @@ export const loginUser = async (emailOrEmpId: string, password: string) => {
 
   const identifier = String(emailOrEmpId).trim();
   const identifierLower = identifier.toLowerCase();
+  const identifierUpper = identifier.toUpperCase();
 
   const user = await prisma.user.findFirst({
     where: {
       OR: [
         { email: identifier },
         { empId: identifier },
+        { empId: identifierUpper },
         ...(identifierLower === "admin" ? [{ role: "ADMIN" }] : []),
       ],
     },

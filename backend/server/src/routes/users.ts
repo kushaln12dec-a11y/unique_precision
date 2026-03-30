@@ -6,6 +6,9 @@ import { mapUser } from "../utils/prismaMappers";
 import { resolveStoredFile } from "../utils/objectStorage";
 
 const router = Router();
+const EMP_ID_COUNTER_KEY = "empId";
+const EMP_ID_REGEX = /^EMP(\d+)$/i;
+const formatEmpId = (sequence: number) => `EMP${String(Math.max(1, Math.trunc(sequence))).padStart(3, "0")}`;
 
 const getParamId = (value: unknown): string | undefined => {
   if (Array.isArray(value)) return value[0];
@@ -13,8 +16,65 @@ const getParamId = (value: unknown): string | undefined => {
   return undefined;
 };
 
+const getEmpIdSequence = (value: unknown): number => {
+  const match = String(value || "").trim().match(EMP_ID_REGEX);
+  if (!match) return 0;
+  const parsed = Number(match[1]);
+  return Number.isFinite(parsed) ? Math.max(0, Math.trunc(parsed)) : 0;
+};
+
+const reserveNextEmpId = async (): Promise<string> =>
+  prisma.$transaction(async (tx) => {
+    const existingUsers = await tx.user.findMany({ select: { empId: true } });
+    const maxExistingSequence = existingUsers.reduce((maxValue, user) => {
+      return Math.max(maxValue, getEmpIdSequence(user.empId));
+    }, 0);
+
+    const counter = await tx.counter.upsert({
+      where: { key: EMP_ID_COUNTER_KEY },
+      update: { seq: { increment: 1 } },
+      create: { key: EMP_ID_COUNTER_KEY, seq: 1 },
+    });
+
+    const counterSequence = Math.max(1, Number(counter.seq || 1));
+    const nextSequence = Math.max(counterSequence, maxExistingSequence + 1);
+
+    if (nextSequence !== counterSequence) {
+      await tx.counter.update({
+        where: { key: EMP_ID_COUNTER_KEY },
+        data: { seq: nextSequence },
+      });
+    }
+
+    return formatEmpId(nextSequence);
+  });
+
+const getNextEmpIdPreview = async (): Promise<string> => {
+  const [existingUsers, counter] = await Promise.all([
+    prisma.user.findMany({ select: { empId: true } }),
+    prisma.counter.findUnique({ where: { key: EMP_ID_COUNTER_KEY } }),
+  ]);
+
+  const maxExistingSequence = existingUsers.reduce((maxValue, user) => {
+    return Math.max(maxValue, getEmpIdSequence(user.empId));
+  }, 0);
+
+  const counterSequence = Math.max(0, Number(counter?.seq || 0));
+  return formatEmpId(Math.max(counterSequence, maxExistingSequence) + 1);
+};
+
 // All routes require authentication
 router.use(authMiddleware);
+
+// Get next employee ID preview (admin only)
+router.get("/next-emp-id", adminMiddleware, async (_req, res) => {
+  try {
+    const empId = await getNextEmpIdPreview();
+    res.json({ empId });
+  } catch (error: any) {
+    res.status(500).json({ message: "Error generating employee ID" });
+  }
+});
 
 // Get all users
 router.get("/", async (req, res) => {
@@ -66,42 +126,66 @@ router.get("/:id", adminMiddleware, async (req, res) => {
 // Create user
 router.post("/", adminMiddleware, async (req, res) => {
   try {
-    const { email, password, firstName, lastName, phone, empId, image, role } = req.body;
+    const { email, password, firstName, lastName, phone, image, role } = req.body;
 
-    if (!email || !password || !firstName || !lastName || !phone || !empId) {
+    if (!password || !firstName || !lastName || !phone) {
       return res.status(400).json({ message: "All required fields must be provided" });
     }
 
-    // Check if user already exists
-    const existingUser = await prisma.user.findFirst({
-      where: {
-        OR: [{ email }, { empId }],
-      },
-    });
-    if (existingUser) {
-      return res.status(400).json({ message: "User with this email or Emp ID already exists" });
+    const normalizedEmail = String(email || "").trim().toLowerCase();
+    if (normalizedEmail) {
+      const existingUser = await prisma.user.findFirst({ where: { email: normalizedEmail } });
+      if (existingUser) {
+        return res.status(400).json({ message: "User with this email already exists" });
+      }
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-
     const imageUrl = await resolveStoredFile(image, "users");
-    const user = await prisma.user.create({
-      data: {
-        email,
-        passwordHash: hashedPassword,
-        firstName,
-        lastName,
-        phone,
-        empId,
-        image: imageUrl || "",
-        role: role || "OPERATOR",
-      },
-    });
+
+    let user = null as any;
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      const generatedEmpId = await reserveNextEmpId();
+      let emailToUse = normalizedEmail || `${generatedEmpId.toLowerCase()}@uniqueprecision.local`;
+      if (!normalizedEmail) {
+        let suffix = 1;
+        while (await prisma.user.findFirst({ where: { email: emailToUse }, select: { id: true } })) {
+          suffix += 1;
+          emailToUse = `${generatedEmpId.toLowerCase()}+${suffix}@uniqueprecision.local`;
+        }
+      }
+
+      try {
+        user = await prisma.user.create({
+          data: {
+            email: emailToUse,
+            passwordHash: hashedPassword,
+            firstName,
+            lastName,
+            phone,
+            empId: generatedEmpId,
+            image: imageUrl || "",
+            role: role || "OPERATOR",
+          },
+        });
+        break;
+      } catch (createError: any) {
+        if (createError?.code === "P2002") {
+          const target = String(createError?.meta?.target || "");
+          if (target.includes("empId")) continue;
+        }
+        throw createError;
+      }
+    }
+
+    if (!user) {
+      return res.status(500).json({ message: "Failed to allocate employee ID" });
+    }
 
     res.status(201).json(mapUser(user));
   } catch (error: any) {
     if (error.code === "P2002") {
-      return res.status(400).json({ message: "User with this email or Emp ID already exists" });
+      return res.status(400).json({ message: "User with this email already exists" });
     }
     res.status(500).json({ message: "Error creating user" });
   }
@@ -110,18 +194,17 @@ router.post("/", adminMiddleware, async (req, res) => {
 // Update user
 router.put("/:id", adminMiddleware, async (req, res) => {
   try {
-    const { email, password, firstName, lastName, phone, empId, image, role } = req.body;
+    const { email, password, firstName, lastName, phone, image, role } = req.body;
 
     const updateData: any = {};
     if (firstName) updateData.firstName = firstName;
     if (lastName) updateData.lastName = lastName;
     if (phone) updateData.phone = phone;
-    if (empId) updateData.empId = empId;
     if (image !== undefined) {
       updateData.image = await resolveStoredFile(image, "users");
     }
     if (role) updateData.role = role;
-    if (email) updateData.email = email;
+    if (String(email || "").trim()) updateData.email = String(email).trim().toLowerCase();
 
     if (password) {
       updateData.passwordHash = await bcrypt.hash(password, 10);
@@ -142,7 +225,7 @@ router.put("/:id", adminMiddleware, async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
     if (error.code === "P2002") {
-      return res.status(400).json({ message: "User with this email or Emp ID already exists" });
+      return res.status(400).json({ message: "User with this email already exists" });
     }
     res.status(500).json({ message: "Error updating user" });
   }

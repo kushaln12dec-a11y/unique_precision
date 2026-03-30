@@ -1,6 +1,16 @@
 import bcrypt from "bcrypt";
 import { prisma } from "../lib/prisma";
 
+const EMP_ID_COUNTER_KEY = "empId";
+const EMP_ID_REGEX = /^EMP(\d+)$/i;
+const formatEmpId = (sequence: number) => `EMP${String(Math.max(1, Math.trunc(sequence))).padStart(3, "0")}`;
+const getEmpIdSequence = (value: unknown): number => {
+  const match = String(value || "").trim().match(EMP_ID_REGEX);
+  if (!match) return 0;
+  const parsed = Number(match[1]);
+  return Number.isFinite(parsed) ? Math.max(0, Math.trunc(parsed)) : 0;
+};
+
 const schemaStatements: string[] = [
   `CREATE EXTENSION IF NOT EXISTS "pgcrypto";`,
 
@@ -301,11 +311,46 @@ export const initDB = async (): Promise<void> => {
   try {
     const passwordHash = await bcrypt.hash("raki123", 10);
     await prisma.$executeRaw`
-      INSERT INTO "User" ("email", "passwordHash", "role", "createdAt", "updatedAt")
-      VALUES (${`rakis@gmail.com`}, ${passwordHash}, ${"ADMIN"}, NOW(), NOW())
-      ON CONFLICT ("email") DO NOTHING;
+      INSERT INTO "User" ("email", "passwordHash", "empId", "role", "createdAt", "updatedAt")
+      VALUES (${`rakis@gmail.com`}, ${passwordHash}, ${"EMP001"}, ${"ADMIN"}, NOW(), NOW())
+      ON CONFLICT ("email") DO UPDATE
+      SET "empId" = COALESCE("User"."empId", EXCLUDED."empId");
     `;
     console.log("Default admin ensured.");
+
+    const allUsers = await prisma.user.findMany({
+      select: { id: true, empId: true },
+      orderBy: { createdAt: "asc" },
+    });
+    const usersMissingEmpId = allUsers.filter((user) => !String(user.empId || "").trim());
+    const maxExistingSequence = allUsers.reduce((maxValue, user) => {
+      return Math.max(maxValue, getEmpIdSequence(user.empId));
+    }, 0);
+
+    if (usersMissingEmpId.length > 0) {
+      let nextSequence = maxExistingSequence;
+      for (const user of usersMissingEmpId) {
+        nextSequence += 1;
+        await prisma.user.update({
+          where: { id: user.id },
+          data: { empId: formatEmpId(nextSequence) },
+        });
+      }
+      await prisma.counter.upsert({
+        where: { key: EMP_ID_COUNTER_KEY },
+        update: { seq: nextSequence },
+        create: { key: EMP_ID_COUNTER_KEY, seq: nextSequence },
+      });
+      console.log(`Assigned Employee IDs to ${usersMissingEmpId.length} existing user(s).`);
+    } else {
+      const counterSequence = Math.max(0, Number((await prisma.counter.findUnique({ where: { key: EMP_ID_COUNTER_KEY } }))?.seq || 0));
+      const targetSequence = Math.max(counterSequence, maxExistingSequence);
+      await prisma.counter.upsert({
+        where: { key: EMP_ID_COUNTER_KEY },
+        update: { seq: targetSequence },
+        create: { key: EMP_ID_COUNTER_KEY, seq: targetSequence },
+      });
+    }
   } catch (error) {
     console.error("Failed to insert default admin user:", error);
   }

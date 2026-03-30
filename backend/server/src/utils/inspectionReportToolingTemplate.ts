@@ -1,3 +1,6 @@
+import fs from "fs";
+import path from "path";
+
 type InstrumentSelection = {
   hm?: boolean;
   sg?: boolean;
@@ -53,6 +56,29 @@ const formatDecision = (decision?: string): string => {
   return "PENDING";
 };
 
+let cachedLogoDataUri: string | null = null;
+
+const resolveLogoPath = (): string | null => {
+  const candidates = [
+    path.resolve(process.cwd(), "../frontend/public/output-onlinepngtools.svg"),
+    path.resolve(process.cwd(), "frontend/public/output-onlinepngtools.svg"),
+    path.resolve(process.cwd(), "public/output-onlinepngtools.svg"),
+  ];
+  for (const candidate of candidates) {
+    if (fs.existsSync(candidate)) return candidate;
+  }
+  return null;
+};
+
+const getLogoDataUri = (): string => {
+  if (cachedLogoDataUri) return cachedLogoDataUri;
+  const logoPath = resolveLogoPath();
+  if (!logoPath) return "";
+  const svgRaw = fs.readFileSync(logoPath, "utf8");
+  cachedLogoDataUri = `data:image/svg+xml;base64,${Buffer.from(svgRaw, "utf8").toString("base64")}`;
+  return cachedLogoDataUri;
+};
+
 const renderBodyRows = (rows: InspectionRowPayload[] = []) => {
   const safeRows = rows.length > 0 ? rows : [{}];
   return safeRows
@@ -79,6 +105,7 @@ const renderBodyRows = (rows: InspectionRowPayload[] = []) => {
 };
 
 export const buildToolingSpareInspectionReportHtml = (payload: ToolingSpareInspectionPayload): string => {
+  const logoDataUri = getLogoDataUri();
   const receivedQty = Number(payload.quantity || 0);
   const acceptedQty = Number.isFinite(receivedQty) && receivedQty > 0 ? Math.max(1, Math.round(receivedQty)) : 1;
   const bodyRows = renderBodyRows(payload.rows || []);
@@ -102,15 +129,39 @@ export const buildToolingSpareInspectionReportHtml = (payload: ToolingSpareInspe
     * { box-sizing: border-box; }
     body { margin: 0; font-family: "Segoe UI", Arial, sans-serif; color: #111827; }
     .sheet { width: 100%; border: 1px solid #1f2937; }
+    .sheet-header {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 8px 10px 6px;
+      border-bottom: 1px solid #1f2937;
+    }
+    .sheet-logo {
+      width: 36px;
+      height: 36px;
+      object-fit: contain;
+      display: ${logoDataUri ? "block" : "none"};
+    }
+    .sheet-title {
+      font-size: 19px;
+      font-weight: 700;
+      letter-spacing: 0.2px;
+      line-height: 1;
+      text-transform: uppercase;
+    }
     table { width: 100%; border-collapse: collapse; table-layout: fixed; }
     td, th { border: 1px solid #1f2937; padding: 5px; vertical-align: middle; }
+    .meta-table td { min-height: 36px; }
     .meta-date { font-size: 18px; text-align: center; font-weight: 700; letter-spacing: 0.25px; }
     .meta-inline {
       text-align: left;
       font-size: 15px;
       font-weight: 600;
       padding: 8px 12px;
-      white-space: nowrap;
+      white-space: normal;
+      overflow-wrap: anywhere;
+      line-height: 1.25;
     }
     .meta-inline strong { font-weight: 700; }
     .center { text-align: center; }
@@ -140,7 +191,11 @@ export const buildToolingSpareInspectionReportHtml = (payload: ToolingSpareInspe
 </head>
 <body>
   <div class="sheet">
-    <table>
+    <div class="sheet-header">
+      ${logoDataUri ? `<img class="sheet-logo" src="${logoDataUri}" alt="Unique Precision Logo" />` : ""}
+      <div class="sheet-title">Unique Precision</div>
+    </div>
+    <table class="meta-table">
       <tr>
         <td class="meta-inline"><strong>Tool Identification No:</strong> ${htmlEscape(toolIdentificationNo)}</td>
         <td class="meta-inline"><strong>Supplier Name:</strong> ${htmlEscape(supplierName)}</td>
@@ -155,7 +210,7 @@ export const buildToolingSpareInspectionReportHtml = (payload: ToolingSpareInspe
         <td class="meta-inline" colspan="3"><strong>Consumable Part Name:</strong> ${htmlEscape(consumablePartName)}</td>
       </tr>
     </table>
-    <table>
+    <table class="report-table">
       <tr class="head">
         <th rowspan="2" style="width:5%;">Sl.No.</th>
         <th rowspan="2" style="width:12%;">Parameter</th>
