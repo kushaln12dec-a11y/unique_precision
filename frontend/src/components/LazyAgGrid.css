@@ -125,6 +125,20 @@
   text-align: center;
 }
 
+.lazy-ag-grid-shell .ag-header-cell .ag-sort-indicator-container {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: 6px;
+}
+
+.lazy-ag-grid-shell .ag-header-cell .ag-icon,
+.lazy-ag-grid-shell .ag-header-cell .ag-sort-ascending-icon,
+.lazy-ag-grid-shell .ag-header-cell .ag-sort-descending-icon,
+.lazy-ag-grid-shell .ag-header-cell .ag-sort-none-icon {
+  color: rgba(255, 255, 255, 0.8);
+}
+
 .lazy-ag-grid-shell .ag-cell-value {
   width: 100%;
   overflow: hidden;

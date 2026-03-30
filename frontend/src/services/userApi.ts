@@ -72,6 +72,20 @@ export const createUser = async (userData: CreateUserData): Promise<User> => {
   return normalizeUser(await res.json());
 };
 
+export const getNextEmpId = async (): Promise<string> => {
+  const res = await fetch(apiUrl("/api/users/next-emp-id"), {
+    method: "GET",
+    headers: getAuthHeaders(),
+  });
+
+  if (!res.ok) {
+    throw new Error("Failed to fetch next employee ID");
+  }
+
+  const data = await res.json();
+  return String(data?.empId || "").trim();
+};
+
 export const updateUser = async (id: string, userData: UpdateUserData): Promise<User> => {
   const res = await fetch(apiUrl(`/api/users/${id}`), {
     method: "PUT",

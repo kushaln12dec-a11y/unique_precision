@@ -5,7 +5,7 @@ import type { EmployeeLog } from "../../../types/employeeLog";
 import type { User } from "../../../types/user";
 import { formatDisplayDateTime, getDisplayDateTimeParts } from "../../../utils/date";
 import { fetchAllPaginatedItems } from "../../../utils/paginationUtils";
-import { getDisplayName, getInitials, getLogUserDisplayName } from "../../../utils/jobFormatting";
+import { formatJobRefDisplay, getDisplayName, getInitials, getLogUserDisplayName } from "../../../utils/jobFormatting";
 import { matchesSearchQuery } from "../../../utils/searchUtils";
 import { getEmployeeLogsPage } from "../../../services/employeeLogsApi";
 import WbSunnyOutlinedIcon from "@mui/icons-material/WbSunnyOutlined";
@@ -27,6 +27,12 @@ const PROGRAMMER_LOG_COLUMN_WIDTHS: Record<string, number> = {
 
 const getProgrammerLogColumnWidth = (columnKey: string) =>
   PROGRAMMER_LOG_COLUMN_WIDTHS[columnKey] ?? 88;
+
+const formatProgrammerJobRef = (value?: string) => {
+  const raw = String(value || "").trim().replace(/^#/, "");
+  if (!raw) return "-";
+  return formatJobRefDisplay(raw) || "-";
+};
 
 const formatDuration = (seconds?: number): string => {
   const total = Math.max(0, Number(seconds || 0));
@@ -109,10 +115,7 @@ export const useProgrammerLogs = ({
         key: "jobNumber",
         label: "JOB #",
         sortable: false,
-        render: (row) => {
-          const ref = String(row.refNumber || "").trim().replace(/^#/, "");
-          return ref ? `#${ref}` : "";
-        },
+        render: (row) => formatProgrammerJobRef(String(row.refNumber || "")),
       },
       {
         key: "description",
@@ -192,7 +195,7 @@ export const useProgrammerLogs = ({
             name,
             designation,
             `${name} ${designation}`.trim(),
-            String(log.refNumber || "").trim() ? `#${String(log.refNumber || "").trim().replace(/^#/, "")}` : "",
+            formatProgrammerJobRef(String(log.refNumber || "")),
             String(log.jobDescription || "-"),
             String((log as any).workSummary || "-"),
             formatDisplayDateTime(log.startedAt),
@@ -228,10 +231,9 @@ export const useProgrammerLogs = ({
         const designation = designationByUserId.get(String(row.userId)) || "Programmer";
         const name = getLogUserDisplayName(row.userName, row.userEmail, "");
         const userValue = name ? `${name} (${designation})` : designation;
-        const ref = String(row.refNumber || "").trim().replace(/^#/, "");
         return [
           userValue,
-          ref ? `#${ref}` : "",
+          formatProgrammerJobRef(String(row.refNumber || "")),
           String(row.jobDescription || "-"),
           String((row as any).workSummary || "-"),
           formatDisplayDateTime(row.startedAt),

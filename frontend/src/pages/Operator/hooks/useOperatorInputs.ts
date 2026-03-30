@@ -114,58 +114,65 @@ export const useOperatorInputs = (
       const newMap = new Map(prev);
       const { cut: current, quantities } = ensureCutInputState(newMap.get(cutId), Math.max(1, quantityIndex + 1));
       const qtyData = quantities[quantityIndex];
+      const tryResumePausedQuantity = (now: number): boolean => {
+        if (!qtyData.currentPauseReason || qtyData.currentPauseReason.trim() === "") {
+          if (setValidationErrors) setOperatorPauseReasonError(setValidationErrors, cutId, quantityIndex);
+          return false;
+        }
+
+        const selectedOps = Array.isArray(qtyData.opsName)
+          ? qtyData.opsName.map((name) => String(name || "").trim()).filter(Boolean)
+          : [];
+        const normalizedCurrentUser = String(currentUserDisplayName || "").trim().toLowerCase();
+        const hasCurrentUserName =
+          !normalizedCurrentUser ||
+          selectedOps.some((name) => name.toLowerCase() === normalizedCurrentUser);
+
+        if (!selectedOps.length || !hasCurrentUserName) {
+          if (setValidationErrors) {
+            setOperatorFieldError(
+              setValidationErrors,
+              cutId,
+              quantityIndex,
+              "opsName",
+              normalizedCurrentUser
+                ? `Add ${currentUserDisplayName} in Ops Name before resuming`
+                : "Select Ops Name before resuming"
+            );
+          }
+          return false;
+        }
+
+        if (!String(qtyData.machineNumber || "").trim()) {
+          if (setValidationErrors) {
+            setOperatorFieldError(
+              setValidationErrors,
+              cutId,
+              quantityIndex,
+              "machineNumber",
+              "Select machine number before resuming"
+            );
+          }
+          return false;
+        }
+
+        if (!qtyData.pauseStartTime) return false;
+
+        if (setValidationErrors) clearOperatorPauseReasonError(setValidationErrors, cutId, quantityIndex);
+        if (setValidationErrors) clearOperatorFieldError(validationErrors, setValidationErrors, cutId, quantityIndex, "opsName");
+        if (setValidationErrors) clearOperatorFieldError(validationErrors, setValidationErrors, cutId, quantityIndex, "machineNumber");
+        quantities[quantityIndex] = resumePausedQuantity(qtyData, now);
+        newMap.set(cutId, { ...current, quantities });
+        return true;
+      };
+
       if (field === "togglePause") {
         const now = Date.now();
         if (qtyData.isPaused) {
-          if (!qtyData.currentPauseReason || qtyData.currentPauseReason.trim() === "") {
-            if (setValidationErrors) setOperatorPauseReasonError(setValidationErrors, cutId, quantityIndex);
+          if (qtyData.currentPauseReason === "Shift Over") {
             return newMap;
           }
-          
-          const selectedOps = Array.isArray(qtyData.opsName)
-            ? qtyData.opsName.map((name) => String(name || "").trim()).filter(Boolean)
-            : [];
-          const normalizedCurrentUser = String(currentUserDisplayName || "").trim().toLowerCase();
-          const hasCurrentUserName =
-            !normalizedCurrentUser ||
-            selectedOps.some((name) => name.toLowerCase() === normalizedCurrentUser);
-
-          if (!selectedOps.length || !hasCurrentUserName) {
-            if (setValidationErrors) {
-              setOperatorFieldError(
-                setValidationErrors,
-                cutId,
-                quantityIndex,
-                "opsName",
-                normalizedCurrentUser
-                  ? `Add ${currentUserDisplayName} in Ops Name before resuming`
-                  : "Select Ops Name before resuming"
-              );
-            }
-            return newMap;
-          }
-
-          if (!String(qtyData.machineNumber || "").trim()) {
-            if (setValidationErrors) {
-              setOperatorFieldError(
-                setValidationErrors,
-                cutId,
-                quantityIndex,
-                "machineNumber",
-                "Select machine number before resuming"
-              );
-            }
-            return newMap;
-          }
-
-          if (qtyData.pauseStartTime) {
-            if (setValidationErrors) clearOperatorPauseReasonError(setValidationErrors, cutId, quantityIndex);
-            if (setValidationErrors) clearOperatorFieldError(validationErrors, setValidationErrors, cutId, quantityIndex, "opsName");
-            if (setValidationErrors) clearOperatorFieldError(validationErrors, setValidationErrors, cutId, quantityIndex, "machineNumber");
-            quantities[quantityIndex] = resumePausedQuantity(qtyData, now);
-            newMap.set(cutId, { ...current, quantities });
-            return newMap;
-          }
+          if (tryResumePausedQuantity(now)) return newMap;
         } else {
           quantities[quantityIndex] = pauseRunningQuantity(qtyData, now);
           newMap.set(cutId, { ...current, quantities });
@@ -174,8 +181,13 @@ export const useOperatorInputs = (
         return newMap;
       }
       if (field === "markShiftOver") {
-        if (!qtyData.startTime || qtyData.endTime || qtyData.isPaused) return newMap;
+        if (!qtyData.startTime || qtyData.endTime) return newMap;
         const now = Date.now();
+        if (qtyData.isPaused) {
+          if (qtyData.currentPauseReason !== "Shift Over") return newMap;
+          if (tryResumePausedQuantity(now)) return newMap;
+          return newMap;
+        }
         const paused = pauseRunningQuantity(qtyData, now);
         quantities[quantityIndex] = {
           ...paused,

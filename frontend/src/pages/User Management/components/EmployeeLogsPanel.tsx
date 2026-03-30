@@ -13,7 +13,6 @@ import {
   formatDuration,
   formatLogStatus,
   formatRoleLabel,
-  formatWorkItemTitle,
   normalizeJobReference,
   getQuantityLabel,
   getWorkedSecondsForLog,
@@ -50,7 +49,7 @@ export const EmployeeLogsPanel = () => {
 
   const getColumnMinWidth = (columnKey: string) => {
     if (columnKey === "employee") return 96;
-    if (columnKey === "workItemTitle") return 106;
+    if (columnKey === "workItemTitle") return 126;
     if (columnKey === "jobDescription" || columnKey === "workSummary") return 128;
     if (columnKey === "quantityCount") return 84;
     if (columnKey === "startedAt" || columnKey === "endedAt") return 104;
@@ -81,7 +80,7 @@ export const EmployeeLogsPanel = () => {
 
         const roleSpecificValues =
           activeRole === "OPERATOR"
-            ? [formatWorkItemTitle(log.workItemTitle), String(log.jobDescription || "-"), String(log.workSummary || "-"), String((log.metadata as any)?.idleTime || "-"), String((log.metadata as any)?.remark || "-"), ...(isAdmin ? [getRevenueLabel(log)] : [])]
+            ? [normalizeJobReference(log.refNumber || log.workItemTitle), String(log.jobDescription || "-"), String(log.workSummary || "-"), String((log.metadata as any)?.idleTime || "-"), String((log.metadata as any)?.remark || "-"), ...(isAdmin ? [getRevenueLabel(log)] : [])]
             : [normalizeJobReference(log.refNumber), String(log.jobDescription || "-"), getQuantityLabel(log) || "-"];
 
         return matchesSearchQuery([...commonValues, ...roleSpecificValues], searchQuery);
@@ -117,7 +116,7 @@ export const EmployeeLogsPanel = () => {
       activeRole === "OPERATOR"
         ? [
             `${String(row.userName || "Unknown User")} (${formatRoleLabel((row.metadata as any)?.userRole || row.role)})`,
-            formatWorkItemTitle(row.workItemTitle),
+            normalizeJobReference(row.refNumber || row.workItemTitle),
             String(row.jobDescription || "-"),
             String(row.workSummary || "-"),
             String((row.metadata as any)?.idleTime || "-"),
@@ -208,7 +207,7 @@ export const EmployeeLogsPanel = () => {
           getRowId={(row) => row._id}
           className="employee-logs-table logs-center"
           rowHeight={66}
-          refreshKey={`${activeRole}|${statusFilter}|${searchQuery.trim().length > 0}`}
+          refreshKey={`${activeRole}|${statusFilter}`}
         />
       )}
     </div>

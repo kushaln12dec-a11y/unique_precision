@@ -189,7 +189,6 @@ const Operator = () => {
   const {
     machineFilterOptions,
     filterOperatorLogs,
-    hasOperatorLogSearch,
     handleExportOperatorLogsCsv,
     operatorLogColumnDefs,
     logsFetchPage,
@@ -267,7 +266,7 @@ const Operator = () => {
           setOperatorGridJobs={setOperatorGridJobs}
           operatorGridRows={operatorGridRows}
           expandedGroups={expandedGroups}
-          createdByRefreshKey={`${hasJobSearch}|${createdByFilter}|${assignedToFilter}|${JSON.stringify(filters)}`}
+          createdByRefreshKey={`${createdByFilter}|${assignedToFilter}|${JSON.stringify(filters)}`}
           operatorLogSearch={operatorLogSearch}
           setOperatorLogSearch={setOperatorLogSearch}
           operatorLogStatus={operatorLogStatus}
@@ -279,7 +278,6 @@ const Operator = () => {
           operatorLogColumnDefs={operatorLogColumnDefs}
           filterOperatorLogs={filterOperatorLogs}
           logsFetchPage={logsFetchPage}
-          hasOperatorLogSearch={hasOperatorLogSearch}
         />
 
         <OperatorPageOverlays

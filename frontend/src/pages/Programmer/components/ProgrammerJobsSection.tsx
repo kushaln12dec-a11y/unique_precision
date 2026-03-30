@@ -36,7 +36,6 @@ type Props = {
   setProgrammerGridJobs: React.Dispatch<React.SetStateAction<JobEntry[]>>;
   expandedGroups: Set<string>;
   programmerGridRefreshKey: number;
-  hasJobSearch: boolean;
 };
 
 export const ProgrammerJobsSection: React.FC<Props> = ({
@@ -59,7 +58,6 @@ export const ProgrammerJobsSection: React.FC<Props> = ({
   setProgrammerGridJobs,
   expandedGroups,
   programmerGridRefreshKey,
-  hasJobSearch,
 }) => {
   if (savingJob) return <AppLoader message="Saving job and loading programmer jobs..." />;
   if (loadingJobs && programmerGridJobs.length === 0) return <AppLoader message="Loading programmer jobs..." />;
@@ -105,7 +103,7 @@ export const ProgrammerJobsSection: React.FC<Props> = ({
         className="jobs-table-wrapper"
         rowHeight={38}
         fitColumns={true}
-        refreshKey={`${hasJobSearch}|${createdByFilter}|${criticalFilter}|${JSON.stringify(filters)}|${programmerGridRefreshKey}`}
+        refreshKey={`${createdByFilter}|${criticalFilter}|${JSON.stringify(filters)}|${programmerGridRefreshKey}`}
       />
     </>
   );

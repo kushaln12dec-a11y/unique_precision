@@ -193,7 +193,6 @@ const Programmer = () => {
     filteredProgrammerTableData,
     programmerGridRows,
     programmerJobColumnDefs,
-    hasJobSearch,
   } = useProgrammerGrid({
     programmerGridJobs,
     sortField,
@@ -217,7 +216,6 @@ const Programmer = () => {
     filterProgrammerLogs,
     handleExportProgrammerLogsCsv,
     programmerLogColumnDefs,
-    hasLogSearch,
     programmerUsers,
   } = useProgrammerLogs({ users, logSearch, logStatus, logUserId, setToast });
 
@@ -272,7 +270,6 @@ const Programmer = () => {
               setProgrammerGridJobs={setProgrammerGridJobs}
               expandedGroups={expandedGroups}
               programmerGridRefreshKey={programmerGridRefreshKey}
-              hasJobSearch={hasJobSearch}
             />
           )}
 
@@ -289,7 +286,6 @@ const Programmer = () => {
               programmerLogColumnDefs={programmerLogColumnDefs}
               filterProgrammerLogs={filterProgrammerLogs}
               fetchPage={logsFetchPage}
-              hasLogSearch={hasLogSearch}
             />
           )}
         </div>

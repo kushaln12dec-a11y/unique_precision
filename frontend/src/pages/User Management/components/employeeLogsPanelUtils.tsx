@@ -2,6 +2,7 @@ import type { Column } from "../../../components/DataTable";
 import MarqueeCopyText from "../../../components/MarqueeCopyText";
 import type { EmployeeLog } from "../../../types/employeeLog";
 import { getDisplayDateTimeParts } from "../../../utils/date";
+import { formatJobRefDisplay } from "../../../utils/jobFormatting";
 
 export type RoleTab = "PROGRAMMER" | "OPERATOR" | "QC";
 
@@ -35,7 +36,9 @@ export const formatLogStatus = (status?: string) => {
 export const normalizeJobReference = (value?: string | number) => {
   const raw = String(value || "").trim();
   if (!raw) return "-";
-  return raw.replace(/^Job\s*#?\s*/i, "").trim() || "-";
+  const withoutPrefix = raw.replace(/^Job\s*#?\s*/i, "").trim();
+  if (!withoutPrefix) return "-";
+  return formatJobRefDisplay(withoutPrefix) || "-";
 };
 
 export const formatWorkItemTitle = (value?: string) => {
@@ -88,7 +91,17 @@ export const createEmployeeLogColumns = ({
   if (activeRole === "OPERATOR") {
     return [
       employeeColumn,
-      { key: "workItemTitle", label: "Job Ref", sortable: false, render: (row) => formatWorkItemTitle(row.workItemTitle) },
+      {
+        key: "workItemTitle",
+        label: "Job Ref",
+        sortable: false,
+        className: "employee-work-item-cell",
+        render: (row) => (
+          <div className="employee-work-item">
+            <span className="ref-badge">{normalizeJobReference(row.refNumber || row.workItemTitle)}</span>
+          </div>
+        ),
+      },
       { key: "jobDescription", label: "Description", sortable: false, render: (row) => <MarqueeCopyText text={String(row.jobDescription || "-")} /> },
       { key: "workSummary", label: "Summary", sortable: false, render: (row) => <MarqueeCopyText text={String(row.workSummary || "-")} /> },
       { key: "idleTime", label: "Idle Time", sortable: false, render: (row) => String((row.metadata as any)?.idleTime || "-") },

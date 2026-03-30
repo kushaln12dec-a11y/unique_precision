@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { getUsers, createUser, updateUser, deleteUser } from "../../../services/userApi";
+import { getUsers, createUser, updateUser, deleteUser, getNextEmpId } from "../../../services/userApi";
 import type { User, CreateUserData, UpdateUserData } from "../../../types/user";
 import { sanitizePhoneInput } from "../utils/tableUtils";
 
@@ -20,7 +20,7 @@ export const useUserManagement = () => {
     firstName: "",
     lastName: "",
     phone: "",
-    empId: "",
+    empId: "Auto Generated",
     role: "OPERATOR",
   });
   const [showPassword, setShowPassword] = useState(false);
@@ -76,7 +76,7 @@ export const useUserManagement = () => {
       firstName: "",
       lastName: "",
       phone: "",
-      empId: "",
+      empId: "Auto Generated",
       role: "OPERATOR",
     });
   };
@@ -129,6 +129,16 @@ export const useUserManagement = () => {
     resetForm();
     setShowForm(true);
     setError("");
+    void (async () => {
+      try {
+        const nextEmpId = await getNextEmpId();
+        if (nextEmpId) {
+          setFormData((prev) => ({ ...prev, empId: nextEmpId }));
+        }
+      } catch {
+        setFormData((prev) => ({ ...prev, empId: "Auto Generated" }));
+      }
+    })();
   };
 
   const handleCancel = () => {

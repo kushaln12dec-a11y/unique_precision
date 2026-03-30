@@ -277,3 +277,21 @@
   border-collapse: separate;
   border-spacing: 0;
 }
+
+.lazy-ag-grid-shell.employee-logs-table .ag-cell,
+.lazy-ag-grid-shell.employee-logs-table .ag-cell-value {
+  text-align: center;
+  justify-content: center;
+}
+
+.lazy-ag-grid-shell.employee-logs-table .employee-work-item {
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.lazy-ag-grid-shell.employee-logs-table .ref-badge {
+  min-width: 98px;
+  justify-content: center;
+}

@@ -67,10 +67,6 @@ function DataTable<T extends Record<string, any>>({
   onRowSelect,
   onRowClick,
 }: DataTableProps<T>) {
-  // Kept for API compatibility with callers that track sort state externally.
-  void sortField;
-  void sortDirection;
-
   const handleSort = (column: Column<T>) => {
     if (column.sortable && onSort) {
       onSort(column.sortKey || column.key);
@@ -79,7 +75,6 @@ function DataTable<T extends Record<string, any>>({
 
   const totalColumns = columns.length + (showAccordion ? 1 : 0) + (showCheckboxes ? 1 : 0);
 
-  // Calculate pagination values if pagination is enabled
   const displayData = pagination
     ? data.slice(
         (pagination.currentPage - 1) * pagination.entriesPerPage,
@@ -96,10 +91,7 @@ function DataTable<T extends Record<string, any>>({
     : 0;
 
   const indexOfLastEntry = pagination
-    ? Math.min(
-        indexOfFirstEntry + pagination.entriesPerPage,
-        pagination.totalEntries
-      )
+    ? Math.min(indexOfFirstEntry + pagination.entriesPerPage, pagination.totalEntries)
     : data.length;
 
   return (
@@ -124,20 +116,30 @@ function DataTable<T extends Record<string, any>>({
                 </th>
               )}
               {showAccordion && <th className="accordion-header-cell" />}
-              {columns.map((column) => (
-                <th
-                  key={column.key}
-                  onClick={() => column.sortable && handleSort(column)}
-                  className={`${column.sortable ? "sortable" : ""} ${
-                    column.headerClassName || ""
-                  }`}
-                  style={{ cursor: column.sortable ? "pointer" : "default" }}
-                >
-                  <span className="th-content">
-                    {column.label}
-                  </span>
-                </th>
-              ))}
+              {columns.map((column) => {
+                const sortKey = column.sortKey || column.key;
+                const isActive = sortField === sortKey;
+                const isSortable = Boolean(column.sortable && onSort);
+
+                return (
+                  <th
+                    key={column.key}
+                    onClick={() => isSortable && handleSort(column)}
+                    className={`${isSortable ? "sortable" : ""} ${column.headerClassName || ""}`}
+                    style={{ cursor: isSortable ? "pointer" : "default" }}
+                  >
+                    <span className="th-content">
+                      {column.label}
+                      {isSortable && (
+                        <span className="sort-icon">
+                          <span className={`sort-arrow up ${isActive && sortDirection === "asc" ? "active" : ""}`}>^</span>
+                          <span className={`sort-arrow down ${isActive && sortDirection === "desc" ? "active" : ""}`}>v</span>
+                        </span>
+                      )}
+                    </span>
+                  </th>
+                );
+              })}
             </tr>
           </thead>
           <tbody>
@@ -159,7 +161,7 @@ function DataTable<T extends Record<string, any>>({
 
               return (
                 <React.Fragment key={rowKey}>
-                  <tr 
+                  <tr
                     className={rowClassName}
                     onClick={() => onRowClick?.(row)}
                     style={{ cursor: onRowClick ? "pointer" : "default" }}
@@ -186,11 +188,11 @@ function DataTable<T extends Record<string, any>>({
                     {showAccordion && !expandable && (
                       <td className="accordion-toggle-cell" />
                     )}
-                    {columns.map((column) => (
-                      <td key={column.key} className={column.className || ""}>
-                        {column.render
-                          ? column.render(row, index)
-                          : String(row[column.key] ?? "—")}
+                    {columns.map((mappedColumn) => (
+                      <td key={mappedColumn.key} className={mappedColumn.className || ""}>
+                        {mappedColumn.render
+                          ? mappedColumn.render(row, index)
+                          : String(row[mappedColumn.key] ?? "-")}
                       </td>
                     ))}
                   </tr>

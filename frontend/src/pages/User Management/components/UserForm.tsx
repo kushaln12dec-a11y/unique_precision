@@ -62,15 +62,14 @@ export const UserForm: React.FC<UserFormProps> = ({
 
         <div className="form-row">
           <div className="form-group">
-            <label>Email Address *</label>
+            <label>Email Address (Optional)</label>
             <input
               type="email"
               name="email"
-              value={formData.email}
+              value={formData.email || ""}
               onChange={onInputChange}
               disabled={saving}
-              placeholder="example@email.com"
-              required
+              placeholder="example@email.com (optional)"
             />
           </div>
           <div className="form-group">
@@ -92,15 +91,15 @@ export const UserForm: React.FC<UserFormProps> = ({
 
         <div className="form-row">
           <div className="form-group">
-            <label>Employee ID *</label>
+            <label>Employee ID (Auto Generated)</label>
             <input
               type="text"
               name="empId"
               value={formData.empId}
               onChange={onInputChange}
-              disabled={saving}
-              placeholder="Enter employee ID"
-              required
+              disabled={true}
+              placeholder="Auto generated"
+              readOnly
             />
           </div>
           <div className="form-group">

@@ -15,7 +15,6 @@ type Props = {
   programmerLogColumnDefs: any[];
   filterProgrammerLogs: (logs: EmployeeLog[]) => EmployeeLog[];
   fetchPage: (offset: number, limit: number) => Promise<{ items: EmployeeLog[]; hasMore: boolean }>;
-  hasLogSearch: boolean;
 };
 
 export const ProgrammerLogsSection: React.FC<Props> = ({
@@ -30,7 +29,6 @@ export const ProgrammerLogsSection: React.FC<Props> = ({
   programmerLogColumnDefs,
   filterProgrammerLogs,
   fetchPage,
-  hasLogSearch,
 }) => {
   return (
     <>
@@ -73,7 +71,7 @@ export const ProgrammerLogsSection: React.FC<Props> = ({
         getRowId={(row) => row._id}
         className="jobs-table-wrapper programmer-logs-table logs-center"
         rowHeight={84}
-        refreshKey={`${hasLogSearch}|${logStatus}|${logUserId}`}
+        refreshKey={`${logStatus}|${logUserId}`}
       />
     </>
   );

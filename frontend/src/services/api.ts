@@ -1,14 +1,14 @@
 import type { LoginResponse } from "../types/auth";
 import { apiUrl } from "./apiClient";
 
-export const login = async (email: string, password: string): Promise<LoginResponse> => {
+export const login = async (empId: string, password: string): Promise<LoginResponse> => {
   try {
     const res = await fetch(apiUrl("/api/auth/login"), {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ empId, password }),
     });
 
     // Check content type before parsing JSON

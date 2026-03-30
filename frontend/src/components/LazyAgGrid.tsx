@@ -71,7 +71,8 @@ function LazyAgGrid<T extends object>({
 
   const defaultColDef = useMemo<ColDef<T>>(
     () => ({
-      sortable: false,
+      sortable: true,
+      unSortIcon: true,
       resizable: false,
       suppressMovable: true,
       minWidth: 80,
@@ -79,6 +80,16 @@ function LazyAgGrid<T extends object>({
       autoHeaderHeight: true,
     }),
     []
+  );
+
+  const effectiveColumnDefs = useMemo<ColDef<any>[]>(
+    () =>
+      columnDefs.map((columnDef) => ({
+        ...columnDef,
+        sortable: true,
+        unSortIcon: true,
+      })),
+    [columnDefs]
   );
 
   const rowSelection = useMemo<GridOptions<T>["rowSelection"]>(
@@ -206,7 +217,7 @@ function LazyAgGrid<T extends object>({
 
   useEffect(() => {
     sizeColumns();
-  }, [displayRows.length, columnDefs, fitColumns]);
+  }, [displayRows.length, effectiveColumnDefs, fitColumns]);
 
   useEffect(() => {
     const viewport = viewportRef.current;
@@ -236,7 +247,7 @@ function LazyAgGrid<T extends object>({
       <AgGridReact<T>
         theme={themeQuartz}
         rowData={displayRows}
-        columnDefs={columnDefs}
+        columnDefs={effectiveColumnDefs}
         defaultColDef={defaultColDef}
         rowHeight={rowHeight}
         getRowHeight={getRowHeight}

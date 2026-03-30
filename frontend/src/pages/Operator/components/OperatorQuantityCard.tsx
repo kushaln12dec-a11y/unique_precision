@@ -101,7 +101,18 @@ export const OperatorQuantityCard: React.FC<Props> = ({
               <span>Start Time</span>
               {qtyData.startTime && (
                 <span className="start-time-pause-meta">
-                  <button type="button" className="start-time-pause-toggle" onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (!qtyData.endTime) onInputChange(cutId, qtyIndex, "togglePause", ""); }} disabled={!!qtyData.endTime} aria-label={qtyData.isPaused ? "Resume timer" : "Idle timer"} title={qtyData.isPaused ? "Resume timer" : "Idle timer"}>
+                  <button
+                    type="button"
+                    className="start-time-pause-toggle"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      if (!qtyData.endTime && !isShiftOverPause) onInputChange(cutId, qtyIndex, "togglePause", "");
+                    }}
+                    disabled={!!qtyData.endTime || isShiftOverPause}
+                    aria-label={qtyData.isPaused ? "Resume timer" : "Idle timer"}
+                    title={isShiftOverPause ? "Use Shift Over button to resume" : qtyData.isPaused ? "Resume timer" : "Idle timer"}
+                  >
                     {qtyData.isPaused ? <PlayArrowIcon fontSize="small" /> : <PauseIcon fontSize="small" />}
                   </button>
                 </span>
@@ -124,8 +135,8 @@ export const OperatorQuantityCard: React.FC<Props> = ({
               showPauseButton={true}
               showPauseButtonInInput={false}
               isPaused={qtyData.isPaused || false}
-              onPauseToggle={() => { if (!qtyData.endTime) onInputChange(cutId, qtyIndex, "togglePause", ""); }}
-              disablePauseButton={!!qtyData.endTime}
+              onPauseToggle={() => { if (!qtyData.endTime && !isShiftOverPause) onInputChange(cutId, qtyIndex, "togglePause", ""); }}
+              disablePauseButton={!!qtyData.endTime || isShiftOverPause}
               disabled={!!qtyData.startTime || !!qtyData.endTime}
             />
           </div>
@@ -224,13 +235,13 @@ export const OperatorQuantityCard: React.FC<Props> = ({
           </button>
         ) : (
           <>
-            {!isRangeMode && qtyData.startTime && !qtyData.endTime && !qtyData.isPaused && (
+            {!isRangeMode && qtyData.startTime && !qtyData.endTime && (!qtyData.isPaused || isShiftOverPause) && (
               <button
                 type="button"
                 className="mark-shift-over-button"
                 onClick={() => onRequestShiftOver?.(cutId, qtyIndex)}
               >
-                Shift Over
+                {isShiftOverPause ? "Resume Quantity" : "Shift Over"}
               </button>
             )}
             {qtyData.startTime && (

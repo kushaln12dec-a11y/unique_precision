@@ -14,12 +14,12 @@ export interface User {
 }
 
 export interface CreateUserData {
-  email: string;
+  email?: string;
   password: string;
   firstName: string;
   lastName: string;
   phone: string;
-  empId: string;
+  empId?: string;
   image?: string;
   role: UserRole;
 }
