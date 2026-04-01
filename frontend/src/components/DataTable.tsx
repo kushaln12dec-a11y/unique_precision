@@ -52,8 +52,6 @@ type DataTableProps<T> = {
 function DataTable<T extends Record<string, any>>({
   columns,
   data,
-  sortField = null,
-  sortDirection = "asc",
   onSort,
   emptyMessage = "No data available",
   expandableRows,
@@ -117,8 +115,6 @@ function DataTable<T extends Record<string, any>>({
               )}
               {showAccordion && <th className="accordion-header-cell" />}
               {columns.map((column) => {
-                const sortKey = column.sortKey || column.key;
-                const isActive = sortField === sortKey;
                 const isSortable = Boolean(column.sortable && onSort);
 
                 return (
@@ -130,12 +126,6 @@ function DataTable<T extends Record<string, any>>({
                   >
                     <span className="th-content">
                       {column.label}
-                      {isSortable && (
-                        <span className="sort-icon">
-                          <span className={`sort-arrow up ${isActive && sortDirection === "asc" ? "active" : ""}`}>^</span>
-                          <span className={`sort-arrow down ${isActive && sortDirection === "desc" ? "active" : ""}`}>v</span>
-                        </span>
-                      )}
                     </span>
                   </th>
                 );

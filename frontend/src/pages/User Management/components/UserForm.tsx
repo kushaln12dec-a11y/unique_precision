@@ -1,7 +1,10 @@
 import React from "react";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
+import ContentCopyOutlinedIcon from "@mui/icons-material/ContentCopyOutlined";
+import CheckIcon from "@mui/icons-material/Check";
 import type { User, CreateUserData, UserRole } from "../../../types/user";
+import { copyTextWithFallback } from "../../../utils/clipboard";
 
 type UserFormProps = {
   editingUser: User | null;
@@ -28,6 +31,19 @@ export const UserForm: React.FC<UserFormProps> = ({
   onCancel,
   onTogglePassword,
 }) => {
+  const [copiedField, setCopiedField] = React.useState<"empId" | "password" | null>(null);
+  const canCopyEmpId = /^EMP\d+$/i.test(String(formData.empId || "").trim());
+  const canCopyPassword = String(formData.password || "").trim().length > 0;
+
+  const handleCopyField = async (field: "empId" | "password", value: string) => {
+    const didCopy = await copyTextWithFallback(value);
+    if (!didCopy) return;
+    setCopiedField(field);
+    window.setTimeout(() => {
+      setCopiedField((current) => (current === field ? null : current));
+    }, 1200);
+  };
+
   return (
     <div className="user-form-container">
       <h2>{editingUser ? "Edit User" : "Create New User"}</h2>
@@ -92,15 +108,27 @@ export const UserForm: React.FC<UserFormProps> = ({
         <div className="form-row">
           <div className="form-group">
             <label>Employee ID (Auto Generated)</label>
-            <input
-              type="text"
-              name="empId"
-              value={formData.empId}
-              onChange={onInputChange}
-              disabled={true}
-              placeholder="Auto generated"
-              readOnly
-            />
+            <div className="input-action-wrapper">
+              <input
+                type="text"
+                name="empId"
+                value={formData.empId}
+                onChange={onInputChange}
+                disabled={true}
+                placeholder="Auto generated"
+                readOnly
+              />
+              <button
+                type="button"
+                className="input-copy-btn"
+                disabled={saving || !canCopyEmpId}
+                onClick={() => handleCopyField("empId", String(formData.empId || ""))}
+                title={copiedField === "empId" ? "Copied" : "Copy Employee ID"}
+                aria-label={copiedField === "empId" ? "Employee ID copied" : "Copy Employee ID"}
+              >
+                {copiedField === "empId" ? <CheckIcon /> : <ContentCopyOutlinedIcon />}
+              </button>
+            </div>
           </div>
           <div className="form-group">
             <label>Role *</label>
@@ -133,15 +161,29 @@ export const UserForm: React.FC<UserFormProps> = ({
                 placeholder={editingUser ? "Leave blank to keep current password" : "Enter password"}
                 required={!editingUser}
               />
-              <button
-                type="button"
-                className="password-toggle"
-                onClick={onTogglePassword}
-                disabled={saving}
-                tabIndex={-1}
-              >
-                {showPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
-              </button>
+              <div className="password-actions">
+                <button
+                  type="button"
+                  className="password-toggle"
+                  onClick={onTogglePassword}
+                  disabled={saving}
+                  tabIndex={-1}
+                  title={showPassword ? "Hide password" : "Show password"}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
+                </button>
+                <button
+                  type="button"
+                  className="input-copy-btn"
+                  disabled={saving || !canCopyPassword}
+                  onClick={() => handleCopyField("password", String(formData.password || ""))}
+                  title={copiedField === "password" ? "Copied" : "Copy Password"}
+                  aria-label={copiedField === "password" ? "Password copied" : "Copy Password"}
+                >
+                  {copiedField === "password" ? <CheckIcon /> : <ContentCopyOutlinedIcon />}
+                </button>
+              </div>
             </div>
           </div>
         </div>

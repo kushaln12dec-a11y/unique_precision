@@ -1,6 +1,7 @@
 import { useState, type MouseEvent } from "react";
 import ContentCopyOutlinedIcon from "@mui/icons-material/ContentCopyOutlined";
 import CheckIcon from "@mui/icons-material/Check";
+import { copyTextWithFallback } from "../utils/clipboard";
 
 type MarqueeCopyTextProps = {
   text: string;
@@ -13,26 +14,10 @@ const MarqueeCopyText = ({ text, className = "" }: MarqueeCopyTextProps) => {
 
   const handleCopy = async (event: MouseEvent<HTMLButtonElement>) => {
     event.stopPropagation();
-    try {
-      await navigator.clipboard.writeText(safeText);
+    const didCopy = await copyTextWithFallback(safeText);
+    if (didCopy) {
       setCopied(true);
       window.setTimeout(() => setCopied(false), 1200);
-    } catch {
-      // Fallback for environments where Clipboard API is restricted.
-      const textarea = document.createElement("textarea");
-      textarea.value = safeText;
-      textarea.style.position = "fixed";
-      textarea.style.left = "-9999px";
-      document.body.appendChild(textarea);
-      textarea.focus();
-      textarea.select();
-      try {
-        document.execCommand("copy");
-        setCopied(true);
-        window.setTimeout(() => setCopied(false), 1200);
-      } finally {
-        document.body.removeChild(textarea);
-      }
     }
   };
 

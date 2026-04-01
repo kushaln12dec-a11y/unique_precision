@@ -3,7 +3,6 @@ import ActionButtons from "../../Programmer/components/ActionButtons";
 import CreatedByBadge from "../../../components/CreatedByBadge";
 import MarqueeCopyText from "../../../components/MarqueeCopyText";
 import SelectDropdown from "../../Programmer/components/SelectDropdown";
-import { MultiSelectOperators } from "../components/MultiSelectOperators";
 import type { OperatorDisplayRow } from "../hooks/useOperatorTable";
 import { formatJobRefDisplay, formatMachineLabel, toYN } from "../../../utils/jobFormatting";
 import { getDispatchableQuantityNumbers, getGroupQaProgressCounts, getQaProgressCounts } from "./qaProgress";
@@ -51,7 +50,7 @@ export const buildBaseOperatorColumns = ({
   isImageInputDisabled: boolean;
 }): Column<OperatorDisplayRow>[] => [
   { key: "customer", label: "Customer", sortable: false, sortKey: "customer", className: "customer-cell", headerClassName: "customer-header", render: (row) => renderOperatorCustomerCell(row, toggleGroup) },
-  { key: "programRef", label: "Job ref", sortable: false, render: (row) => formatJobRefDisplay(row.entry.refNumber || "") },
+  { key: "programRef", label: "Job ref", sortable: false, render: (row) => <MarqueeCopyText text={formatJobRefDisplay(row.entry.refNumber || "") || "-"} className="job-ref-copy-text" /> },
   { key: "programRefFileName", label: <>Program Ref<br />File Name</>, sortable: false, render: (row) => <MarqueeCopyText text={String((row.entry as any).programRefFile || (row.entry as any).programRefFileName || "-")} /> },
   { key: "description", label: "Description", sortable: false, sortKey: "description", render: (row) => <MarqueeCopyText text={row.entry.description || "-"} /> },
   { key: "cut", label: "Cut (mm)", sortable: false, sortKey: "cut", render: (row) => Math.round(Number(row.entry.cut || 0)) },
@@ -67,15 +66,33 @@ export const buildBaseOperatorColumns = ({
     className: "operator-assigned-cell",
     render: (row) => {
       const assignedOperators = normalizeAssignedOperators(row.entry.assignedTo || "", operatorNameLookup);
+      const normalizedCurrentUser = String(currentUserName || "").trim();
+      const assignableOperators = isAdmin
+        ? [...new Set(operatorUsers.map((item) => String(item.name || "").trim()).filter(Boolean))]
+        : (normalizedCurrentUser ? [normalizedCurrentUser] : []);
+
+      const assignmentOptions = [
+        { label: "Unassign", value: "Unassign" },
+        ...assignableOperators.map((name) => ({ label: name, value: name })),
+      ];
+
+      const selectedOperator = assignedOperators[0] || "";
+      const hasSelectedInOptions = assignmentOptions.some(
+        (option) => option.value.toLowerCase() === selectedOperator.toLowerCase()
+      );
+      const dropdownOptions = hasSelectedInOptions || !selectedOperator
+        ? assignmentOptions
+        : [{ label: selectedOperator, value: selectedOperator }, ...assignmentOptions];
+      const dropdownValue = selectedOperator || "Unassign";
+
       return canAssign ? (
-        <MultiSelectOperators
-          selectedOperators={assignedOperators}
-          availableOperators={operatorUsers}
+        <SelectDropdown
           className="operator-assigned-dropdown"
-          onChange={(operators) => handleAssignChange(row.entry.id, operators.length > 0 ? [...new Set(operators.map((name) => name.trim()).filter(Boolean))].join(", ") : "Unassign")}
-          assignToSelfName={currentUserName || undefined}
+          value={dropdownValue}
+          onChange={(nextValue) => handleAssignChange(row.entry.id, String(nextValue || "Unassign"))}
+          options={dropdownOptions}
           placeholder="Unassign"
-          compact
+          align="left"
         />
       ) : (
         <div className="assigned-operators-readonly">

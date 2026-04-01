@@ -1,11 +1,18 @@
 import type { CutForm } from "../programmerUtils";
 
+export const isValidCustomerUpcCode = (customer: string) => {
+  const normalizedCustomer = String(customer || "").trim().toUpperCase();
+  return /^UPC\d+$/.test(normalizedCustomer);
+};
+
 /**
  * Validate cut form data
  */
 export const validateCut = (cut: CutForm): Record<string, string> => {
   const errors: Record<string, string> = {};
-  if (!cut.customer) errors.customer = "Customer is required.";
+  if (!isValidCustomerUpcCode(cut.customer)) {
+    errors.customer = "Customer UPC number is required (e.g. UPC001).";
+  }
   if (!cut.rate) errors.rate = "Rate is required.";
   if (!cut.cut) errors.cut = "Cut length is required.";
   if (!cut.thickness) errors.thickness = "Thickness is required.";

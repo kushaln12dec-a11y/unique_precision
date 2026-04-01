@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { NavigateFunction } from "react-router-dom";
+import { useLocation, type NavigateFunction } from "react-router-dom";
 import { countActiveFilters } from "../../../utils/filterUtils";
 import { fetchAllPaginatedItems } from "../../../utils/paginationUtils";
 import { getUsers } from "../../../services/userApi";
@@ -20,15 +20,11 @@ type UseProgrammerPageControllerParams = {
   descriptionFilter: string;
   createdByFilter: string;
   criticalFilter: boolean;
-  isNewJobRoute: boolean;
-  isEditRoute: boolean;
-  isCloneRoute: boolean;
   loadingJobs: boolean;
   cutsLength: number;
   editGroupError: string | null;
   editingGroupId: string | null;
   routeEditGroupId: string | null;
-  setShowForm: React.Dispatch<React.SetStateAction<boolean>>;
   handleNewJobState: () => void;
   handleCancelState: () => void;
   setToast: React.Dispatch<
@@ -48,21 +44,18 @@ export const useProgrammerPageController = ({
   descriptionFilter,
   createdByFilter,
   criticalFilter,
-  isNewJobRoute,
-  isEditRoute,
-  isCloneRoute,
   loadingJobs,
   cutsLength,
   editGroupError,
   editingGroupId,
   routeEditGroupId,
-  setShowForm,
   handleNewJobState,
   handleCancelState,
   setToast,
   savingJob,
   setSavingJob,
 }: UseProgrammerPageControllerParams) => {
+  const location = useLocation();
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(() => new Set());
   const [users, setUsers] = useState<User[]>([]);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -81,7 +74,11 @@ export const useProgrammerPageController = ({
   const previousProgrammerFormRouteRef = useRef(false);
 
   const activeFilterCount = useMemo(() => countActiveFilters(filters), [filters]);
-  const isProgrammerListRoute = !isNewJobRoute && !isEditRoute && !isCloneRoute;
+  const isNewJobRoute = location.pathname.startsWith("/programmer/newjob");
+  const isEditRoute = location.pathname.startsWith("/programmer/edit/");
+  const isCloneRoute = location.pathname.startsWith("/programmer/clone/");
+
+  const isProgrammerListRoute = /^\/programmer\/?$/.test(location.pathname);
   const isProgrammerFormRoute = isNewJobRoute || isEditRoute || isCloneRoute;
   const isEditFormReady = isEditRoute && Boolean(routeEditGroupId) && editingGroupId === routeEditGroupId && cutsLength > 0;
   const shouldRenderJobForm = isNewJobRoute || isCloneRoute || (isEditRoute && isEditFormReady);
@@ -159,25 +156,10 @@ export const useProgrammerPageController = ({
 
   const handleCancel = useCallback((navigate: NavigateFunction) => {
     handleCancelState();
-    if (isProgrammerFormRoute) navigate("/programmer", { replace: true });
-    setShowForm(false);
-  }, [handleCancelState, isProgrammerFormRoute, setShowForm]);
+    navigate("/programmer", { replace: true, state: { refreshedAt: Date.now() } });
+  }, [handleCancelState]);
 
   const jobsFetchPage = useCallback(async (offset: number, limit: number) => {
-    if (customerFilter || descriptionFilter) {
-      const items = await fetchAllPaginatedItems<JobEntry>(
-        async (pageOffset, pageLimit) => {
-          const page = await getProgrammerJobsPage(filters, "", createdByFilter, criticalFilter ? true : undefined, "", {
-            offset: pageOffset,
-            limit: pageLimit,
-          });
-          return { items: page.items, hasMore: page.hasMore };
-        },
-        SEARCH_FETCH_PAGE_SIZE
-      );
-      return { items, hasMore: false };
-    }
-
     const page = await getProgrammerJobsPage(
       filters,
       customerFilter,

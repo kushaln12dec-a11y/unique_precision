@@ -122,25 +122,26 @@ export const updateJob = async (id: string, jobData: Partial<JobEntry>): Promise
 
 export const updateJobsByGroupId = async (groupId: string, jobs: JobEntry[]): Promise<JobEntry[]> => {
   const existingJobs = sortGroupEntriesParentFirst(await getJobsByGroupId(groupId));
-  const updatedJobs: JobEntry[] = [];
-
-  for (let index = 0; index < jobs.length; index++) {
-    const jobData = jobs[index];
+  const updateTasks = jobs.map(async (jobData, index) => {
     const existingJob = existingJobs[index];
     if (existingJob?.id) {
-      updatedJobs.push(await updateJob(String(existingJob.id), jobData));
-    } else {
-      updatedJobs.push(...await createJobs([jobData]));
+      return updateJob(String(existingJob.id), jobData);
     }
-  }
+    const createdJobs = await createJobs([jobData]);
+    return createdJobs[0];
+  });
 
-  if (existingJobs.length > jobs.length) {
-    for (const jobToDelete of existingJobs.slice(jobs.length)) {
-      if (jobToDelete.id) await deleteJob(String(jobToDelete.id));
-    }
-  }
+  const deleteTasks = existingJobs
+    .slice(jobs.length)
+    .filter((jobToDelete) => jobToDelete.id)
+    .map((jobToDelete) => deleteJob(String(jobToDelete.id)));
 
-  return updatedJobs;
+  const [updatedJobs] = await Promise.all([
+    Promise.all(updateTasks),
+    Promise.all(deleteTasks),
+  ]);
+
+  return updatedJobs.filter(Boolean);
 };
 
 export const deleteJob = async (id: string): Promise<void> => {

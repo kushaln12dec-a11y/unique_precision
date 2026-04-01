@@ -36,7 +36,6 @@ type OperatorPageContentProps = {
   handleSendSelectedRowsToQa: () => void | Promise<void>;
   selectedEntryIds: Set<string | number>;
   machineOptionsForDropdown: string[];
-  currentUserDisplayName: string;
   handleApplyBulkAssignment: (payload: { operators: string[]; machineNumber: string }) => Promise<void>;
   operatorJobColumnDefs: any[];
   fetchJobsPage: (offset: number, limit: number) => Promise<{ items: JobEntry[]; hasMore: boolean }>;
@@ -89,7 +88,6 @@ const OperatorPageContent = (props: OperatorPageContentProps) => {
     handleSendSelectedRowsToQa,
     selectedEntryIds,
     machineOptionsForDropdown,
-    currentUserDisplayName,
     handleApplyBulkAssignment,
     operatorJobColumnDefs,
     fetchJobsPage,
@@ -143,7 +141,6 @@ const OperatorPageContent = (props: OperatorPageContentProps) => {
           handleSendSelectedRowsToQa={handleSendSelectedRowsToQa}
           selectedEntryIds={selectedEntryIds}
           machineOptionsForDropdown={machineOptionsForDropdown}
-          currentUserDisplayName={currentUserDisplayName}
           handleApplyBulkAssignment={handleApplyBulkAssignment}
           operatorJobColumnDefs={operatorJobColumnDefs}
           fetchPage={fetchJobsPage}

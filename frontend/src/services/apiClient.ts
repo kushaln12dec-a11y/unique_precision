@@ -5,5 +5,3 @@ export const apiUrl = (path: string): string => {
   if (path.startsWith("http://") || path.startsWith("https://")) return path;
   return `${normalizedBaseUrl}${path.startsWith("/") ? path : `/${path}`}`;
 };
-
-console.log("API URL:", normalizedBaseUrl);

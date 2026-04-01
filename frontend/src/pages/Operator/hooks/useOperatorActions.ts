@@ -162,8 +162,9 @@ export const useOperatorActions = ({ operatorGridJobs, setJobs, setOperatorGridJ
       return;
     }
     const operators = [...new Set(payload.operators.map((name) => name.trim()).filter(Boolean))];
+    const selectedOperator = operators[0] || "";
     const machineNumber = String(payload.machineNumber || "").trim();
-    if (operators.length === 0 && !machineNumber) {
+    if (!selectedOperator && !machineNumber) {
       showTimedToast(setToast, "Choose operator or machine to apply.", "error");
       return;
     }
@@ -173,7 +174,7 @@ export const useOperatorActions = ({ operatorGridJobs, setJobs, setOperatorGridJ
       showTimedToast(setToast, "No valid selected rows found.", "error");
       return;
     }
-    const assignedToValue = operators.length > 0 ? operators.join(", ") : null;
+    const assignedToValue = selectedOperator || null;
     try {
       await Promise.all(targetEntries.map((entry) => {
         const updatePayload: Record<string, string> = {};

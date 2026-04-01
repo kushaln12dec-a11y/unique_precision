@@ -98,7 +98,7 @@ export const createEmployeeLogColumns = ({
         className: "employee-work-item-cell",
         render: (row) => (
           <div className="employee-work-item">
-            <span className="ref-badge">{normalizeJobReference(row.refNumber || row.workItemTitle)}</span>
+            <MarqueeCopyText text={normalizeJobReference(row.refNumber || row.workItemTitle)} className="job-ref-copy-text employee-job-ref-copy" />
           </div>
         ),
       },
@@ -116,7 +116,7 @@ export const createEmployeeLogColumns = ({
 
   return [
     employeeColumn,
-    { key: "workItemTitle", label: "Job Ref", sortable: false, className: "employee-work-item-cell", render: (row) => <div className="employee-work-item"><span className="ref-badge">{normalizeJobReference(row.refNumber)}</span></div> },
+    { key: "workItemTitle", label: "Job Ref", sortable: false, className: "employee-work-item-cell", render: (row) => <div className="employee-work-item"><MarqueeCopyText text={normalizeJobReference(row.refNumber)} className="job-ref-copy-text employee-job-ref-copy" /></div> },
     { key: "jobDescription", label: "Description", sortable: false, render: (row) => <MarqueeCopyText text={String(row.jobDescription || "-")} /> },
     { key: "quantityCount", label: "Quantities", sortable: false, render: (row) => getQuantityLabel(row) || "-" },
     createDateColumn("startedAt", "Started At"),

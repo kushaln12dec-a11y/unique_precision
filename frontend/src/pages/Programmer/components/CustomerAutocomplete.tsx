@@ -10,7 +10,6 @@ interface CustomerAutocompleteProps {
 }
 
 const CUSTOMER_OPTIONS = [
-  "UPC",
   "UPC001",
   "UPC002",
   "UPC003",

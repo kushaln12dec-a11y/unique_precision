@@ -175,7 +175,7 @@ const Login = () => {
                 id="empId"
                 type="text"
                 className="form-input"
-                placeholder="Enter your employee ID (e.g. EMP001)"
+                placeholder="Enter your employee ID (e.g. EMP0001)"
                 value={empId}
                 onChange={(e) => setEmpId(e.target.value.toUpperCase())}
                 required

@@ -12,6 +12,8 @@ type Params = {
   setJobs: React.Dispatch<React.SetStateAction<JobEntry[]>>;
   setOperatorGridJobs: React.Dispatch<React.SetStateAction<JobEntry[]>>;
   setToast: ToastSetter;
+  userRole: string;
+  currentUserDisplayName: string;
 };
 
 export const useOperatorPageHandlers = ({
@@ -20,6 +22,8 @@ export const useOperatorPageHandlers = ({
   setJobs,
   setOperatorGridJobs,
   setToast,
+  userRole,
+  currentUserDisplayName,
 }: Params) => {
   const syncJob = useCallback(
     (matcher: (job: JobEntry) => boolean, updater: (job: JobEntry) => JobEntry) => {
@@ -32,14 +36,20 @@ export const useOperatorPageHandlers = ({
   const handleAssignChange = useCallback(
     async (jobId: number | string, value: string) => {
       try {
-        await updateOperatorJob(String(jobId), { assignedTo: value });
-        syncJob((job) => job.id === jobId, (job) => ({ ...job, assignedTo: value }));
+        const normalizedValue = String(value || "").trim();
+        const isUnassign = !normalizedValue || normalizedValue.toLowerCase() === "unassign" || normalizedValue.toLowerCase() === "unassigned";
+        const nextAssignedTo =
+          userRole === "OPERATOR"
+            ? (isUnassign ? "Unassign" : String(currentUserDisplayName || "").trim() || normalizedValue)
+            : (isUnassign ? "Unassign" : normalizedValue);
+        await updateOperatorJob(String(jobId), { assignedTo: nextAssignedTo });
+        syncJob((job) => job.id === jobId, (job) => ({ ...job, assignedTo: nextAssignedTo }));
       } catch (error) {
         console.error("Failed to update job assignment", error);
         setToast({ message: "Failed to update assignment. Please try again.", variant: "error", visible: true });
       }
     },
-    [setToast, syncJob]
+    [currentUserDisplayName, setToast, syncJob, userRole]
   );
 
   const handleMachineNumberChange = useCallback(

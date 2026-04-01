@@ -5,7 +5,6 @@ import FilterBadges from "../../../components/FilterBadges";
 import DownloadIcon from "@mui/icons-material/Download";
 import { OperatorTaskTimer } from "./OperatorTaskTimer";
 import SelectDropdown, { type SelectOption } from "../../Programmer/components/SelectDropdown";
-import { MultiSelectOperators } from "./MultiSelectOperators";
 import type { FilterField, FilterCategory, FilterValues } from "../../../components/FilterModal";
 import { getDisplayName } from "../../../utils/jobFormatting";
 
@@ -41,7 +40,6 @@ type OperatorFiltersProps = {
   onSendSelectedRowsToQa: () => void;
   selectedRowsCount: number;
   machineOptions: string[];
-  currentUserName: string;
   onApplyBulkAssignment: (payload: { operators: string[]; machineNumber: string }) => void;
 };
 
@@ -71,10 +69,9 @@ export const OperatorFilters: React.FC<OperatorFiltersProps> = ({
   onSendSelectedRowsToQa,
   selectedRowsCount,
   machineOptions,
-  currentUserName,
   onApplyBulkAssignment,
 }) => {
-  const [bulkOperators, setBulkOperators] = React.useState<string[]>([]);
+  const [bulkOperator, setBulkOperator] = React.useState("");
   const [bulkMachineNumber, setBulkMachineNumber] = React.useState("");
 
   const createdByOptions = useMemo<SelectOption[]>(
@@ -115,6 +112,23 @@ export const OperatorFilters: React.FC<OperatorFiltersProps> = ({
     ],
     [machineOptions]
   );
+
+  const bulkOperatorOptions = useMemo<SelectOption[]>(() => {
+    const source = operatorUsers.length > 0 ? operatorUsers : users;
+    const seen = new Set<string>();
+    const options: SelectOption[] = [
+      { label: "Keep Operator", value: "" },
+      { label: "Unassign", value: "Unassign" },
+    ];
+    source.forEach((user) => {
+      const displayName = getDisplayName(user.firstName, user.lastName, user.email, String(user._id));
+      const key = displayName.toLowerCase();
+      if (!displayName || seen.has(key)) return;
+      seen.add(key);
+      options.push({ label: displayName, value: displayName });
+    });
+    return options;
+  }, [operatorUsers, users]);
 
   return (
     <>
@@ -178,17 +192,13 @@ export const OperatorFilters: React.FC<OperatorFiltersProps> = ({
             {selectedRowsCount > 0 && (
               <div className="operator-bulk-assign-group operator-bulk-assign-banner">
                 <span className="operator-bulk-selected-pill">{selectedRowsCount} selected</span>
-                <MultiSelectOperators
-                  selectedOperators={bulkOperators}
-                  availableOperators={(operatorUsers.length > 0 ? operatorUsers : users).map((user) => ({
-                    id: user._id,
-                    name: getDisplayName(user.firstName, user.lastName, user.email, String(user._id)),
-                  }))}
-                  onChange={setBulkOperators}
-                  assignToSelfName={currentUserName || undefined}
-                  placeholder="Assign operators"
+                <SelectDropdown
+                  value={bulkOperator}
+                  onChange={setBulkOperator}
+                  options={bulkOperatorOptions}
+                  placeholder="Keep Operator"
+                  align="left"
                   className="operator-bulk-operators"
-                  compact
                 />
                 <SelectDropdown
                   value={bulkMachineNumber}
@@ -200,8 +210,8 @@ export const OperatorFilters: React.FC<OperatorFiltersProps> = ({
                 />
                 <button
                   className="operator-bulk-apply-btn"
-                  onClick={() => onApplyBulkAssignment({ operators: bulkOperators, machineNumber: bulkMachineNumber })}
-                  disabled={bulkOperators.length === 0 && !bulkMachineNumber}
+                  onClick={() => onApplyBulkAssignment({ operators: bulkOperator ? [bulkOperator] : [], machineNumber: bulkMachineNumber })}
+                  disabled={!bulkOperator && !bulkMachineNumber}
                   title="Apply selected operators/machine to selected rows"
                 >
                   Apply Selected

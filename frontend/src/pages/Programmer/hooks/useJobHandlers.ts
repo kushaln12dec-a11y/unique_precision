@@ -3,7 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { getUserDisplayNameFromToken } from "../../../utils/auth";
 import { createJobs, updateJobsByGroupId, deleteJobsByGroupId } from "../../../services/jobApi";
 import { completeProgrammerJobLog } from "../../../services/employeeLogsApi";
-import { calculateTotals, DEFAULT_CUT, sortGroupEntriesParentFirst, type CalculationResult, type CutForm } from "../programmerUtils";
+import { calculateTotals, sortGroupEntriesParentFirst, type CalculationResult, type CutForm } from "../programmerUtils";
+import { isValidCustomerUpcCode } from "../utils/validation";
 import type { JobEntry } from "../../../types/job";
 
 type UseJobHandlersProps = {
@@ -12,9 +13,6 @@ type UseJobHandlersProps = {
   refNumber: string;
   jobs: JobEntry[];
   setJobs: React.Dispatch<React.SetStateAction<JobEntry[]>>;
-  setShowForm: React.Dispatch<React.SetStateAction<boolean>>;
-  setEditingGroupId: React.Dispatch<React.SetStateAction<string | null>>;
-  setCuts: React.Dispatch<React.SetStateAction<CutForm[]>>;
   setToast: React.Dispatch<
     React.SetStateAction<{ message: string; variant: "success" | "error" | "info"; visible: boolean }>
   >;
@@ -28,16 +26,31 @@ export const useJobHandlers = ({
   refNumber,
   jobs,
   setJobs,
-  setShowForm,
-  setEditingGroupId,
-  setCuts,
   setToast,
   setSavingJob,
   totals,
 }: UseJobHandlersProps) => {
   const navigate = useNavigate();
 
+  const navigateToProgrammerTable = useCallback(() => {
+    navigate("/programmer", {
+      replace: true,
+      state: { refreshedAt: Date.now() },
+    });
+  }, [navigate]);
+
   const handleSaveJob = useCallback(async () => {
+    const invalidCustomerIndex = cuts.findIndex((cut) => !isValidCustomerUpcCode(cut.customer));
+    if (invalidCustomerIndex >= 0) {
+      setToast({
+        message: `Setting ${invalidCustomerIndex + 1}: customer UPC number is required (e.g. UPC001).`,
+        variant: "error",
+        visible: true,
+      });
+      setTimeout(() => setToast({ message: "", variant: "error", visible: false }), 3000);
+      return;
+    }
+
     setSavingJob(true);
     try {
       const displayName = getUserDisplayNameFromToken();
@@ -77,11 +90,7 @@ export const useJobHandlers = ({
         ]);
         setToast({ message: "Job updated successfully!", variant: "success", visible: true });
         setTimeout(() => setToast({ message: "", variant: "success", visible: false }), 3000);
-        setShowForm(false);
-        setEditingGroupId(null);
-        setCuts([DEFAULT_CUT]);
-        setSavingJob(false);
-        navigate("/programmer", { replace: true });
+        navigateToProgrammerTable();
       } else {
         const createdJobs = await createJobs(entries);
         setJobs((prev) => [...createdJobs, ...prev]);
@@ -101,11 +110,7 @@ export const useJobHandlers = ({
 
         setToast({ message: "Job created successfully!", variant: "success", visible: true });
         setTimeout(() => setToast({ message: "", variant: "success", visible: false }), 3000);
-        setShowForm(false);
-        setEditingGroupId(null);
-        setCuts([DEFAULT_CUT]);
-        setSavingJob(false);
-        navigate("/programmer", { replace: true });
+        navigateToProgrammerTable();
       }
     } catch (error) {
       console.error("Failed to save job", error);
@@ -124,12 +129,9 @@ export const useJobHandlers = ({
     jobs,
     totals,
     setJobs,
-    setShowForm,
-    setEditingGroupId,
-    setCuts,
     setToast,
     setSavingJob,
-    navigate,
+    navigateToProgrammerTable,
   ]);
 
   const handleDeleteJob = useCallback(

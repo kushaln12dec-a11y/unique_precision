@@ -12,6 +12,8 @@ type OperatorInputSectionProps = {
   cutId: number | string;
   quantity: number;
   operatorUsers: Array<{ id: string | number; name: string }>;
+  machineOptions: string[];
+  isAdmin: boolean;
   onInputChange: (cutId: number | string, quantityIndex: number, field: OperatorInputField, value: string | string[]) => void;
   onApplyToAllQuantities: (cutId: number | string, sourceQuantityIndex: number, totalQuantity: number) => void;
   onApplyToCountQuantities: (cutId: number | string, sourceQuantityIndex: number, totalQuantity: number, quantityCount: number) => void;
@@ -54,6 +56,8 @@ export const OperatorInputSection: React.FC<OperatorInputSectionProps> = ({
   cutId,
   quantity,
   operatorUsers,
+  machineOptions,
+  isAdmin,
   onInputChange,
   onApplyToAllQuantities: _onApplyToAllQuantities,
   onApplyToCountQuantities: _onApplyToCountQuantities,
@@ -182,6 +186,7 @@ export const OperatorInputSection: React.FC<OperatorInputSectionProps> = ({
             isRangeApproved={isRangeApproved}
             getStatus={getStatus}
             operatorUsers={operatorUsers}
+            machineOptions={machineOptions}
             onInputChange={onInputChange}
             onShowToast={onShowToast}
             onStartTimeCaptured={onStartTimeCaptured}
@@ -192,6 +197,7 @@ export const OperatorInputSection: React.FC<OperatorInputSectionProps> = ({
             onSaveQuantity={onSaveQuantity}
             onSaveRange={onSaveRange}
             savedRanges={savedRanges}
+            canReset={isAdmin}
           />
         );
       })}

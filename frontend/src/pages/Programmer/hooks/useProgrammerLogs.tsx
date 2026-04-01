@@ -115,7 +115,7 @@ export const useProgrammerLogs = ({
         key: "jobNumber",
         label: "JOB #",
         sortable: false,
-        render: (row) => formatProgrammerJobRef(String(row.refNumber || "")),
+        render: (row) => formatProgrammerJobRef(String(row.refNumber || row.workItemTitle || "")),
       },
       {
         key: "description",
@@ -195,7 +195,7 @@ export const useProgrammerLogs = ({
             name,
             designation,
             `${name} ${designation}`.trim(),
-            formatProgrammerJobRef(String(log.refNumber || "")),
+            formatProgrammerJobRef(String(log.refNumber || log.workItemTitle || "")),
             String(log.jobDescription || "-"),
             String((log as any).workSummary || "-"),
             formatDisplayDateTime(log.startedAt),
@@ -233,7 +233,7 @@ export const useProgrammerLogs = ({
         const userValue = name ? `${name} (${designation})` : designation;
         return [
           userValue,
-          formatProgrammerJobRef(String(row.refNumber || "")),
+          formatProgrammerJobRef(String(row.refNumber || row.workItemTitle || "")),
           String(row.jobDescription || "-"),
           String((row as any).workSummary || "-"),
           formatDisplayDateTime(row.startedAt),

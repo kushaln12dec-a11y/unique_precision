@@ -1,4 +1,5 @@
 import type { User } from "../../../types/user";
+import { formatEmployeeId, getEmployeeIdSequence } from "../../../utils/employeeId";
 
 export type SortDirection = "asc" | "desc";
 
@@ -19,6 +20,7 @@ export const filterUsers = (
     const email = String(user.email || "").toLowerCase();
     const phone = String(user.phone || "").toLowerCase();
     const empId = String(user.empId || "").toLowerCase();
+    const formattedEmpId = formatEmployeeId(user.empId).toLowerCase();
     const role = String(user.role || "").toLowerCase();
 
     if (query) {
@@ -28,6 +30,7 @@ export const filterUsers = (
         email.includes(query) ||
         phone.includes(query) ||
         empId.includes(query) ||
+        formattedEmpId.includes(query) ||
         role.includes(query);
 
       if (!matchesSearch) {
@@ -51,6 +54,13 @@ export const sortUsers = (
   if (!field) return users;
 
   return [...users].sort((a, b) => {
+    if (field === "empId") {
+      const aValue = getEmployeeIdSequence(a.empId);
+      const bValue = getEmployeeIdSequence(b.empId);
+      const comparison = aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
+      return direction === "asc" ? comparison : -comparison;
+    }
+
     const aValue = a[field] ?? "";
     const bValue = b[field] ?? "";
 

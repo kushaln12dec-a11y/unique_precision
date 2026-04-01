@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { getUsers, createUser, updateUser, deleteUser, getNextEmpId } from "../../../services/userApi";
 import type { User, CreateUserData, UpdateUserData } from "../../../types/user";
 import { sanitizePhoneInput } from "../utils/tableUtils";
+import { formatEmployeeId } from "../../../utils/employeeId";
 
 /**
  * Hook for user management data and operations
@@ -117,7 +118,7 @@ export const useUserManagement = () => {
       firstName: user.firstName,
       lastName: user.lastName,
       phone: user.phone,
-      empId: user.empId,
+      empId: formatEmployeeId(user.empId),
       role: user.role,
     });
     setShowForm(true);
@@ -133,7 +134,7 @@ export const useUserManagement = () => {
       try {
         const nextEmpId = await getNextEmpId();
         if (nextEmpId) {
-          setFormData((prev) => ({ ...prev, empId: nextEmpId }));
+          setFormData((prev) => ({ ...prev, empId: formatEmployeeId(nextEmpId) }));
         }
       } catch {
         setFormData((prev) => ({ ...prev, empId: "Auto Generated" }));

@@ -179,12 +179,7 @@ export const EmployeeLogsPanel = () => {
         </button>
       </div>
 
-      {activeRole === "QC" ? (
-        <div className="qa-placeholder-card">
-          <h3>QC Logs</h3>
-          <p>QC logging tab is ready. QC event capture wiring can be added in the next step.</p>
-        </div>
-      ) : error ? (
+      {error ? (
         <div className="error-message">{error}</div>
       ) : (
         <LazyAgGrid

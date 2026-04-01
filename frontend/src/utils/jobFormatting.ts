@@ -87,8 +87,27 @@ export const formatMachineLabel = (value: unknown): string => {
 };
 
 export const formatJobRefDisplay = (value: unknown, withHash = true): string => {
-  const raw = String(value || "").trim().replace(/^#/, "");
+  const raw = String(value || "")
+    .trim()
+    .replace(/^#/, "")
+    .replace(/^Job\s*#?\s*/i, "")
+    .trim()
+    .toUpperCase();
   if (!raw) return "";
-  const normalized = raw.replace(/^JOB-?/i, "JOB");
+
+  const compact = raw.replace(/\s+/g, "");
+  const directMatch = compact.match(/^JOB-?(\d+)$/i);
+  if (directMatch) {
+    const normalized = `JOB${directMatch[1].padStart(5, "0")}`;
+    return withHash ? `#${normalized}` : normalized;
+  }
+
+  const numericMatch = compact.match(/^-?(\d+)$/);
+  if (numericMatch) {
+    const normalized = `JOB${numericMatch[1].padStart(5, "0")}`;
+    return withHash ? `#${normalized}` : normalized;
+  }
+
+  const normalized = compact.replace(/^JOB-?/i, "JOB");
   return withHash ? `#${normalized}` : normalized;
 };

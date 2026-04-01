@@ -8,7 +8,7 @@ import InventoryIcon from '@mui/icons-material/Inventory';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import SettingsSuggestIcon from '@mui/icons-material/SettingsSuggest';
-import { getUserDesignationFromToken, getUserDisplayNameFromToken } from '../utils/auth';
+import { getUserDesignationFromToken, getUserDisplayNameFromToken, getUserEmpIdFromToken } from '../utils/auth';
 import './Header.css';
 
 interface HeaderProps {
@@ -94,6 +94,7 @@ const Header = ({ title }: HeaderProps) => {
   const navigate = useNavigate();
   const location = useLocation();
   const displayName = getUserDisplayNameFromToken();
+  const empId = getUserEmpIdFromToken();
   const designation = getUserDesignationFromToken();
 
   // Handle dynamic routes for programmer
@@ -166,10 +167,11 @@ const Header = ({ title }: HeaderProps) => {
       </div>
 
       <div className="header-right">
-        {displayName && (
-          <div className="user-pill" title={displayName}>
+        {(displayName || empId) && (
+          <div className="user-pill" title={displayName || empId || undefined}>
             <span className="user-label">Logged in as</span>
-            <span className="user-name">{displayName}</span>
+            <span className="user-name">{displayName || empId || "USER"}</span>
+            {empId && <span className="user-emp-id">{empId}</span>}
             {designation && <span className="user-designation">{designation}</span>}
           </div>
         )}

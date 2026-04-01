@@ -121,7 +121,15 @@ const Operator = () => {
     handleChildMachineNumberChange,
     handleImageInput,
     handleSubmit,
-  } = useOperatorPageHandlers({ jobs, navigate, setJobs, setOperatorGridJobs, setToast });
+  } = useOperatorPageHandlers({
+    jobs,
+    navigate,
+    setJobs,
+    setOperatorGridJobs,
+    setToast,
+    userRole,
+    currentUserDisplayName,
+  });
 
   const { tableData } = useOperatorTableData(
     operatorGridJobs,
@@ -259,7 +267,6 @@ const Operator = () => {
           handleSendSelectedRowsToQa={handleSendSelectedRowsToQa}
           selectedEntryIds={selectedEntryIds}
           machineOptionsForDropdown={machineOptionsForDropdown}
-          currentUserDisplayName={currentUserDisplayName}
           handleApplyBulkAssignment={handleApplyBulkAssignment}
           operatorJobColumnDefs={operatorJobColumnDefs}
           fetchJobsPage={jobsFetchPage}

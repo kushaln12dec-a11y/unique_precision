@@ -92,7 +92,7 @@ export const useTableColumns = ({
         sortable: false,
         render: (row) => {
           const ref = row.entry.refNumber || "";
-          return formatJobRefDisplay(ref);
+          return <MarqueeCopyText text={formatJobRefDisplay(ref) || "-"} className="job-ref-copy-text" />;
         },
       },
       {

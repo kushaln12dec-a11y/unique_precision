@@ -41,7 +41,7 @@ export const buildOperatorLogsColumns = ({
     },
   },
   { key: "machineNumber", label: "MACH #", sortable: false, render: (row) => formatMachineLabel(getMachineNumberForLog(row)) },
-  { key: "workItemTitle", label: "Job Ref", sortable: false, className: "operator-log-text-col", render: (row) => formatOperatorWorkItem(row.workItemTitle) },
+  { key: "workItemTitle", label: "Job Ref", sortable: false, className: "operator-log-text-col", render: (row) => formatOperatorWorkItem(row.refNumber || row.workItemTitle) },
   { key: "jobDescription", label: "Description", sortable: false, className: "operator-log-text-col", render: (row) => <MarqueeCopyText text={String(row.jobDescription || "-")} /> },
   { key: "workSummary", label: "Summary", sortable: false, className: "operator-log-text-col", render: (row) => <MarqueeCopyText text={String(row.workSummary || "-")} /> },
   {
@@ -131,7 +131,7 @@ export const buildOperatorLogFilter =
           getLogUserDisplayName(log.userName, log.userEmail, "Operator"),
           designationByUserName.get(getLogUserDisplayName(log.userName, log.userEmail, "Operator").toLowerCase()) || "Operator",
           formatMachineLabel(getMachineNumberForLog(log)),
-          formatOperatorWorkItem(log.workItemTitle),
+          formatOperatorWorkItem(log.refNumber || log.workItemTitle),
           log.jobDescription || "",
           log.workSummary || "",
           formatDisplayDateTime(log.startedAt),
