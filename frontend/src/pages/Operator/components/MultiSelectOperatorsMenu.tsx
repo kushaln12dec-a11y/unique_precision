@@ -26,6 +26,7 @@ const MultiSelectOperatorsMenu = ({
   onAssignToSelf,
   onToggleOperator,
 }: MultiSelectOperatorsMenuProps) => {
+  const normalizeName = (value: unknown) => String(value || "").trim().toLowerCase();
   if (!isOpen || disabled) return null;
 
   return createPortal(
@@ -48,14 +49,19 @@ const MultiSelectOperatorsMenu = ({
             <div className="dropdown-option" onClick={onAssignToSelf}>
               <input
                 type="checkbox"
-                checked={normalizedSelectedOperators.length === 1 && normalizedSelectedOperators[0] === assignToSelfName}
+                checked={
+                  normalizedSelectedOperators.length === 1 &&
+                  normalizeName(normalizedSelectedOperators[0]) === normalizeName(assignToSelfName)
+                }
                 readOnly
               />
               <span>Assign To Me ({assignToSelfName})</span>
             </div>
           )}
           {normalizedAvailableOperators.map((operator) => {
-            const isSelected = normalizedSelectedOperators.includes(operator.name);
+            const isSelected = normalizedSelectedOperators.some(
+              (selectedName) => normalizeName(selectedName) === normalizeName(operator.name)
+            );
             return (
               <div
                 key={operator.id}

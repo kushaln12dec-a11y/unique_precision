@@ -16,7 +16,6 @@ type Props = {
   operatorLogColumnDefs: any[];
   filterOperatorLogs: (logs: EmployeeLog[]) => EmployeeLog[];
   logsFetchPage: (offset: number, limit: number) => Promise<{ items: EmployeeLog[]; hasMore: boolean }>;
-  hasOperatorLogSearch: boolean;
 };
 
 export const OperatorLogsSection: React.FC<Props> = ({
@@ -31,7 +30,6 @@ export const OperatorLogsSection: React.FC<Props> = ({
   operatorLogColumnDefs,
   filterOperatorLogs,
   logsFetchPage,
-  hasOperatorLogSearch,
 }) => {
   return (
     <>
@@ -74,7 +72,7 @@ export const OperatorLogsSection: React.FC<Props> = ({
         getRowId={(row) => row._id}
         className="operator-logs-table logs-center"
         rowHeight={84}
-        refreshKey={`${hasOperatorLogSearch}|${operatorLogStatus}|${operatorLogMachine}`}
+        refreshKey={`${operatorLogStatus}|${operatorLogMachine}`}
       />
     </>
   );

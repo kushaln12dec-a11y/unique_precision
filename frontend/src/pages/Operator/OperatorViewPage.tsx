@@ -15,7 +15,7 @@ import OperatorViewModals from "./components/OperatorViewModals";
 import type { CutInputData } from "./types/cutInput";
 import { createEmptyCutInputData } from "./types/cutInput";
 import { getUserDisplayNameFromToken, getUserRoleFromToken } from "../../utils/auth";
-import { estimatedHoursFromAmount } from "../../utils/jobFormatting";
+import { estimatedHoursFromAmount, MACHINE_OPTIONS, toMachineIndex } from "../../utils/jobFormatting";
 import { getQuantityElapsedSeconds, parseOperatorDateTime } from "./utils/operatorTimeUtils";
 import "../RoleBoard.css";
 import "../Programmer/Programmer.css";
@@ -87,6 +87,19 @@ const OperatorViewPage = () => {
   const totalGroupQuantity = jobs.reduce((sum, job) => sum + Math.max(1, Number(job.qty || 1)), 0);
   const groupTotalAmount = jobs.reduce((sum, job) => sum + (job.totalAmount || 0), 0);
   const groupEstimatedHrs = estimatedHoursFromAmount(amounts.totalWedmAmount || 0);
+  const machineOptions = useMemo(() => {
+    const options = new Set<string>(MACHINE_OPTIONS.map((machine) => toMachineIndex(machine)).filter(Boolean));
+    jobs.forEach((job) => {
+      const jobMachine = toMachineIndex(String((job as any).machineNumber || "").trim());
+      if (jobMachine) options.add(jobMachine);
+      const captures = Array.isArray((job as any).operatorCaptures) ? (job as any).operatorCaptures : [];
+      captures.forEach((capture: any) => {
+        const captureMachine = toMachineIndex(String(capture?.machineNumber || "").trim());
+        if (captureMachine) options.add(captureMachine);
+      });
+    });
+    return Array.from(options);
+  }, [jobs]);
 
   const hasActiveQuantityTimer = useMemo(
     () =>
@@ -186,6 +199,7 @@ const OperatorViewPage = () => {
                         cutData={cutData}
                         isExpanded={isExpanded}
                         operatorUsers={operatorUsers}
+                        machineOptions={machineOptions}
                         onToggleExpansion={() => toggleCutExpansion(cutItem.id)}
                         onImageChange={(files) => handleCutImageChange(cutItem.id, files)}
                         onInputChange={handleInputChange}

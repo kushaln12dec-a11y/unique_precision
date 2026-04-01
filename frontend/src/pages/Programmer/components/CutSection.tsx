@@ -86,7 +86,6 @@ export const CutSection: React.FC<CutSectionProps & { customerOptions: CustomerR
 
   const summaryRow = 2 + operationRows.length;
   const remarkRow = summaryRow + 1;
-  const formulaRow = remarkRow + 1;
 
   return (
     <div className={`cut-section ${isCollapsed ? "collapsed" : ""}`}>
@@ -131,20 +130,19 @@ export const CutSection: React.FC<CutSectionProps & { customerOptions: CustomerR
             isAdmin={isAdmin}
             summaryRow={summaryRow}
             remarkRow={remarkRow}
-            formulaRow={formulaRow}
             onSedmChange={onSedmChange}
             onSedmModalOpen={onSedmModalOpen}
             onCutChange={onCutChange}
           />
-        </div>
 
-        <div className="cut-section-actions">
-          <button type="button" className="btn-success small" onClick={onSaveCut}>
-            Save Setting
-          </button>
-          <button type="button" className="btn-clear small" onClick={onClearCut}>
-            Clear
-          </button>
+          <div className="cut-section-actions cut-section-actions-inline">
+            <button type="button" className="btn-success small" onClick={onSaveCut}>
+              Save Setting
+            </button>
+            <button type="button" className="btn-clear small" onClick={onClearCut}>
+              Clear
+            </button>
+          </div>
         </div>
       </div>
     </div>

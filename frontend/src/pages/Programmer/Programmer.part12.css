@@ -34,7 +34,9 @@
       "pass setting"
       "qty sedm"
       "totalhrs estimated"
-      "totalamount totalamount";
+      "totalamount totalamount"
+      "remark remark"
+      "actions actions";
     gap: 0.75rem;
   }
 
@@ -175,7 +177,9 @@
       "pass setting"
       "qty sedm"
       "totalhrs estimated"
-      "totalamount totalamount";
+      "totalamount totalamount"
+      "remark remark"
+      "actions actions";
     gap: 0.7rem;
   }
 
@@ -230,7 +234,9 @@
       "sedm"
       "totalhrs"
       "estimated"
-      "totalamount";
+      "totalamount"
+      "remark"
+      "actions";
     gap: 0.65rem;
   }
 
@@ -246,6 +252,124 @@
 
   .calculation-formula-panel {
     grid-column: 1 / -1 !important;
+  }
+}
+
+@media (min-width: 1025px) and (max-width: 1280px) and (orientation: landscape) {
+  .programmer-panel {
+    margin: 0.45rem 0.25rem;
+    width: calc(100% - 0.5rem);
+    max-width: calc(100% - 0.5rem);
+    padding: 1rem;
+  }
+
+  .cut-section-body {
+    grid-template-columns: 180px minmax(0, 1fr);
+    gap: 0.85rem;
+  }
+
+  .job-form-image {
+    width: 180px;
+    min-height: 180px;
+    height: 180px;
+  }
+
+  .job-form-image .job-form-image-container,
+  .job-form-image .image-slider-wrapper,
+  .job-form-image .image-slider-display,
+  .job-form-image .image-placeholder-empty,
+  .job-form-image .slider-image {
+    min-height: 180px;
+    height: 180px;
+  }
+
+  .cut-section-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-areas:
+      "customer rate"
+      "material programref"
+      "description description"
+      "cut thickness"
+      "pass setting"
+      "qty sedm"
+      "totalhrs estimated"
+      "totalamount totalamount"
+      "remark remark"
+      "actions actions";
+  }
+
+  .cut-section-actions,
+  .form-actions,
+  .form-action-buttons {
+    flex-wrap: wrap;
+  }
+
+  .form-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .form-totals {
+    position: static;
+    transform: none;
+    left: auto;
+    justify-content: space-between;
+    width: 100%;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 800px) and (orientation: portrait) {
+  .programmer-panel {
+    margin: 0.55rem 0.3rem;
+    width: calc(100% - 0.6rem);
+    max-width: calc(100% - 0.6rem);
+    padding: 0.85rem;
+  }
+
+  .cut-section-body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .cut-section-grid {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "customer"
+      "rate"
+      "material"
+      "programref"
+      "description"
+      "cut"
+      "thickness"
+      "pass"
+      "setting"
+      "qty"
+      "sedm"
+      "totalhrs"
+      "estimated"
+      "totalamount"
+      "remark"
+      "actions";
+  }
+
+  .form-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .form-totals {
+    position: static;
+    transform: none;
+    left: auto;
+    width: 100%;
+    justify-content: space-between;
+  }
+}
+
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  .job-form-card,
+  .cut-section,
+  .programmer-panel {
+    box-shadow: 0 10px 26px rgba(15, 23, 42, 0.14);
   }
 }
 

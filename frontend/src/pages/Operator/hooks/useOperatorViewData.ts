@@ -19,7 +19,8 @@ export const useOperatorViewData = (groupId: string | null, cutIdParam: string |
       return [...new Set(rawAssignedTo.map((value) => String(value || "").trim()).filter(Boolean))];
     }
     const normalized = String(rawAssignedTo || "").trim();
-    if (!normalized || normalized === "Unassigned" || normalized === "Unassign") return [];
+    const normalizedLower = normalized.toLowerCase();
+    if (!normalized || normalizedLower === "unassigned" || normalizedLower === "unassign") return [];
     return [...new Set(normalized.split(",").map((value) => value.trim()).filter(Boolean))];
   };
 
@@ -80,12 +81,28 @@ export const useOperatorViewData = (groupId: string | null, cutIdParam: string |
           // If we have saved data for this cut, use it
           if (savedInputs && savedInputs.has(jobId)) {
             const saved = savedInputs.get(jobId)!;
+            const savedQuantities = Array.isArray(saved.quantities) ? saved.quantities : [];
+            const requiredQuantity = Math.max(1, Number(job.qty || 1));
+            const sharedMachine = String(existing.machineNumber || "").trim();
             initialInputs.set(jobId, {
-              quantities: (saved.quantities || []).map((qty) => ({
-                ...qty,
-                machineNumber: String(existing.machineNumber || qty.machineNumber || "").trim(),
-                opsName: assignedToArray.length > 0 ? assignedToArray : (Array.isArray(qty.opsName) ? qty.opsName : []),
-              })),
+              quantities: Array.from({ length: requiredQuantity }, (_, index) => {
+                const qty = savedQuantities[index];
+                if (!qty) {
+                  return {
+                    ...createEmptyQuantityInputData(),
+                    machineNumber: sharedMachine,
+                    opsName: assignedToArray,
+                  };
+                }
+                const qtyOps = Array.isArray(qty.opsName)
+                  ? qty.opsName.map((value) => String(value || "").trim()).filter(Boolean)
+                  : [];
+                return {
+                  ...qty,
+                  machineNumber: String(qty.machineNumber || "").trim() || sharedMachine,
+                  opsName: qtyOps.length > 0 ? qtyOps : assignedToArray,
+                };
+              }),
             });
             return;
           }
@@ -218,40 +235,20 @@ export const useOperatorViewData = (groupId: string | null, cutIdParam: string |
   useEffect(() => {
     if (!groupId) return;
 
-    const syncSharedFields = async () => {
+    const syncJobsOnly = async () => {
       try {
         const fetchedJobs = await getOperatorJobsByGroupId(groupId);
         const filteredJobs = cutIdParam
           ? fetchedJobs.filter((job) => String(job.id) === String(cutIdParam))
           : fetchedJobs;
-
         setJobs(filteredJobs);
-        setCutInputs((prev) => {
-          if (prev.size === 0) return prev;
-          const next = new Map(prev);
-          filteredJobs.forEach((job) => {
-            const existingCut = next.get(job.id);
-            if (!existingCut) return;
-            const assignedToArray = parseAssignedOperators((job as any).assignedTo || "");
-            const sharedMachine = String((job as any).machineNumber || "").trim();
-            next.set(job.id, {
-              ...existingCut,
-              quantities: (existingCut.quantities || []).map((quantity) => ({
-                ...quantity,
-                machineNumber: sharedMachine || quantity.machineNumber,
-                opsName: assignedToArray.length > 0 ? assignedToArray : quantity.opsName,
-              })),
-            });
-          });
-          return next;
-        });
       } catch {
         // Background sync should not block operator flow.
       }
     };
 
     const intervalId = window.setInterval(() => {
-      void syncSharedFields();
+      void syncJobsOnly();
     }, 8000);
 
     return () => {

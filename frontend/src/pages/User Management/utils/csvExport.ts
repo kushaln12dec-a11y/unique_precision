@@ -1,4 +1,5 @@
 import type { User } from "../../../types/user";
+import { formatEmployeeId } from "../../../utils/employeeId";
 
 /**
  * Export users to CSV
@@ -10,7 +11,7 @@ export const exportUsersToCSV = (users: User[]): void => {
     `${user.firstName} ${user.lastName}`,
     user.email,
     user.phone || "",
-    user.empId || "",
+    formatEmployeeId(user.empId) || "",
     user.role,
   ]);
 

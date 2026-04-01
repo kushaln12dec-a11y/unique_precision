@@ -1,5 +1,13 @@
 import type { User, CreateUserData, UpdateUserData } from "../types/user";
 import { apiUrl } from "./apiClient";
+import { formatEmployeeId } from "../utils/employeeId";
+
+const AUTO_GENERATED_EMP_EMAIL_REGEX = /^emp\d{4}(?:\+\d+)?@uniqueprecision\.local$/i;
+
+const getDisplayEmail = (email: unknown): string => {
+  const normalizedEmail = String(email ?? "").trim().toLowerCase();
+  return AUTO_GENERATED_EMP_EMAIL_REGEX.test(normalizedEmail) ? "" : normalizedEmail;
+};
 
 const getAuthHeaders = () => {
   const token = localStorage.getItem("token");
@@ -11,11 +19,11 @@ const getAuthHeaders = () => {
 
 const normalizeUser = (user: any): User => ({
   _id: String(user?._id ?? user?.id ?? ""),
-  email: String(user?.email ?? ""),
+  email: getDisplayEmail(user?.email),
   firstName: String(user?.firstName ?? ""),
   lastName: String(user?.lastName ?? ""),
   phone: String(user?.phone ?? ""),
-  empId: String(user?.empId ?? ""),
+  empId: formatEmployeeId(user?.empId),
   image: user?.image ? String(user.image) : "",
   role: user?.role ?? "OPERATOR",
   createdAt: user?.createdAt ? String(user.createdAt) : undefined,
@@ -70,6 +78,20 @@ export const createUser = async (userData: CreateUserData): Promise<User> => {
   }
 
   return normalizeUser(await res.json());
+};
+
+export const getNextEmpId = async (): Promise<string> => {
+  const res = await fetch(apiUrl("/api/users/next-emp-id"), {
+    method: "GET",
+    headers: getAuthHeaders(),
+  });
+
+  if (!res.ok) {
+    throw new Error("Failed to fetch next employee ID");
+  }
+
+  const data = await res.json();
+  return formatEmployeeId(data?.empId);
 };
 
 export const updateUser = async (id: string, userData: UpdateUserData): Promise<User> => {

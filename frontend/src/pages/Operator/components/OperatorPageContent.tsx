@@ -36,7 +36,6 @@ type OperatorPageContentProps = {
   handleSendSelectedRowsToQa: () => void | Promise<void>;
   selectedEntryIds: Set<string | number>;
   machineOptionsForDropdown: string[];
-  currentUserDisplayName: string;
   handleApplyBulkAssignment: (payload: { operators: string[]; machineNumber: string }) => Promise<void>;
   operatorJobColumnDefs: any[];
   fetchJobsPage: (offset: number, limit: number) => Promise<{ items: JobEntry[]; hasMore: boolean }>;
@@ -55,7 +54,6 @@ type OperatorPageContentProps = {
   operatorLogColumnDefs: any[];
   filterOperatorLogs: (logs: EmployeeLog[]) => EmployeeLog[];
   logsFetchPage: (offset: number, limit: number) => Promise<{ items: EmployeeLog[]; hasMore: boolean }>;
-  hasOperatorLogSearch: boolean;
 };
 
 const OperatorPageContent = (props: OperatorPageContentProps) => {
@@ -90,7 +88,6 @@ const OperatorPageContent = (props: OperatorPageContentProps) => {
     handleSendSelectedRowsToQa,
     selectedEntryIds,
     machineOptionsForDropdown,
-    currentUserDisplayName,
     handleApplyBulkAssignment,
     operatorJobColumnDefs,
     fetchJobsPage,
@@ -109,7 +106,6 @@ const OperatorPageContent = (props: OperatorPageContentProps) => {
     operatorLogColumnDefs,
     filterOperatorLogs,
     logsFetchPage,
-    hasOperatorLogSearch,
   } = props;
 
   return (
@@ -145,7 +141,6 @@ const OperatorPageContent = (props: OperatorPageContentProps) => {
           handleSendSelectedRowsToQa={handleSendSelectedRowsToQa}
           selectedEntryIds={selectedEntryIds}
           machineOptionsForDropdown={machineOptionsForDropdown}
-          currentUserDisplayName={currentUserDisplayName}
           handleApplyBulkAssignment={handleApplyBulkAssignment}
           operatorJobColumnDefs={operatorJobColumnDefs}
           fetchPage={fetchJobsPage}
@@ -167,7 +162,6 @@ const OperatorPageContent = (props: OperatorPageContentProps) => {
           operatorLogColumnDefs={operatorLogColumnDefs}
           filterOperatorLogs={filterOperatorLogs}
           logsFetchPage={logsFetchPage}
-          hasOperatorLogSearch={hasOperatorLogSearch}
         />
       )}
     </div>

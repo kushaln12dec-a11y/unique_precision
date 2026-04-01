@@ -9,6 +9,7 @@
 
 .roleboard-content {
   flex: 1;
+  min-width: 0;
   background: #f5f6fb;
   padding: 0.25rem;
   box-sizing: border-box;
@@ -61,5 +62,38 @@
   .roleboard-body {
     margin-top: 0.75rem;
     padding: 1rem;
+  }
+}
+
+@media (min-width: 1025px) and (max-width: 1280px) and (orientation: landscape) {
+  .roleboard-content {
+    padding: 0.2rem;
+  }
+
+  .roleboard-body {
+    margin-top: 0.85rem;
+    padding: 1rem;
+    border-radius: 14px;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 800px) and (orientation: portrait) {
+  .roleboard-container {
+    padding-left: 56px;
+  }
+
+  .roleboard-content {
+    padding: 0.15rem;
+  }
+
+  .roleboard-body {
+    margin-top: 0.65rem;
+    padding: 0.85rem;
+  }
+}
+
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  .roleboard-body {
+    box-shadow: 0 12px 30px rgba(15, 23, 42, 0.1);
   }
 }

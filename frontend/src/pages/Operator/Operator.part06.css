@@ -185,18 +185,71 @@
 .operator-machine-dropdown-wrapper .option-dropdown-trigger {
   width: 100%;
   min-width: 0;
-  max-width: 64px;
-  height: 28px;
+  max-width: 92px;
+  min-height: 32px;
   border: 1px solid #cbd5e1;
-  border-radius: 14px;
-  background: #ffffff;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
   color: #0f172a;
-  font-size: 0.74rem;
-  padding: 0 0.25rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 0.35rem 0.55rem;
+  box-shadow: inset 0 0 0 1px rgba(203, 213, 225, 0.35);
 }
 
 .operator-machine-dropdown-wrapper .option-dropdown-value {
+  text-align: center;
+  font-size: 0.78rem;
+}
+
+.option-dropdown-wrapper.operator-assigned-dropdown {
+  width: 100%;
+  min-width: 0;
+}
+
+.option-dropdown-wrapper.operator-assigned-dropdown .option-dropdown-trigger {
+  width: 100%;
+  min-width: 0;
+  min-height: 36px;
+  border: 1px solid #93c5fd;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #f8fbff 0%, #eef4ff 100%);
+  color: #0f172a;
+  padding: 0.45rem 0.75rem;
+  box-shadow: inset 0 0 0 1px rgba(147, 197, 253, 0.28);
+}
+
+.option-dropdown-wrapper.operator-assigned-dropdown .option-dropdown-value {
   text-align: left;
+  color: #1e3a8a;
+  font-weight: 700;
+  font-size: 0.8rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.option-dropdown-wrapper.operator-assigned-dropdown .option-dropdown-arrow,
+.operator-machine-dropdown-wrapper .option-dropdown-arrow {
+  color: #2563eb;
+  flex-shrink: 0;
+}
+
+.operator-table-no-scroll .data-table td.operator-assigned-cell,
+.operator-table-no-scroll .data-table td.operator-machine-cell {
+  vertical-align: middle;
+}
+
+.operator-table-no-scroll .data-table td.operator-assigned-cell .option-dropdown-wrapper,
+.operator-table-no-scroll .data-table td.operator-machine-cell .option-dropdown-wrapper {
+  margin: 0 auto;
+}
+
+.operator-table-no-scroll .data-table td:nth-child(3) .job-ref-copy-text .marquee-static,
+.operator-table-no-scroll .data-table td:nth-child(3) .job-ref-copy-text .marquee-animated {
+  animation: none;
+  transform: none;
+  padding-right: 0;
 }
 
 @media only screen and (min-width: 1367px) {
@@ -219,6 +272,43 @@
     width: 40px;
     min-width: 40px;
     max-width: 40px;
+  }
+}
+
+@media (min-width: 1025px) and (max-width: 1280px) and (orientation: landscape) {
+  .operator-table-no-scroll {
+    overflow-x: auto;
+  }
+
+  .operator-table-no-scroll .data-table {
+    min-width: 1480px;
+  }
+
+  .roleboard-content .programmer-panel {
+    margin: 0.4rem 0.2rem;
+    padding: 0.65rem;
+    width: calc(100% - 0.4rem);
+  }
+
+  .operator-actions-row {
+    width: 100%;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  .operator-stage-legend-inline {
+    flex-wrap: wrap;
+    white-space: normal;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 800px) and (orientation: portrait) {
+  .operator-table-no-scroll {
+    overflow-x: auto;
+  }
+
+  .operator-table-no-scroll .data-table {
+    min-width: 1420px;
   }
 }
 

@@ -2,6 +2,7 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { prisma } from "../lib/prisma";
 import { HttpError } from "../lib/httpError";
+import { getEmpIdCandidates, normalizeEmpId } from "../utils/employeeId";
 
 export const loginUser = async (emailOrEmpId: string, password: string) => {
   if (!process.env.JWT_SECRET) {
@@ -10,12 +11,14 @@ export const loginUser = async (emailOrEmpId: string, password: string) => {
 
   const identifier = String(emailOrEmpId).trim();
   const identifierLower = identifier.toLowerCase();
+  const empIdCandidates = getEmpIdCandidates(identifier);
 
   const user = await prisma.user.findFirst({
     where: {
       OR: [
         { email: identifier },
-        { empId: identifier },
+        { email: identifierLower },
+        ...empIdCandidates.map((empId) => ({ empId })),
         ...(identifierLower === "admin" ? [{ role: "ADMIN" }] : []),
       ],
     },
@@ -37,7 +40,7 @@ export const loginUser = async (emailOrEmpId: string, password: string) => {
       userId: user.id,
       email: user.email,
       role: user.role || "OPERATOR",
-      empId: user.empId || null,
+      empId: normalizeEmpId(user.empId) || null,
       firstName: user.firstName || null,
       lastName: user.lastName || null,
       fullName,
@@ -52,7 +55,7 @@ export const loginUser = async (emailOrEmpId: string, password: string) => {
       id: user.id,
       email: user.email,
       role: user.role || "OPERATOR",
-      empId: user.empId || null,
+      empId: normalizeEmpId(user.empId) || null,
       firstName: user.firstName,
       lastName: user.lastName,
       fullName,

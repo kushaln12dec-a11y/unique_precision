@@ -121,7 +121,15 @@ const Operator = () => {
     handleChildMachineNumberChange,
     handleImageInput,
     handleSubmit,
-  } = useOperatorPageHandlers({ jobs, navigate, setJobs, setOperatorGridJobs, setToast });
+  } = useOperatorPageHandlers({
+    jobs,
+    navigate,
+    setJobs,
+    setOperatorGridJobs,
+    setToast,
+    userRole,
+    currentUserDisplayName,
+  });
 
   const { tableData } = useOperatorTableData(
     operatorGridJobs,
@@ -189,7 +197,6 @@ const Operator = () => {
   const {
     machineFilterOptions,
     filterOperatorLogs,
-    hasOperatorLogSearch,
     handleExportOperatorLogsCsv,
     operatorLogColumnDefs,
     logsFetchPage,
@@ -260,14 +267,13 @@ const Operator = () => {
           handleSendSelectedRowsToQa={handleSendSelectedRowsToQa}
           selectedEntryIds={selectedEntryIds}
           machineOptionsForDropdown={machineOptionsForDropdown}
-          currentUserDisplayName={currentUserDisplayName}
           handleApplyBulkAssignment={handleApplyBulkAssignment}
           operatorJobColumnDefs={operatorJobColumnDefs}
           fetchJobsPage={jobsFetchPage}
           setOperatorGridJobs={setOperatorGridJobs}
           operatorGridRows={operatorGridRows}
           expandedGroups={expandedGroups}
-          createdByRefreshKey={`${hasJobSearch}|${createdByFilter}|${assignedToFilter}|${JSON.stringify(filters)}`}
+          createdByRefreshKey={`${createdByFilter}|${assignedToFilter}|${JSON.stringify(filters)}`}
           operatorLogSearch={operatorLogSearch}
           setOperatorLogSearch={setOperatorLogSearch}
           operatorLogStatus={operatorLogStatus}
@@ -279,7 +285,6 @@ const Operator = () => {
           operatorLogColumnDefs={operatorLogColumnDefs}
           filterOperatorLogs={filterOperatorLogs}
           logsFetchPage={logsFetchPage}
-          hasOperatorLogSearch={hasOperatorLogSearch}
         />
 
         <OperatorPageOverlays

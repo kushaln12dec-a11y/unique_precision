@@ -9,7 +9,7 @@ import "./Login.css";
 
 const Login = () => {
   const navigate = useNavigate();
-  const [email, setEmail] = useState("");
+  const [empId, setEmpId] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -43,7 +43,7 @@ const Login = () => {
     setError("");
 
     try {
-      await login(email, password);
+      await login(empId, password);
       // Redirect to dashboard on successful login
       navigate("/dashboard");
     } catch (err: any) {
@@ -168,16 +168,16 @@ const Login = () => {
 
           <form onSubmit={handleSubmit} className="login-form">
             <div className="form-group">
-              <label htmlFor="email" className="form-label">
-                Email or Employee ID
+              <label htmlFor="empId" className="form-label">
+                Employee ID
               </label>
               <input
-                id="email"
+                id="empId"
                 type="text"
                 className="form-input"
-                placeholder="Enter your email or employee ID"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Enter your employee ID (e.g. EMP0001)"
+                value={empId}
+                onChange={(e) => setEmpId(e.target.value.toUpperCase())}
                 required
                 autoComplete="username"
               />

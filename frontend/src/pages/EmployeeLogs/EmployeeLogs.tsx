@@ -1,11 +1,23 @@
+import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Sidebar from '../../components/Sidebar';
 import Header from '../../components/Header';
 import { EmployeeLogsPanel } from '../User Management/components/EmployeeLogsPanel';
+import { getUserRoleFromToken } from '../../utils/auth';
 import './EmployeeLogs.css';
 
 const EmployeeLogs = () => {
   const navigate = useNavigate();
+  const role = (getUserRoleFromToken() || '').toUpperCase();
+  const isAdmin = role === 'ADMIN';
+
+  useEffect(() => {
+    if (isAdmin) return;
+    const fallbackPath = role === 'OPERATOR' ? '/operator' : '/dashboard';
+    navigate(fallbackPath, { replace: true });
+  }, [isAdmin, navigate, role]);
+
+  if (!isAdmin) return null;
 
   return (
     <div className="employee-logs-page-container">

@@ -24,7 +24,7 @@ const updateUserRole = async () => {
     if (!user.firstName) updateData.firstName = "Admin";
     if (!user.lastName) updateData.lastName = "User";
     if (!user.phone) updateData.phone = "";
-    if (!user.empId) updateData.empId = "EMP001";
+    if (!user.empId) updateData.empId = "EMP0001";
 
     await prisma.user.update({ where: { id: user.id }, data: updateData });
     console.log("User updated successfully!");

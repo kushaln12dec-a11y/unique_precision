@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import type { User } from "../../../types/user";
 import type { Column } from "../../../components/DataTable";
+import { formatEmployeeId } from "../../../utils/employeeId";
 
 /**
  * Hook for user table columns configuration
@@ -44,7 +45,7 @@ export const useUserTable = (
         label: "Emp ID",
         sortable: true,
         sortKey: "empId",
-        render: (user) => user.empId || "-",
+        render: (user) => formatEmployeeId(user.empId) || "-",
       },
       {
         key: "role",

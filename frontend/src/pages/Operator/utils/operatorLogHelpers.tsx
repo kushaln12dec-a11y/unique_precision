@@ -1,5 +1,6 @@
 import WbSunnyOutlinedIcon from "@mui/icons-material/WbSunnyOutlined";
 import DarkModeOutlinedIcon from "@mui/icons-material/DarkModeOutlined";
+import { formatJobRefDisplay } from "../../../utils/jobFormatting";
 
 export const OPERATOR_LOG_SEARCH_FETCH_PAGE_SIZE = 100;
 
@@ -37,7 +38,9 @@ export const formatOperatorLogStatus = (status?: string) => {
 export const formatOperatorWorkItem = (value?: string) => {
   const raw = String(value || "").trim();
   if (!raw) return "-";
-  return raw.replace(/^Job\s*#?\s*/i, "").trim() || "-";
+  const withoutPrefix = raw.replace(/^Job\s*#?\s*/i, "").trim();
+  if (!withoutPrefix) return "-";
+  return formatJobRefDisplay(withoutPrefix) || "-";
 };
 
 export const formatOperatorDuration = (seconds?: number): string => {

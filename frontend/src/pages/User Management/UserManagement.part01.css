@@ -153,14 +153,27 @@
   align-items: center;
 }
 
-.password-input-wrapper input {
+.password-input-wrapper input,
+.input-action-wrapper input {
   flex: 1;
-  padding-right: 3rem;
+  padding-right: 5.5rem;
+}
+
+.input-action-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.password-actions {
+  position: absolute;
+  right: 0.5rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
 }
 
 .password-toggle {
-  position: absolute;
-  right: 0.75rem;
   background: none;
   border: none;
   cursor: pointer;
@@ -176,8 +189,36 @@
   color: #1e293b;
 }
 
-.password-toggle svg {
+.password-toggle svg,
+.input-copy-btn svg {
   font-size: 1.25rem;
+}
+
+.input-copy-btn {
+  position: absolute;
+  right: 0.5rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #64748b;
+  padding: 0.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.3s ease;
+}
+
+.password-actions .input-copy-btn {
+  position: static;
+}
+
+.input-copy-btn:hover:not(:disabled) {
+  color: #1e293b;
+}
+
+.input-copy-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 .form-actions {

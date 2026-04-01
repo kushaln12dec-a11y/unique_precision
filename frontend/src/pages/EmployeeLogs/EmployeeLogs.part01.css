@@ -9,6 +9,7 @@
 
 .employee-logs-page-content {
   flex: 1;
+  min-width: 0;
   margin-left: 70px;
   min-height: 100vh;
   max-height: 100vh;
@@ -20,6 +21,12 @@
   .sidebar.collapsed:hover ~ .employee-logs-page-content,
   .sidebar.expanded ~ .employee-logs-page-content {
     margin-left: 240px;
+  }
+}
+
+@media (max-width: 1024px) {
+  .employee-logs-page-content {
+    margin-left: 56px;
   }
 }
 
@@ -188,12 +195,14 @@
 .employee-work-item {
   display: inline-flex;
   align-items: center;
+  width: 100%;
+  max-width: 100%;
 }
 
 .data-table-wrapper.employee-logs-table .data-table td.employee-work-item-cell {
   overflow: visible;
   text-overflow: clip;
-  white-space: nowrap;
+  white-space: normal;
 }
 
 .ref-badge {
@@ -276,4 +285,79 @@
   overflow: visible;
   border-collapse: separate;
   border-spacing: 0;
+}
+
+.lazy-ag-grid-shell.employee-logs-table .ag-cell,
+.lazy-ag-grid-shell.employee-logs-table .ag-cell-value {
+  text-align: center;
+  justify-content: center;
+}
+
+.lazy-ag-grid-shell.employee-logs-table .employee-work-item {
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.lazy-ag-grid-shell.employee-logs-table .ref-badge {
+  min-width: 98px;
+  justify-content: center;
+}
+
+.employee-job-ref-copy {
+  width: 100%;
+  max-width: 100%;
+}
+
+.employee-job-ref-copy .marquee-animated,
+.employee-job-ref-copy .marquee-static {
+  text-align: center;
+  font-weight: 700;
+  color: #1e3a8a;
+}
+
+@media (min-width: 1025px) and (max-width: 1280px) and (orientation: landscape) {
+  .employee-logs-page-content {
+    overflow-x: auto;
+  }
+
+  .employee-logs-page-shell {
+    margin: 0.55rem 0.35rem 1rem 0.35rem;
+  }
+
+  .employee-logs-container {
+    padding: 0.9rem;
+    border-radius: 18px;
+  }
+
+  .employee-log-filters {
+    flex-wrap: wrap;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 800px) and (orientation: portrait) {
+  .employee-logs-page-content {
+    margin-left: 56px;
+  }
+
+  .employee-logs-page-shell {
+    margin: 0.45rem 0.25rem 0.85rem 0.25rem;
+  }
+
+  .employee-logs-container {
+    padding: 0.8rem;
+    border-radius: 16px;
+  }
+
+  .employee-role-tabs,
+  .employee-log-filters {
+    flex-wrap: wrap;
+  }
+}
+
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  .employee-logs-container {
+    box-shadow: 0 16px 34px rgba(30, 41, 59, 0.1);
+  }
 }

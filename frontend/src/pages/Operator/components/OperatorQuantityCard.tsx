@@ -3,6 +3,7 @@ import PauseIcon from "@mui/icons-material/Pause";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import DateTimeInput from "./DateTimeInput";
 import { MultiSelectOperators } from "./MultiSelectOperators";
+import SelectDropdown from "../../Programmer/components/SelectDropdown";
 import { decimalHoursToHHMM } from "../utils/machineHrsCalculation";
 import { useQuantityTimer } from "../hooks/useQuantityTimer";
 import { getQaStageLabel, type QuantityProgressStatus } from "../utils/qaProgress";
@@ -24,6 +25,7 @@ type Props = {
   isRangeApproved: boolean;
   getStatus: (qty: number) => QuantityProgressStatus;
   operatorUsers: Array<{ id: string | number; name: string }>;
+  machineOptions: string[];
   onInputChange: (cutId: number | string, quantityIndex: number, field: OperatorInputField, value: string | string[]) => void;
   onShowToast?: (message: string, variant?: "success" | "error" | "info") => void;
   onStartTimeCaptured?: (cutId: number | string, quantityIndex: number) => void;
@@ -34,6 +36,7 @@ type Props = {
   onSaveQuantity?: (cutId: number | string, quantityIndex: number) => void;
   onSaveRange?: (cutId: number | string, sourceQuantityIndex: number, fromQty: number, toQty: number) => void;
   savedRanges: Set<string>;
+  canReset: boolean;
 };
 
 export const OperatorQuantityCard: React.FC<Props> = ({
@@ -47,6 +50,7 @@ export const OperatorQuantityCard: React.FC<Props> = ({
   isRangeApproved,
   getStatus,
   operatorUsers,
+  machineOptions,
   onInputChange,
   onShowToast,
   onStartTimeCaptured,
@@ -57,6 +61,7 @@ export const OperatorQuantityCard: React.FC<Props> = ({
   onSaveQuantity,
   onSaveRange,
   savedRanges,
+  canReset,
 }) => {
   const rangeQuantityCount = isRangeMode && isRangeValid ? Math.max(1, rangeEndQty - rangeStartQty + 1) : 1;
   const quantityRequiredSeconds = Math.max(
@@ -101,7 +106,18 @@ export const OperatorQuantityCard: React.FC<Props> = ({
               <span>Start Time</span>
               {qtyData.startTime && (
                 <span className="start-time-pause-meta">
-                  <button type="button" className="start-time-pause-toggle" onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (!qtyData.endTime) onInputChange(cutId, qtyIndex, "togglePause", ""); }} disabled={!!qtyData.endTime} aria-label={qtyData.isPaused ? "Resume timer" : "Idle timer"} title={qtyData.isPaused ? "Resume timer" : "Idle timer"}>
+                  <button
+                    type="button"
+                    className="start-time-pause-toggle"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      if (!qtyData.endTime && !isShiftOverPause) onInputChange(cutId, qtyIndex, "togglePause", "");
+                    }}
+                    disabled={!!qtyData.endTime || isShiftOverPause}
+                    aria-label={qtyData.isPaused ? "Resume timer" : "Idle timer"}
+                    title={isShiftOverPause ? "Use Shift Over button to resume" : qtyData.isPaused ? "Resume timer" : "Idle timer"}
+                  >
                     {qtyData.isPaused ? <PlayArrowIcon fontSize="small" /> : <PauseIcon fontSize="small" />}
                   </button>
                 </span>
@@ -124,8 +140,8 @@ export const OperatorQuantityCard: React.FC<Props> = ({
               showPauseButton={true}
               showPauseButtonInInput={false}
               isPaused={qtyData.isPaused || false}
-              onPauseToggle={() => { if (!qtyData.endTime) onInputChange(cutId, qtyIndex, "togglePause", ""); }}
-              disablePauseButton={!!qtyData.endTime}
+              onPauseToggle={() => { if (!qtyData.endTime && !isShiftOverPause) onInputChange(cutId, qtyIndex, "togglePause", ""); }}
+              disablePauseButton={!!qtyData.endTime || isShiftOverPause}
               disabled={!!qtyData.startTime || !!qtyData.endTime}
             />
           </div>
@@ -159,7 +175,14 @@ export const OperatorQuantityCard: React.FC<Props> = ({
           </div>
           <div className="operator-input-card">
             <label>Mach #</label>
-            <input type="text" value={formatMachineLabel(qtyData.machineNumber)} placeholder="Machine Number" readOnly className={validationErrors.machineNumber ? "input-error" : ""} />
+            <SelectDropdown
+              value={machineOptions.includes(String(qtyData.machineNumber || "").trim()) ? String(qtyData.machineNumber || "").trim() : ""}
+              onChange={(nextValue) => onInputChange(cutId, qtyIndex, "machineNumber", nextValue)}
+              options={machineOptions.map((machine) => ({ label: formatMachineLabel(machine), value: machine }))}
+              placeholder="Select"
+              align="left"
+              className={`machine-number-select ${validationErrors.machineNumber ? "input-error" : ""}`.trim()}
+            />
             {validationErrors.machineNumber && <p className="field-error">{validationErrors.machineNumber}</p>}
           </div>
           <div className="operator-input-card">
@@ -224,16 +247,16 @@ export const OperatorQuantityCard: React.FC<Props> = ({
           </button>
         ) : (
           <>
-            {!isRangeMode && qtyData.startTime && !qtyData.endTime && !qtyData.isPaused && (
+            {!isRangeMode && qtyData.startTime && !qtyData.endTime && (!qtyData.isPaused || isShiftOverPause) && (
               <button
                 type="button"
                 className="mark-shift-over-button"
                 onClick={() => onRequestShiftOver?.(cutId, qtyIndex)}
               >
-                Shift Over
+                {isShiftOverPause ? "Resume Quantity" : "Shift Over"}
               </button>
             )}
-            {qtyData.startTime && (
+            {canReset && qtyData.startTime && (
               <button type="button" className="reset-timer-button" onClick={() => onRequestResetTimer ? onRequestResetTimer(cutId, qtyIndex) : onInputChange(cutId, qtyIndex, "resetTimer", "")} aria-label="Reset timer" title="Reset timer">
                 Reset Quantity {qtyIndex + 1}
               </button>

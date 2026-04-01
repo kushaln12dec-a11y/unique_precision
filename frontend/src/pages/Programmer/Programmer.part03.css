@@ -70,9 +70,15 @@
   display: flex;
   justify-content: flex-end;
   margin-top: 0.75rem;
-  position: absolute;
-  right: 1rem;
-  bottom: 1rem;
+  position: static;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.cut-section-actions-inline {
+  grid-area: actions;
+  margin-top: 0;
+  padding-top: 0.25rem;
 }
 
 .cut-remove {
@@ -121,7 +127,9 @@
   grid-template-areas:
   "customer rate material programref description"
   "cut thickness pass setting qty"
-  "sedm totalhrs estimated totalamount .";
+  "sedm totalhrs estimated totalamount ."
+  "remark remark remark remark remark"
+  "actions actions actions actions actions";
 
 
 }
@@ -130,7 +138,9 @@
   grid-template-areas:
     "customer material programref description description"
     "cut thickness pass setting qty"
-    "sedm totalhrs estimated . .";
+    "sedm totalhrs estimated . ."
+    "remark remark remark remark remark"
+    "actions actions actions actions actions";
 }
 
 .qty-with-add {
@@ -247,6 +257,10 @@
   text-align: left;
   resize: vertical;
   text-transform: uppercase;
+}
+
+.grid-remark {
+  grid-area: remark;
 }
 
 .sedm-config-button {

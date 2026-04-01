@@ -1,5 +1,8 @@
 import bcrypt from "bcrypt";
 import { prisma } from "../lib/prisma";
+import { formatEmpId, getEmpIdSequence, normalizeEmpId } from "../utils/employeeId";
+
+const EMP_ID_COUNTER_KEY = "empId";
 
 const schemaStatements: string[] = [
   `CREATE EXTENSION IF NOT EXISTS "pgcrypto";`,
@@ -301,11 +304,73 @@ export const initDB = async (): Promise<void> => {
   try {
     const passwordHash = await bcrypt.hash("raki123", 10);
     await prisma.$executeRaw`
-      INSERT INTO "User" ("email", "passwordHash", "role", "createdAt", "updatedAt")
-      VALUES (${`rakis@gmail.com`}, ${passwordHash}, ${"ADMIN"}, NOW(), NOW())
-      ON CONFLICT ("email") DO NOTHING;
+      INSERT INTO "User" ("email", "passwordHash", "empId", "role", "createdAt", "updatedAt")
+      VALUES (${`rakis@gmail.com`}, ${passwordHash}, ${"EMP0001"}, ${"ADMIN"}, NOW(), NOW())
+      ON CONFLICT ("email") DO UPDATE
+      SET "empId" = COALESCE("User"."empId", EXCLUDED."empId");
     `;
     console.log("Default admin ensured.");
+
+    const allUsers = await prisma.user.findMany({
+      select: { id: true, empId: true },
+      orderBy: { createdAt: "asc" },
+    });
+    let normalizedEmpIdsUpdated = 0;
+    for (const user of allUsers) {
+      const currentEmpId = String(user.empId || "").trim();
+      if (!currentEmpId) continue;
+
+      const normalizedEmpId = normalizeEmpId(currentEmpId);
+      if (!normalizedEmpId || normalizedEmpId === currentEmpId) continue;
+
+      try {
+        await prisma.user.update({
+          where: { id: user.id },
+          data: { empId: normalizedEmpId },
+        });
+        normalizedEmpIdsUpdated += 1;
+      } catch (normalizeError: any) {
+        console.warn(`Skipped EMP ID normalization for user ${user.id}:`, normalizeError?.message || normalizeError);
+      }
+    }
+
+    if (normalizedEmpIdsUpdated > 0) {
+      console.log(`Normalized Employee IDs for ${normalizedEmpIdsUpdated} existing user(s).`);
+    }
+
+    const refreshedUsers = await prisma.user.findMany({
+      select: { id: true, empId: true },
+      orderBy: { createdAt: "asc" },
+    });
+    const usersMissingEmpId = refreshedUsers.filter((user) => !String(user.empId || "").trim());
+    const maxExistingSequence = refreshedUsers.reduce((maxValue, user) => {
+      return Math.max(maxValue, getEmpIdSequence(user.empId));
+    }, 0);
+
+    if (usersMissingEmpId.length > 0) {
+      let nextSequence = maxExistingSequence;
+      for (const user of usersMissingEmpId) {
+        nextSequence += 1;
+        await prisma.user.update({
+          where: { id: user.id },
+          data: { empId: formatEmpId(nextSequence) },
+        });
+      }
+      await prisma.counter.upsert({
+        where: { key: EMP_ID_COUNTER_KEY },
+        update: { seq: nextSequence },
+        create: { key: EMP_ID_COUNTER_KEY, seq: nextSequence },
+      });
+      console.log(`Assigned Employee IDs to ${usersMissingEmpId.length} existing user(s).`);
+    } else {
+      const counterSequence = Math.max(0, Number((await prisma.counter.findUnique({ where: { key: EMP_ID_COUNTER_KEY } }))?.seq || 0));
+      const targetSequence = Math.max(counterSequence, maxExistingSequence);
+      await prisma.counter.upsert({
+        where: { key: EMP_ID_COUNTER_KEY },
+        update: { seq: targetSequence },
+        create: { key: EMP_ID_COUNTER_KEY, seq: targetSequence },
+      });
+    }
   } catch (error) {
     console.error("Failed to insert default admin user:", error);
   }

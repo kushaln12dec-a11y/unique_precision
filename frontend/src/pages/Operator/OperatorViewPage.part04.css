@@ -266,6 +266,42 @@
   box-sizing: border-box;
 }
 
+.operator-input-card .option-dropdown-wrapper {
+  width: 100%;
+  min-width: 0;
+}
+
+.operator-input-card .option-dropdown-trigger {
+  width: 100%;
+  min-width: 0;
+  min-height: 48px;
+  padding: 0.75rem 0.875rem;
+  border-radius: 12px;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #1e293b;
+  box-shadow: none;
+}
+
+.operator-input-card .option-dropdown-value {
+  text-align: left;
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+
+.operator-input-card .option-dropdown-arrow {
+  color: #64748b;
+}
+
+.operator-input-card .machine-number-select .option-dropdown-trigger {
+  justify-content: space-between;
+}
+
+.operator-input-card .machine-number-select .option-dropdown-value {
+  text-align: center;
+  font-weight: 700;
+}
+
 .operator-input-card input:focus,
 .operator-input-card select:focus {
   outline: none;

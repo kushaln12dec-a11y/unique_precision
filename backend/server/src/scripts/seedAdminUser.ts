@@ -12,7 +12,7 @@ const ADMIN_PAYLOAD = {
   firstName: "Kushal",
   lastName: "N",
   phone: "9632998952",
-  empId: "EMP001",
+  empId: "EMP0001",
   role: "ADMIN",
   image: ""
 };

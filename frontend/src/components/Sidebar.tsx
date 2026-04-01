@@ -36,7 +36,6 @@ const Sidebar = ({ onNavigate }: SidebarProps) => {
       ? menuItems.filter(
           (item) =>
             item.path === dashboardPath ||
-            item.path === '/jobLogs' ||
             item.label === 'Dashboard' ||
             item.label.toUpperCase() === role,
         )

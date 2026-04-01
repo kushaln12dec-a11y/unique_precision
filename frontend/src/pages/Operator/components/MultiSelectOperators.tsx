@@ -2,6 +2,8 @@ import { useEffect, useId, useMemo, useRef, useState, type CSSProperties, type F
 import MultiSelectOperatorsMenu from "./MultiSelectOperatorsMenu";
 import "./MultiSelectOperators.css";
 
+const normalizeOperatorName = (value: unknown) => String(value || "").trim().toLowerCase();
+
 type MultiSelectOperatorsProps = {
   selectedOperators: string[];
   availableOperators: Array<{ id: string | number; name: string }>;
@@ -30,13 +32,39 @@ export const MultiSelectOperators = ({
   const dropdownId = useId();
   const normalizedSelfName = (assignToSelfName || "").trim().toLowerCase();
 
-  const normalizedSelectedOperators = useMemo(() => [...new Set(selectedOperators.filter(Boolean))], [selectedOperators]);
+  const canonicalOperatorNames = useMemo(() => {
+    const lookup = new Map<string, string>();
+    availableOperators.forEach((operator) => {
+      const normalizedName = String(operator.name || "").trim();
+      const key = normalizeOperatorName(normalizedName);
+      if (!normalizedName || !key || lookup.has(key)) return;
+      lookup.set(key, normalizedName);
+    });
+    if (assignToSelfName && normalizedSelfName) {
+      lookup.set(normalizedSelfName, assignToSelfName.trim());
+    }
+    return lookup;
+  }, [availableOperators, assignToSelfName, normalizedSelfName]);
+
+  const normalizedSelectedOperators = useMemo(() => {
+    const unique = new Set<string>();
+    const normalized: string[] = [];
+    selectedOperators.forEach((operator) => {
+      const value = String(operator || "").trim();
+      const key = normalizeOperatorName(value);
+      if (!value || !key || unique.has(key)) return;
+      unique.add(key);
+      normalized.push(canonicalOperatorNames.get(key) || value);
+    });
+    return normalized;
+  }, [canonicalOperatorNames, selectedOperators]);
+
   const normalizedAvailableOperators = useMemo(() => {
     const seen = new Set<string>();
     return availableOperators.filter((operator) => {
       const normalizedName = String(operator.name || "").trim();
-      if (!normalizedName) return false;
-      const key = normalizedName.toLowerCase();
+      const key = normalizeOperatorName(normalizedName);
+      if (!normalizedName || !key) return false;
       if (seen.has(key) || (normalizedSelfName && key === normalizedSelfName)) return false;
       seen.add(key);
       return true;
@@ -44,7 +72,13 @@ export const MultiSelectOperators = ({
   }, [availableOperators, normalizedSelfName]);
 
   useEffect(() => {
+    const incoming = [...new Set(selectedOperators.map((operator) => normalizeOperatorName(operator)).filter(Boolean))];
+    const normalized = normalizedSelectedOperators.map((operator) => normalizeOperatorName(operator));
+    const incomingSnapshot = incoming.join("|");
+    const normalizedSnapshot = normalized.join("|");
+
     if (
+      incomingSnapshot !== normalizedSnapshot ||
       normalizedSelectedOperators.length !== selectedOperators.length ||
       normalizedSelectedOperators.some((op, idx) => op !== selectedOperators[idx])
     ) {
@@ -106,9 +140,11 @@ export const MultiSelectOperators = ({
 
   const toggleOperator = (operatorName: string) => {
     if (disabled) return;
+    const normalizedTarget = normalizeOperatorName(operatorName);
+    const isSelected = normalizedSelectedOperators.some((name) => normalizeOperatorName(name) === normalizedTarget);
     onChange(
-      normalizedSelectedOperators.includes(operatorName)
-        ? normalizedSelectedOperators.filter((name) => name !== operatorName)
+      isSelected
+        ? normalizedSelectedOperators.filter((name) => normalizeOperatorName(name) !== normalizedTarget)
         : [...normalizedSelectedOperators, operatorName]
     );
   };

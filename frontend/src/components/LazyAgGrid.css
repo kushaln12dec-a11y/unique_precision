@@ -125,6 +125,17 @@
   text-align: center;
 }
 
+.lazy-ag-grid-shell .ag-header-cell .ag-sort-indicator-container {
+  display: none !important;
+}
+
+.lazy-ag-grid-shell .ag-header-cell .ag-icon,
+.lazy-ag-grid-shell .ag-header-cell .ag-sort-ascending-icon,
+.lazy-ag-grid-shell .ag-header-cell .ag-sort-descending-icon,
+.lazy-ag-grid-shell .ag-header-cell .ag-sort-none-icon {
+  color: rgba(255, 255, 255, 0.8);
+}
+
 .lazy-ag-grid-shell .ag-cell-value {
   width: 100%;
   overflow: hidden;
@@ -142,6 +153,29 @@
 
 .lazy-ag-grid-shell .ag-cell-value .description-marquee {
   width: 100%;
+  margin: 0 auto;
+}
+
+.lazy-ag-grid-shell .ag-cell.operator-assigned-cell,
+.lazy-ag-grid-shell .ag-cell.operator-machine-cell,
+.lazy-ag-grid-shell .ag-cell.operator-assigned-cell .ag-cell-value,
+.lazy-ag-grid-shell .ag-cell.operator-machine-cell .ag-cell-value {
+  overflow: visible;
+}
+
+.lazy-ag-grid-shell .ag-cell-value .job-ref-copy-text {
+  justify-content: center;
+}
+
+.lazy-ag-grid-shell .ag-cell.operator-assigned-cell .option-dropdown-wrapper.operator-assigned-dropdown {
+  width: 100%;
+  max-width: 146px;
+  margin: 0 auto;
+}
+
+.lazy-ag-grid-shell .ag-cell.operator-machine-cell .option-dropdown-wrapper {
+  width: 100%;
+  max-width: 80px;
   margin: 0 auto;
 }
 

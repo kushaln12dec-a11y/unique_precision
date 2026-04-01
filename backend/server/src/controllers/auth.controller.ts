@@ -4,13 +4,14 @@ import { HttpError } from "../lib/httpError";
 
 export const login = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { email, password } = req.body ?? {};
+    const { empId, email, identifier, password } = req.body ?? {};
+    const loginIdentifier = String(empId ?? identifier ?? email ?? "").trim();
 
-    if (!email || !password) {
-      throw new HttpError(400, "Email/Employee ID and password are required");
+    if (!loginIdentifier || !password) {
+      throw new HttpError(400, "Employee ID and password are required");
     }
 
-    const result = await authService.loginUser(String(email), String(password));
+    const result = await authService.loginUser(loginIdentifier, String(password));
     res.json(result);
   } catch (error) {
     next(error);

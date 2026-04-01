@@ -1,3 +1,5 @@
+import { formatEmployeeId } from "./employeeId";
+
 const getEmailLocalPart = (email: unknown): string | null => {
   const normalizedEmail = String(email || "").trim();
   if (!normalizedEmail) return null;
@@ -50,12 +52,19 @@ export const getUserDisplayNameFromToken = (): string | null => {
     decoded.fullName ||
     (decoded.firstName && decoded.lastName ? `${decoded.firstName} ${decoded.lastName}`.trim() : null) ||
     (decoded.firstName || decoded.lastName ? `${decoded.firstName || ""} ${decoded.lastName || ""}`.trim() : null) ||
-    decoded.empId ||
     decoded.name ||
     decoded.username ||
-    getEmailLocalPart(decoded.email);
+    getEmailLocalPart(decoded.email) ||
+    formatEmployeeId(decoded.empId);
 
   return displayName ? String(displayName).toUpperCase() : null;
+};
+
+export const getUserEmpIdFromToken = (): string | null => {
+  const decoded = getDecodedTokenPayload();
+  if (!decoded) return null;
+  const formatted = formatEmployeeId(decoded.empId);
+  return formatted || null;
 };
 
 export const getUserIdFromToken = (): string | null => {

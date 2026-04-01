@@ -38,7 +38,6 @@ type Props = {
   handleSendSelectedRowsToQa: () => void;
   selectedEntryIds: Set<string | number>;
   machineOptionsForDropdown: string[];
-  currentUserDisplayName: string;
   handleApplyBulkAssignment: (payload: { operators: string[]; machineNumber: string }) => void;
   operatorJobColumnDefs: any[];
   fetchPage: (offset: number, limit: number) => Promise<{ items: JobEntry[]; hasMore: boolean }>;
@@ -77,7 +76,6 @@ export const OperatorJobsSection: React.FC<Props> = ({
   handleSendSelectedRowsToQa,
   selectedEntryIds,
   machineOptionsForDropdown,
-  currentUserDisplayName,
   handleApplyBulkAssignment,
   operatorJobColumnDefs,
   fetchPage,
@@ -124,7 +122,6 @@ export const OperatorJobsSection: React.FC<Props> = ({
         onSendSelectedRowsToQa={handleSendSelectedRowsToQa}
         selectedRowsCount={selectedEntryIds.size}
         machineOptions={machineOptionsForDropdown}
-        currentUserName={currentUserDisplayName}
         onApplyBulkAssignment={handleApplyBulkAssignment}
       />
       <LazyAgGrid

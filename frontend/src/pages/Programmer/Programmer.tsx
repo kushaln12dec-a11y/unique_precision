@@ -51,16 +51,11 @@ const Programmer = () => {
     loadingJobs,
     loadingEditGroup,
     setJobs,
-    setShowForm,
     cuts,
     setCuts,
     editingGroupId,
-    setEditingGroupId,
     refNumber,
     editGroupError,
-    isNewJobRoute,
-    isEditRoute,
-    isCloneRoute,
     handleNewJob: handleNewJobState,
     handleCancel: handleCancelState,
   } = useProgrammerState(filters, customerFilter, descriptionFilter, createdByFilter, criticalFilter);
@@ -115,15 +110,11 @@ const Programmer = () => {
     descriptionFilter,
     createdByFilter,
     criticalFilter,
-    isNewJobRoute,
-    isEditRoute,
-    isCloneRoute,
     loadingJobs,
     cutsLength: cuts.length,
     editGroupError,
     editingGroupId,
     routeEditGroupId,
-    setShowForm,
     handleNewJobState,
     handleCancelState,
     setToast,
@@ -152,9 +143,6 @@ const Programmer = () => {
     refNumber,
     jobs,
     setJobs,
-    setShowForm,
-    setEditingGroupId,
-    setCuts,
     setToast,
     setSavingJob,
     totals,
@@ -193,7 +181,6 @@ const Programmer = () => {
     filteredProgrammerTableData,
     programmerGridRows,
     programmerJobColumnDefs,
-    hasJobSearch,
   } = useProgrammerGrid({
     programmerGridJobs,
     sortField,
@@ -217,7 +204,6 @@ const Programmer = () => {
     filterProgrammerLogs,
     handleExportProgrammerLogsCsv,
     programmerLogColumnDefs,
-    hasLogSearch,
     programmerUsers,
   } = useProgrammerLogs({ users, logSearch, logStatus, logUserId, setToast });
 
@@ -272,7 +258,6 @@ const Programmer = () => {
               setProgrammerGridJobs={setProgrammerGridJobs}
               expandedGroups={expandedGroups}
               programmerGridRefreshKey={programmerGridRefreshKey}
-              hasJobSearch={hasJobSearch}
             />
           )}
 
@@ -289,7 +274,6 @@ const Programmer = () => {
               programmerLogColumnDefs={programmerLogColumnDefs}
               filterProgrammerLogs={filterProgrammerLogs}
               fetchPage={logsFetchPage}
-              hasLogSearch={hasLogSearch}
             />
           )}
         </div>

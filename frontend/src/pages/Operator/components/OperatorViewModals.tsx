@@ -82,17 +82,17 @@ const OperatorViewModals = ({
 
       {pendingShiftOver && (
         <ConfirmDeleteModal
-          title="Confirm Shift Over"
-          message="Mark this running quantity as idle due to shift over?"
+          title="Confirm Shift Over Action"
+          message="Proceed with Shift Over action for this quantity? If it is already marked Shift Over, this will resume it."
           details={[
             { label: "Setting", value: String(jobs.findIndex((j) => String(j.id) === String(pendingShiftOver.cutId)) + 1) },
             { label: "Quantity", value: String(pendingShiftOver.quantityIndex + 1) },
           ]}
-          confirmButtonText="Mark Shift Over"
+          confirmButtonText="Confirm"
           onConfirm={() => {
             handleInputChange(pendingShiftOver.cutId, pendingShiftOver.quantityIndex, "markShiftOver", "");
             setActionToast({
-              message: "Shift Over marked as idle. Save the quantity and click Submit so the next operator can resume.",
+              message: "Shift Over action completed.",
               variant: "info",
               visible: true,
             });
