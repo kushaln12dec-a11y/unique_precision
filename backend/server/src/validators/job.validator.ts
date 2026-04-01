@@ -2,12 +2,16 @@ import { z } from "zod";
 
 const booleanLike = z.union([z.boolean(), z.string(), z.number()]).optional();
 const stringLike = z.union([z.string(), z.number()]).optional();
+const customerUpcCodeSchema = z
+  .string()
+  .trim()
+  .regex(/^UPC\d+$/i, "Customer UPC number is required (e.g. UPC001).");
 
 const createJobInputSchema = z.object({
   id: z.any().optional(),
   _id: z.any().optional(),
   groupId: z.union([z.string(), z.number(), z.bigint()]),
-  customer: z.string().optional(),
+  customer: customerUpcCodeSchema,
   rate: stringLike,
   cut: stringLike,
   thickness: stringLike,

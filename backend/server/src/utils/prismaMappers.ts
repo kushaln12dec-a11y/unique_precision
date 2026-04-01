@@ -1,4 +1,7 @@
 import { formatDbDateTime } from "./dateTime";
+import { normalizeEmpId } from "./employeeId";
+
+const AUTO_GENERATED_EMP_EMAIL_REGEX = /^emp\d{4}(?:\+\d+)?@uniqueprecision\.local$/i;
 
 const toId = (record: any) => {
   if (!record) return record;
@@ -75,13 +78,16 @@ const mapOperatorCaptures = (job: any) => {
 export const mapUser = (user: any) => {
   if (!user) return user;
   const { passwordHash, ...rest } = user;
+  const rawEmail = String(user.email ?? "").trim().toLowerCase();
+  const email = AUTO_GENERATED_EMP_EMAIL_REGEX.test(rawEmail) ? "" : rawEmail;
   return {
     ...rest,
     _id: user.id,
+    email,
     firstName: user.firstName ?? "",
     lastName: user.lastName ?? "",
     phone: user.phone ?? "",
-    empId: user.empId ?? "",
+    empId: normalizeEmpId(user.empId) || "",
     image: user.image ?? "",
     role: user.role ?? "OPERATOR",
   };

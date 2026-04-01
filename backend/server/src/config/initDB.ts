@@ -1,15 +1,8 @@
 import bcrypt from "bcrypt";
 import { prisma } from "../lib/prisma";
+import { formatEmpId, getEmpIdSequence, normalizeEmpId } from "../utils/employeeId";
 
 const EMP_ID_COUNTER_KEY = "empId";
-const EMP_ID_REGEX = /^EMP(\d+)$/i;
-const formatEmpId = (sequence: number) => `EMP${String(Math.max(1, Math.trunc(sequence))).padStart(3, "0")}`;
-const getEmpIdSequence = (value: unknown): number => {
-  const match = String(value || "").trim().match(EMP_ID_REGEX);
-  if (!match) return 0;
-  const parsed = Number(match[1]);
-  return Number.isFinite(parsed) ? Math.max(0, Math.trunc(parsed)) : 0;
-};
 
 const schemaStatements: string[] = [
   `CREATE EXTENSION IF NOT EXISTS "pgcrypto";`,
@@ -312,7 +305,7 @@ export const initDB = async (): Promise<void> => {
     const passwordHash = await bcrypt.hash("raki123", 10);
     await prisma.$executeRaw`
       INSERT INTO "User" ("email", "passwordHash", "empId", "role", "createdAt", "updatedAt")
-      VALUES (${`rakis@gmail.com`}, ${passwordHash}, ${"EMP001"}, ${"ADMIN"}, NOW(), NOW())
+      VALUES (${`rakis@gmail.com`}, ${passwordHash}, ${"EMP0001"}, ${"ADMIN"}, NOW(), NOW())
       ON CONFLICT ("email") DO UPDATE
       SET "empId" = COALESCE("User"."empId", EXCLUDED."empId");
     `;
@@ -322,8 +315,35 @@ export const initDB = async (): Promise<void> => {
       select: { id: true, empId: true },
       orderBy: { createdAt: "asc" },
     });
-    const usersMissingEmpId = allUsers.filter((user) => !String(user.empId || "").trim());
-    const maxExistingSequence = allUsers.reduce((maxValue, user) => {
+    let normalizedEmpIdsUpdated = 0;
+    for (const user of allUsers) {
+      const currentEmpId = String(user.empId || "").trim();
+      if (!currentEmpId) continue;
+
+      const normalizedEmpId = normalizeEmpId(currentEmpId);
+      if (!normalizedEmpId || normalizedEmpId === currentEmpId) continue;
+
+      try {
+        await prisma.user.update({
+          where: { id: user.id },
+          data: { empId: normalizedEmpId },
+        });
+        normalizedEmpIdsUpdated += 1;
+      } catch (normalizeError: any) {
+        console.warn(`Skipped EMP ID normalization for user ${user.id}:`, normalizeError?.message || normalizeError);
+      }
+    }
+
+    if (normalizedEmpIdsUpdated > 0) {
+      console.log(`Normalized Employee IDs for ${normalizedEmpIdsUpdated} existing user(s).`);
+    }
+
+    const refreshedUsers = await prisma.user.findMany({
+      select: { id: true, empId: true },
+      orderBy: { createdAt: "asc" },
+    });
+    const usersMissingEmpId = refreshedUsers.filter((user) => !String(user.empId || "").trim());
+    const maxExistingSequence = refreshedUsers.reduce((maxValue, user) => {
       return Math.max(maxValue, getEmpIdSequence(user.empId));
     }, 0);
 

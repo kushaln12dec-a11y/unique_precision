@@ -4,23 +4,15 @@ import { prisma } from "../lib/prisma";
 import { authMiddleware, adminMiddleware } from "../middleware/auth";
 import { mapUser } from "../utils/prismaMappers";
 import { resolveStoredFile } from "../utils/objectStorage";
+import { formatEmpId, getEmpIdSequence } from "../utils/employeeId";
 
 const router = Router();
 const EMP_ID_COUNTER_KEY = "empId";
-const EMP_ID_REGEX = /^EMP(\d+)$/i;
-const formatEmpId = (sequence: number) => `EMP${String(Math.max(1, Math.trunc(sequence))).padStart(3, "0")}`;
 
 const getParamId = (value: unknown): string | undefined => {
   if (Array.isArray(value)) return value[0];
   if (typeof value === "string") return value;
   return undefined;
-};
-
-const getEmpIdSequence = (value: unknown): number => {
-  const match = String(value || "").trim().match(EMP_ID_REGEX);
-  if (!match) return 0;
-  const parsed = Number(match[1]);
-  return Number.isFinite(parsed) ? Math.max(0, Math.trunc(parsed)) : 0;
 };
 
 const reserveNextEmpId = async (): Promise<string> =>
