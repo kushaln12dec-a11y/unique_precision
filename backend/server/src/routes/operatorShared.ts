@@ -10,13 +10,13 @@ export const operatorJobInclude: Prisma.JobInclude = {
 export const getUpdatedByName = (req: any): string => {
   const reqUser = req?.user as any;
   const fullName = String(reqUser?.fullName || "").trim();
-  if (fullName) return fullName;
+  if (fullName) return fullName.toUpperCase();
   const firstName = String(reqUser?.firstName || "").trim();
   const lastName = String(reqUser?.lastName || "").trim();
   const joined = `${firstName} ${lastName}`.trim();
-  if (joined) return joined;
+  if (joined) return joined.toUpperCase();
   const email = String(reqUser?.email || "").trim();
-  return email.split("@")[0]?.trim() || "";
+  return (email.split("@")[0]?.trim() || "").toUpperCase();
 };
 
 export const toUuid = (value: unknown): string | undefined => {
@@ -184,6 +184,7 @@ export const buildOperatorLogPayload = ({
   resolvedToQty,
   quantityCount,
   captureEntry,
+  forceDurationSeconds = false,
 }: {
   existingLogId?: string | undefined;
   reqUser: any;
@@ -200,10 +201,11 @@ export const buildOperatorLogPayload = ({
   resolvedToQty: number;
   quantityCount: number;
   captureEntry: { fromQty: number; toQty: number };
+  forceDurationSeconds?: boolean;
 }) => {
   const userId = toUuid(reqUser?.userId);
   const durationSeconds = Math.max(0, Math.floor((parsedEnd.getTime() - parsedStart.getTime()) / 1000));
-  const workedSeconds = parseMachineHoursToSeconds(machineHrs) ?? durationSeconds;
+  const workedSeconds = forceDurationSeconds ? durationSeconds : parseMachineHoursToSeconds(machineHrs) ?? durationSeconds;
   const jobWedmAmount = Math.max(0, Number((refreshedJob as any).totalHrs || 0) * Number((refreshedJob as any).rate || 0));
   const totalQuantity = Math.max(1, Number((refreshedJob as any).qty || quantityCount || 1));
   const perQuantityRevenue = jobWedmAmount / totalQuantity;

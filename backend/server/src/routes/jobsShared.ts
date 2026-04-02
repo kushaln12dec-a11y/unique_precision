@@ -114,13 +114,13 @@ export const parseGroupIdParam = (value: unknown): bigint | null => {
 
 export const resolveReqUserName = (reqUser: any): string => {
   const fullName = String(reqUser?.fullName || "").trim();
-  if (fullName) return fullName;
+  if (fullName) return fullName.toUpperCase();
   const firstName = String(reqUser?.firstName || "").trim();
   const lastName = String(reqUser?.lastName || "").trim();
   const joined = `${firstName} ${lastName}`.trim();
-  if (joined) return joined;
+  if (joined) return joined.toUpperCase();
   const email = String(reqUser?.email || "").trim();
-  return email.split("@")[0]?.trim() || "";
+  return (email.split("@")[0]?.trim() || "").toUpperCase();
 };
 
 export const normalizeJobInput = async (job: any) => {
