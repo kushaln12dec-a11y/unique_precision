@@ -18,6 +18,7 @@ type UseJobHandlersProps = {
   >;
   setSavingJob: React.Dispatch<React.SetStateAction<boolean>>;
   totals: CalculationResult[];
+  resetProgrammerFormState: () => void;
 };
 
 export const useJobHandlers = ({
@@ -29,6 +30,7 @@ export const useJobHandlers = ({
   setToast,
   setSavingJob,
   totals,
+  resetProgrammerFormState,
 }: UseJobHandlersProps) => {
   const navigate = useNavigate();
 
@@ -88,6 +90,8 @@ export const useJobHandlers = ({
           ...updatedJobs,
           ...prev.filter((job) => String(job.groupId) !== editingGroupId),
         ]);
+        resetProgrammerFormState();
+        setSavingJob(false);
         setToast({ message: "Job updated successfully!", variant: "success", visible: true });
         setTimeout(() => setToast({ message: "", variant: "success", visible: false }), 3000);
         navigateToProgrammerTable();
@@ -108,6 +112,8 @@ export const useJobHandlers = ({
           console.error("Failed to complete programmer job log", logError);
         }
 
+        resetProgrammerFormState();
+        setSavingJob(false);
         setToast({ message: "Job created successfully!", variant: "success", visible: true });
         setTimeout(() => setToast({ message: "", variant: "success", visible: false }), 3000);
         navigateToProgrammerTable();
@@ -132,6 +138,7 @@ export const useJobHandlers = ({
     setToast,
     setSavingJob,
     navigateToProgrammerTable,
+    resetProgrammerFormState,
   ]);
 
   const handleDeleteJob = useCallback(

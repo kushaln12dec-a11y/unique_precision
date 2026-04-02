@@ -1,7 +1,7 @@
 import { getUsers } from "../../../services/userApi";
 import { getDisplayName } from "../../../utils/jobFormatting";
-import type { JobEntry, QuantityQaStatus } from "../../../types/job";
-import { getQuantityProgressStatuses } from "./qaProgress";
+import type { JobEntry } from "../../../types/job";
+import { getQuantityProgressStatuses, type QuantityProgressStatus } from "./qaProgress";
 
 type ToastState = { message: string; variant: "success" | "error" | "info"; visible: boolean };
 
@@ -26,11 +26,11 @@ export const loadOperatorUsers = async () => {
 };
 
 export const seedQaStatusesByCut = (jobs: JobEntry[]) => {
-  const next = new Map<number | string, Record<number, QuantityQaStatus>>();
+  const next = new Map<number | string, Record<number, QuantityProgressStatus>>();
   jobs.forEach((job) => {
     const qty = Math.max(1, Number(job.qty || 1));
     const statuses = getQuantityProgressStatuses(job, qty);
-    const mapped: Record<number, QuantityQaStatus> = {};
+    const mapped: Record<number, QuantityProgressStatus> = {};
     statuses.forEach((status, idx) => {
       if (status !== "EMPTY") mapped[idx + 1] = status;
     });

@@ -164,9 +164,9 @@ export const EmployeeLogsPanel = () => {
         <input type="text" className="employee-search-input" placeholder="Search any column..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
         <select className="employee-status-select" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as "" | "COMPLETED" | "IN_PROGRESS" | "REJECTED")}>
           <option value="">All Status</option>
-          <option value="COMPLETED">Completed</option>
-          <option value="IN_PROGRESS">In Progress</option>
-          <option value="REJECTED">Rejected</option>
+          <option value="COMPLETED">LOGGED</option>
+          <option value="IN_PROGRESS">RUNNING</option>
+          <option value="REJECTED">HOLD</option>
         </select>
         <button
           type="button"
@@ -201,7 +201,7 @@ export const EmployeeLogsPanel = () => {
           emptyMessage="No logs found for the current filters."
           getRowId={(row) => row._id}
           className="employee-logs-table logs-center"
-          rowHeight={66}
+          rowHeight={78}
           refreshKey={`${activeRole}|${statusFilter}`}
         />
       )}

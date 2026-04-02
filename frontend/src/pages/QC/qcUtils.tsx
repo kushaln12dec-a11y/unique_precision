@@ -5,6 +5,7 @@ import { formatJobRefDisplay } from "../../utils/jobFormatting";
 export type QcRow = {
   qcItemId: string;
   quantityLabel: string;
+  reportScopeLabel: string;
   quantityFrom: number;
   quantityTo: number;
   quantityCount: number;
@@ -45,6 +46,7 @@ export const getQcRowSearchValues = (row: QcRow) => {
     row.entry.description || row.parent.description || "-",
     formatJobRefDisplay(String(row.entry.refNumber || row.parent.refNumber || "").trim()),
     row.quantityLabel,
+    row.reportScopeLabel,
     getPrimaryOperatorName(row.entry.assignedTo || row.parent.assignedTo),
     createdAtParts.date,
     createdAtParts.time,
@@ -88,12 +90,17 @@ export const buildQcRows = (qcGridJobs: JobEntry[]) => {
           const quantityCount = range.to - range.from + 1;
           const label =
             quantityCount <= 1
-              ? formatOrdinal(range.from)
-              : `Qty ${range.from}-${range.to} (${quantityCount})`;
+              ? `Quantity ${range.from}`
+              : `Quantities ${range.from}-${range.to}`;
+          const reportScopeLabel =
+            quantityCount <= 1
+              ? "Single quantity report"
+              : `Consolidated report (${quantityCount} quantities)`;
 
           return {
             qcItemId: `${String(entry.id)}:${range.from}-${range.to}`,
             quantityLabel: label,
+            reportScopeLabel,
             quantityFrom: range.from,
             quantityTo: range.to,
             quantityCount,
@@ -108,13 +115,4 @@ export const buildQcRows = (qcGridJobs: JobEntry[]) => {
       });
     })
     .sort((a, b) => parseDateValue(b.entry.createdAt || b.parent.createdAt) - parseDateValue(a.entry.createdAt || a.parent.createdAt));
-};
-
-const formatOrdinal = (value: number) => {
-  const mod10 = value % 10;
-  const mod100 = value % 100;
-  if (mod10 === 1 && mod100 !== 11) return `${value}st Qty`;
-  if (mod10 === 2 && mod100 !== 12) return `${value}nd Qty`;
-  if (mod10 === 3 && mod100 !== 13) return `${value}rd Qty`;
-  return `${value}th Qty`;
 };

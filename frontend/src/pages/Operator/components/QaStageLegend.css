@@ -26,10 +26,16 @@
   border-color: #7dd3fc;
 }
 
+.qa-legend-item.running {
+  color: #991b1b;
+  background: #fef2f2;
+  border-color: #fca5a5;
+}
+
 .qa-legend-item.ready {
-  color: #166534;
-  background: #ecfdf5;
-  border-color: #86efac;
+  color: #92400e;
+  background: #fffbeb;
+  border-color: #fcd34d;
 }
 
 .qa-legend-item.sent {

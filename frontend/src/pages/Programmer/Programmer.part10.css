@@ -15,6 +15,12 @@
   letter-spacing: 0.02em;
 }
 
+.qa-mini.running {
+  background: #fef2f2;
+  border-color: #fca5a5;
+  color: #991b1b;
+}
+
 .qa-mini.saved {
   background: #e0f2fe;
   border-color: #7dd3fc;
@@ -22,9 +28,9 @@
 }
 
 .qa-mini.ready {
-  background: #ecfdf5;
-  border-color: #86efac;
-  color: #166534;
+  background: #fffbeb;
+  border-color: #fcd34d;
+  color: #92400e;
 }
 
 .qa-mini.sent {
@@ -244,6 +250,39 @@
 }
 
 .programmer-container .jobs-table-wrapper .child-row.operator-stage-row-dispatched:not(.child-priority-row):not(.child-critical-row) td:first-child {
+  box-shadow: inset 3px 0 0 #818cf8;
+}
+
+.programmer-container .jobs-table-wrapper .child-row.operator-stage-row-running:not(.child-priority-row):not(.child-critical-row) {
+  border-left: 3px solid #ef4444;
+  background-image:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.54) 0%, rgba(255, 255, 255, 0.1) 48%, rgba(255, 255, 255, 0) 100%),
+    linear-gradient(90deg, rgba(239, 68, 68, 0.18) 0%, rgba(239, 68, 68, 0.06) 38%, rgba(255, 255, 255, 0.96) 100%);
+}
+
+.programmer-container .jobs-table-wrapper .child-row.operator-stage-row-running:not(.child-priority-row):not(.child-critical-row) td:first-child {
+  box-shadow: inset 3px 0 0 #ef4444;
+}
+
+.programmer-container .jobs-table-wrapper .child-row.operator-stage-row-hold:not(.child-priority-row):not(.child-critical-row) {
+  border-left: 3px solid #f59e0b;
+  background-image:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.54) 0%, rgba(255, 255, 255, 0.1) 48%, rgba(255, 255, 255, 0) 100%),
+    linear-gradient(90deg, rgba(245, 158, 11, 0.2) 0%, rgba(245, 158, 11, 0.07) 38%, rgba(255, 255, 255, 0.96) 100%);
+}
+
+.programmer-container .jobs-table-wrapper .child-row.operator-stage-row-hold:not(.child-priority-row):not(.child-critical-row) td:first-child {
+  box-shadow: inset 3px 0 0 #f59e0b;
+}
+
+.programmer-container .jobs-table-wrapper .child-row.operator-stage-row-qc:not(.child-priority-row):not(.child-critical-row) {
+  border-left: 3px solid #818cf8;
+  background-image:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.54) 0%, rgba(255, 255, 255, 0.1) 48%, rgba(255, 255, 255, 0) 100%),
+    linear-gradient(90deg, rgba(129, 140, 248, 0.18) 0%, rgba(129, 140, 248, 0.06) 38%, rgba(255, 255, 255, 0.96) 100%);
+}
+
+.programmer-container .jobs-table-wrapper .child-row.operator-stage-row-qc:not(.child-priority-row):not(.child-critical-row) td:first-child {
   box-shadow: inset 3px 0 0 #818cf8;
 }
 

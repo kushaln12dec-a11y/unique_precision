@@ -26,9 +26,9 @@ export const getOperatorLogColumnWidth = (columnKey: string) => OPERATOR_LOG_COL
 
 export const formatOperatorLogStatus = (status?: string) => {
   const raw = String(status || "-").toUpperCase();
-  if (raw === "IN_PROGRESS") return "In Progress";
-  if (raw === "REJECTED") return "Rejected";
-  if (raw === "COMPLETED") return "Completed";
+  if (raw === "IN_PROGRESS") return "RUNNING";
+  if (raw === "REJECTED") return "HOLD";
+  if (raw === "COMPLETED") return "LOGGED";
   return raw
     .split("_")
     .map((part) => part.charAt(0) + part.slice(1).toLowerCase())

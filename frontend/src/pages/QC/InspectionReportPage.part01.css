@@ -84,6 +84,13 @@
   gap: 0.7rem;
 }
 
+.qc-report-help-text {
+  margin: -0.15rem 0 0;
+  color: #475569;
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
 .qc-report-decision {
   border: 1px solid #d6e0ff;
   border-radius: 8px;

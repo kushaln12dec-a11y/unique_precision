@@ -7,7 +7,6 @@ import AppLoader from "../../components/AppLoader";
 import { useOperatorViewData } from "./hooks/useOperatorViewData";
 import { useOperatorInputs } from "./hooks/useOperatorInputs";
 import { useOperatorViewActions } from "./hooks/useOperatorViewActions";
-import { useOperatorSubmit } from "./hooks/useOperatorSubmit";
 import { OperatorJobInfo } from "./components/OperatorJobInfo";
 import { OperatorCutCard } from "./components/OperatorCutCard";
 import { OperatorTotalsSection } from "./components/OperatorTotalsSection";
@@ -15,7 +14,7 @@ import OperatorViewModals from "./components/OperatorViewModals";
 import type { CutInputData } from "./types/cutInput";
 import { createEmptyCutInputData } from "./types/cutInput";
 import { getUserDisplayNameFromToken, getUserRoleFromToken } from "../../utils/auth";
-import { estimatedHoursFromAmount, MACHINE_OPTIONS, toMachineIndex } from "../../utils/jobFormatting";
+import { estimatedDurationSecondsFromHours, estimatedHoursFromAmount, MACHINE_OPTIONS, toMachineIndex } from "../../utils/jobFormatting";
 import { getQuantityElapsedSeconds, parseOperatorDateTime } from "./utils/operatorTimeUtils";
 import "../RoleBoard.css";
 import "../Programmer/Programmer.css";
@@ -42,7 +41,6 @@ const OperatorViewPage = () => {
     cutInputs,
     setCutInputs,
     expandedCuts,
-    setExpandedCuts,
     toggleCutExpansion,
   } = useOperatorViewData(groupId, cutIdParam);
 
@@ -53,14 +51,6 @@ const OperatorViewPage = () => {
     validationErrors,
     setValidationErrors,
     currentUserDisplayName
-  );
-
-  const { handleSubmit, toast, setToast } = useOperatorSubmit(
-    groupId,
-    jobs,
-    cutInputs,
-    setExpandedCuts,
-    setValidationErrors
   );
 
   const {
@@ -81,7 +71,8 @@ const OperatorViewPage = () => {
     handleSaveRange,
     handleUpdateQaStatus,
     handleStartTimeCaptured,
-  } = useOperatorViewActions({ jobs, cutInputs, setValidationErrors });
+    handleShiftOverAction,
+  } = useOperatorViewActions({ jobs, cutInputs, setValidationErrors, currentUserDisplayName });
 
   const parentJob = jobs.length > 0 ? jobs[0] : null;
   const totalGroupQuantity = jobs.reduce((sum, job) => sum + Math.max(1, Number(job.qty || 1)), 0);
@@ -128,7 +119,7 @@ const OperatorViewPage = () => {
   }, [hasActiveQuantityTimer]);
 
   const groupOvertimeSeconds = useMemo(() => {
-    const expectedSeconds = Math.max(0, Math.round(groupEstimatedHrs * 3600));
+    const expectedSeconds = estimatedDurationSecondsFromHours(groupEstimatedHrs);
     if (expectedSeconds <= 0) return 0;
 
     let maxElapsedSeconds = 0;
@@ -244,16 +235,6 @@ const OperatorViewPage = () => {
                 isAdmin={isAdmin}
                 overtimeSeconds={groupOvertimeSeconds}
               />
-
-              {/* Action Buttons */}
-              <div className="operator-view-actions">
-                <button className="btn-secondary" onClick={() => navigate("/operator")}>
-                  Cancel
-                </button>
-                <button className="btn-primary" onClick={handleSubmit}>
-                  Submit
-                </button>
-              </div>
             </>
           ) : (
             <div className="roleboard-body">
@@ -262,12 +243,6 @@ const OperatorViewPage = () => {
           )}
         </div>
       </div>
-      <Toast
-        message={toast.message}
-        visible={toast.visible}
-        variant={toast.variant}
-        onClose={() => setToast({ ...toast, visible: false })}
-      />
       <Toast
         message={saveToast.message}
         visible={saveToast.visible}
@@ -290,6 +265,7 @@ const OperatorViewPage = () => {
         setPendingShiftOver={setPendingShiftOver}
         handleUpdateQaStatus={handleUpdateQaStatus}
         handleInputChange={handleInputChange}
+        handleShiftOverAction={handleShiftOverAction}
         setActionToast={setActionToast}
       />
     </div>

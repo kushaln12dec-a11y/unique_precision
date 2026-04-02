@@ -32,19 +32,29 @@
 }
 
 .operator-logs-table .description-marquee .marquee-animated {
-  display: none;
+  display: inline-block;
+  visibility: visible;
+  white-space: nowrap;
+  min-width: max-content;
+  padding-right: 1.5rem;
+  animation: description-marquee-scroll 4.8s linear infinite;
 }
 
 .operator-logs-table .description-marquee .marquee-static {
-  position: static;
-  display: block;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  display: none;
 }
 
 .operator-logs-table .description-marquee .marquee-copy-btn {
   display: none;
+}
+
+@keyframes description-marquee-scroll {
+  0% {
+    transform: translateX(100%);
+  }
+  100% {
+    transform: translateX(-100%);
+  }
 }
 
 .operator-table-no-scroll
@@ -53,11 +63,19 @@
   td,
 .operator-table-no-scroll
   .child-jobs-table
+  tr.child-row.operator-stage-row-running
+  td,
+.operator-table-no-scroll
+  .child-jobs-table
+  tr.child-row.operator-stage-row-hold
+  td,
+.operator-table-no-scroll
+  .child-jobs-table
   tr.child-row.operator-stage-row-logged
   td,
 .operator-table-no-scroll
   .child-jobs-table
-  tr.child-row.operator-stage-row-dispatched
+  tr.child-row.operator-stage-row-qc
   td {
   background: transparent;
 }
@@ -66,95 +84,121 @@
   .child-jobs-table
   tr.child-row.child-critical-row
 {
-  border-left: 3px solid #dc2626;
+  border-left: none;
 }
 
 .operator-table-no-scroll
   .child-jobs-table
   tr.child-row.child-critical-row
   td:first-child {
-  box-shadow: inset 3px 0 0 #dc2626;
+  box-shadow: none;
 }
 
 .operator-table-no-scroll
   .child-jobs-table
   tr.child-row.child-priority-row.child-priority-high
 {
-  border-left: 3px solid #ef4444;
+  border-left: none;
 }
 
 .operator-table-no-scroll
   .child-jobs-table
   tr.child-row.child-priority-row.child-priority-high
   td:first-child {
-  box-shadow: inset 3px 0 0 #ef4444;
+  box-shadow: none;
 }
 
 .operator-table-no-scroll
   .child-jobs-table
   tr.child-row.child-priority-row.child-priority-medium
 {
-  border-left: 3px solid #f59e0b;
+  border-left: none;
 }
 
 .operator-table-no-scroll
   .child-jobs-table
   tr.child-row.child-priority-row.child-priority-medium
   td:first-child {
-  box-shadow: inset 3px 0 0 #f59e0b;
+  box-shadow: none;
 }
 
 .operator-table-no-scroll
   .child-jobs-table
   tr.child-row.child-priority-row.child-priority-low
 {
-  border-left: 3px solid #10b981;
+  border-left: none;
 }
 
 .operator-table-no-scroll
   .child-jobs-table
   tr.child-row.child-priority-row.child-priority-low
   td:first-child {
-  box-shadow: inset 3px 0 0 #10b981;
+  box-shadow: none;
 }
 
 .operator-table-no-scroll
   .child-jobs-table
   tr.child-row.operator-stage-row-not-started:not(.child-priority-row):not(.child-critical-row) {
-  border-left: 3px solid #f59e0b;
+  border-left: none;
 }
 
 .operator-table-no-scroll
   .child-jobs-table
   tr.child-row.operator-stage-row-not-started:not(.child-priority-row):not(.child-critical-row)
   td:first-child {
-  box-shadow: inset 3px 0 0 #f59e0b;
+  box-shadow: none;
 }
 
 .operator-table-no-scroll
   .child-jobs-table
   tr.child-row.operator-stage-row-logged:not(.child-priority-row):not(.child-critical-row) {
-  border-left: 3px solid #38bdf8;
+  border-left: none;
 }
 
 .operator-table-no-scroll
   .child-jobs-table
   tr.child-row.operator-stage-row-logged:not(.child-priority-row):not(.child-critical-row)
   td:first-child {
-  box-shadow: inset 3px 0 0 #38bdf8;
+  box-shadow: none;
 }
 
 .operator-table-no-scroll
   .child-jobs-table
-  tr.child-row.operator-stage-row-dispatched:not(.child-priority-row):not(.child-critical-row) {
-  border-left: 3px solid #818cf8;
+  tr.child-row.operator-stage-row-running:not(.child-priority-row):not(.child-critical-row) {
+  border-left: none;
 }
 
 .operator-table-no-scroll
   .child-jobs-table
-  tr.child-row.operator-stage-row-dispatched:not(.child-priority-row):not(.child-critical-row)
+  tr.child-row.operator-stage-row-running:not(.child-priority-row):not(.child-critical-row)
   td:first-child {
-  box-shadow: inset 3px 0 0 #818cf8;
+  box-shadow: none;
+}
+
+.operator-table-no-scroll
+  .child-jobs-table
+  tr.child-row.operator-stage-row-hold:not(.child-priority-row):not(.child-critical-row) {
+  border-left: none;
+}
+
+.operator-table-no-scroll
+  .child-jobs-table
+  tr.child-row.operator-stage-row-hold:not(.child-priority-row):not(.child-critical-row)
+  td:first-child {
+  box-shadow: none;
+}
+
+.operator-table-no-scroll
+  .child-jobs-table
+  tr.child-row.operator-stage-row-qc:not(.child-priority-row):not(.child-critical-row) {
+  border-left: none;
+}
+
+.operator-table-no-scroll
+  .child-jobs-table
+  tr.child-row.operator-stage-row-qc:not(.child-priority-row):not(.child-critical-row)
+  td:first-child {
+  box-shadow: none;
 }
 
 /* ============================================
@@ -184,6 +228,12 @@
   letter-spacing: 0.02em;
 }
 
+.qa-mini.running {
+  background: #fef2f2;
+  border-color: #fca5a5;
+  color: #991b1b;
+}
+
 .qa-mini.saved {
   background: #e0f2fe;
   border-color: #7dd3fc;
@@ -191,9 +241,9 @@
 }
 
 .qa-mini.ready {
-  background: #ecfdf5;
-  border-color: #86efac;
-  color: #166534;
+  background: #fff7ed;
+  border-color: #fb923c;
+  color: #9a3412;
 }
 
 .qa-mini.sent {

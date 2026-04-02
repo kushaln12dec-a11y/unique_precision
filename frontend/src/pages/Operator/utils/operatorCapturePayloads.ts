@@ -1,4 +1,5 @@
 import type { QuantityQaStatus } from "../../../types/job";
+import type { QuantityProgressStatus } from "./qaProgress";
 
 type QuantityInput = {
   startTime: string;
@@ -60,11 +61,11 @@ export const buildRangeCapturePayload = (
 });
 
 export const applyQaStatusToQuantities = (
-  existing: Record<number, QuantityQaStatus>,
+  existing: Record<number, QuantityProgressStatus>,
   quantityNumbers: number[],
   status: QuantityQaStatus
 ) => {
-  const next = { ...existing };
+  const next: Record<number, QuantityProgressStatus> = { ...existing };
   quantityNumbers.forEach((qty) => {
     next[qty] = status;
   });

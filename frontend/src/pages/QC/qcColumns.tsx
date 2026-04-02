@@ -21,7 +21,18 @@ export const createQcColumns = ({
   { key: "customer", label: "Customer", render: (row: QcRow) => <div className="qc-customer-cell"><span className="qc-customer-name">{row.entry.customer || row.parent.customer || "-"}</span></div> },
   { key: "description", label: "Description", render: (row: QcRow) => <MarqueeCopyText text={row.entry.description || row.parent.description || "-"} /> },
   { key: "jobRef", label: "Job ref", headerClassName: "qc-job-ref-col", className: "qc-job-ref-cell", render: (row: QcRow) => <span className="qc-job-ref-value">{formatJobRefDisplay(String(row.entry.refNumber || row.parent.refNumber || "").trim())}</span> },
-  { key: "qty", label: "Qty", headerClassName: "qc-qty-col", className: "qc-qty-cell", render: (row: QcRow) => row.quantityLabel },
+  {
+    key: "qty",
+    label: <>Quantity<br />Report Type</>,
+    headerClassName: "qc-qty-col",
+    className: "qc-qty-cell",
+    render: (row: QcRow) => (
+      <div className="qc-quantity-cell">
+        <span className="qc-quantity-title">{row.quantityLabel}</span>
+        <span className="qc-quantity-subtitle">{row.reportScopeLabel}</span>
+      </div>
+    ),
+  },
   { key: "operator", label: "Operator", render: (row: QcRow) => getPrimaryOperatorName(row.entry.assignedTo || row.parent.assignedTo) },
   {
     key: "createdAt",

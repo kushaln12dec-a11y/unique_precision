@@ -1,10 +1,12 @@
 import { useMemo } from "react";
 import type { Column } from "../../../components/DataTable";
+import type { JobEntry } from "../../../types/job";
 import { estimatedHoursFromAmount, formatEstimatedTime, formatJobRefDisplay, formatMachineLabel, toYN } from "../../../utils/jobFormatting";
 import { getThicknessDisplayValue } from "../../Programmer/programmerUtils";
 import { matchesSearchQuery } from "../../../utils/searchUtils";
 import type { OperatorDisplayRow } from "./useOperatorTable";
 import type { OperatorTableRow } from "../types";
+import { getGroupQaProgressCounts } from "../utils/qaProgress";
 
 const OPERATOR_GRID_COLUMN_WIDTHS: Record<string, number> = {
   customer: 92,
@@ -14,12 +16,12 @@ const OPERATOR_GRID_COLUMN_WIDTHS: Record<string, number> = {
   cut: 62,
   thickness: 62,
   passLevel: 48,
-  setting: 56,
+  setting: 70,
   qty: 44,
   sedm: 50,
-  assignedTo: 128,
-  machineNumber: 88,
-  estimatedTime: 76,
+  assignedTo: 142,
+  machineNumber: 104,
+  estimatedTime: 92,
   totalAmount: 84,
   productionStage: 88,
   createdBy: 68,
@@ -36,7 +38,7 @@ const getOperatorHeaderName = (column: Column<OperatorDisplayRow>) => {
     case "programRefFileName":
       return "PROGRAM REF FILE NAME";
     case "machineNumber":
-      return "MACH #";
+      return "MACHINE ASSIGN";
     case "estimatedTime":
       return "ESTIMATED TIME";
     case "totalAmount":
@@ -51,23 +53,9 @@ const getOperatorHeaderName = (column: Column<OperatorDisplayRow>) => {
 };
 
 const getOperatorRowSearchValues = (row: OperatorTableRow, isAdmin: boolean) => {
-  const counts = row.entries.reduce(
-    (acc, entry) => {
-      const qty = Math.max(1, Number(entry.qty || 1));
-      const states = entry.quantityQaStates || {};
-      for (let i = 1; i <= qty; i += 1) {
-        const status = String(states[String(i)] || "").toUpperCase();
-        if (status === "SENT_TO_QA") acc.sent += 1;
-        else if (status === "SAVED") acc.saved += 1;
-        else if (status === "READY_FOR_QA") acc.ready += 1;
-        else acc.empty += 1;
-      }
-      return acc;
-    },
-    { empty: 0, ready: 0, saved: 0, sent: 0 }
-  );
+  const counts = getGroupQaProgressCounts(row.entries);
 
-  const stageSummary = [`Yet to Start ${counts.empty}`, `In Progress ${counts.ready}`, `Logged ${counts.saved}`, `QC ${counts.sent}`].join(" ");
+  const stageSummary = [`NOT STARTED ${counts.empty}`, `RUNNING ${counts.running}`, `HOLD ${counts.ready}`, `LOGGED ${counts.saved}`, `QC ${counts.sent}`].join(" ");
   const estimatedTime = formatEstimatedTime(
     estimatedHoursFromAmount(row.entries.reduce((sum, entry) => sum + Number(entry.totalHrs || 0) * Number(entry.rate || 0), 0))
   );
@@ -87,6 +75,7 @@ const getOperatorRowSearchValues = (row: OperatorTableRow, isAdmin: boolean) => 
       Number(entry.qty || 0).toString(),
       toYN(entry.sedm),
       entry.assignedTo || "Unassign",
+      getOperatorRowLiveRunSearchValue(entry),
       formatMachineLabel(String(entry.machineNumber || "").trim() || "-"),
       entry.createdBy || "-",
       ...(isAdmin ? [entry.totalAmount ? `Rs. ${Math.round(entry.totalAmount)}` : "-"] : [])
@@ -94,6 +83,20 @@ const getOperatorRowSearchValues = (row: OperatorTableRow, isAdmin: boolean) => 
   });
 
   return values;
+};
+
+const getOperatorRowLiveRunSearchValue = (entry: JobEntry) => {
+  const captures = Array.isArray(entry.operatorCaptures) ? entry.operatorCaptures : [];
+  const activeCapture = [...captures].reverse().find((capture) => capture?.startTime && !capture?.endTime);
+  if (!activeCapture) return "";
+  return [
+    "running",
+    formatMachineLabel(String(activeCapture.machineNumber || "").trim() || "-"),
+    String(activeCapture.opsName || "").trim(),
+    `qty ${Math.max(1, Number(activeCapture.fromQty || 1))}`,
+  ]
+    .filter(Boolean)
+    .join(" ");
 };
 
 type Params = {

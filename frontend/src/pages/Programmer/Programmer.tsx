@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import Sidebar from "../../components/Sidebar";
 import Header from "../../components/Header";
 import { getUserRoleFromToken } from "../../utils/auth";
@@ -22,6 +22,7 @@ import { useProgrammerPageController } from "./hooks/useProgrammerPageController
 import { useProgrammerReduxDispatchers } from "./hooks/useProgrammerReduxDispatchers";
 
 const Programmer = () => {
+  const location = useLocation();
   const navigate = useNavigate();
   const params = useParams<{ groupId?: string }>();
   const dispatch = useAppDispatch();
@@ -146,6 +147,7 @@ const Programmer = () => {
     setToast,
     setSavingJob,
     totals,
+    resetProgrammerFormState: handleCancelState,
   });
 
   const handleDeleteConfirm = async () => {
@@ -215,7 +217,10 @@ const Programmer = () => {
       <Sidebar currentPath="/programmer" onNavigate={(path) => navigate(path)} />
       <div className={`programmer-content ${isProgrammerFormRoute ? "programmer-content-scrollable" : ""}`}>
         <Header title="Programmer" />
-        <div className={`programmer-panel ${isProgrammerFormRoute ? "programmer-panel-scrollable" : ""}`}>
+        <div
+          key={location.pathname}
+          className={`programmer-panel ${isProgrammerFormRoute ? "programmer-panel-scrollable" : ""}`}
+        >
           {isProgrammerListRoute && <ProgrammerTabs activeTab={activeTab} setActiveTab={setActiveTab} />}
 
           <ProgrammerFormSection

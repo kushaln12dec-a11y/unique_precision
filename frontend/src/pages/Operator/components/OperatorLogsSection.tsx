@@ -47,9 +47,9 @@ export const OperatorLogsSection: React.FC<Props> = ({
           className="filter-select"
         >
           <option value="">All Status</option>
-          <option value="IN_PROGRESS">In Progress</option>
-          <option value="COMPLETED">Completed</option>
-          <option value="REJECTED">Rejected</option>
+          <option value="IN_PROGRESS">RUNNING</option>
+          <option value="COMPLETED">LOGGED</option>
+          <option value="REJECTED">HOLD</option>
         </select>
         <select value={operatorLogMachine} onChange={(e) => setOperatorLogMachine(e.target.value)} className="filter-select">
           <option value="">All Machines</option>

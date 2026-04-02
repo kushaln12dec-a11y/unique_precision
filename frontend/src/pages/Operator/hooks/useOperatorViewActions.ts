@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { startOperatorProductionLog } from "../../../services/employeeLogsApi";
+import { completeOperatorProductionLog, startOperatorProductionLog } from "../../../services/employeeLogsApi";
 import { captureOperatorInput, updateOperatorJob, updateOperatorQaStatus } from "../../../services/operatorApi";
 import { validateQuantityInputs, validateRangeSelection } from "../utils/validation";
 import { calculateTotals, type CutForm } from "../../Programmer/programmerUtils";
 import type { CutInputData } from "../types/cutInput";
 import type { JobEntry, QuantityQaStatus } from "../../../types/job";
+import type { QuantityProgressStatus } from "../utils/qaProgress";
 import { loadOperatorUsers, readImageFileAsBase64, seedQaStatusesByCut, seedSavedQuantities, showAndHideToast } from "../utils/operatorViewActionUtils";
 import { createDefaultToast, type ToastState } from "../utils/operatorViewToast";
 import { applyQaStatusToQuantities, buildRangeCapturePayload, buildSingleCapturePayload, getAssignedToValue, getOperatorOpsName } from "../utils/operatorCapturePayloads";
@@ -13,13 +14,14 @@ type Params = {
   jobs: JobEntry[];
   cutInputs: Map<number | string, CutInputData>;
   setValidationErrors: React.Dispatch<React.SetStateAction<Map<number | string, Record<string, Record<string, string>>>>>;
+  currentUserDisplayName: string;
 };
 
-export const useOperatorViewActions = ({ jobs, cutInputs, setValidationErrors }: Params) => {
+export const useOperatorViewActions = ({ jobs, cutInputs, setValidationErrors, currentUserDisplayName }: Params) => {
   const [operatorUsers, setOperatorUsers] = useState<Array<{ id: string | number; name: string }>>([]);
   const [savedQuantities, setSavedQuantities] = useState<Map<number | string, Set<number>>>(new Map());
   const [savedRanges, setSavedRanges] = useState<Map<number | string, Set<string>>>(new Map());
-  const [qaStatusesByCut, setQaStatusesByCut] = useState<Map<number | string, Record<number, QuantityQaStatus>>>(new Map());
+  const [qaStatusesByCut, setQaStatusesByCut] = useState<Map<number | string, Record<number, QuantityProgressStatus>>>(new Map());
   const [activeOperatorLogIds, setActiveOperatorLogIds] = useState<Map<string, string>>(new Map());
   const [saveToast, setSaveToast] = useState<ToastState>(() => createDefaultToast("success"));
   const [actionToast, setActionToast] = useState<ToastState>(() => createDefaultToast("info"));
@@ -244,6 +246,7 @@ export const useOperatorViewActions = ({ jobs, cutInputs, setValidationErrors }:
     if (!job) return;
     try {
       const fromQty = quantityIndex + 1;
+      const qtyData = cutInputs.get(cutId)?.quantities?.[quantityIndex];
       const startedLog = await startOperatorProductionLog({
         jobId: String(job.id),
         jobGroupId: String(job.groupId ?? ""),
@@ -263,10 +266,126 @@ export const useOperatorViewActions = ({ jobs, cutInputs, setValidationErrors }:
           return next;
         });
       }
+
+      const nextAssignedTo = getAssignedToValue(getOperatorOpsName(qtyData?.opsName || []));
+      const nextMachineNumber = String(qtyData?.machineNumber || "").trim();
+      if (nextAssignedTo || nextMachineNumber) {
+        await updateOperatorJob(String(cutId), {
+          ...(nextAssignedTo ? { assignedTo: nextAssignedTo } : {}),
+          ...(nextMachineNumber ? { machineNumber: nextMachineNumber } : {}),
+        });
+      }
     } catch (error) {
       console.error("Failed to start operator production log", error);
     }
-  }, [activeOperatorLogIds, jobs]);
+  }, [activeOperatorLogIds, cutInputs, jobs]);
+
+  const handleShiftOverAction = useCallback(async (cutId: number | string, quantityIndex: number) => {
+    const cutData = cutInputs.get(cutId);
+    if (!cutData?.quantities?.[quantityIndex]) {
+      showAndHideToast(setActionToast, "No quantity data found.", "error", 3000);
+      return false;
+    }
+
+    const qtyData = cutData.quantities[quantityIndex];
+    const key = `${String(cutId)}:${quantityIndex}`;
+    const job = jobs.find((item) => String(item.id) === String(cutId));
+    if (!job) {
+      showAndHideToast(setActionToast, "Job not found.", "error", 3000);
+      return false;
+    }
+
+    try {
+      if (qtyData.isPaused && qtyData.currentPauseReason === "Shift Over") {
+        const selectedOps = Array.isArray(qtyData.opsName)
+          ? qtyData.opsName.map((name) => String(name || "").trim()).filter(Boolean).slice(0, 1)
+          : [];
+        const normalizedCurrentUser = String(currentUserDisplayName || "").trim().toLowerCase();
+        const hasCurrentUserName =
+          !normalizedCurrentUser ||
+          selectedOps.some((name) => name.toLowerCase() === normalizedCurrentUser);
+
+        if (!selectedOps.length || !hasCurrentUserName) {
+          showAndHideToast(
+            setActionToast,
+            normalizedCurrentUser
+              ? `Add ${currentUserDisplayName} in Ops Name before resuming.`
+              : "Select Ops Name before resuming.",
+            "error",
+            3000
+          );
+          return false;
+        }
+
+        if (!String(qtyData.machineNumber || "").trim()) {
+          showAndHideToast(setActionToast, "Select machine number before resuming.", "error", 3000);
+          return false;
+        }
+
+        const startedLog = await startOperatorProductionLog({
+          jobId: String(job.id),
+          jobGroupId: String(job.groupId ?? ""),
+          refNumber: String((job as any).refNumber || ""),
+          customer: job.customer || "",
+          description: job.description || "",
+          settingLabel: String(job.setting || ""),
+          fromQty: quantityIndex + 1,
+          toQty: quantityIndex + 1,
+          quantityCount: 1,
+          startedAt: new Date().toISOString(),
+        });
+
+        if (startedLog?._id) {
+          setActiveOperatorLogIds((prev) => {
+            const next = new Map(prev);
+            next.set(key, startedLog._id);
+            return next;
+          });
+        }
+
+        await updateOperatorJob(String(cutId), {
+          assignedTo: getAssignedToValue(getOperatorOpsName(qtyData.opsName)),
+          machineNumber: String(qtyData.machineNumber || "").trim(),
+        });
+
+        return true;
+      }
+
+      const activeLogId = activeOperatorLogIds.get(key);
+      if (activeLogId) {
+        await completeOperatorProductionLog({
+          logId: activeLogId,
+          status: "REJECTED",
+          endedAt: new Date().toISOString(),
+          machineNumber: String(qtyData.machineNumber || "").trim(),
+          opsName: getOperatorOpsName(qtyData.opsName),
+          machineHrs: String(qtyData.machineHrs || ""),
+          idleTime: "Shift Over",
+          idleTimeDuration: "",
+        });
+        setActiveOperatorLogIds((prev) => {
+          const next = new Map(prev);
+          next.delete(key);
+          return next;
+        });
+      }
+
+      const nextAssignedTo = getAssignedToValue(getOperatorOpsName(qtyData.opsName));
+      const nextMachineNumber = String(qtyData.machineNumber || "").trim();
+      if (nextAssignedTo || nextMachineNumber) {
+        await updateOperatorJob(String(cutId), {
+          ...(nextAssignedTo ? { assignedTo: nextAssignedTo } : {}),
+          ...(nextMachineNumber ? { machineNumber: nextMachineNumber } : {}),
+        });
+      }
+
+      return true;
+    } catch (error) {
+      console.error("Failed to process shift over action", error);
+      showAndHideToast(setActionToast, "Failed to process shift over action.", "error", 3000);
+      return false;
+    }
+  }, [activeOperatorLogIds, currentUserDisplayName, cutInputs, jobs]);
 
   return {
     operatorUsers,
@@ -286,5 +405,6 @@ export const useOperatorViewActions = ({ jobs, cutInputs, setValidationErrors }:
     handleSaveRange,
     handleUpdateQaStatus,
     handleStartTimeCaptured,
+    handleShiftOverAction,
   };
 };

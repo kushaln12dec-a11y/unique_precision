@@ -5,6 +5,7 @@ import FilterBadges from "../../../components/FilterBadges";
 import DownloadIcon from "@mui/icons-material/Download";
 import { OperatorTaskTimer } from "./OperatorTaskTimer";
 import SelectDropdown, { type SelectOption } from "../../Programmer/components/SelectDropdown";
+import { MultiSelectOperators } from "./MultiSelectOperators";
 import type { FilterField, FilterCategory, FilterValues } from "../../../components/FilterModal";
 import { getDisplayName } from "../../../utils/jobFormatting";
 
@@ -41,6 +42,15 @@ type OperatorFiltersProps = {
   selectedRowsCount: number;
   machineOptions: string[];
   onApplyBulkAssignment: (payload: { operators: string[]; machineNumber: string }) => void;
+  runningMachineAlerts: Array<{
+    machineNumber: string;
+    jobRef: string;
+    customer: string;
+    description: string;
+    quantityLabel: string;
+    operatorName?: string;
+  }>;
+  onClearAllFilters: () => void;
 };
 
 export const OperatorFilters: React.FC<OperatorFiltersProps> = ({
@@ -70,39 +80,43 @@ export const OperatorFilters: React.FC<OperatorFiltersProps> = ({
   selectedRowsCount,
   machineOptions,
   onApplyBulkAssignment,
+  runningMachineAlerts,
+  onClearAllFilters,
 }) => {
   const [bulkOperator, setBulkOperator] = React.useState("");
   const [bulkMachineNumber, setBulkMachineNumber] = React.useState("");
 
-  const createdByOptions = useMemo<SelectOption[]>(
-    () => [
-      { label: "All Users", value: "" },
-      ...users.map((user) => {
-        const displayName = getDisplayName(user.firstName, user.lastName, user.email);
-        return { label: displayName, value: displayName };
-      }),
-    ],
+  const selectedCreatedByUsers = useMemo(
+    () =>
+      String(createdByFilter || "")
+        .split(",")
+        .map((value) => value.trim())
+        .filter(Boolean),
+    [createdByFilter]
+  );
+  const selectedAssignedOperators = useMemo(
+    () =>
+      String(assignedToFilter || "")
+        .split(",")
+        .map((value) => value.trim())
+        .filter(Boolean),
+    [assignedToFilter]
+  );
+  const createdByMultiSelectUsers = useMemo(
+    () =>
+      users.map((user) => ({
+        id: user._id,
+        name: getDisplayName(user.firstName, user.lastName, user.email),
+      })),
     [users]
   );
-
-  const assignedToOptions = useMemo<SelectOption[]>(() => {
+  const assignedToMultiSelectUsers = useMemo(() => {
     const source = operatorUsers.length > 0 ? operatorUsers : users;
-    const seen = new Set<string>(["", "unassigned", "unassign"]);
-    const options: SelectOption[] = [
-      { label: "All", value: "" },
-      { label: "Unassign", value: "Unassign" },
-    ];
-
-    source.forEach((user) => {
-      const displayName = getDisplayName(user.firstName, user.lastName, user.email);
-      const key = displayName.toLowerCase();
-      if (!seen.has(key)) {
-        seen.add(key);
-        options.push({ label: displayName, value: displayName });
-      }
-    });
-
-    return options;
+    const items = source.map((user) => ({
+      id: user._id,
+      name: getDisplayName(user.firstName, user.lastName, user.email),
+    }));
+    return [{ id: "__unassign__", name: "UNASSIGN" }, ...items];
   }, [operatorUsers, users]);
 
   const bulkMachineOptions = useMemo<SelectOption[]>(
@@ -130,6 +144,9 @@ export const OperatorFilters: React.FC<OperatorFiltersProps> = ({
     return options;
   }, [operatorUsers, users]);
 
+  const hasInlineFilters = Boolean(jobSearchFilter || createdByFilter || assignedToFilter);
+  const showClearAll = activeFilterCount > 0 || hasInlineFilters;
+
   return (
     <>
       <div className="panel-header">
@@ -148,34 +165,54 @@ export const OperatorFilters: React.FC<OperatorFiltersProps> = ({
             </div>
             <div className="filter-group operator-filter-created-by">
               <label>Created By</label>
-              <SelectDropdown
-                value={createdByFilter}
-                onChange={onCreatedByFilterChange}
-                options={createdByOptions}
-                placeholder="All Users"
-                align="left"
-                className="operator-filter-dropdown"
+              <MultiSelectOperators
+                selectedOperators={selectedCreatedByUsers}
+                availableOperators={createdByMultiSelectUsers}
+                onChange={(nextValues) => onCreatedByFilterChange(nextValues.join(", "))}
+                placeholder="ALL USERS"
+                className="operator-filter-dropdown operator-filter-multi"
+                compact={true}
               />
             </div>
             <div className="filter-group operator-filter-assigned-to">
               <label>Assigned To</label>
-              <SelectDropdown
-                value={assignedToFilter}
-                onChange={onAssignedToFilterChange}
-                options={assignedToOptions}
-                placeholder="All"
-                align="left"
-                className="operator-filter-dropdown"
+              <MultiSelectOperators
+                selectedOperators={selectedAssignedOperators}
+                availableOperators={assignedToMultiSelectUsers}
+                onChange={(nextValues) => onAssignedToFilterChange(nextValues.join(", "))}
+                placeholder="ALL"
+                className="operator-filter-dropdown operator-filter-multi"
+                compact={true}
               />
             </div>
           </div>
           <div className="operator-stage-legend-inline">
             <span className="operator-stage-legend-title">Stage Legend:</span>
-            <span className="operator-stage-chip empty">Yet to Start</span>
-            <span className="operator-stage-chip ready">In Progress</span>
-            <span className="operator-stage-chip saved">Logged</span>
+            <span className="operator-stage-chip empty">NOT STARTED</span>
+            <span className="operator-stage-chip running">RUNNING</span>
+            <span className="operator-stage-chip ready">HOLD</span>
+            <span className="operator-stage-chip saved">LOGGED</span>
             <span className="operator-stage-chip sent">QC</span>
           </div>
+          {runningMachineAlerts.length > 0 ? (
+            <div className="operator-running-strip" aria-label="Running machine updates">
+              {runningMachineAlerts.map((alert) => (
+                <div
+                  key={`${alert.machineNumber}-${alert.jobRef}-${alert.quantityLabel}`}
+                  className="operator-running-pill"
+                  title={`${alert.machineNumber} | ${alert.jobRef || "-"} | ${alert.description || "-"} | ${alert.quantityLabel}`}
+                >
+                  <span className="operator-running-dot" aria-hidden="true" />
+                  <span className="operator-running-pill-text">
+                    {(alert.machineNumber || "MACHINE PENDING").toUpperCase()}
+                    {alert.quantityLabel ? ` | ${String(alert.quantityLabel).toUpperCase()}` : ""}
+                    {alert.customer ? ` | ${String(alert.customer).toUpperCase()}` : ""}
+                    {alert.operatorName ? ` | ${String(alert.operatorName).toUpperCase()}` : ""}
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : null}
         </div>
 
         <div className="panel-header-actions">
@@ -252,6 +289,13 @@ export const OperatorFilters: React.FC<OperatorFiltersProps> = ({
         assignedToFilter={assignedToFilter}
         searchFilterLabel="Search"
         onRemoveFilter={onRemoveFilter}
+        trailingAction={
+          showClearAll ? (
+            <button className="btn-download-csv operator-clear-all-btn" onClick={onClearAllFilters} title="Clear all filters">
+              Clear All
+            </button>
+          ) : null
+        }
       />
     </>
   );

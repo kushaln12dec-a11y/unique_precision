@@ -229,11 +229,16 @@ const InspectionReportPage = () => {
               <label>Drawing Name<input value={drawingName} onChange={(e) => setDrawingName(e.target.value)} /></label>
               <label>Drawing No.<input value={drawingNo} onChange={(e) => setDrawingNo(e.target.value)} /></label>
               {templateVariant === "TOOLING_SPARE" && (
-                <div className="qc-report-tooling-fields">
-                  <label>Tool Identification No.<input value={toolingDetails.toolIdentificationNo} onChange={(e) => setToolingField("toolIdentificationNo", e.target.value)} /></label>
-                  <label>Consumable Part Identification No.<input value={toolingDetails.consumablePartIdentificationNo} onChange={(e) => setToolingField("consumablePartIdentificationNo", e.target.value)} /></label>
-                  <label>Consumable Part Name<input value={toolingDetails.consumablePartName} onChange={(e) => setToolingField("consumablePartName", e.target.value)} /></label>
-                </div>
+                <>
+                  <div className="qc-report-tooling-fields">
+                    <label>Tool Identification No.<input value={toolingDetails.toolIdentificationNo} onChange={(e) => setToolingField("toolIdentificationNo", e.target.value)} /></label>
+                    <label>Consumable Part Identification No.<input value={toolingDetails.consumablePartIdentificationNo} onChange={(e) => setToolingField("consumablePartIdentificationNo", e.target.value)} /></label>
+                    <label>Consumable Part Name<input value={toolingDetails.consumablePartName} onChange={(e) => setToolingField("consumablePartName", e.target.value)} /></label>
+                  </div>
+                  <p className="qc-report-help-text">
+                    Consolidated report note: the PDF labels the result columns as Quantity 1 and Quantity 2 so inspectors can match the sheet directly to the actual quantities.
+                  </p>
+                </>
               )}
 
               <InspectionReportMeasurements

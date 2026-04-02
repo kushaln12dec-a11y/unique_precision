@@ -41,6 +41,7 @@ export const loadOperatorInputsFromLocalStorage = (
           pauseStartTime: qty.pauseStartTime || null,
           totalPauseTime: qty.totalPauseTime || 0,
           pausedElapsedTime: qty.pausedElapsedTime || 0,
+          operatorHistory: Array.isArray(qty.operatorHistory) ? qty.operatorHistory : Array.isArray(qty.opsName) ? qty.opsName : [],
           lastImageFile: null,
         })),
       });

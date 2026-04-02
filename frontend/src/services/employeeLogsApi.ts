@@ -168,6 +168,30 @@ export const startOperatorProductionLog = async (payload: {
   return res.json();
 };
 
+export const completeOperatorProductionLog = async (payload: {
+  logId?: string;
+  status?: "COMPLETED" | "REJECTED";
+  endedAt?: string;
+  machineNumber?: string;
+  opsName?: string;
+  machineHrs?: string;
+  idleTime?: string;
+  idleTimeDuration?: string;
+}): Promise<EmployeeLog> => {
+  const res = await fetch(apiUrl("/api/employee-logs/operator/complete"), {
+    method: "POST",
+    headers: getAuthHeaders(),
+    body: JSON.stringify(payload),
+  });
+
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({ message: "Failed to complete operator production log" }));
+    throw new Error(error.message || "Failed to complete operator production log");
+  }
+
+  return res.json();
+};
+
 export const createOperatorTaskSwitchLog = async (payload: {
   idleTime: string;
   remark: string;

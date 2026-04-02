@@ -17,12 +17,12 @@ const templateOptions: Array<{
   {
     variant: "DEFAULT",
     title: "Single Quantity Layout",
-    description: "Use this for one quantity per report page.",
+    description: "Create one report sheet for one quantity only.",
   },
   {
     variant: "TOOLING_SPARE",
     title: "Consolidated Layout",
-    description: "Use this for multiple quantities in one landscape report.",
+    description: "Create one sheet for multiple quantities. The PDF uses Quantity 1 and Quantity 2 labels for clarity.",
   },
 ];
 

@@ -5,10 +5,11 @@ import MarqueeCopyText from "../../../components/MarqueeCopyText";
 import SelectDropdown from "../../Programmer/components/SelectDropdown";
 import type { OperatorDisplayRow } from "../hooks/useOperatorTable";
 import { formatJobRefDisplay, formatMachineLabel, toYN } from "../../../utils/jobFormatting";
-import { getDispatchableQuantityNumbers, getGroupQaProgressCounts, getQaProgressCounts } from "./qaProgress";
+import { getDispatchableQuantityNumbers, getGroupQaProgressCounts, getQaProgressCounts, getQaStatusBadges } from "./qaProgress";
 import { getThicknessDisplayValue } from "../../Programmer/programmerUtils";
 import {
   getOperatorMachineNumber,
+  getOperatorHistoryNames,
   normalizeAssignedOperators,
   renderEstimatedTime,
   renderOperatorCustomerCell,
@@ -31,6 +32,8 @@ export const buildBaseOperatorColumns = ({
   handleSubmit,
   handleOpenQaModal,
   isImageInputDisabled,
+  activeRunsByJobId,
+  operatorHistoryByJobId,
 }: {
   toggleGroup: (groupId: string) => void;
   operatorNameLookup: Map<string, string>;
@@ -48,9 +51,30 @@ export const buildBaseOperatorColumns = ({
   handleImageInput: (groupId: string, cutId?: string | number) => void;
   handleOpenQaModal: (entries: any[]) => void;
   isImageInputDisabled: boolean;
+  activeRunsByJobId: Map<string, any>;
+  operatorHistoryByJobId: Map<string, string[]>;
 }): Column<OperatorDisplayRow>[] => [
-  { key: "customer", label: "Customer", sortable: false, sortKey: "customer", className: "customer-cell", headerClassName: "customer-header", render: (row) => renderOperatorCustomerCell(row, toggleGroup) },
-  { key: "programRef", label: "Job ref", sortable: false, render: (row) => <MarqueeCopyText text={formatJobRefDisplay(row.entry.refNumber || "") || "-"} className="job-ref-copy-text" /> },
+  {
+    key: "customer",
+    label: "Customer",
+    sortable: false,
+    sortKey: "customer",
+    className: "customer-cell",
+    headerClassName: "customer-header",
+    render: (row) => renderOperatorCustomerCell(row, toggleGroup, activeRunsByJobId),
+  },
+  {
+    key: "programRef",
+    label: "Job ref",
+    sortable: false,
+    render: (row) => {
+      return (
+        <div className="operator-job-ref-cell">
+          <MarqueeCopyText text={formatJobRefDisplay(row.entry.refNumber || "") || "-"} className="job-ref-copy-text" />
+        </div>
+      );
+    },
+  },
   { key: "programRefFileName", label: <>Program Ref<br />File Name</>, sortable: false, render: (row) => <MarqueeCopyText text={String((row.entry as any).programRefFile || (row.entry as any).programRefFileName || "-")} /> },
   { key: "description", label: "Description", sortable: false, sortKey: "description", render: (row) => <MarqueeCopyText text={row.entry.description || "-"} /> },
   { key: "cut", label: "Cut (mm)", sortable: false, sortKey: "cut", render: (row) => Math.round(Number(row.entry.cut || 0)) },
@@ -66,44 +90,64 @@ export const buildBaseOperatorColumns = ({
     className: "operator-assigned-cell",
     render: (row) => {
       const assignedOperators = normalizeAssignedOperators(row.entry.assignedTo || "", operatorNameLookup);
+      const activeOperatorName = String(activeRunsByJobId.get(String(row.entry.id))?.userName || "").trim();
+      const operatorHistory = Array.from(
+        new Set(
+          [
+            ...getOperatorHistoryNames(row.entry),
+            ...(operatorHistoryByJobId.get(String(row.entry.id)) || []),
+            ...(activeOperatorName ? [activeOperatorName.toUpperCase()] : []),
+          ].filter(Boolean)
+        )
+      );
+      const latestWorkedByName = operatorHistory[operatorHistory.length - 1] || "";
+      const displayAssignedValue =
+        assignedOperators[0] ||
+        (activeOperatorName ? activeOperatorName.toUpperCase() : "") ||
+        latestWorkedByName ||
+        "Unassign";
+      const normalizedDisplayAssignedValue = String(displayAssignedValue || "").trim().toUpperCase();
+      const shouldShowOperatorHistory =
+        operatorHistory.length > 1 ||
+        (operatorHistory.length === 1 &&
+          operatorHistory[0].trim().toUpperCase() !== normalizedDisplayAssignedValue &&
+          normalizedDisplayAssignedValue !== "UNASSIGN");
       const normalizedCurrentUser = String(currentUserName || "").trim();
       const assignableOperators = isAdmin
         ? [...new Set(operatorUsers.map((item) => String(item.name || "").trim()).filter(Boolean))]
         : (normalizedCurrentUser ? [normalizedCurrentUser] : []);
-
-      const assignmentOptions = [
-        { label: "Unassign", value: "Unassign" },
-        ...assignableOperators.map((name) => ({ label: name, value: name })),
+      const dropdownOptions = [
+        { label: "UNASSIGN", value: "Unassign" },
+        ...(
+          displayAssignedValue &&
+          displayAssignedValue.toLowerCase() !== "unassign" &&
+          !assignableOperators.some((name) => name.trim().toLowerCase() === displayAssignedValue.trim().toLowerCase())
+            ? [{ label: displayAssignedValue.toUpperCase(), value: displayAssignedValue }]
+            : []
+        ),
+        ...assignableOperators.map((name) => ({ label: String(name || "").toUpperCase(), value: name })),
       ];
 
-      const selectedOperator = assignedOperators[0] || "";
-      const hasSelectedInOptions = assignmentOptions.some(
-        (option) => option.value.toLowerCase() === selectedOperator.toLowerCase()
-      );
-      const dropdownOptions = hasSelectedInOptions || !selectedOperator
-        ? assignmentOptions
-        : [{ label: selectedOperator, value: selectedOperator }, ...assignmentOptions];
-      const dropdownValue = selectedOperator || "Unassign";
-
       return canAssign ? (
-        <SelectDropdown
-          className="operator-assigned-dropdown"
-          value={dropdownValue}
-          onChange={(nextValue) => handleAssignChange(row.entry.id, String(nextValue || "Unassign"))}
-          options={dropdownOptions}
-          placeholder="Unassign"
-          align="left"
-        />
-      ) : (
-        <div className="assigned-operators-readonly">
-          {assignedOperators.length > 1 ? <span className="compact-display-readonly" title={assignedOperators.join(", ")}><span className="multi-select-display-track">{assignedOperators.join(", ")}</span></span> : assignedOperators.length === 1 ? <span className="operator-badge-readonly">{assignedOperators[0]}</span> : <span className="unassigned-text">Unassign</span>}
+        <div className="operator-assigned-cell-stack" title={operatorHistory.length ? `Worked By: ${operatorHistory.join(", ")}` : undefined}>
+          <SelectDropdown
+            className="operator-assigned-dropdown"
+            value={displayAssignedValue}
+            onChange={(nextValue) => handleAssignChange(row.entry.id, String(nextValue || "Unassign"))}
+            options={dropdownOptions}
+            placeholder="Unassign"
+            align="left"
+          />
+          {shouldShowOperatorHistory ? <div className="operator-history-inline">WORKED BY: {operatorHistory.join(", ")}</div> : null}
         </div>
+      ) : (
+        <div className="assigned-operators-readonly">{operatorHistory.length ? `WORKED BY: ${operatorHistory.join(", ")}` : ""}</div>
       );
     },
   },
   {
     key: "machineNumber",
-    label: "Mach #",
+    label: <>Machine<br />Assign</>,
     sortable: false,
     className: "operator-machine-cell",
     render: (row) => (
@@ -127,12 +171,7 @@ export const buildBaseOperatorColumns = ({
     headerClassName: "status-header",
     render: (row) => {
       const counts = row.kind === "parent" ? getGroupQaProgressCounts(row.tableRow.entries) : getQaProgressCounts(row.entry, Math.max(1, Number(row.entry.qty || 1)));
-      const badges = [
-        { className: "empty", label: `Yet to Start ${counts.empty}` },
-        { className: "ready", label: `In Progress ${counts.ready}` },
-        { className: "saved", label: `Logged ${counts.saved}` },
-        { className: "sent", label: `QC ${counts.sent}` },
-      ];
+      const badges = getQaStatusBadges(counts);
       return <div className="child-stage-summary"><div className="qa-badge-ticker" title={badges.map((badge) => badge.label).join(" | ")}><div className="qa-badge-track">{[...badges, ...badges].map((badge, index) => <span key={`${badge.className}-${index}`} className={`qa-mini ${badge.className}`}>{badge.label}</span>)}</div></div></div>;
     },
   },

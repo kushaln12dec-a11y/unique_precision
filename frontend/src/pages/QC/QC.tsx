@@ -244,6 +244,7 @@ const QC = () => {
           message="Are you sure you want to close this inspection report?"
           details={[
             { label: "QC Item", value: reportCloseCandidate.quantityLabel },
+            { label: "Report Type", value: reportCloseCandidate.reportScopeLabel },
             { label: "Job Ref", value: reportCloseCandidate.entry.refNumber || reportCloseCandidate.groupId },
             { label: "Customer", value: reportCloseCandidate.entry.customer || reportCloseCandidate.parent.customer || "-" },
           ]}

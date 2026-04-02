@@ -11,9 +11,9 @@ export const getDisplayName = (
   fallback = "User"
 ): string => {
   const fullName = `${String(firstName || "").trim()} ${String(lastName || "").trim()}`.trim();
-  if (fullName) return fullName;
+  if (fullName) return fullName.toUpperCase();
   const emailLocalPart = getEmailLocalPart(email);
-  return emailLocalPart || fallback;
+  return String(emailLocalPart || fallback).toUpperCase();
 };
 
 export const getFirstNameDisplay = (
@@ -22,9 +22,9 @@ export const getFirstNameDisplay = (
   fallback = "User"
 ): string => {
   const normalizedFirstName = String(firstName || "").trim();
-  if (normalizedFirstName) return normalizedFirstName;
+  if (normalizedFirstName) return normalizedFirstName.toUpperCase();
   const emailLocalPart = getEmailLocalPart(email);
-  return emailLocalPart || fallback;
+  return String(emailLocalPart || fallback).toUpperCase();
 };
 
 export const getInitials = (value: string): string => {
@@ -41,9 +41,9 @@ export const getLogUserDisplayName = (
   fallback = "Unknown User"
 ): string => {
   const directName = String(userName || "").trim();
-  if (directName) return directName;
+  if (directName) return directName.toUpperCase();
   const emailLocalPart = getEmailLocalPart(userEmail);
-  return emailLocalPart || fallback;
+  return String(emailLocalPart || fallback).toUpperCase();
 };
 
 export const toYN = (value: unknown): string => {
@@ -66,6 +66,16 @@ export const formatEstimatedTime = (hours: number): string => {
 
 export const estimatedHoursFromAmount = (amount: number): number => {
   return (Number(amount || 0) || 0) / 625;
+};
+
+export const estimatedDurationSecondsFromHours = (hours: number): number => {
+  const safeHours = Number(hours || 0) || 0;
+  if (safeHours <= 0) return 0;
+  if (safeHours < 1) {
+    const minutes = Math.max(1, Math.round(safeHours * 60));
+    return minutes * 60;
+  }
+  return Math.max(0, Math.round(Number(safeHours.toFixed(2)) * 3600));
 };
 
 export const estimatedTimeFromAmount = (amount: number): string => {

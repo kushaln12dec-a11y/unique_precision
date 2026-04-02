@@ -87,9 +87,11 @@
 }
 
 .programmer-container .jobs-table-wrapper .child-row-content .child-jobs-table {
-  width: calc(100% - 24px) !important;
-  margin-left: 24px;
+  width: calc(100% - 91px) !important;
+  margin-left: 64px;
   border-left: 2px solid #dbeafe;
+  border-radius: 14px;
+  box-shadow: 0 10px 24px rgba(148, 163, 184, 0.12);
 }
 
 .child-jobs-table th,
@@ -287,7 +289,7 @@
 
 @media (max-width: 1024px) {
   .programmer-container .jobs-table-wrapper .child-row-content .child-jobs-table {
-    width: calc(100% - 14px) !important;
-    margin-left: 14px;
+    width: calc(100% - 47px) !important;
+    margin-left: 30px;
   }
 }

@@ -66,12 +66,17 @@
   color: #ffffff;
   border: none;
   padding: 0.5rem 1rem;
+  min-height: 46px;
   border-radius: 8px;
   font-size: 0.875rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
   box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
 }
 
 .btn-success.small:hover {
@@ -115,13 +120,18 @@
   color: #ffffff;
   border: none;
   padding: 0.5rem 1rem;
+  min-height: 46px;
   border-radius: 8px;
   font-size: 0.875rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
   box-shadow: 0 2px 4px rgba(245, 158, 11, 0.2);
-  margin-left: 0.5rem;
+  margin-left: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
 }
 
 .btn-clear:hover {

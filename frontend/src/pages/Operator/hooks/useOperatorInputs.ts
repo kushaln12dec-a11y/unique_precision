@@ -24,6 +24,19 @@ export const useOperatorInputs = (
   setValidationErrors: React.Dispatch<React.SetStateAction<Map<number | string, Record<string, Record<string, string>>>>>,
   currentUserDisplayName: string
 ) => {
+  const normalizeOperatorList = (values: unknown[]): string[] => {
+    const seen = new Set<string>();
+    return values
+      .map((value) => String(value || "").trim().toUpperCase())
+      .filter((value) => {
+        if (!value) return false;
+        const key = value.toLowerCase();
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+  };
+
   const copyQuantityToAll = (
     cutId: number | string,
     sourceQuantityIndex: number,
@@ -121,7 +134,7 @@ export const useOperatorInputs = (
         }
 
         const selectedOps = Array.isArray(qtyData.opsName)
-          ? qtyData.opsName.map((name) => String(name || "").trim()).filter(Boolean)
+          ? qtyData.opsName.map((name) => String(name || "").trim()).filter(Boolean).slice(0, 1)
           : [];
         const normalizedCurrentUser = String(currentUserDisplayName || "").trim().toLowerCase();
         const hasCurrentUserName =
@@ -229,6 +242,18 @@ export const useOperatorInputs = (
         ...qtyData,
         ...(field !== "recalculateMachineHrs" && field !== "addIdleTimeToMachineHrs" ? { [field]: value } : {}),
       } as QuantityInputData;
+
+      if (field === "opsName") {
+        const nextOps = Array.isArray(value)
+          ? value.map((name) => String(name || "").trim()).filter(Boolean).slice(0, 1)
+          : (String(value || "").trim() ? [String(value || "").trim()] : []);
+        updatedQtyData.opsName = nextOps;
+        updatedQtyData.operatorHistory = normalizeOperatorList([
+          ...(qtyData.operatorHistory || []),
+          ...(qtyData.opsName || []),
+          ...nextOps,
+        ]);
+      }
 
       if (field === "startTime") {
         updatedQtyData.startTimeEpochMs = null;

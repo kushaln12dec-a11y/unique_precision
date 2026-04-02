@@ -161,7 +161,7 @@ export const useOperatorActions = ({ operatorGridJobs, setJobs, setOperatorGridJ
       showTimedToast(setToast, "Select at least one row first.", "error");
       return;
     }
-    const operators = [...new Set(payload.operators.map((name) => name.trim()).filter(Boolean))];
+    const operators = [...new Set(payload.operators.map((name) => name.trim().toUpperCase()).filter(Boolean))];
     const selectedOperator = operators[0] || "";
     const machineNumber = String(payload.machineNumber || "").trim();
     if (!selectedOperator && !machineNumber) {

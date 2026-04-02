@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import type { JobEntry } from "../../../types/job";
 import type { Column } from "../../../components/DataTable";
 import type { OperatorTableRow } from "../types";
+import type { EmployeeLog } from "../../../types/employeeLog";
 import {
   getOperatorMachineDropdownOptions,
 } from "../utils/operatorTableHelpers";
@@ -33,6 +34,8 @@ type UseOperatorTableProps = {
   isAdmin: boolean;
   isImageInputDisabled: boolean;
   toggleGroup: (groupId: string) => void;
+  activeRunsByJobId: Map<string, EmployeeLog>;
+  operatorHistoryByJobId: Map<string, string[]>;
 };
 
 export const useOperatorTable = ({
@@ -51,6 +54,8 @@ export const useOperatorTable = ({
   isAdmin,
   isImageInputDisabled,
   toggleGroup,
+  activeRunsByJobId,
+  operatorHistoryByJobId,
 }: UseOperatorTableProps): Column<OperatorDisplayRow>[] => {
   const machineDropdownOptions = useMemo(() => getOperatorMachineDropdownOptions(machineOptions), [machineOptions]);
 
@@ -86,6 +91,8 @@ export const useOperatorTable = ({
       handleImageInput,
       handleOpenQaModal,
       isImageInputDisabled,
+      activeRunsByJobId,
+      operatorHistoryByJobId,
     }),
     [
       canAssign,
@@ -102,6 +109,8 @@ export const useOperatorTable = ({
       handleOpenQaModal,
       isAdmin,
       isImageInputDisabled,
+      activeRunsByJobId,
+      operatorHistoryByJobId,
       operatorNameLookup,
       toggleGroup,
     ]

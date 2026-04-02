@@ -19,6 +19,7 @@ type SendToQaTargetCardProps = {
 
 const getStatusCounts = (statusByQuantity: Record<number, QuantityProgressStatus>) => ({
   empty: Object.values(statusByQuantity).filter((status) => status === "EMPTY").length,
+  running: Object.values(statusByQuantity).filter((status) => status === "RUNNING").length,
   sent: Object.values(statusByQuantity).filter((status) => status === "SENT_TO_QA").length,
   ready: Object.values(statusByQuantity).filter((status) => status === "READY_FOR_QA").length,
   saved: Object.values(statusByQuantity).filter((status) => status === "SAVED").length,
@@ -50,10 +51,11 @@ const SendToQaTargetCard = ({
           <p>{target.refNumber || "-"} • Setting {target.settingLabel || "-"} • {target.description || "No description"}</p>
         </div>
         <div className="send-to-qa-badges">
-          <span className="qa-summary-chip saved">Logged {counts.saved}</span>
-          <span className="qa-summary-chip ready">In Progress {counts.ready}</span>
+          <span className="qa-summary-chip empty">NOT STARTED {counts.empty}</span>
+          <span className="qa-summary-chip running">RUNNING {counts.running}</span>
+          <span className="qa-summary-chip ready">HOLD {counts.ready}</span>
+          <span className="qa-summary-chip saved">LOGGED {counts.saved}</span>
           <span className="qa-summary-chip sent">QC {counts.sent}</span>
-          <span className="qa-summary-chip empty">Yet to Start {counts.empty}</span>
         </div>
       </div>
 
@@ -63,7 +65,7 @@ const SendToQaTargetCard = ({
           <button type="button" className={mode === "range" ? "active" : ""} onClick={() => onSetMode("range")}>Range Selector</button>
         </div>
         <div className="send-to-qa-quick-actions">
-          <button type="button" onClick={onSelectAll}>All Logged</button>
+          <button type="button" onClick={onSelectAll}>All Logged / Hold</button>
           <button type="button" onClick={onClear}>Clear</button>
         </div>
       </div>

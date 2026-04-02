@@ -17,12 +17,10 @@ export const buildOperatorLogsColumns = ({
   designationByUserName,
   getMachineNumberForLog,
   getRevenueForLog,
-  isAdmin,
 }: {
   designationByUserName: Map<string, string>;
   getMachineNumberForLog: (log: EmployeeLog) => string;
   getRevenueForLog: (log: EmployeeLog, workedSecondsMap?: Map<string, number>) => string;
-  isAdmin: boolean;
 }): Column<EmployeeLog>[] => [
   {
     key: "userName",
@@ -34,7 +32,6 @@ export const buildOperatorLogsColumns = ({
       return (
         <div className="log-user-stack log-user-badge-stack">
           <span className="log-user-initial-badge" title={name.toUpperCase()}>{getInitials(name)}</span>
-          <strong title={name.toUpperCase()}>{name}</strong>
           <span>{designation}</span>
         </div>
       );
@@ -68,12 +65,12 @@ export const buildOperatorLogsColumns = ({
   { key: "overtimeSeconds", label: "Overtime", sortable: false, render: (row) => formatOperatorDuration(Number((row.metadata as any)?.overtimeSeconds || 0)) },
   { key: "idleTime", label: "Idle Time", sortable: false, render: (row) => String((row.metadata as any)?.idleTime || "-") },
   { key: "remark", label: "Remark", sortable: false, render: (row) => String((row.metadata as any)?.remark || "-") },
-  ...(isAdmin ? [{
+  {
     key: "revenue",
     label: "Revenue",
     sortable: false,
     render: (row: EmployeeLog) => <span className="log-revenue-value">{getRevenueForLog(row)}</span>,
-  } as Column<EmployeeLog>] : []),
+  } as Column<EmployeeLog>,
   {
     key: "status",
     label: "Status",
@@ -115,13 +112,11 @@ export const buildOperatorLogFilter =
     designationByUserName,
     getMachineNumberForLog,
     getRevenueForLog,
-    isAdmin,
     operatorLogSearch,
   }: {
     designationByUserName: Map<string, string>;
     getMachineNumberForLog: (log: EmployeeLog) => string;
     getRevenueForLog: (log: EmployeeLog, workedSecondsMap?: Map<string, number>) => string;
-    isAdmin: boolean;
     operatorLogSearch: string;
   }) =>
   (logs: EmployeeLog[]) =>
@@ -142,7 +137,7 @@ export const buildOperatorLogFilter =
           formatOperatorDuration(Number((log.metadata as any)?.overtimeSeconds || 0)),
           String((log.metadata as any)?.idleTime || "-"),
           String((log.metadata as any)?.remark || "-"),
-          ...(isAdmin ? [getRevenueForLog(log)] : []),
+          getRevenueForLog(log),
           formatOperatorLogStatus(log.status),
         ],
         operatorLogSearch

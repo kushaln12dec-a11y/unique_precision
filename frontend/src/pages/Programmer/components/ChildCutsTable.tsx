@@ -3,7 +3,7 @@ import type { JobEntry } from "../../../types/job";
 import JobDetailsModal from "./JobDetailsModal";
 import { getRowClassName } from "../utils/priorityUtils";
 import { getUserRoleFromToken } from "../../../utils/auth";
-import { getQaProgressCounts } from "../../Operator/utils/qaProgress";
+import { getDominantQaStageClass, getQaProgressCounts } from "../../Operator/utils/qaProgress";
 import { MACHINE_OPTIONS, toMachineIndex } from "../../../utils/jobFormatting";
 import ChildCutsTableHeader from "./ChildCutsTableHeader";
 import ChildCutsTableRow from "./ChildCutsTableRow";
@@ -96,9 +96,7 @@ const ChildCutsTable = ({
           {entries.map((entry, index) => {
             const rowKey = getRowKey(entry, index);
             const counts = getQaProgressCounts(entry, Math.max(1, Number(entry.qty || 1)));
-            const logged = counts.saved + counts.ready;
-            const maxCount = Math.max(logged, counts.sent, counts.empty);
-            const stageClass = !isOperator ? "" : counts.sent === maxCount ? "operator-stage-row-dispatched" : logged === maxCount ? "operator-stage-row-logged" : "operator-stage-row-not-started";
+            const stageClass = !isOperator ? "" : getDominantQaStageClass(counts);
             return (
               <ChildCutsTableRow
                 key={String(rowKey)}

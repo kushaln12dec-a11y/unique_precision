@@ -18,7 +18,7 @@ export const useOperatorPageConfig = (
     () =>
       operatorUsers.map((user) => ({
         id: user._id,
-        name: getDisplayName(user.firstName, user.lastName, user.email, String(user._id)),
+        name: getDisplayName(user.firstName, user.lastName, user.email, String(user._id)).toUpperCase(),
       })),
     [operatorUsers]
   );

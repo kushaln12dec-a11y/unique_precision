@@ -275,10 +275,11 @@
 }
 
 .data-table-wrapper.employee-logs-table {
-  max-height: calc(100vh - 300px);
+  max-height: calc(100vh - 100px);
   overflow-y: auto;
   overflow-x: auto;
   position: relative;
+  padding-top: 8px;
 }
 
 .employee-logs-table .data-table {

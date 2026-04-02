@@ -164,7 +164,7 @@ const SelectDropdown: React.FC<SelectDropdownProps> = ({
   return (
     <>
       <div
-        className={`option-dropdown-wrapper align-${align} ${className}`.trim()}
+        className={`option-dropdown-wrapper align-${align} ${isOpen ? "open" : ""} ${className}`.trim()}
         ref={wrapperRef}
         onBlur={handleWrapperBlur}
       >

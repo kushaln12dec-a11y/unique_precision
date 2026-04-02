@@ -54,7 +54,7 @@ export const validateQuantityInputs = (qtyData: QuantityInputData): Record<strin
   }
   
   if (!qtyData.opsName || qtyData.opsName.length === 0) {
-    errors.opsName = "At least one Operator Name is required.";
+    errors.opsName = "Operator Name is required.";
   }
   
   // Machine Hrs is auto-calculated, so we check if it's valid

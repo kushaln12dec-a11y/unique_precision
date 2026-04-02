@@ -20,6 +20,7 @@ type FilterBadgesProps = {
   assignedToFilter?: string;
   searchFilterLabel?: string;
   onRemoveFilter: (key: string, type: "inline" | "modal") => void;
+  trailingAction?: React.ReactNode;
 };
 
 const FilterBadges: React.FC<FilterBadgesProps> = ({
@@ -31,6 +32,7 @@ const FilterBadges: React.FC<FilterBadgesProps> = ({
   assignedToFilter,
   searchFilterLabel,
   onRemoveFilter,
+  trailingAction,
 }) => {
   const badges: FilterBadge[] = [];
 
@@ -129,7 +131,7 @@ const FilterBadges: React.FC<FilterBadgesProps> = ({
     }
   });
 
-  if (badges.length === 0) {
+  if (badges.length === 0 && !trailingAction) {
     return null;
   }
 
@@ -149,6 +151,7 @@ const FilterBadges: React.FC<FilterBadgesProps> = ({
           </button>
         </div>
       ))}
+      {trailingAction}
     </div>
   );
 };
