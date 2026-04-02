@@ -2,12 +2,13 @@ import React from "react";
 import LazyAgGrid from "../../../components/LazyAgGrid";
 import AppLoader from "../../../components/AppLoader";
 import { OperatorFilters } from "./OperatorFilters";
-import { getGroupQaProgressCounts, getQaProgressCounts } from "../utils/qaProgress";
+import { getDominantQaStageClass, getGroupQaProgressCounts, getQaProgressCounts } from "../utils/qaProgress";
 import { getParentRowClassName, getRowClassName } from "../../Programmer/utils/priorityUtils";
 import type { FilterValues } from "../../../components/FilterModal";
 import type { JobEntry } from "../../../types/job";
 import type { OperatorDisplayRow } from "../hooks/useOperatorTable";
 import type { OperatorTableRow } from "../types";
+import type { EmployeeLog } from "../../../types/employeeLog";
 
 type Props = {
   loadingJobs: boolean;
@@ -45,6 +46,7 @@ type Props = {
   operatorGridRows: OperatorDisplayRow[];
   expandedGroups: Set<string>;
   createdByRefreshKey: string;
+  activeOperatorRuns: EmployeeLog[];
 };
 
 export const OperatorJobsSection: React.FC<Props> = ({
@@ -83,10 +85,34 @@ export const OperatorJobsSection: React.FC<Props> = ({
   operatorGridRows,
   expandedGroups,
   createdByRefreshKey,
+  activeOperatorRuns,
 }) => {
   if (loadingJobs && operatorGridJobs.length === 0) {
     return <AppLoader message="Loading operator jobs..." />;
   }
+
+  const runningMachineAlerts = React.useMemo(() => {
+    const alertsByMachine = new Map<
+      string,
+      { machineNumber: string; jobRef: string; customer: string; description: string; quantityLabel: string; operatorName?: string }
+    >();
+    activeOperatorRuns.forEach((log) => {
+      const entry = operatorGridJobs.find((job) => String(job.id) === String(log.jobId));
+      if (!entry) return;
+      const metadata = (log.metadata || {}) as Record<string, any>;
+      const quantityFrom = Math.max(1, Number(log.quantityFrom || 1));
+      const quantityTo = Math.max(quantityFrom, Number(log.quantityTo || quantityFrom));
+      alertsByMachine.set(String(entry.id), {
+        machineNumber: String(metadata.machineNumber || entry.machineNumber || "Machine Pending"),
+        jobRef: String(entry.refNumber || ""),
+        customer: String(entry.customer || ""),
+        description: entry.description || "",
+        quantityLabel: quantityFrom === quantityTo ? `QTY ${quantityFrom}` : `QTY ${quantityFrom}-${quantityTo}`,
+        operatorName: String(log.userName || entry.assignedTo || "").trim(),
+      });
+    });
+    return Array.from(alertsByMachine.values());
+  }, [activeOperatorRuns, operatorGridJobs]);
 
   return (
     <>
@@ -123,6 +149,8 @@ export const OperatorJobsSection: React.FC<Props> = ({
         selectedRowsCount={selectedEntryIds.size}
         machineOptions={machineOptionsForDropdown}
         onApplyBulkAssignment={handleApplyBulkAssignment}
+        runningMachineAlerts={runningMachineAlerts}
+        onClearAllFilters={handleClearFilters}
       />
       <LazyAgGrid
         columnDefs={operatorJobColumnDefs as any}
@@ -138,26 +166,18 @@ export const OperatorJobsSection: React.FC<Props> = ({
           if (params.data?.kind === "child") {
             const childFlagClass = getRowClassName([params.data.entry], false, true);
             const childCounts = getQaProgressCounts(params.data.entry, Math.max(1, Number(params.data.entry.qty || 1)));
-            const childLogged = childCounts.saved + childCounts.ready;
-            const childMax = Math.max(childLogged, childCounts.sent, childCounts.empty);
-            let childStageClass = "operator-stage-row-not-started";
-            if (childCounts.sent === childMax) childStageClass = "operator-stage-row-dispatched";
-            else if (childLogged === childMax) childStageClass = "operator-stage-row-logged";
+            const childStageClass = getDominantQaStageClass(childCounts);
             return `${childFlagClass} ${childStageClass}`;
           }
 
           const row = params.data.tableRow as OperatorTableRow;
           const flagClass = getParentRowClassName(row.parent, row.entries, expandedGroups.has(row.groupId));
           const c = getGroupQaProgressCounts(row.entries);
-          const logged = c.saved + c.ready;
-          const maxCount = Math.max(logged, c.sent, c.empty);
-          let stageClass = "operator-stage-row-not-started";
-          if (c.sent === maxCount) stageClass = "operator-stage-row-dispatched";
-          else if (logged === maxCount) stageClass = "operator-stage-row-logged";
+          const stageClass = getDominantQaStageClass(c);
           return `${flagClass} ${stageClass}`;
         }}
         className="jobs-table-wrapper operator-table-no-scroll"
-        rowHeight={56}
+        rowHeight={88}
         fitColumns={true}
         refreshKey={createdByRefreshKey}
       />

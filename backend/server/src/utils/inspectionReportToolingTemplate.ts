@@ -217,13 +217,13 @@ export const buildToolingSpareInspectionReportHtml = (payload: ToolingSpareInspe
         <th rowspan="2" style="width:12%;">Specification Nominal</th>
         <th rowspan="2" style="width:11%;">Specification Tolerance</th>
         <th rowspan="2" style="width:12%;">Inspection Method</th>
-        <th colspan="2" style="width:16%;">Sample Inspection Result</th>
+        <th colspan="2" style="width:16%;">Quantity Inspection Result</th>
         <th rowspan="2" style="width:10%;">Result<br/>OK / Not OK</th>
         <th rowspan="2" style="width:22%;">Remarks</th>
       </tr>
       <tr class="sub-head">
-        <th>Sample 1</th>
-        <th>Sample 2</th>
+        <th>Quantity 1</th>
+        <th>Quantity 2</th>
       </tr>
       ${bodyRows.replace(/<tr>/g, '<tr class="body-row">')}
       <tr>

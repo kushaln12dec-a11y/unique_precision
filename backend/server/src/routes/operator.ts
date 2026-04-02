@@ -105,20 +105,50 @@ const getAllocatedRevenueByQuantity = (
 router.get("/jobs", async (req, res) => {
   try {
     const where: any = {};
+    const andConditions: any[] = [];
+    const orConditions: any[] = [];
+
+    const parseMultiValue = (value: unknown) =>
+      String(value || "")
+        .split(",")
+        .map((item) => item.trim())
+        .filter(Boolean);
 
     if (req.query.customer) {
       where.customer = { contains: String(req.query.customer), mode: "insensitive" };
     }
     if (req.query.createdBy) {
-      where.createdBy = String(req.query.createdBy);
+      const createdByValues = parseMultiValue(req.query.createdBy);
+      if (createdByValues.length === 1) {
+        where.createdBy = createdByValues[0];
+      } else if (createdByValues.length > 1) {
+        andConditions.push({
+          OR: createdByValues.map((value) => ({ createdBy: value })),
+        });
+      }
     }
     if (req.query.assignedTo) {
-      const assignedTo = String(req.query.assignedTo).trim();
-      if (/^unassign(?:ed)?$/i.test(assignedTo)) {
-        where.OR = [{ assignedTo: "Unassign" }, { assignedTo: "Unassigned" }];
-      } else {
-        where.assignedTo = assignedTo;
+      const assignedValues = parseMultiValue(req.query.assignedTo);
+      const includeUnassigned = assignedValues.some((value) => /^unassign(?:ed)?$/i.test(value));
+      const namedAssignments = assignedValues.filter((value) => !/^unassign(?:ed)?$/i.test(value));
+
+      if (namedAssignments.length > 0) {
+        orConditions.push(
+          ...namedAssignments.map((value) => ({
+            assignedTo: { contains: value, mode: "insensitive" },
+          }))
+        );
       }
+      if (includeUnassigned) {
+        orConditions.push({ assignedTo: "Unassign" }, { assignedTo: "Unassigned" });
+      }
+    }
+
+    if (orConditions.length > 0) {
+      andConditions.push({ OR: orConditions });
+    }
+    if (andConditions.length > 0) {
+      where.AND = [...(Array.isArray(where.AND) ? where.AND : []), ...andConditions];
     }
 
     const { limit, offset } = getPagination(req);
@@ -327,7 +357,7 @@ router.post("/jobs/:id/capture-input", async (req, res) => {
         existingLogId: existingLog?.id,
         reqUser,
         refreshedJob,
-        parsedStart,
+        parsedStart: existingLog?.startedAt instanceof Date ? existingLog.startedAt : parsedStart,
         parsedEnd,
         mode,
         machineNumber,
@@ -339,6 +369,7 @@ router.post("/jobs/:id/capture-input", async (req, res) => {
         resolvedToQty,
         quantityCount,
         captureEntry,
+        forceDurationSeconds: Boolean(existingLog),
       });
 
       const metadata = (basePayload.metadata || {}) as Record<string, any>;
@@ -356,7 +387,7 @@ router.post("/jobs/:id/capture-input", async (req, res) => {
           jobId: String(refreshedJob.id),
           role: "OPERATOR",
           activityType: "OPERATOR_PRODUCTION",
-          status: "COMPLETED",
+          status: { in: ["COMPLETED", "REJECTED"] },
           ...(existingLog ? { id: { not: existingLog.id } } : {}),
         },
         select: {

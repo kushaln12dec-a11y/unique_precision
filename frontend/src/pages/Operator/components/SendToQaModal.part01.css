@@ -138,10 +138,16 @@
   color: #075985;
 }
 
+.send-to-qa-badges .qa-summary-chip.running {
+  background: #fef2f2;
+  border-color: #fca5a5;
+  color: #991b1b;
+}
+
 .send-to-qa-badges .qa-summary-chip.ready {
-  background: #ecfdf5;
-  border-color: #86efac;
-  color: #166534;
+  background: #fffbeb;
+  border-color: #fcd34d;
+  color: #92400e;
 }
 
 .send-to-qa-badges .qa-summary-chip.sent {

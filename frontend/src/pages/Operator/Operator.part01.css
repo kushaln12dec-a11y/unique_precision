@@ -202,8 +202,8 @@
 /* Setting Column */
 .operator-table-no-scroll .data-table th:nth-child(9),
 .operator-table-no-scroll .data-table td:nth-child(9) {
-  width: 56px;
-  min-width: 56px;
+  width: 72px;
+  min-width: 72px;
   text-align: left;
 }
 
@@ -226,8 +226,8 @@
 /* Assigned To Column */
 .operator-table-no-scroll .data-table th:nth-child(12),
 .operator-table-no-scroll .data-table td:nth-child(12) {
-  width: 156px;
-  min-width: 156px;
+  width: 142px;
+  min-width: 142px;
   text-align: center;
 }
 
@@ -242,8 +242,8 @@
 /* Estimated Time Column */
 .operator-table-no-scroll .data-table th:nth-child(14),
 .operator-table-no-scroll .data-table td:nth-child(14) {
-  width: 74px;
-  min-width: 74px;
+  width: 96px;
+  min-width: 96px;
   text-align: left;
 }
 

@@ -20,6 +20,7 @@ type OperatorViewModalsProps = {
     field: "markShiftOver" | "resetTimer",
     value: string
   ) => void;
+  handleShiftOverAction: (cutId: number | string, quantityIndex: number) => Promise<boolean>;
   setActionToast: Dispatch<SetStateAction<{ message: string; variant: "success" | "error" | "info"; visible: boolean }>>;
 };
 
@@ -33,6 +34,7 @@ const OperatorViewModals = ({
   setPendingShiftOver,
   handleUpdateQaStatus,
   handleInputChange,
+  handleShiftOverAction,
   setActionToast,
 }: OperatorViewModalsProps) => {
   const pendingDispatchJob = pendingDispatch
@@ -89,7 +91,9 @@ const OperatorViewModals = ({
             { label: "Quantity", value: String(pendingShiftOver.quantityIndex + 1) },
           ]}
           confirmButtonText="Confirm"
-          onConfirm={() => {
+          onConfirm={async () => {
+            const success = await handleShiftOverAction(pendingShiftOver.cutId, pendingShiftOver.quantityIndex);
+            if (!success) return;
             handleInputChange(pendingShiftOver.cutId, pendingShiftOver.quantityIndex, "markShiftOver", "");
             setActionToast({
               message: "Shift Over action completed.",

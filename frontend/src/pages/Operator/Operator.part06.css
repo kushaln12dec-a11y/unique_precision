@@ -81,7 +81,7 @@
 
   .operator-table-no-scroll .data-table {
     width: max-content;
-    min-width: 1680px;
+    min-width: 1840px;
     max-width: none;
   }
 
@@ -114,7 +114,7 @@
   }
 
   .operator-table-no-scroll .data-table {
-    min-width: 1680px;
+    min-width: 1840px;
   }
 
   .operator-table-no-scroll .child-row-content .child-jobs-table {
@@ -136,6 +136,12 @@
   border: 1px solid transparent;
 }
 
+.operator-stage-chip.running {
+  color: #991b1b;
+  background: #fef2f2;
+  border-color: #fca5a5;
+}
+
 .operator-stage-chip.saved {
   color: #075985;
   background: #e0f2fe;
@@ -143,9 +149,9 @@
 }
 
 .operator-stage-chip.ready {
-  color: #166534;
-  background: #ecfdf5;
-  border-color: #86efac;
+  color: #9a3412;
+  background: #fff7ed;
+  border-color: #fb923c;
 }
 
 .operator-stage-chip.sent {
@@ -158,6 +164,61 @@
   color: #92400e;
   background: #fffbeb;
   border-color: #fcd34d;
+}
+
+.operator-running-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-top: 0.45rem;
+}
+
+.operator-running-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.42rem;
+  padding: 0.26rem 0.65rem;
+  border-radius: 999px;
+  border: 1px solid #fecaca;
+  background: linear-gradient(180deg, #fff7f7 0%, #fee2e2 100%);
+  max-width: 100%;
+}
+
+.operator-running-pill-text {
+  color: #7f1d1d;
+  font-size: 0.72rem;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.operator-running-dot {
+  width: 9px;
+  height: 9px;
+  min-width: 9px;
+  border-radius: 999px;
+  background: #dc2626;
+  box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.55);
+  animation: operator-running-pulse 1.25s ease-in-out infinite;
+}
+
+@keyframes operator-running-pulse {
+  0% {
+    opacity: 0.9;
+    transform: scale(0.92);
+    box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.5);
+  }
+  70% {
+    opacity: 1;
+    transform: scale(1);
+    box-shadow: 0 0 0 7px rgba(220, 38, 38, 0);
+  }
+  100% {
+    opacity: 0.92;
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(220, 38, 38, 0);
+  }
 }
 
 /* ============================================
@@ -180,12 +241,14 @@
 .operator-machine-dropdown-wrapper {
   width: 100%;
   min-width: 0;
+  max-width: 96px;
+  box-sizing: border-box;
 }
 
 .operator-machine-dropdown-wrapper .option-dropdown-trigger {
   width: 100%;
   min-width: 0;
-  max-width: 92px;
+  max-width: 96px;
   min-height: 32px;
   border: 1px solid #cbd5e1;
   border-radius: 12px;
@@ -193,8 +256,9 @@
   color: #0f172a;
   font-size: 0.78rem;
   font-weight: 700;
-  padding: 0.35rem 0.55rem;
+  padding: 0.35rem 0.5rem;
   box-shadow: inset 0 0 0 1px rgba(203, 213, 225, 0.35);
+  box-sizing: border-box;
 }
 
 .operator-machine-dropdown-wrapper .option-dropdown-value {
@@ -205,31 +269,51 @@
 .option-dropdown-wrapper.operator-assigned-dropdown {
   width: 100%;
   min-width: 0;
+  max-width: 144px;
+  box-sizing: border-box;
 }
 
 .option-dropdown-wrapper.operator-assigned-dropdown .option-dropdown-trigger {
   width: 100%;
   min-width: 0;
-  min-height: 36px;
+  min-height: 38px;
+  padding: 0.38rem 0.58rem;
   border: 1px solid #93c5fd;
-  border-radius: 14px;
-  background: linear-gradient(180deg, #f8fbff 0%, #eef4ff 100%);
-  color: #0f172a;
-  padding: 0.45rem 0.75rem;
-  box-shadow: inset 0 0 0 1px rgba(147, 197, 253, 0.28);
+  border-radius: 16px;
+  background: linear-gradient(180deg, #ffffff 0%, #eef4ff 100%);
+  box-shadow: inset 0 0 0 1px rgba(147, 197, 253, 0.24);
+  box-sizing: border-box;
+}
+
+.option-dropdown-wrapper.operator-assigned-dropdown.open .option-dropdown-trigger,
+.option-dropdown-wrapper.operator-assigned-dropdown .option-dropdown-trigger:focus-visible {
+  border-color: #60a5fa;
+  box-shadow:
+    inset 0 0 0 1px rgba(96, 165, 250, 0.22),
+    0 0 0 3px rgba(96, 165, 250, 0.18);
 }
 
 .option-dropdown-wrapper.operator-assigned-dropdown .option-dropdown-value {
-  text-align: left;
-  color: #1e3a8a;
-  font-weight: 700;
+  min-width: 0;
+  color: #1d4ed8;
   font-size: 0.8rem;
+  font-weight: 800;
+  text-align: center;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.option-dropdown-wrapper.operator-assigned-dropdown .option-dropdown-arrow,
+.option-dropdown-wrapper.operator-assigned-dropdown.align-left .option-dropdown-value {
+  text-align: center;
+}
+
+.option-dropdown-wrapper.operator-assigned-dropdown .option-dropdown-arrow {
+  color: #2563eb;
+  font-size: 0.72rem;
+  flex-shrink: 0;
+}
+
 .operator-machine-dropdown-wrapper .option-dropdown-arrow {
   color: #2563eb;
   flex-shrink: 0;
@@ -238,9 +322,61 @@
 .operator-table-no-scroll .data-table td.operator-assigned-cell,
 .operator-table-no-scroll .data-table td.operator-machine-cell {
   vertical-align: middle;
+  padding-left: 0.28rem;
+  padding-right: 0.28rem;
 }
 
-.operator-table-no-scroll .data-table td.operator-assigned-cell .option-dropdown-wrapper,
+.lazy-ag-grid-shell.operator-table-no-scroll .ag-cell.operator-assigned-cell,
+.lazy-ag-grid-shell.operator-table-no-scroll .ag-cell.operator-assigned-cell .ag-cell-value {
+  height: 100%;
+  align-items: flex-start;
+  overflow: visible;
+}
+
+.operator-assigned-cell-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.08rem;
+  width: 100%;
+  min-height: 0;
+  padding: 0.18rem 0;
+}
+
+.assigned-operators-readonly {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.08rem;
+  width: 100%;
+  min-height: 0;
+  padding: 0.18rem 0;
+  color: #64748b;
+  font-size: 0.62rem;
+  font-weight: 800;
+  line-height: 1.15;
+  text-transform: uppercase;
+}
+
+.operator-history-inline {
+  display: block;
+  max-width: 138px;
+  color: #64748b;
+  font-size: 0.58rem;
+  font-weight: 800;
+  line-height: 1.15;
+  text-transform: uppercase;
+  white-space: nowrap;
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+
+.operator-table-no-scroll .data-table td.operator-assigned-cell .option-dropdown-wrapper.operator-assigned-dropdown,
+.operator-table-no-scroll .data-table td.operator-assigned-cell .multi-select-operators,
 .operator-table-no-scroll .data-table td.operator-machine-cell .option-dropdown-wrapper {
   margin: 0 auto;
 }
@@ -250,6 +386,77 @@
   animation: none;
   transform: none;
   padding-right: 0;
+}
+
+.operator-filter-multi {
+  width: 100%;
+}
+
+.operator-filter-multi.multi-select-operators {
+  min-height: 36px;
+  padding: 0.3rem 0.75rem;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+}
+
+.operator-filter-multi .multi-select-trigger {
+  min-height: 24px;
+}
+
+.operator-filter-multi .selected-text,
+.operator-filter-multi .compact-display,
+.operator-filter-multi .placeholder {
+  font-size: 0.82rem;
+  color: #0f172a;
+}
+
+.operator-filter-clear-inline {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: -0.45rem;
+  padding-top: 0;
+}
+
+.operator-clear-all-btn {
+  min-width: 112px;
+  margin-left: auto;
+}
+
+.operator-job-ref-cell {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-width: 0;
+}
+
+.operator-customer-cell {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.34rem;
+  width: 100%;
+  min-width: 0;
+}
+
+.operator-running-dot-inline {
+  margin-left: 0.08rem;
+  margin-right: 0.08rem;
+}
+
+.operator-history-proof {
+  margin-top: 0.35rem;
+  color: #64748b;
+  font-size: 0.76rem;
+  font-weight: 700;
+  line-height: 1.25;
+  text-transform: uppercase;
+}
+
+.operator-job-ref-cell .job-ref-copy-text,
+.operator-job-ref-cell .description-marquee {
+  min-width: 0;
+  margin: 0;
 }
 
 @media only screen and (min-width: 1367px) {
@@ -281,7 +488,7 @@
   }
 
   .operator-table-no-scroll .data-table {
-    min-width: 1480px;
+    min-width: 1620px;
   }
 
   .roleboard-content .programmer-panel {
@@ -308,7 +515,7 @@
   }
 
   .operator-table-no-scroll .data-table {
-    min-width: 1420px;
+    min-width: 1540px;
   }
 }
 
@@ -332,11 +539,27 @@
   background-color: #bfdbfe;
 }
 
-.operator-stage-row-dispatched {
+.operator-stage-row-running {
+  background-color: #fee2e2;
+}
+
+.operator-stage-row-running:hover {
+  background-color: #fecaca;
+}
+
+.operator-stage-row-hold {
+  background-color: #ffedd5;
+}
+
+.operator-stage-row-hold:hover {
+  background-color: #fed7aa;
+}
+
+.operator-stage-row-qc {
   background-color: #ddd6fe;
 }
 
-.operator-stage-row-dispatched:hover {
+.operator-stage-row-qc:hover {
   background-color: #c4b5fd;
 }
 
@@ -351,10 +574,15 @@
   background-color: #bfdbfe;
 }
 
-.operator-table-no-scroll
-  .data-table
-  tbody
-  tr.operator-stage-row-dispatched:hover {
+.operator-table-no-scroll .data-table tbody tr.operator-stage-row-running:hover {
+  background-color: #fecaca;
+}
+
+.operator-table-no-scroll .data-table tbody tr.operator-stage-row-hold:hover {
+  background-color: #fed7aa;
+}
+
+.operator-table-no-scroll .data-table tbody tr.operator-stage-row-qc:hover {
   background-color: #c4b5fd;
 }
 
@@ -365,4 +593,100 @@
 
 .operator-table-no-scroll .data-table tr.operator-stage-row-logged td {
   background: transparent;
+}
+
+.operator-table-no-scroll .data-table tr.operator-stage-row-running td,
+.operator-table-no-scroll .data-table tr.operator-stage-row-hold td,
+.operator-table-no-scroll .data-table tr.operator-stage-row-qc td {
+  background: transparent;
+}
+
+.lazy-ag-grid-shell.operator-table-no-scroll .ag-pinned-left-cols-container .ag-row.group-row.operator-stage-row-not-started,
+.lazy-ag-grid-shell.operator-table-no-scroll .ag-pinned-left-cols-container .ag-row.child-row.operator-stage-row-not-started,
+.lazy-ag-grid-shell.operator-table-no-scroll .ag-pinned-left-cols-container .ag-row.group-row.operator-stage-row-running,
+.lazy-ag-grid-shell.operator-table-no-scroll .ag-pinned-left-cols-container .ag-row.child-row.operator-stage-row-running,
+.lazy-ag-grid-shell.operator-table-no-scroll .ag-pinned-left-cols-container .ag-row.group-row.operator-stage-row-hold,
+.lazy-ag-grid-shell.operator-table-no-scroll .ag-pinned-left-cols-container .ag-row.child-row.operator-stage-row-hold,
+.lazy-ag-grid-shell.operator-table-no-scroll .ag-pinned-left-cols-container .ag-row.group-row.operator-stage-row-logged,
+.lazy-ag-grid-shell.operator-table-no-scroll .ag-pinned-left-cols-container .ag-row.child-row.operator-stage-row-logged,
+.lazy-ag-grid-shell.operator-table-no-scroll .ag-pinned-left-cols-container .ag-row.group-row.operator-stage-row-qc,
+.lazy-ag-grid-shell.operator-table-no-scroll .ag-pinned-left-cols-container .ag-row.child-row.operator-stage-row-qc,
+.lazy-ag-grid-shell.operator-table-no-scroll .ag-pinned-left-cols-container .ag-row.group-row.operator-stage-row-dispatched,
+.lazy-ag-grid-shell.operator-table-no-scroll .ag-pinned-left-cols-container .ag-row.child-row.operator-stage-row-dispatched {
+  border-left: 3px solid transparent !important;
+}
+
+.lazy-ag-grid-shell.operator-table-no-scroll .ag-center-cols-container .ag-row.group-row.operator-stage-row-not-started .ag-cell:first-child,
+.lazy-ag-grid-shell.operator-table-no-scroll .ag-pinned-left-cols-container .ag-row.group-row.operator-stage-row-not-started .ag-cell:first-child,
+.lazy-ag-grid-shell.operator-table-no-scroll .ag-center-cols-container .ag-row.child-row.operator-stage-row-not-started .ag-cell:first-child,
+.lazy-ag-grid-shell.operator-table-no-scroll .ag-pinned-left-cols-container .ag-row.child-row.operator-stage-row-not-started .ag-cell:first-child,
+.lazy-ag-grid-shell.operator-table-no-scroll .ag-center-cols-container .ag-row.group-row.operator-stage-row-running .ag-cell:first-child,
+.lazy-ag-grid-shell.operator-table-no-scroll .ag-pinned-left-cols-container .ag-row.group-row.operator-stage-row-running .ag-cell:first-child,
+.lazy-ag-grid-shell.operator-table-no-scroll .ag-center-cols-container .ag-row.child-row.operator-stage-row-running .ag-cell:first-child,
+.lazy-ag-grid-shell.operator-table-no-scroll .ag-pinned-left-cols-container .ag-row.child-row.operator-stage-row-running .ag-cell:first-child,
+.lazy-ag-grid-shell.operator-table-no-scroll .ag-center-cols-container .ag-row.group-row.operator-stage-row-hold .ag-cell:first-child,
+.lazy-ag-grid-shell.operator-table-no-scroll .ag-pinned-left-cols-container .ag-row.group-row.operator-stage-row-hold .ag-cell:first-child,
+.lazy-ag-grid-shell.operator-table-no-scroll .ag-center-cols-container .ag-row.child-row.operator-stage-row-hold .ag-cell:first-child,
+.lazy-ag-grid-shell.operator-table-no-scroll .ag-pinned-left-cols-container .ag-row.child-row.operator-stage-row-hold .ag-cell:first-child,
+.lazy-ag-grid-shell.operator-table-no-scroll .ag-center-cols-container .ag-row.group-row.operator-stage-row-logged .ag-cell:first-child,
+.lazy-ag-grid-shell.operator-table-no-scroll .ag-pinned-left-cols-container .ag-row.group-row.operator-stage-row-logged .ag-cell:first-child,
+.lazy-ag-grid-shell.operator-table-no-scroll .ag-center-cols-container .ag-row.child-row.operator-stage-row-logged .ag-cell:first-child,
+.lazy-ag-grid-shell.operator-table-no-scroll .ag-pinned-left-cols-container .ag-row.child-row.operator-stage-row-logged .ag-cell:first-child,
+.lazy-ag-grid-shell.operator-table-no-scroll .ag-center-cols-container .ag-row.group-row.operator-stage-row-qc .ag-cell:first-child,
+.lazy-ag-grid-shell.operator-table-no-scroll .ag-pinned-left-cols-container .ag-row.group-row.operator-stage-row-qc .ag-cell:first-child,
+.lazy-ag-grid-shell.operator-table-no-scroll .ag-center-cols-container .ag-row.child-row.operator-stage-row-qc .ag-cell:first-child,
+.lazy-ag-grid-shell.operator-table-no-scroll .ag-pinned-left-cols-container .ag-row.child-row.operator-stage-row-qc .ag-cell:first-child,
+.lazy-ag-grid-shell.operator-table-no-scroll .ag-center-cols-container .ag-row.group-row.operator-stage-row-dispatched .ag-cell:first-child,
+.lazy-ag-grid-shell.operator-table-no-scroll .ag-pinned-left-cols-container .ag-row.group-row.operator-stage-row-dispatched .ag-cell:first-child,
+.lazy-ag-grid-shell.operator-table-no-scroll .ag-center-cols-container .ag-row.child-row.operator-stage-row-dispatched .ag-cell:first-child,
+.lazy-ag-grid-shell.operator-table-no-scroll .ag-pinned-left-cols-container .ag-row.child-row.operator-stage-row-dispatched .ag-cell:first-child {
+  box-shadow: inset 3px 0 0 transparent !important;
+}
+
+.lazy-ag-grid-shell.operator-table-no-scroll .ag-pinned-left-cols-container .ag-row.group-row.priority-row.priority-high,
+.lazy-ag-grid-shell.operator-table-no-scroll .ag-pinned-left-cols-container .ag-row.child-row.child-priority-row.child-priority-high {
+  border-left-color: #ef4444 !important;
+}
+
+.lazy-ag-grid-shell.operator-table-no-scroll .ag-pinned-left-cols-container .ag-row.group-row.priority-row.priority-medium,
+.lazy-ag-grid-shell.operator-table-no-scroll .ag-pinned-left-cols-container .ag-row.child-row.child-priority-row.child-priority-medium {
+  border-left-color: #f59e0b !important;
+}
+
+.lazy-ag-grid-shell.operator-table-no-scroll .ag-pinned-left-cols-container .ag-row.group-row.priority-row.priority-low,
+.lazy-ag-grid-shell.operator-table-no-scroll .ag-pinned-left-cols-container .ag-row.child-row.child-priority-row.child-priority-low {
+  border-left-color: #10b981 !important;
+}
+
+.lazy-ag-grid-shell.operator-table-no-scroll .ag-pinned-left-cols-container .ag-row.group-row.critical-row,
+.lazy-ag-grid-shell.operator-table-no-scroll .ag-pinned-left-cols-container .ag-row.child-row.child-critical-row {
+  border-left-width: 4px !important;
+  border-left-color: #dc2626 !important;
+}
+
+.lazy-ag-grid-shell.operator-table-no-scroll .ag-pinned-left-cols-container .ag-row.group-row.operator-stage-row-not-started:not(.priority-row):not(.critical-row),
+.lazy-ag-grid-shell.operator-table-no-scroll .ag-pinned-left-cols-container .ag-row.child-row.operator-stage-row-not-started:not(.child-priority-row):not(.child-critical-row) {
+  border-left-color: #f59e0b !important;
+}
+
+.lazy-ag-grid-shell.operator-table-no-scroll .ag-pinned-left-cols-container .ag-row.group-row.operator-stage-row-running:not(.priority-row):not(.critical-row),
+.lazy-ag-grid-shell.operator-table-no-scroll .ag-pinned-left-cols-container .ag-row.child-row.operator-stage-row-running:not(.child-priority-row):not(.child-critical-row) {
+  border-left-color: #ef4444 !important;
+}
+
+.lazy-ag-grid-shell.operator-table-no-scroll .ag-pinned-left-cols-container .ag-row.group-row.operator-stage-row-hold:not(.priority-row):not(.critical-row),
+.lazy-ag-grid-shell.operator-table-no-scroll .ag-pinned-left-cols-container .ag-row.child-row.operator-stage-row-hold:not(.child-priority-row):not(.child-critical-row) {
+  border-left-color: #f97316 !important;
+}
+
+.lazy-ag-grid-shell.operator-table-no-scroll .ag-pinned-left-cols-container .ag-row.group-row.operator-stage-row-logged:not(.priority-row):not(.critical-row),
+.lazy-ag-grid-shell.operator-table-no-scroll .ag-pinned-left-cols-container .ag-row.child-row.operator-stage-row-logged:not(.child-priority-row):not(.child-critical-row) {
+  border-left-color: #38bdf8 !important;
+}
+
+.lazy-ag-grid-shell.operator-table-no-scroll .ag-pinned-left-cols-container .ag-row.group-row.operator-stage-row-qc:not(.priority-row):not(.critical-row),
+.lazy-ag-grid-shell.operator-table-no-scroll .ag-pinned-left-cols-container .ag-row.child-row.operator-stage-row-qc:not(.child-priority-row):not(.child-critical-row),
+.lazy-ag-grid-shell.operator-table-no-scroll .ag-pinned-left-cols-container .ag-row.group-row.operator-stage-row-dispatched:not(.priority-row):not(.critical-row),
+.lazy-ag-grid-shell.operator-table-no-scroll .ag-pinned-left-cols-container .ag-row.child-row.operator-stage-row-dispatched:not(.child-priority-row):not(.child-critical-row) {
+  border-left-color: #818cf8 !important;
 }

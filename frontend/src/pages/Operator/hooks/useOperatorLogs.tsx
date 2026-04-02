@@ -24,7 +24,6 @@ type Params = {
   jobs: JobEntry[];
   users: Array<{ firstName?: string | null; lastName?: string | null; email: string; role?: string | null }>;
   machineOptionsForDropdown: string[];
-  isAdmin: boolean;
   operatorLogSearch: string;
   operatorLogStatus: "" | "IN_PROGRESS" | "COMPLETED" | "REJECTED";
   operatorLogMachine: string;
@@ -37,7 +36,6 @@ export const useOperatorLogs = ({
   jobs,
   users,
   machineOptionsForDropdown,
-  isAdmin,
   operatorLogSearch,
   operatorLogStatus,
   operatorLogMachine,
@@ -58,41 +56,13 @@ export const useOperatorLogs = ({
     return map;
   }, [users]);
 
-  const groupWedmByGroupId = useMemo(() => {
+  const wedmByJobId = useMemo(() => {
     const map = new Map<string, number>();
-    const groups = new Map<string, JobEntry[]>();
     jobs.forEach((entry) => {
-      const key = String(entry.groupId ?? entry.id);
-      if (!groups.has(key)) groups.set(key, []);
-      groups.get(key)!.push(entry);
-    });
-    groups.forEach((entries, groupId) => {
-      const wedm = entries.reduce((sum, entry) => sum + Number(entry.totalHrs || 0) * Number(entry.rate || 0), 0);
-      map.set(groupId, wedm);
+      map.set(String(entry.id), Number(entry.totalHrs || 0) * Number(entry.rate || 0));
     });
     return map;
   }, [jobs]);
-
-  const getWorkedSecondsForLog = useCallback((log: EmployeeLog): number => {
-    const metadata = (log.metadata || {}) as Record<string, any>;
-    const machineHrs = Number(metadata.machineHrs || 0);
-    if (Number.isFinite(machineHrs) && machineHrs > 0) return Math.max(0, Math.round(machineHrs * 3600));
-    return Math.max(0, Number(log.durationSeconds || 0));
-  }, []);
-
-  const calculateWorkedSecondsByLogs = useCallback(
-    (logs: EmployeeLog[]) => {
-      const map = new Map<string, number>();
-      logs.forEach((log) => {
-        const groupId = String(log.jobGroupId || "").trim();
-        if (!groupId || String(log.role || "").toUpperCase() !== "OPERATOR") return;
-        const workedSeconds = getWorkedSecondsForLog(log);
-        map.set(groupId, (map.get(groupId) || 0) + workedSeconds);
-      });
-      return map;
-    },
-    [getWorkedSecondsForLog]
-  );
 
   const getMachineNumberForLog = useCallback(
     (log: EmployeeLog): string => {
@@ -111,24 +81,19 @@ export const useOperatorLogs = ({
   );
 
   const getRevenueForLog = useCallback(
-    (log: EmployeeLog, workedSecondsMap: Map<string, number> = new Map<string, number>()) => {
+    (log: EmployeeLog) => {
       const metadata = (log.metadata || {}) as Record<string, any>;
       const explicitRevenue = log.revenue ?? metadata.revenue;
       if (explicitRevenue !== undefined && explicitRevenue !== null && String(explicitRevenue).trim() !== "") {
         const numericValue = Number(explicitRevenue);
-        if (Number.isFinite(numericValue)) return `Rs. ${Math.round(numericValue)}`;
+        if (Number.isFinite(numericValue)) return `Rs. ${numericValue.toFixed(2)}`;
         return String(explicitRevenue);
       }
-
-      const groupId = String(log.jobGroupId || "").trim();
-      const wedm = groupId ? groupWedmByGroupId.get(groupId) || 0 : 0;
-      if (!wedm) return "-";
-      const totalWorkedSeconds = workedSecondsMap.get(groupId) || 0;
-      if (!totalWorkedSeconds) return `Rs. ${Math.round(wedm)}`;
-      const workedSeconds = getWorkedSecondsForLog(log);
-      return `Rs. ${Math.round(wedm * (Math.max(0, workedSeconds) / totalWorkedSeconds))}`;
+      const jobId = String(log.jobId || "").trim();
+      const wedm = jobId ? wedmByJobId.get(jobId) || 0 : 0;
+      return wedm > 0 ? `Rs. ${wedm.toFixed(2)}` : "-";
     },
-    [getWorkedSecondsForLog, groupWedmByGroupId]
+    [wedmByJobId]
   );
 
   const machineFilterOptions = machineOptionsForDropdown;
@@ -137,8 +102,7 @@ export const useOperatorLogs = ({
     designationByUserName,
     getMachineNumberForLog,
     getRevenueForLog,
-    isAdmin,
-  }), [designationByUserName, getMachineNumberForLog, getRevenueForLog, isAdmin]);
+  }), [designationByUserName, getMachineNumberForLog, getRevenueForLog]);
 
   const filterOperatorLogs = useMemo(
     () =>
@@ -146,10 +110,9 @@ export const useOperatorLogs = ({
         designationByUserName,
         getMachineNumberForLog,
         getRevenueForLog,
-        isAdmin,
         operatorLogSearch,
       }),
-    [designationByUserName, getMachineNumberForLog, getRevenueForLog, isAdmin, operatorLogSearch]
+    [designationByUserName, getMachineNumberForLog, getRevenueForLog, operatorLogSearch]
   );
 
   const hasOperatorLogSearch = operatorLogSearch.trim().length > 0;
@@ -170,9 +133,7 @@ export const useOperatorLogs = ({
         OPERATOR_LOG_SEARCH_FETCH_PAGE_SIZE
       );
       const filteredLogs = filterOperatorLogs(allLogs);
-      const workedSecondsMap = calculateWorkedSecondsByLogs(filteredLogs);
-      const headers = ["User", "MACH #", "Job Ref", "Description", "Summary", "Started at", "Ended at", "Shift", "Duration", "Estimated", "Overtime", "Idle Time", "Remark", "Status"];
-      if (isAdmin) headers.splice(headers.length - 1, 0, "Revenue");
+      const headers = ["User", "MACH #", "Job Ref", "Description", "Summary", "Started at", "Ended at", "Shift", "Duration", "Estimated", "Overtime", "Idle Time", "Remark", "Revenue", "Status"];
       const rows = filteredLogs.map((row) => {
         const name = getLogUserDisplayName(row.userName, row.userEmail, "");
         const designation = designationByUserName.get(name.toLowerCase()) || "Operator";
@@ -190,7 +151,7 @@ export const useOperatorLogs = ({
           formatOperatorDuration(Number((row.metadata as any)?.overtimeSeconds || 0)),
           String((row.metadata as any)?.idleTime || "-"),
           String((row.metadata as any)?.remark || "-"),
-          ...(isAdmin ? [getRevenueForLog(row, workedSecondsMap)] : []),
+          getRevenueForLog(row),
           formatOperatorLogStatus(row.status),
         ];
       });
@@ -208,12 +169,10 @@ export const useOperatorLogs = ({
       setTimeout(() => setToast((prev) => ({ ...prev, visible: false })), 2500);
     });
   }, [
-    calculateWorkedSecondsByLogs,
     designationByUserName,
     filterOperatorLogs,
     getMachineNumberForLog,
     getRevenueForLog,
-    isAdmin,
     operatorLogMachine,
     operatorLogStatus,
     setToast,

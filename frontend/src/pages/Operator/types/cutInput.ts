@@ -16,7 +16,8 @@ export type QuantityInputData = {
   endTimeEpochMs: number | null;
   machineHrs: string;
   machineNumber: string;
-  opsName: string[]; // Changed to array for multiple operators
+  opsName: string[];
+  operatorHistory: string[];
   idleTime: string;
   idleTimeDuration: string;
   lastImage: string | null;
@@ -41,6 +42,7 @@ export const createEmptyQuantityInputData = (): QuantityInputData => ({
   machineHrs: "",
   machineNumber: "",
   opsName: [],
+  operatorHistory: [],
   idleTime: "",
   idleTimeDuration: "",
   lastImage: null,

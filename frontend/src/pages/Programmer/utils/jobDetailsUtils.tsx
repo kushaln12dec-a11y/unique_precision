@@ -80,7 +80,7 @@ export const buildCutDetailPairs = ({
     const counts = getQaProgressCounts(cutItem, qty);
     basePairs.push({
       label: "QC Progress",
-      value: `Yet to Start ${counts.empty} | In Progress ${counts.ready} | Logged ${counts.saved} | QC ${counts.sent}`,
+      value: `NOT STARTED ${counts.empty} | RUNNING ${counts.running} | HOLD ${counts.ready} | LOGGED ${counts.saved} | QC ${counts.sent}`,
     });
   }
 

@@ -118,11 +118,13 @@ export const OperatorInputSection: React.FC<OperatorInputSectionProps> = ({
     (acc, qty) => {
       const status = getStatus(qty);
       if (status === "SENT_TO_QA") acc.sent += 1;
-      else if (status === "SAVED" || status === "READY_FOR_QA") acc.logged += 1;
+      else if (status === "RUNNING") acc.running += 1;
+      else if (status === "READY_FOR_QA") acc.hold += 1;
+      else if (status === "SAVED") acc.logged += 1;
       else acc.empty += 1;
       return acc;
     },
-    { logged: 0, sent: 0, empty: 0 }
+    { running: 0, hold: 0, logged: 0, sent: 0, empty: 0 }
   );
   const sendEligible = Array.from(selectedQaQuantities).filter((qty) => {
     const status = getStatus(qty);
@@ -135,9 +137,11 @@ export const OperatorInputSection: React.FC<OperatorInputSectionProps> = ({
         <h5 className="operator-inputs-title">Input Values</h5>
         <div className="qa-stage-legend qa-title-legend">
           <span className="qa-legend-title">Stage Legend:</span>
-          <span className="qa-legend-item saved">Logged = input captured</span>
+          <span className="qa-legend-item empty">NOT STARTED = values not entered yet</span>
+          <span className="qa-legend-item running">RUNNING = machine is cutting now</span>
+          <span className="qa-legend-item ready">HOLD = captured and waiting</span>
+          <span className="qa-legend-item saved">LOGGED = input captured</span>
           <span className="qa-legend-item sent">QC = moved to QC queue</span>
-          <span className="qa-legend-item empty">Yet to Start = values not entered yet</span>
         </div>
       </div>
 

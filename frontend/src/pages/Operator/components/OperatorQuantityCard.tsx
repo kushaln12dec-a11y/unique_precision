@@ -2,12 +2,11 @@ import React from "react";
 import PauseIcon from "@mui/icons-material/Pause";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import DateTimeInput from "./DateTimeInput";
-import { MultiSelectOperators } from "./MultiSelectOperators";
 import SelectDropdown from "../../Programmer/components/SelectDropdown";
 import { decimalHoursToHHMM } from "../utils/machineHrsCalculation";
 import { useQuantityTimer } from "../hooks/useQuantityTimer";
 import { getQaStageLabel, type QuantityProgressStatus } from "../utils/qaProgress";
-import { formatMachineLabel } from "../../../utils/jobFormatting";
+import { estimatedDurationSecondsFromHours, formatMachineLabel } from "../../../utils/jobFormatting";
 import { formatIdleDuration } from "../utils/operatorTimeUtils";
 import type { QuantityInputData } from "../types/cutInput";
 import type { OperatorInputField } from "../types/inputFields";
@@ -64,9 +63,8 @@ export const OperatorQuantityCard: React.FC<Props> = ({
   canReset,
 }) => {
   const rangeQuantityCount = isRangeMode && isRangeValid ? Math.max(1, rangeEndQty - rangeStartQty + 1) : 1;
-  const quantityRequiredSeconds = Math.max(
-    0,
-    Math.round((Number(requiredHoursPerQuantity || 0) || 0) * 3600 * rangeQuantityCount)
+  const quantityRequiredSeconds = estimatedDurationSecondsFromHours(
+    (Number(requiredHoursPerQuantity || 0) || 0) * rangeQuantityCount
   );
   const { elapsedTime, pauseTime, remainingTime, overtimeTime, hasOvertime, isRunning } = useQuantityTimer(
     qtyData.startTime,
@@ -81,6 +79,10 @@ export const OperatorQuantityCard: React.FC<Props> = ({
   );
   const rangeBadgeKey = `${rangeStartQty}-${rangeEndQty}`;
   const isShiftOverPause = qtyData.isPaused && qtyData.currentPauseReason === "Shift Over";
+  const operatorProofHistory = Array.isArray(qtyData.operatorHistory)
+    ? qtyData.operatorHistory.map((name) => String(name || "").trim()).filter(Boolean)
+    : [];
+  const estimatedTimerLabel = hasOvertime ? "Overtime:" : "Remaining Time:";
 
   return (
     <div className="quantity-input-group">
@@ -93,7 +95,7 @@ export const OperatorQuantityCard: React.FC<Props> = ({
         {qtyData.startTime && (
           <div className="quantity-timers">
             {((qtyData.isPaused || Number(qtyData.totalPauseTime || 0) > 0) && pauseTime && pauseTime !== "00:00:00") && <div className="quantity-timer idle-timer"><span className="timer-label">Idle Time:</span><span className={`timer-value ${isRunning ? "running" : ""}`}>{pauseTime}</span></div>}
-            <div className={`quantity-timer required-timer ${hasOvertime ? "overtime-timer" : ""}`.trim()}><span className="timer-label">{hasOvertime ? "Overtime:" : "Estimated Time:"}</span><span className={`timer-value ${hasOvertime ? "overtime" : isRunning ? "running" : ""}`.trim()}>{hasOvertime ? overtimeTime : remainingTime}</span></div>
+            <div className={`quantity-timer required-timer ${hasOvertime ? "overtime-timer" : ""}`.trim()}><span className="timer-label">{estimatedTimerLabel}</span><span className={`timer-value ${hasOvertime ? "overtime" : isRunning ? "running" : ""}`.trim()}>{hasOvertime ? overtimeTime : remainingTime}</span></div>
             <div className="quantity-timer"><span className="timer-label">Running Time:</span><span className={`timer-value ${isRunning ? "running" : ""}`}>{elapsedTime}</span></div>
           </div>
         )}
@@ -187,8 +189,23 @@ export const OperatorQuantityCard: React.FC<Props> = ({
           </div>
           <div className="operator-input-card">
             <label>Ops Name</label>
-            <MultiSelectOperators selectedOperators={qtyData.opsName || []} availableOperators={operatorUsers} onChange={(operators) => onInputChange(cutId, qtyIndex, "opsName", operators)} placeholder="Select operators..." compact={true} className={validationErrors.opsName ? "input-error" : ""} />
+            <SelectDropdown
+              value={(qtyData.opsName || [])[0] || ""}
+              onChange={(nextValue) => onInputChange(cutId, qtyIndex, "opsName", nextValue ? [String(nextValue)] : [])}
+              options={operatorUsers.map((operator) => ({
+                label: String(operator.name || "").toUpperCase(),
+                value: String(operator.name || ""),
+              }))}
+              placeholder="SELECT OPERATOR"
+              align="left"
+              className={validationErrors.opsName ? "input-error" : ""}
+            />
             {validationErrors.opsName && <p className="field-error">{validationErrors.opsName}</p>}
+            {operatorProofHistory.length > 0 ? (
+              <p className="operator-history-proof" title={operatorProofHistory.join(", ")}>
+                Worked By: {operatorProofHistory.join(", ")}
+              </p>
+            ) : null}
           </div>
           {qtyData.isPaused && !qtyData.endTime && (
             <div className="operator-input-card pause-reason-card">

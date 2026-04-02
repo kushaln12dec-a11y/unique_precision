@@ -20,13 +20,13 @@ const withJobId = (jobId?: string) => (jobId ? { jobId } : {});
 
 const resolveReqUserName = (reqUser: any): string => {
   const fullName = String(reqUser?.fullName || "").trim();
-  if (fullName) return fullName;
+  if (fullName) return fullName.toUpperCase();
   const firstName = String(reqUser?.firstName || "").trim();
   const lastName = String(reqUser?.lastName || "").trim();
   const joined = `${firstName} ${lastName}`.trim();
-  if (joined) return joined;
+  if (joined) return joined.toUpperCase();
   const email = String(reqUser?.email || "").trim();
-  return email.split("@")[0]?.trim() || "";
+  return (email.split("@")[0]?.trim() || "").toUpperCase();
 };
 
 const parsePositiveInt = (value: unknown, fallback: number) => {
@@ -41,6 +41,126 @@ const parseNonNegativeInt = (value: unknown, fallback: number) => {
   if (!Number.isFinite(parsed)) return fallback;
   const normalized = Math.trunc(parsed);
   return normalized >= 0 ? normalized : fallback;
+};
+
+const parseMachineHoursToSeconds = (value: unknown): number | null => {
+  const raw = String(value || "").trim();
+  if (!raw) return null;
+  if (raw.includes(":")) {
+    const [hoursRaw, minutesRaw] = raw.split(":");
+    const hours = Number(hoursRaw);
+    const minutes = Number(minutesRaw);
+    if (!Number.isFinite(hours) || !Number.isFinite(minutes)) return null;
+    return Math.max(0, Math.round((hours * 60 + minutes) * 60));
+  }
+  const numeric = Number(raw);
+  if (!Number.isFinite(numeric) || numeric < 0) return null;
+  return Math.round(numeric * 3600);
+};
+
+const getWorkedSecondsForOperatorLog = (log: any): number => {
+  const metadata = (log?.metadata || {}) as Record<string, any>;
+  const fromMachineHours = parseMachineHoursToSeconds(metadata.machineHrs);
+  if (fromMachineHours !== null && fromMachineHours > 0) return fromMachineHours;
+  return Math.max(0, Number(log?.durationSeconds || 0));
+};
+
+const getQuantityNumbersFromLog = (log: {
+  quantityFrom?: number | null;
+  quantityTo?: number | null;
+  quantityCount?: number | null;
+  metadata?: any;
+}): number[] => {
+  const metadata = (log.metadata || {}) as Record<string, any>;
+  const fromMeta = Array.isArray(metadata.quantityNumbers)
+    ? metadata.quantityNumbers.map((qty) => Number(qty)).filter((qty) => Number.isInteger(qty) && qty >= 1)
+    : [];
+  if (fromMeta.length > 0) return fromMeta;
+
+  const from = Number(log.quantityFrom || 0);
+  const to = Number(log.quantityTo || 0);
+  if (from >= 1 && to >= from) {
+    return Array.from({ length: to - from + 1 }, (_, index) => from + index);
+  }
+
+  const count = Number(log.quantityCount || 0);
+  if (count >= 1) return Array.from({ length: count }, (_, index) => index + 1);
+  return [];
+};
+
+const getOperatorRevenueValue = (log: any): number | null => {
+  const metadata = (log?.metadata || {}) as Record<string, any>;
+  const explicitRevenue = log?.revenue ?? metadata.revenue;
+  const numericRevenue = Number(explicitRevenue);
+  return Number.isFinite(numericRevenue) ? numericRevenue : null;
+};
+
+const buildOperatorLogCompletionKey = (log: any): string[] => {
+  const jobId = String(log?.jobId || "").trim();
+  const quantityNumbers = getQuantityNumbersFromLog(log);
+  if (!jobId || quantityNumbers.length === 0) return [];
+  return quantityNumbers.map((qty) => `${jobId}:${qty}`);
+};
+
+const parseFlexibleDate = (value: unknown): Date | null => {
+  const raw = String(value || "").trim();
+  if (!raw) return null;
+  const asDate = new Date(raw);
+  if (!Number.isNaN(asDate.getTime())) return asDate;
+  return parseOperatorDateTime(raw);
+};
+
+const getRevenueByQuantityForLog = (log: {
+  quantityFrom?: number | null;
+  quantityTo?: number | null;
+  quantityCount?: number | null;
+  metadata?: any;
+}): Map<number, number> => {
+  const metadata = (log.metadata || {}) as Record<string, any>;
+  const quantities = getQuantityNumbersFromLog(log);
+  const revenueByQty = new Map<number, number>();
+
+  if (metadata.revenueByQuantity && typeof metadata.revenueByQuantity === "object") {
+    Object.entries(metadata.revenueByQuantity).forEach(([qtyKey, amount]) => {
+      const qty = Number(qtyKey);
+      const value = Number(amount);
+      if (Number.isInteger(qty) && qty >= 1 && Number.isFinite(value) && value > 0) {
+        revenueByQty.set(qty, (revenueByQty.get(qty) || 0) + value);
+      }
+    });
+    if (revenueByQty.size > 0) return revenueByQty;
+  }
+
+  const totalRevenue = Number(metadata.revenue || 0);
+  if (!Number.isFinite(totalRevenue) || totalRevenue <= 0 || quantities.length === 0) return revenueByQty;
+
+  const perQuantity = totalRevenue / quantities.length;
+  quantities.forEach((qty) => revenueByQty.set(qty, (revenueByQty.get(qty) || 0) + perQuantity));
+  return revenueByQty;
+};
+
+const getAllocatedRevenueByQuantity = (
+  logs: Array<{
+    quantityFrom?: number | null;
+    quantityTo?: number | null;
+    quantityCount?: number | null;
+    metadata?: any;
+  }>,
+  quantityNumbers: number[]
+) => {
+  const target = new Set(quantityNumbers);
+  const allocated = new Map<number, number>();
+  quantityNumbers.forEach((qty) => allocated.set(qty, 0));
+
+  logs.forEach((log) => {
+    const revenueByQty = getRevenueByQuantityForLog(log);
+    revenueByQty.forEach((amount, qty) => {
+      if (!target.has(qty)) return;
+      allocated.set(qty, (allocated.get(qty) || 0) + amount);
+    });
+  });
+
+  return allocated;
 };
 
 const getPagination = (req: any, defaultLimit = 15, maxLimit = 100) => {
@@ -234,6 +354,7 @@ router.post("/operator/complete", async (req, res) => {
   try {
     const reqUser = req.user as any;
     const {
+      logId,
       jobId,
       jobGroupId,
       refNumber,
@@ -250,10 +371,126 @@ router.post("/operator/complete", async (req, res) => {
       machineHrs,
       idleTime,
       idleTimeDuration,
+      status,
     } = req.body || {};
 
     const userId = toUuid(reqUser?.userId);
     const resolvedJobId = toUuid(jobId);
+    const normalizedStatus = String(status || "COMPLETED").toUpperCase() === "REJECTED" ? "REJECTED" : "COMPLETED";
+
+    const existingLog = logId
+      ? await prisma.employeeLog.findFirst({
+          where: {
+            id: String(logId),
+            role: "OPERATOR",
+            activityType: "OPERATOR_PRODUCTION",
+            status: "IN_PROGRESS",
+          },
+        })
+      : null;
+
+    if (existingLog) {
+      const parsedEnd = parseFlexibleDate(endTime || req.body?.endedAt) || new Date();
+      const parsedStart = existingLog.startedAt instanceof Date ? existingLog.startedAt : parseFlexibleDate(startTime) || parsedEnd;
+      const workedSeconds = Math.max(0, Math.floor((parsedEnd.getTime() - parsedStart.getTime()) / 1000));
+      const quantityNumbers = getQuantityNumbersFromLog(existingLog);
+      const resolvedExistingJobId = String(existingLog.jobId || "").trim();
+      const relatedJob = resolvedExistingJobId
+        ? await prisma.job.findUnique({
+            where: { id: resolvedExistingJobId },
+            select: {
+              id: true,
+              groupId: true,
+              qty: true,
+              totalHrs: true,
+              rate: true,
+              refNumber: true,
+              customer: true,
+              description: true,
+              setting: true,
+            },
+          })
+        : null;
+
+      const totalQuantity = Math.max(1, Number(relatedJob?.qty || existingLog.quantityCount || quantityNumbers.length || 1));
+      const jobWedmAmount = Math.max(0, Number(relatedJob?.totalHrs || 0) * Number(relatedJob?.rate || 0));
+      const perQuantityRevenue = totalQuantity > 0 ? jobWedmAmount / totalQuantity : 0;
+      const estimatedHoursPerQuantity = perQuantityRevenue / 625;
+      const estimatedSecondsPerQuantity = Math.max(0, Math.round(estimatedHoursPerQuantity * 3600));
+      const estimatedSeconds = estimatedSecondsPerQuantity * Math.max(1, quantityNumbers.length || Number(existingLog.quantityCount || 1));
+      const workedToEstimatedRatio = estimatedSeconds > 0 ? Math.max(0, Math.min(1, workedSeconds / estimatedSeconds)) : 0;
+      const priorLogs = resolvedExistingJobId
+        ? await prisma.employeeLog.findMany({
+            where: {
+              jobId: resolvedExistingJobId,
+              role: "OPERATOR",
+              activityType: "OPERATOR_PRODUCTION",
+              status: { in: ["COMPLETED", "REJECTED"] },
+              id: { not: existingLog.id },
+            },
+            select: {
+              quantityFrom: true,
+              quantityTo: true,
+              quantityCount: true,
+              metadata: true,
+            },
+          })
+        : [];
+      const allocatedByQuantity = getAllocatedRevenueByQuantity(priorLogs, quantityNumbers);
+      const revenueByQuantity: Record<string, number> = {};
+      let totalRevenue = 0;
+
+      quantityNumbers.forEach((qty) => {
+        const alreadyAllocated = Math.max(0, allocatedByQuantity.get(qty) || 0);
+        const remaining = Math.max(0, perQuantityRevenue - alreadyAllocated);
+        const proposedRevenue = perQuantityRevenue * workedToEstimatedRatio;
+        const qtyRevenue = Math.max(0, Math.min(remaining, proposedRevenue));
+        const roundedQtyRevenue = Number(qtyRevenue.toFixed(2));
+        revenueByQuantity[String(qty)] = roundedQtyRevenue;
+        totalRevenue += roundedQtyRevenue;
+      });
+
+      const finalRevenue = Number(totalRevenue.toFixed(2));
+      const updatedLog = await prisma.employeeLog.update({
+        where: { id: existingLog.id },
+        data: {
+          status: normalizedStatus,
+          startedAt: parsedStart,
+          endedAt: parsedEnd,
+          durationSeconds: workedSeconds,
+          refNumber: String(refNumber || existingLog.refNumber || relatedJob?.refNumber || ""),
+          settingLabel: String(settingLabel || existingLog.settingLabel || relatedJob?.setting || ""),
+          quantityFrom: existingLog.quantityFrom,
+          quantityTo: existingLog.quantityTo,
+          quantityCount: existingLog.quantityCount,
+          jobCustomer: String(customer || existingLog.jobCustomer || relatedJob?.customer || ""),
+          jobDescription: String(description || existingLog.jobDescription || relatedJob?.description || ""),
+          workItemTitle: `Job #${String(refNumber || existingLog.refNumber || relatedJob?.refNumber || "-")}`,
+          workSummary: `Machine ${machineNumber || (existingLog.metadata as any)?.machineNumber || "-"} | Ops ${opsName || (existingLog.metadata as any)?.opsName || existingLog.userName || "-"} | Hrs ${machineHrs || "-"}`,
+          metadata: {
+            ...((existingLog.metadata as any) || {}),
+            machineNumber: String(machineNumber || (existingLog.metadata as any)?.machineNumber || ""),
+            opsName: String(opsName || (existingLog.metadata as any)?.opsName || existingLog.userName || ""),
+            machineHrs: String(machineHrs || ""),
+            idleTime: String(idleTime || "Shift Over"),
+            idleTimeDuration: String(idleTimeDuration || ""),
+            quantityNumbers,
+            workedSeconds,
+            estimatedSeconds,
+            estimatedSecondsPerQuantity,
+            overtimeSeconds: Math.max(0, workedSeconds - estimatedSeconds),
+            workedToEstimatedRatio,
+            wedmAmount: jobWedmAmount,
+            perQuantityRevenue,
+            revenueByQuantity,
+            revenue: finalRevenue,
+            quantityRevenueModel: "WEDM_PROPORTIONAL",
+          },
+        },
+      });
+
+      return res.status(201).json(mapEmployeeLog(updatedLog));
+    }
 
     const parsedStart = parseOperatorDateTime(startTime);
     const parsedEnd = parseOperatorDateTime(endTime);
@@ -284,7 +521,7 @@ router.post("/operator/complete", async (req, res) => {
       data: {
         role: "OPERATOR",
         activityType: "OPERATOR_PRODUCTION",
-        status: "COMPLETED",
+        status: normalizedStatus,
         ...withUserId(userId),
         userEmail: String(reqUser?.email || ""),
         userName: resolveReqUserName(reqUser),
@@ -509,7 +746,122 @@ router.get("/", async (req, res) => {
         take: limit,
       }),
     ]);
-    res.json(createPaginatedResponse(logs.map(mapEmployeeLog), total, offset, limit));
+
+    const mappedLogs = logs.map(mapEmployeeLog);
+    const operatorGroupIds = Array.from(
+      new Set(
+        mappedLogs
+          .filter((log: any) => String(log.role || "").toUpperCase() === "OPERATOR" && log.jobGroupId !== null && log.jobGroupId !== undefined)
+          .map((log: any) => String(log.jobGroupId))
+          .filter(Boolean)
+      )
+    );
+
+    if (operatorGroupIds.length === 0) {
+      return res.json(createPaginatedResponse(mappedLogs, total, offset, limit));
+    }
+
+    const operatorGroupIdsAsBigInt = operatorGroupIds.map((value) => toBigInt(value)).filter((value): value is bigint => value !== undefined);
+    const operatorJobIds = Array.from(
+      new Set(
+        mappedLogs
+          .filter((log: any) => String(log.role || "").toUpperCase() === "OPERATOR" && log.jobId)
+          .map((log: any) => String(log.jobId))
+          .filter(Boolean)
+      )
+    );
+
+    const [groupJobs, operatorGroupLogs, operatorJobsById] = await prisma.$transaction([
+      prisma.job.findMany({
+        where: { groupId: { in: operatorGroupIdsAsBigInt } },
+        select: { id: true, groupId: true, totalHrs: true, rate: true },
+      }),
+      prisma.employeeLog.findMany({
+        where: {
+          role: "OPERATOR",
+          jobGroupId: { in: operatorGroupIdsAsBigInt },
+        },
+      }),
+      prisma.job.findMany({
+        where: { id: { in: operatorJobIds } },
+        select: { id: true, totalHrs: true, rate: true, qty: true },
+      }),
+    ]);
+
+    const wedmAmountByGroupId = new Map<string, number>();
+    const wedmAmountByJobId = new Map<string, number>();
+    groupJobs.forEach((job) => {
+      const key = String(job.groupId);
+      wedmAmountByGroupId.set(key, (wedmAmountByGroupId.get(key) || 0) + Number(job.totalHrs || 0) * Number(job.rate || 0));
+      wedmAmountByJobId.set(String(job.id), Number(job.totalHrs || 0) * Number(job.rate || 0));
+    });
+    operatorJobsById.forEach((job) => {
+      wedmAmountByJobId.set(String(job.id), Number(job.totalHrs || 0) * Number(job.rate || 0));
+    });
+
+    const completedLogKeys = new Set<string>();
+    const totalWorkedSecondsByGroupId = new Map<string, number>();
+    const totalWorkedSecondsByJobId = new Map<string, number>();
+    operatorGroupLogs.forEach((log) => {
+      const status = String(log.status || "").toUpperCase();
+      const groupId = String(log.jobGroupId || "").trim();
+      const jobId = String(log.jobId || "").trim();
+
+      if (status === "COMPLETED") {
+        buildOperatorLogCompletionKey(log).forEach((key) => completedLogKeys.add(key));
+      }
+
+      if (status !== "COMPLETED") return;
+      const workedSeconds = getWorkedSecondsForOperatorLog(log);
+      if (groupId) {
+        totalWorkedSecondsByGroupId.set(groupId, (totalWorkedSecondsByGroupId.get(groupId) || 0) + workedSeconds);
+      }
+      if (jobId) {
+        totalWorkedSecondsByJobId.set(jobId, (totalWorkedSecondsByJobId.get(jobId) || 0) + workedSeconds);
+      }
+    });
+
+    const visibleLogs = mappedLogs.filter((log: any) => {
+      if (String(log.role || "").toUpperCase() !== "OPERATOR") return true;
+      if (String(log.status || "").toUpperCase() !== "IN_PROGRESS") return true;
+      const completionKeys = buildOperatorLogCompletionKey(log);
+      if (completionKeys.length === 0) return true;
+      return !completionKeys.some((key) => completedLogKeys.has(key));
+    });
+
+    const responseItems = visibleLogs.map((log: any) => {
+      if (String(log.role || "").toUpperCase() !== "OPERATOR") return log;
+      const explicitRevenue = getOperatorRevenueValue(log);
+      if (explicitRevenue !== null) {
+        return {
+          ...log,
+          revenue: Number(explicitRevenue.toFixed(2)),
+          metadata: {
+            ...(log.metadata || {}),
+            revenue: Number(explicitRevenue.toFixed(2)),
+          },
+        };
+      }
+
+      const jobId = String(log.jobId || "").trim();
+      const groupId = String(log.jobGroupId || "").trim();
+      const wedmAmount = (jobId ? wedmAmountByJobId.get(jobId) : 0) || (groupId ? wedmAmountByGroupId.get(groupId) : 0) || 0;
+      const totalWorkedSeconds = (jobId ? totalWorkedSecondsByJobId.get(jobId) : 0) || (groupId ? totalWorkedSecondsByGroupId.get(groupId) : 0) || 0;
+      if (!wedmAmount || totalWorkedSeconds <= 0) return log;
+      const workedSeconds = getWorkedSecondsForOperatorLog(log);
+      const revenue = Math.max(0, Number(((wedmAmount * workedSeconds) / totalWorkedSeconds).toFixed(2)));
+      return {
+        ...log,
+        revenue,
+        metadata: {
+          ...(log.metadata || {}),
+          revenue,
+          wedmAmount,
+        },
+      };
+    });
+
+    res.json(createPaginatedResponse(responseItems, total, offset, limit));
   } catch (error: any) {
     console.error("Error fetching employee logs:", error);
     res.status(500).json({ message: "Error fetching employee logs" });

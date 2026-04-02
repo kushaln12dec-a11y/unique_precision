@@ -20,6 +20,7 @@ export const buildCopiedQuantityFields = (source: QuantityInputData) => ({
   machineHrs: source.machineHrs,
   machineNumber: source.machineNumber,
   opsName: [...(source.opsName || [])],
+  operatorHistory: [...(source.operatorHistory || source.opsName || [])],
   idleTime: source.idleTime,
   idleTimeDuration: source.idleTimeDuration,
   lastImage: source.lastImage,

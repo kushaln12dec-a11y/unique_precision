@@ -27,9 +27,9 @@ export const formatDuration = (seconds?: number) => {
 
 export const formatLogStatus = (status?: string) => {
   const value = String(status || "").toUpperCase();
-  if (value === "IN_PROGRESS") return "In Progress";
-  if (value === "REJECTED") return "Rejected";
-  if (value === "COMPLETED") return "Completed";
+  if (value === "IN_PROGRESS") return "RUNNING";
+  if (value === "REJECTED") return "HOLD";
+  if (value === "COMPLETED") return "LOGGED";
   return value || "-";
 };
 
@@ -142,5 +142,5 @@ const createStatusColumn = (): Column<EmployeeLog> => ({
   sortable: false,
   className: "employee-status-cell",
   headerClassName: "employee-status-col",
-  render: (row) => <span className={`employee-log-status status-${row.status.toLowerCase()}`}>{row.status === "IN_PROGRESS" ? "In Progress" : row.status === "REJECTED" ? "Rejected" : "Completed"}</span>,
+  render: (row) => <span className={`employee-log-status status-${row.status.toLowerCase()}`}>{row.status === "IN_PROGRESS" ? "RUNNING" : row.status === "REJECTED" ? "HOLD" : "LOGGED"}</span>,
 });

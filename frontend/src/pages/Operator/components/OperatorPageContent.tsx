@@ -54,6 +54,7 @@ type OperatorPageContentProps = {
   operatorLogColumnDefs: any[];
   filterOperatorLogs: (logs: EmployeeLog[]) => EmployeeLog[];
   logsFetchPage: (offset: number, limit: number) => Promise<{ items: EmployeeLog[]; hasMore: boolean }>;
+  activeOperatorRuns: EmployeeLog[];
 };
 
 const OperatorPageContent = (props: OperatorPageContentProps) => {
@@ -106,6 +107,7 @@ const OperatorPageContent = (props: OperatorPageContentProps) => {
     operatorLogColumnDefs,
     filterOperatorLogs,
     logsFetchPage,
+    activeOperatorRuns,
   } = props;
 
   return (
@@ -148,6 +150,7 @@ const OperatorPageContent = (props: OperatorPageContentProps) => {
           operatorGridRows={operatorGridRows}
           expandedGroups={expandedGroups}
           createdByRefreshKey={createdByRefreshKey}
+          activeOperatorRuns={activeOperatorRuns}
         />
       ) : (
         <OperatorLogsSection

@@ -13,7 +13,7 @@ type Props = {
   rangeEndQty: number;
   isRangeApproved: boolean;
   setIsRangeApproved: React.Dispatch<React.SetStateAction<boolean>>;
-  qaCounts: { logged: number; sent: number; empty: number };
+  qaCounts: { running: number; hold: number; logged: number; sent: number; empty: number };
   onShowToast?: (message: string, variant?: "success" | "error" | "info") => void;
 };
 
@@ -74,9 +74,11 @@ export const OperatorInputRangeControls: React.FC<Props> = ({
     )}
     <div className="qa-inline-status-block">
       <div className="qa-overall-summary qa-inline-summary">
-        <span className="qa-summary-chip saved">Logged: {qaCounts.logged}</span>
+        <span className="qa-summary-chip empty">NOT STARTED: {qaCounts.empty}</span>
+        <span className="qa-summary-chip running">RUNNING: {qaCounts.running}</span>
+        <span className="qa-summary-chip ready">HOLD: {qaCounts.hold}</span>
+        <span className="qa-summary-chip saved">LOGGED: {qaCounts.logged}</span>
         <span className="qa-summary-chip sent">QC: {qaCounts.sent}</span>
-        <span className="qa-summary-chip empty">Yet to Start: {qaCounts.empty}</span>
       </div>
     </div>
   </div>

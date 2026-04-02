@@ -7,7 +7,7 @@
   width: 100%;
   padding: 0.55rem 0.65rem;
   border-radius: 12px;
-  border: none;
+  border: 1px solid transparent;
   background: #ffffff;
   color: #0f172a;
   font-size: 0.85rem;
@@ -16,11 +16,19 @@
   justify-content: space-between;
   gap: 0.5rem;
   cursor: pointer;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease;
 }
 
 .option-dropdown-trigger:disabled {
   cursor: not-allowed;
   opacity: 0.75;
+}
+
+.option-dropdown-wrapper.open .option-dropdown-trigger,
+.option-dropdown-trigger:focus-visible {
+  outline: none;
+  border-color: #60a5fa;
+  box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.2);
 }
 
 .option-dropdown-value {

@@ -290,6 +290,8 @@
 .job-ref-copy-text .marquee-static {
   font-weight: 700;
   letter-spacing: 0.2px;
+  animation: none !important;
+  transform: none !important;
 }
 
 .data-table tbody tr .description-marquee:hover .marquee-static,

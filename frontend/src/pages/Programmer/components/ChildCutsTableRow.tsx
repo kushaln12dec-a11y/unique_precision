@@ -1,11 +1,11 @@
 import ActionButtons from "./ActionButtons";
 import type { JobEntry } from "../../../types/job";
 import { getQaProgressCounts } from "../../Operator/utils/qaProgress";
-import { MultiSelectOperators } from "../../Operator/components/MultiSelectOperators";
 import { estimatedTimeFromAmount, formatMachineLabel, toYN } from "../../../utils/jobFormatting";
 import { getThicknessDisplayValue } from "../programmerUtils";
 import MarqueeCopyText from "../../../components/MarqueeCopyText";
 import { buildStatusBadges, getParentSerialPrefix, isUnassignedValue, renderBadgeTicker, toAlphabetSuffix } from "../utils/childCutsTableUtils";
+import SelectDropdown from "./SelectDropdown";
 
 type ChildCutsTableRowProps = {
   entry: JobEntry;
@@ -101,13 +101,16 @@ const ChildCutsTableRow = ({
         <td className="assigned-col">
           {canAssign && onAssignChange && operatorUsers.length > 0 ? (
             <div onClick={(e) => e.stopPropagation()}>
-              <MultiSelectOperators
-                selectedOperators={assignedOperators}
-                availableOperators={operatorUsers}
+              <SelectDropdown
+                value={assignedOperators[0] || "Unassign"}
+                onChange={(nextValue) => onAssignChange(entry.id, String(nextValue || "Unassign"))}
+                options={[
+                  { label: "UNASSIGN", value: "Unassign" },
+                  ...operatorUsers.map((user) => ({ label: String(user.name || "").toUpperCase(), value: user.name })),
+                ]}
                 className="operator-assigned-dropdown"
-                onChange={(operators) => onAssignChange(entry.id, operators.length > 0 ? [...new Set(operators)].join(", ") : "Unassign")}
                 placeholder="Unassign"
-                compact
+                align="left"
               />
             </div>
           ) : (

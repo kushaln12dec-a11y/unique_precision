@@ -69,6 +69,7 @@
 .cut-section-actions {
   display: flex;
   justify-content: flex-end;
+  align-items: center;
   margin-top: 0.75rem;
   position: static;
   gap: 0.6rem;
@@ -79,6 +80,7 @@
   grid-area: actions;
   margin-top: 0;
   padding-top: 0.25rem;
+  align-self: end;
 }
 
 .cut-remove {

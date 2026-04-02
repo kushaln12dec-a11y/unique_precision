@@ -1,7 +1,14 @@
 import ArrowForwardIosSharpIcon from "@mui/icons-material/ArrowForwardIosSharp";
 import type { JobEntry } from "../../../types/job";
-import { estimatedHoursFromAmount, formatEstimatedTime, MACHINE_OPTIONS, toMachineIndex } from "../../../utils/jobFormatting";
+import {
+  estimatedDurationSecondsFromHours,
+  estimatedHoursFromAmount,
+  formatEstimatedTime,
+  MACHINE_OPTIONS,
+  toMachineIndex,
+} from "../../../utils/jobFormatting";
 import type { OperatorDisplayRow } from "../hooks/useOperatorTable";
+import type { EmployeeLog } from "../../../types/employeeLog";
 
 export const getOperatorMachineDropdownOptions = (machineOptions: string[]) => {
   const normalized = machineOptions.map((value) => toMachineIndex(value)).filter(Boolean);
@@ -14,6 +21,130 @@ export const getOperatorMachineNumber = (job: JobEntry): string => {
   const captures = Array.isArray(job.operatorCaptures) ? job.operatorCaptures : [];
   const latest = captures[captures.length - 1];
   return toMachineIndex(String(latest?.machineNumber || "").trim());
+};
+
+type ActiveCaptureSummary = {
+  entry: JobEntry;
+  startTime: string;
+  machineNumber: string;
+  operatorName: string;
+  quantityLabel: string;
+};
+
+const formatCaptureQuantityLabel = (capture: any) => {
+  const fromQty = Math.max(1, Number(capture?.fromQty || 1));
+  const toQty = Math.max(fromQty, Number(capture?.toQty || fromQty));
+  return fromQty === toQty ? `Qty ${fromQty}` : `Qty ${fromQty}-${toQty}`;
+};
+
+export const getLatestActiveCaptureSummary = (entries: JobEntry[]): ActiveCaptureSummary | null => {
+  let latestCapture: ActiveCaptureSummary | null = null;
+
+  entries.forEach((entry) => {
+    const captures = Array.isArray(entry.operatorCaptures) ? entry.operatorCaptures : [];
+    captures.forEach((capture) => {
+      if (!capture?.startTime || capture?.endTime) return;
+      const startedAt = new Date(capture.startTime);
+      if (Number.isNaN(startedAt.getTime())) return;
+
+      if (!latestCapture || startedAt.getTime() > new Date(latestCapture.startTime).getTime()) {
+        latestCapture = {
+          entry,
+          startTime: capture.startTime,
+          machineNumber: toMachineIndex(String(capture.machineNumber || "").trim()),
+          operatorName: String(capture.opsName || "").trim(),
+          quantityLabel: formatCaptureQuantityLabel(capture),
+        };
+      }
+    });
+  });
+
+  return latestCapture;
+};
+
+export const getOperatorHistoryNames = (entry: JobEntry): string[] => {
+  const seen = new Set<string>();
+  const history: string[] = [];
+  const pushValues = (rawValue: unknown) => {
+    String(rawValue || "")
+      .split(",")
+      .map((value) => value.trim().toUpperCase())
+      .filter(Boolean)
+      .forEach((value) => {
+        const key = value.toLowerCase();
+        if (seen.has(key) || key === "unassign" || key === "unassigned") return;
+        seen.add(key);
+        history.push(value);
+      });
+  };
+
+  const captures = Array.isArray(entry.operatorCaptures) ? entry.operatorCaptures : [];
+  captures.forEach((capture) => pushValues(capture?.opsName));
+  pushValues(entry.assignedTo);
+  return history;
+};
+
+export const getActiveOperatorLogSummary = (
+  entry: JobEntry,
+  activeRunsByJobId: Map<string, EmployeeLog>
+): ActiveCaptureSummary | null => {
+  const activeLog = activeRunsByJobId.get(String(entry.id));
+  if (!activeLog) return null;
+  const metadata = (activeLog.metadata || {}) as Record<string, any>;
+  const quantityFrom = Math.max(1, Number(activeLog.quantityFrom || 1));
+  const quantityTo = Math.max(quantityFrom, Number(activeLog.quantityTo || quantityFrom));
+  return {
+    entry,
+    startTime: String(activeLog.startedAt || ""),
+    machineNumber: toMachineIndex(String(metadata.machineNumber || entry.machineNumber || "").trim()),
+    operatorName: String(activeLog.userName || entry.assignedTo || "").trim(),
+    quantityLabel: quantityFrom === quantityTo ? `Qty ${quantityFrom}` : `Qty ${quantityFrom}-${quantityTo}`,
+  };
+};
+
+export const renderOperatorLiveRunCell = (row: OperatorDisplayRow) => {
+  const sourceEntries = row.kind === "parent" ? row.tableRow.entries : [row.entry];
+  const activeCapture = getLatestActiveCaptureSummary(sourceEntries);
+  const assignedMachine = getOperatorMachineNumber(row.entry);
+
+  if (activeCapture) {
+    return (
+      <div className="operator-live-run-cell" title={`${activeCapture.quantityLabel}${activeCapture.operatorName ? ` | ${activeCapture.operatorName}` : ""}`}>
+        <span className="operator-live-run-primary">
+          Running on {activeCapture.machineNumber || "Machine Pending"}
+        </span>
+        <span className="operator-live-run-meta">{activeCapture.quantityLabel}</span>
+      </div>
+    );
+  }
+
+  if (assignedMachine) {
+    return (
+      <div className="operator-live-run-cell" title={`Ready on ${assignedMachine}`}>
+        <span className="operator-live-run-primary">Ready on {assignedMachine}</span>
+        <span className="operator-live-run-meta">Awaiting machine start</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="operator-live-run-cell" title="Machine not assigned">
+      <span className="operator-live-run-primary">Machine pending</span>
+      <span className="operator-live-run-meta">Assign machine to start cut</span>
+    </div>
+  );
+};
+
+export const formatOperatorRunningAlert = (entries: JobEntry[]) => {
+  const activeCapture = getLatestActiveCaptureSummary(entries);
+  if (!activeCapture) return null;
+  return {
+    machineNumber: activeCapture.machineNumber || "Machine Pending",
+    jobRef: activeCapture.entry.refNumber || "",
+    description: activeCapture.entry.description || "",
+    quantityLabel: activeCapture.quantityLabel,
+    operatorName: activeCapture.operatorName,
+  };
 };
 
 export const normalizeAssignedOperators = (
@@ -45,17 +176,7 @@ export const getGroupExpectedHours = (entries: JobEntry[]): number =>
   estimatedHoursFromAmount(entries.reduce((sum, entry) => sum + Number(entry.totalHrs || 0) * Number(entry.rate || 0), 0));
 
 export const getLatestActiveCaptureStartedAt = (entries: JobEntry[]): string | null => {
-  let latestStart: string | null = null;
-  entries.forEach((entry) => {
-    const captures = Array.isArray(entry.operatorCaptures) ? entry.operatorCaptures : [];
-    captures.forEach((capture) => {
-      if (!capture?.startTime || capture?.endTime) return;
-      const startedAt = new Date(capture.startTime);
-      if (Number.isNaN(startedAt.getTime())) return;
-      if (!latestStart || startedAt.getTime() > new Date(latestStart).getTime()) latestStart = capture.startTime;
-    });
-  });
-  return latestStart;
+  return getLatestActiveCaptureSummary(entries)?.startTime || null;
 };
 
 export const formatOperatorDurationMinutes = (minutes: number): string => {
@@ -65,11 +186,16 @@ export const formatOperatorDurationMinutes = (minutes: number): string => {
 
 export const renderOperatorCustomerCell = (
   row: OperatorDisplayRow,
-  toggleGroup: (groupId: string) => void
+  toggleGroup: (groupId: string) => void,
+  activeRunsByJobId?: Map<string, EmployeeLog>
 ) => {
   const isChild = row.kind === "child";
+  const sourceEntries = row.kind === "parent" ? row.tableRow.entries : [row.entry];
+  const activeCapture = sourceEntries
+    .map((entry) => getActiveOperatorLogSummary(entry, activeRunsByJobId || new Map()))
+    .find(Boolean);
   return (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-start", gap: "0.2rem", width: "100%" }}>
+    <div className="operator-customer-cell">
       {!isChild && row.hasChildren && (
         <button
           type="button"
@@ -99,6 +225,7 @@ export const renderOperatorCustomerCell = (
       )}
       {isChild && <span className="inline-row-branch">|-</span>}
       {!isChild && !row.hasChildren && <span style={{ width: "1rem" }} />}
+      {activeCapture ? <span className="operator-running-dot operator-running-dot-inline" aria-hidden="true" /> : null}
       <span>{row.entry.customer || "-"}</span>
     </div>
   );
@@ -107,13 +234,14 @@ export const renderOperatorCustomerCell = (
 export const renderEstimatedTime = (row: OperatorDisplayRow) => {
   const sourceEntries = row.kind === "parent" ? row.tableRow.entries : [row.entry];
   const expectedHours = getGroupExpectedHours(sourceEntries);
+  const expectedSeconds = estimatedDurationSecondsFromHours(expectedHours);
   const activeStartedAt = getLatestActiveCaptureStartedAt(sourceEntries);
-  if (activeStartedAt && expectedHours > 0) {
-    const elapsedHours = Math.max(0, Date.now() - new Date(activeStartedAt).getTime()) / 3600000;
-    if (elapsedHours > expectedHours) {
+  if (activeStartedAt && expectedSeconds > 0) {
+    const elapsedSeconds = Math.max(0, Math.floor((Date.now() - new Date(activeStartedAt).getTime()) / 1000));
+    if (elapsedSeconds > expectedSeconds) {
       return (
         <span className="operator-overtime-value" title={`Expected ${formatEstimatedTime(expectedHours)}`}>
-          Overtime {formatOperatorDurationMinutes((elapsedHours - expectedHours) * 60)}
+          Overtime {formatOperatorDurationMinutes((elapsedSeconds - expectedSeconds) / 60)}
         </span>
       );
     }

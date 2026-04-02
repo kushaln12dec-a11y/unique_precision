@@ -8,10 +8,14 @@
     gap: 0.85rem;
   }
 
+  .cut-section {
+    padding: 0.85rem;
+  }
+
   .job-form-image {
     grid-row: auto;
     min-height: 120px;
-    width: 100%;
+    width: min(180px, 42vw);
     height: 120px;
   }
 
@@ -74,6 +78,7 @@
     left: auto;
     transform: none;
     justify-content: space-between;
+    flex-wrap: wrap;
     gap: 0.85rem;
     width: 100%;
     box-sizing: border-box;
@@ -142,14 +147,14 @@
 
 @media (max-width: 1200px) {
   .cut-section-body {
-    grid-template-columns: clamp(150px, 22vw, 190px) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr);
     gap: 0.9rem;
   }
 
   .cut-section-body > .job-form-image-container {
     justify-self: start;
-    width: 100%;
-    max-width: clamp(150px, 22vw, 190px);
+    width: min(190px, 42vw);
+    max-width: 190px;
   }
 
   .job-form-image {
@@ -202,6 +207,26 @@
     justify-content: flex-end;
     margin-top: 0.6rem;
     padding-top: 0.2rem;
+    flex-wrap: wrap;
+  }
+
+  .form-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .form-totals {
+    position: static;
+    transform: none;
+    left: auto;
+    width: 100%;
+    justify-content: space-between;
+    flex-wrap: wrap;
+  }
+
+  .form-action-buttons {
+    width: 100%;
+    justify-content: flex-end;
     flex-wrap: wrap;
   }
 }

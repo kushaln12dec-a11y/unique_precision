@@ -40,8 +40,8 @@ export const useOperatorPageHandlers = ({
         const isUnassign = !normalizedValue || normalizedValue.toLowerCase() === "unassign" || normalizedValue.toLowerCase() === "unassigned";
         const nextAssignedTo =
           userRole === "OPERATOR"
-            ? (isUnassign ? "Unassign" : String(currentUserDisplayName || "").trim() || normalizedValue)
-            : (isUnassign ? "Unassign" : normalizedValue);
+            ? (isUnassign ? "Unassign" : String(currentUserDisplayName || "").trim().toUpperCase() || normalizedValue.toUpperCase())
+            : (isUnassign ? "Unassign" : normalizedValue.toUpperCase());
         await updateOperatorJob(String(jobId), { assignedTo: nextAssignedTo });
         syncJob((job) => job.id === jobId, (job) => ({ ...job, assignedTo: nextAssignedTo }));
       } catch (error) {

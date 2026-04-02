@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import type { JobEntry } from "../../../types/job";
 import { calculateTotals } from "../programmerUtils";
+import { getQaStatusBadges, type QaProgressCounts } from "../../Operator/utils/qaProgress";
 
 export const isUnassignedValue = (value: unknown): boolean => {
   const normalized = String(value || "").trim().toLowerCase();
@@ -33,12 +34,7 @@ export const getSelectedCutAsParentViewJob = (selectedCut: JobEntry | null) => {
   };
 };
 
-export const buildStatusBadges = (counts: { empty: number; ready: number; saved: number; sent: number }) => [
-  { className: "empty", label: `Yet to Start ${counts.empty}` },
-  { className: "ready", label: `In Progress ${counts.ready}` },
-  { className: "saved", label: `Logged ${counts.saved}` },
-  { className: "sent", label: `QC ${counts.sent}` },
-];
+export const buildStatusBadges = (counts: QaProgressCounts) => getQaStatusBadges(counts);
 
 export const renderBadgeTicker = (badges: Array<{ className: string; label: string }>): ReactNode => (
   <div className="child-stage-summary">

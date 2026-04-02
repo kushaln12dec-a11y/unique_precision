@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { getOperatorJobsByGroupId } from "../../../services/operatorApi";
 import { getIdleTimeConfigs } from "../../../services/idleTimeConfigApi";
+import { getEmployeeLogs } from "../../../services/employeeLogsApi";
 import type { JobEntry } from "../../../types/job";
 import type { CutInputData, QuantityInputData } from "../types/cutInput";
 import { createEmptyQuantityInputData } from "../types/cutInput";
@@ -16,12 +17,49 @@ export const useOperatorViewData = (groupId: string | null, cutIdParam: string |
 
   const parseAssignedOperators = (rawAssignedTo: unknown): string[] => {
     if (Array.isArray(rawAssignedTo)) {
-      return [...new Set(rawAssignedTo.map((value) => String(value || "").trim()).filter(Boolean))];
+      return [...new Set(rawAssignedTo.map((value) => String(value || "").trim().toUpperCase()).filter(Boolean))].slice(0, 1);
     }
     const normalized = String(rawAssignedTo || "").trim();
     const normalizedLower = normalized.toLowerCase();
     if (!normalized || normalizedLower === "unassigned" || normalizedLower === "unassign") return [];
-    return [...new Set(normalized.split(",").map((value) => value.trim()).filter(Boolean))];
+    return [...new Set(normalized.split(",").map((value) => value.trim().toUpperCase()).filter(Boolean))].slice(0, 1);
+  };
+
+  const collectOperatorHistoryForQuantity = (
+    captures: any[],
+    quantityNumber: number,
+    assignedToArray: string[],
+    logsForJob: Array<{ quantityFrom?: number | null; quantityTo?: number | null; userName?: string | null }>
+  ): string[] => {
+    const seen = new Set<string>();
+    const collected: string[] = [];
+    const pushName = (rawValue: unknown) => {
+      String(rawValue || "")
+        .split(",")
+        .map((value) => value.trim().toUpperCase())
+        .filter(Boolean)
+        .forEach((value) => {
+          const key = value.toLowerCase();
+          if (seen.has(key)) return;
+          seen.add(key);
+          collected.push(value);
+        });
+    };
+
+    captures.forEach((capture: any) => {
+      const fromQty = Math.max(1, Number(capture?.fromQty || 1));
+      const toQty = Math.max(fromQty, Number(capture?.toQty || fromQty));
+      if (quantityNumber < fromQty || quantityNumber > toQty) return;
+      pushName(capture?.opsName);
+    });
+    logsForJob.forEach((log) => {
+      const fromQty = Math.max(1, Number(log?.quantityFrom || 1));
+      const toQty = Math.max(fromQty, Number(log?.quantityTo || fromQty));
+      if (quantityNumber < fromQty || quantityNumber > toQty) return;
+      pushName(log?.userName);
+    });
+    assignedToArray.forEach((value) => pushName(value));
+    return collected;
   };
 
   // Fetch idle time configs
@@ -55,6 +93,14 @@ export const useOperatorViewData = (groupId: string | null, cutIdParam: string |
       try {
         setLoadingJobs(true);
         const fetchedJobs = await getOperatorJobsByGroupId(groupId);
+        const operatorLogs = await getEmployeeLogs({ role: "OPERATOR", limit: 500 }).catch(() => []);
+        const logsByJobId = new Map<string, Array<{ quantityFrom?: number | null; quantityTo?: number | null; userName?: string | null }>>();
+        operatorLogs.forEach((log) => {
+          const jobId = String(log.jobId || "").trim();
+          if (!jobId) return;
+          if (!logsByJobId.has(jobId)) logsByJobId.set(jobId, []);
+          logsByJobId.get(jobId)!.push(log);
+        });
         
         // Filter to specific cut if cutId is provided
         let filteredJobs = fetchedJobs;
@@ -71,9 +117,9 @@ export const useOperatorViewData = (groupId: string | null, cutIdParam: string |
           const jobId = job.id;
           const existing = job as any;
           const getOpsNameArray = (rawOpsName: string | string[]) => {
-            if (Array.isArray(rawOpsName)) return rawOpsName.map((value) => String(value || "").trim()).filter(Boolean);
+            if (Array.isArray(rawOpsName)) return rawOpsName.map((value) => String(value || "").trim().toUpperCase()).filter(Boolean).slice(0, 1);
             return rawOpsName && rawOpsName !== "Unassigned" && rawOpsName !== "Unassign"
-              ? rawOpsName.split(",").map((value) => value.trim()).filter(Boolean)
+              ? rawOpsName.split(",").map((value) => value.trim().toUpperCase()).filter(Boolean).slice(0, 1)
               : [];
           };
           const assignedToArray = parseAssignedOperators(existing.assignedTo || "");
@@ -98,9 +144,12 @@ export const useOperatorViewData = (groupId: string | null, cutIdParam: string |
                   ? qty.opsName.map((value) => String(value || "").trim()).filter(Boolean)
                   : [];
                 return {
-                  ...qty,
-                  machineNumber: String(qty.machineNumber || "").trim() || sharedMachine,
-                  opsName: qtyOps.length > 0 ? qtyOps : assignedToArray,
+                    ...qty,
+                    machineNumber: String(qty.machineNumber || "").trim() || sharedMachine,
+                    opsName: qtyOps.length > 0 ? qtyOps : assignedToArray,
+                    operatorHistory: Array.isArray(qty.operatorHistory)
+                      ? qty.operatorHistory.map((value) => String(value || "").trim().toUpperCase()).filter(Boolean)
+                      : collectOperatorHistoryForQuantity(existing.operatorCaptures || [], index + 1, assignedToArray, logsByJobId.get(String(jobId)) || []),
                 };
               }),
             });
@@ -118,7 +167,7 @@ export const useOperatorViewData = (groupId: string | null, cutIdParam: string |
               const fromQty = Math.max(1, Number(capture.fromQty || 1));
               const toQty = Math.min(quantity, Math.max(fromQty, Number(capture.toQty || fromQty)));
               const captureOps = getOpsNameArray(capture.opsName || "");
-              const opsNameArray = assignedToArray.length > 0 ? assignedToArray : captureOps;
+              const opsNameArray = captureOps.length > 0 ? captureOps : assignedToArray;
               const startTime = capture.startTime || "";
               const endTime = capture.endTime || "";
               let idleTime = capture.idleTime || "";
@@ -151,6 +200,7 @@ export const useOperatorViewData = (groupId: string | null, cutIdParam: string |
                   machineHrs,
                   machineNumber: capture.machineNumber || "",
                   opsName: opsNameArray,
+                  operatorHistory: collectOperatorHistoryForQuantity(captures, idx + 1, assignedToArray, logsByJobId.get(String(jobId)) || []),
                   idleTime,
                   idleTimeDuration,
                   lastImage: capture.lastImage || null,
@@ -167,7 +217,7 @@ export const useOperatorViewData = (groupId: string | null, cutIdParam: string |
           } else {
             const opsName = existing.opsName || "";
             const baseOps = getOpsNameArray(opsName);
-            const opsNameArray = assignedToArray.length > 0 ? assignedToArray : baseOps;
+            const opsNameArray = baseOps.length > 0 ? baseOps : assignedToArray;
             const startTime = existing.startTime || "";
             const endTime = existing.endTime || "";
             let idleTime = existing.idleTime || "";
@@ -199,6 +249,7 @@ export const useOperatorViewData = (groupId: string | null, cutIdParam: string |
               machineHrs,
               machineNumber: existing.machineNumber || "",
               opsName: opsNameArray,
+              operatorHistory: collectOperatorHistoryForQuantity(captures, 1, assignedToArray, logsByJobId.get(String(jobId)) || []),
               idleTime,
               idleTimeDuration,
               lastImage: existing.lastImage || null,

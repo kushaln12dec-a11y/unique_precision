@@ -89,6 +89,12 @@ const filtersSlice = createSlice({
     },
     clearOperatorFilters(state) {
       state.operator.filters = {};
+      state.operator.customerFilter = "";
+      state.operator.descriptionFilter = "";
+      state.operator.createdByFilter = "";
+      state.operator.assignedToFilter = "";
+      state.operator.productionStageFilter = "";
+      state.operator.showFilterModal = false;
     },
     setOperatorShowFilterModal(state, action: PayloadAction<boolean>) {
       state.operator.showFilterModal = action.payload;

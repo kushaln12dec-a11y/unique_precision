@@ -1,8 +1,9 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Sidebar from "../../components/Sidebar";
 import Header from "../../components/Header";
 import { getOperatorJobsPage } from "../../services/jobApi";
+import { getEmployeeLogs } from "../../services/employeeLogsApi";
 import { getUserDisplayNameFromToken, getUserRoleFromToken } from "../../utils/auth";
 import { fetchAllPaginatedItems } from "../../utils/paginationUtils";
 import OperatorPageContent from "./components/OperatorPageContent";
@@ -18,6 +19,7 @@ import { useOperatorTable } from "./hooks/useOperatorTable";
 import { useOperatorTableData } from "./hooks/useOperatorTableData.tsx";
 import { exportOperatorJobsToCSV } from "./utils/csvExport";
 import type { JobEntry } from "../../types/job";
+import type { EmployeeLog } from "../../types/employeeLog";
 import type { OperatorTableRow } from "./types";
 import "../RoleBoard.css";
 import "../Programmer/Programmer.css";
@@ -45,6 +47,8 @@ const Operator = () => {
     variant: "info",
     visible: false,
   });
+  const [activeOperatorRuns, setActiveOperatorRuns] = useState<EmployeeLog[]>([]);
+  const [operatorHistoryLogs, setOperatorHistoryLogs] = useState<EmployeeLog[]>([]);
   const qaTableDataRef = useRef<OperatorTableRow[]>([]);
 
   const {
@@ -89,6 +93,70 @@ const Operator = () => {
     currentUserDisplayName,
     userRole
   );
+
+  useEffect(() => {
+    let isMounted = true;
+    const loadActiveRuns = async () => {
+      try {
+        const logs = await getEmployeeLogs({ role: "OPERATOR", limit: 500 });
+        if (!isMounted) return;
+        setOperatorHistoryLogs(logs.filter((log) => String(log.jobId || "").trim()));
+        setActiveOperatorRuns(
+          logs.filter(
+            (log) =>
+              String(log.jobId || "").trim() &&
+              String(log.status || "").toUpperCase() === "IN_PROGRESS"
+          )
+        );
+      } catch {
+        if (isMounted) {
+          setActiveOperatorRuns([]);
+          setOperatorHistoryLogs([]);
+        }
+      }
+    };
+
+    void loadActiveRuns();
+    const intervalId = window.setInterval(() => {
+      void loadActiveRuns();
+    }, 5000);
+
+    return () => {
+      isMounted = false;
+      window.clearInterval(intervalId);
+    };
+  }, []);
+
+  const activeRunsByJobId = useMemo(() => {
+    const map = new Map<string, EmployeeLog>();
+    activeOperatorRuns.forEach((log) => {
+      const jobId = String(log.jobId || "").trim();
+      if (!jobId) return;
+      const existing = map.get(jobId);
+      if (!existing || new Date(String(log.startedAt || "")).getTime() >= new Date(String(existing.startedAt || "")).getTime()) {
+        map.set(jobId, log);
+      }
+    });
+    return map;
+  }, [activeOperatorRuns]);
+
+  const operatorHistoryByJobId = useMemo(() => {
+    const map = new Map<string, string[]>();
+    const sortedLogs = [...operatorHistoryLogs].sort((left, right) => {
+      const leftTime = new Date(String(left.startedAt || left.createdAt || 0)).getTime();
+      const rightTime = new Date(String(right.startedAt || right.createdAt || 0)).getTime();
+      return leftTime - rightTime;
+    });
+    sortedLogs.forEach((log) => {
+      const jobId = String(log.jobId || "").trim();
+      const userName = String(log.userName || "").trim().toUpperCase();
+      if (!jobId || !userName) return;
+      const existing = map.get(jobId) || [];
+      if (!existing.includes(userName)) existing.push(userName);
+      map.set(jobId, existing);
+    });
+    return map;
+  }, [operatorHistoryLogs]);
 
   const {
     selectedJobIds,
@@ -176,6 +244,8 @@ const Operator = () => {
     isAdmin,
     isImageInputDisabled: isTaskTimerRunning,
     toggleGroup,
+    activeRunsByJobId,
+    operatorHistoryByJobId,
   });
 
   const jobSearchQuery = String(customerFilter || descriptionFilter || "").trim();
@@ -204,7 +274,6 @@ const Operator = () => {
     jobs,
     users,
     machineOptionsForDropdown,
-    isAdmin,
     operatorLogSearch,
     operatorLogStatus,
     operatorLogMachine,
@@ -273,7 +342,7 @@ const Operator = () => {
           setOperatorGridJobs={setOperatorGridJobs}
           operatorGridRows={operatorGridRows}
           expandedGroups={expandedGroups}
-          createdByRefreshKey={`${createdByFilter}|${assignedToFilter}|${JSON.stringify(filters)}`}
+          createdByRefreshKey={`${customerFilter}|${descriptionFilter}|${createdByFilter}|${assignedToFilter}|${JSON.stringify(filters)}`}
           operatorLogSearch={operatorLogSearch}
           setOperatorLogSearch={setOperatorLogSearch}
           operatorLogStatus={operatorLogStatus}
@@ -285,6 +354,7 @@ const Operator = () => {
           operatorLogColumnDefs={operatorLogColumnDefs}
           filterOperatorLogs={filterOperatorLogs}
           logsFetchPage={logsFetchPage}
+          activeOperatorRuns={activeOperatorRuns}
         />
 
         <OperatorPageOverlays
