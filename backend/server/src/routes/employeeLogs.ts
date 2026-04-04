@@ -4,6 +4,7 @@ import { prisma } from "../lib/prisma";
 import { parseOperatorDateTime } from "../utils/dateTime";
 import { toBigInt } from "../utils/bigint";
 import { mapEmployeeLog } from "../utils/prismaMappers";
+import { rebalanceOperatorRevenueForJob } from "./operatorShared";
 
 const router = Router();
 
@@ -27,6 +28,26 @@ const resolveReqUserName = (reqUser: any): string => {
   if (joined) return joined.toUpperCase();
   const email = String(reqUser?.email || "").trim();
   return (email.split("@")[0]?.trim() || "").toUpperCase();
+};
+
+const getRequestedOperatorNames = (value: unknown): string[] =>
+  String(value || "")
+    .split(",")
+    .map((entry) => entry.trim().toUpperCase())
+    .filter((entry) => entry && entry !== "UNASSIGN" && entry !== "UNASSIGNED");
+
+const canOperatorAdjustOwnAssignment = (reqUser: any, currentValue: unknown, requestedValue: unknown) => {
+  const role = String(reqUser?.role || "").toUpperCase();
+  if (role !== "OPERATOR") return true;
+
+  const currentUserName = resolveReqUserName(reqUser);
+  if (!currentUserName) return false;
+
+  const currentNames = getRequestedOperatorNames(currentValue);
+  const requestedNames = getRequestedOperatorNames(requestedValue);
+  const withoutSelf = (values: string[]) => values.filter((entry) => entry !== currentUserName).sort();
+
+  return JSON.stringify(withoutSelf(currentNames)) === JSON.stringify(withoutSelf(requestedNames));
 };
 
 const parsePositiveInt = (value: unknown, fallback: number) => {
@@ -377,7 +398,6 @@ router.post("/operator/complete", async (req, res) => {
     const userId = toUuid(reqUser?.userId);
     const resolvedJobId = toUuid(jobId);
     const normalizedStatus = String(status || "COMPLETED").toUpperCase() === "REJECTED" ? "REJECTED" : "COMPLETED";
-
     const existingLog = logId
       ? await prisma.employeeLog.findFirst({
           where: {
@@ -408,85 +428,50 @@ router.post("/operator/complete", async (req, res) => {
               customer: true,
               description: true,
               setting: true,
+              assignedTo: true,
             },
           })
         : null;
 
-      const totalQuantity = Math.max(1, Number(relatedJob?.qty || existingLog.quantityCount || quantityNumbers.length || 1));
-      const jobWedmAmount = Math.max(0, Number(relatedJob?.totalHrs || 0) * Number(relatedJob?.rate || 0));
-      const perQuantityRevenue = totalQuantity > 0 ? jobWedmAmount / totalQuantity : 0;
-      const estimatedHoursPerQuantity = perQuantityRevenue / 625;
-      const estimatedSecondsPerQuantity = Math.max(0, Math.round(estimatedHoursPerQuantity * 3600));
-      const estimatedSeconds = estimatedSecondsPerQuantity * Math.max(1, quantityNumbers.length || Number(existingLog.quantityCount || 1));
-      const workedToEstimatedRatio = estimatedSeconds > 0 ? Math.max(0, Math.min(1, workedSeconds / estimatedSeconds)) : 0;
-      const priorLogs = resolvedExistingJobId
-        ? await prisma.employeeLog.findMany({
-            where: {
-              jobId: resolvedExistingJobId,
-              role: "OPERATOR",
-              activityType: "OPERATOR_PRODUCTION",
-              status: { in: ["COMPLETED", "REJECTED"] },
-              id: { not: existingLog.id },
-            },
-            select: {
-              quantityFrom: true,
-              quantityTo: true,
-              quantityCount: true,
-              metadata: true,
-            },
-          })
-        : [];
-      const allocatedByQuantity = getAllocatedRevenueByQuantity(priorLogs, quantityNumbers);
-      const revenueByQuantity: Record<string, number> = {};
-      let totalRevenue = 0;
+      if (relatedJob && !canOperatorAdjustOwnAssignment(reqUser, relatedJob.assignedTo, opsName || (existingLog.metadata as any)?.opsName)) {
+        return res.status(403).json({ message: "Operators can only add or remove their own name." });
+      }
 
-      quantityNumbers.forEach((qty) => {
-        const alreadyAllocated = Math.max(0, allocatedByQuantity.get(qty) || 0);
-        const remaining = Math.max(0, perQuantityRevenue - alreadyAllocated);
-        const proposedRevenue = perQuantityRevenue * workedToEstimatedRatio;
-        const qtyRevenue = Math.max(0, Math.min(remaining, proposedRevenue));
-        const roundedQtyRevenue = Number(qtyRevenue.toFixed(2));
-        revenueByQuantity[String(qty)] = roundedQtyRevenue;
-        totalRevenue += roundedQtyRevenue;
-      });
-
-      const finalRevenue = Number(totalRevenue.toFixed(2));
-      const updatedLog = await prisma.employeeLog.update({
-        where: { id: existingLog.id },
-        data: {
-          status: normalizedStatus,
-          startedAt: parsedStart,
-          endedAt: parsedEnd,
-          durationSeconds: workedSeconds,
-          refNumber: String(refNumber || existingLog.refNumber || relatedJob?.refNumber || ""),
-          settingLabel: String(settingLabel || existingLog.settingLabel || relatedJob?.setting || ""),
-          quantityFrom: existingLog.quantityFrom,
-          quantityTo: existingLog.quantityTo,
-          quantityCount: existingLog.quantityCount,
-          jobCustomer: String(customer || existingLog.jobCustomer || relatedJob?.customer || ""),
-          jobDescription: String(description || existingLog.jobDescription || relatedJob?.description || ""),
-          workItemTitle: `Job #${String(refNumber || existingLog.refNumber || relatedJob?.refNumber || "-")}`,
-          workSummary: `Machine ${machineNumber || (existingLog.metadata as any)?.machineNumber || "-"} | Ops ${opsName || (existingLog.metadata as any)?.opsName || existingLog.userName || "-"} | Hrs ${machineHrs || "-"}`,
-          metadata: {
-            ...((existingLog.metadata as any) || {}),
-            machineNumber: String(machineNumber || (existingLog.metadata as any)?.machineNumber || ""),
-            opsName: String(opsName || (existingLog.metadata as any)?.opsName || existingLog.userName || ""),
-            machineHrs: String(machineHrs || ""),
-            idleTime: String(idleTime || "Shift Over"),
-            idleTimeDuration: String(idleTimeDuration || ""),
-            quantityNumbers,
-            workedSeconds,
-            estimatedSeconds,
-            estimatedSecondsPerQuantity,
-            overtimeSeconds: Math.max(0, workedSeconds - estimatedSeconds),
-            workedToEstimatedRatio,
-            wedmAmount: jobWedmAmount,
-            perQuantityRevenue,
-            revenueByQuantity,
-            revenue: finalRevenue,
-            quantityRevenueModel: "WEDM_PROPORTIONAL",
+      const updatedLog = await prisma.$transaction(async (tx) => {
+        const nextLog = await tx.employeeLog.update({
+          where: { id: existingLog.id },
+          data: {
+            status: normalizedStatus,
+            startedAt: parsedStart,
+            endedAt: parsedEnd,
+            durationSeconds: workedSeconds,
+            refNumber: String(refNumber || existingLog.refNumber || relatedJob?.refNumber || ""),
+            settingLabel: String(settingLabel || existingLog.settingLabel || relatedJob?.setting || ""),
+            quantityFrom: existingLog.quantityFrom,
+            quantityTo: existingLog.quantityTo,
+            quantityCount: existingLog.quantityCount,
+            jobCustomer: String(customer || existingLog.jobCustomer || relatedJob?.customer || ""),
+            jobDescription: String(description || existingLog.jobDescription || relatedJob?.description || ""),
+            workItemTitle: `Job #${String(refNumber || existingLog.refNumber || relatedJob?.refNumber || "-")}`,
+            workSummary: `Machine ${machineNumber || (existingLog.metadata as any)?.machineNumber || "-"} | Ops ${opsName || (existingLog.metadata as any)?.opsName || existingLog.userName || "-"} | Hrs ${machineHrs || "-"}`,
+            metadata: {
+              ...((existingLog.metadata as any) || {}),
+              machineNumber: String(machineNumber || (existingLog.metadata as any)?.machineNumber || ""),
+              opsName: String(opsName || (existingLog.metadata as any)?.opsName || existingLog.userName || ""),
+              machineHrs: String(machineHrs || ""),
+              idleTime: String(idleTime || "Shift Over"),
+              idleTimeDuration: String(idleTimeDuration || ""),
+              quantityNumbers,
+              workedSeconds,
+            },
           },
-        },
+        });
+
+        if (relatedJob?.id) {
+          await rebalanceOperatorRevenueForJob(tx, relatedJob);
+        }
+
+        return nextLog;
       });
 
       return res.status(201).json(mapEmployeeLog(updatedLog));
@@ -500,6 +485,15 @@ router.post("/operator/complete", async (req, res) => {
 
     const durationSeconds = Math.max(0, Math.floor((parsedEnd.getTime() - parsedStart.getTime()) / 1000));
     const resolvedGroupId = toBigInt(jobGroupId) ?? null;
+    if (resolvedJobId) {
+      const relatedJob = await prisma.job.findUnique({
+        where: { id: resolvedJobId },
+        select: { assignedTo: true },
+      });
+      if (relatedJob && !canOperatorAdjustOwnAssignment(reqUser, relatedJob.assignedTo, opsName)) {
+        return res.status(403).json({ message: "Operators can only add or remove their own name." });
+      }
+    }
     const groupJobs = resolvedGroupId
       ? await prisma.job.findMany({
           where: { groupId: resolvedGroupId },
@@ -517,40 +511,54 @@ router.post("/operator/complete", async (req, res) => {
         }).then((job) => Number(job?.totalHrs || 0) * Number(job?.rate || 0))
       : 0;
 
-    const log = await prisma.employeeLog.create({
-      data: {
-        role: "OPERATOR",
-        activityType: "OPERATOR_PRODUCTION",
-        status: normalizedStatus,
-        ...withUserId(userId),
-        userEmail: String(reqUser?.email || ""),
-        userName: resolveReqUserName(reqUser),
-        ...withJobId(resolvedJobId),
-        jobGroupId: resolvedGroupId,
-        refNumber: String(refNumber || ""),
-        settingLabel: String(settingLabel || ""),
-        quantityFrom: Number(fromQty || 0) || null,
-        quantityTo: Number(toQty || 0) || null,
-        quantityCount:
-          Number(quantityCount || 0) ||
-          (Number(toQty || 0) && Number(fromQty || 0) ? Number(toQty) - Number(fromQty) + 1 : null),
-        jobCustomer: String(customer || ""),
-        jobDescription: String(description || ""),
-        workItemTitle: `Job #${String(refNumber || "-")}`,
-        workSummary: `Machine ${machineNumber || "-"} | Ops ${opsName || "-"} | Hrs ${machineHrs || "-"}`,
-        startedAt: parsedStart,
-        endedAt: parsedEnd,
-        durationSeconds,
-        metadata: {
-          machineNumber: String(machineNumber || ""),
-          opsName: String(opsName || ""),
-          machineHrs: String(machineHrs || ""),
-          idleTime: String(idleTime || ""),
-          idleTimeDuration: String(idleTimeDuration || ""),
-          wedmAmount: groupWedmAmount,
-          revenue: currentJobRevenue > 0 ? currentJobRevenue : undefined,
+    const log = await prisma.$transaction(async (tx) => {
+      const createdLog = await tx.employeeLog.create({
+        data: {
+          role: "OPERATOR",
+          activityType: "OPERATOR_PRODUCTION",
+          status: normalizedStatus,
+          ...withUserId(userId),
+          userEmail: String(reqUser?.email || ""),
+          userName: resolveReqUserName(reqUser),
+          ...withJobId(resolvedJobId),
+          jobGroupId: resolvedGroupId,
+          refNumber: String(refNumber || ""),
+          settingLabel: String(settingLabel || ""),
+          quantityFrom: Number(fromQty || 0) || null,
+          quantityTo: Number(toQty || 0) || null,
+          quantityCount:
+            Number(quantityCount || 0) ||
+            (Number(toQty || 0) && Number(fromQty || 0) ? Number(toQty) - Number(fromQty) + 1 : null),
+          jobCustomer: String(customer || ""),
+          jobDescription: String(description || ""),
+          workItemTitle: `Job #${String(refNumber || "-")}`,
+          workSummary: `Machine ${machineNumber || "-"} | Ops ${opsName || "-"} | Hrs ${machineHrs || "-"}`,
+          startedAt: parsedStart,
+          endedAt: parsedEnd,
+          durationSeconds,
+          metadata: {
+            machineNumber: String(machineNumber || ""),
+            opsName: String(opsName || ""),
+            machineHrs: String(machineHrs || ""),
+            idleTime: String(idleTime || ""),
+            idleTimeDuration: String(idleTimeDuration || ""),
+            wedmAmount: groupWedmAmount,
+            revenue: currentJobRevenue > 0 ? currentJobRevenue : undefined,
+          },
         },
-      },
+      });
+
+      if (resolvedJobId) {
+        const relatedJob = await tx.job.findUnique({
+          where: { id: resolvedJobId },
+          select: { id: true, qty: true, totalHrs: true, rate: true },
+        });
+        if (relatedJob) {
+          await rebalanceOperatorRevenueForJob(tx, relatedJob);
+        }
+      }
+
+      return createdLog;
     });
 
     res.status(201).json(mapEmployeeLog(log));

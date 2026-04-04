@@ -196,7 +196,6 @@ const Operator = () => {
     setOperatorGridJobs,
     setToast,
     userRole,
-    currentUserDisplayName,
   });
 
   const { tableData } = useOperatorTableData(

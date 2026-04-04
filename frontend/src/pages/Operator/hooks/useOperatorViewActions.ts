@@ -280,7 +280,11 @@ export const useOperatorViewActions = ({ jobs, cutInputs, setValidationErrors, c
     }
   }, [activeOperatorLogIds, cutInputs, jobs]);
 
-  const handleShiftOverAction = useCallback(async (cutId: number | string, quantityIndex: number) => {
+  const handlePauseResumeAction = useCallback(async (
+    cutId: number | string,
+    quantityIndex: number,
+    action: "shiftOver" | "resume"
+  ) => {
     const cutData = cutInputs.get(cutId);
     if (!cutData?.quantities?.[quantityIndex]) {
       showAndHideToast(setActionToast, "No quantity data found.", "error", 3000);
@@ -296,9 +300,9 @@ export const useOperatorViewActions = ({ jobs, cutInputs, setValidationErrors, c
     }
 
     try {
-      if (qtyData.isPaused && qtyData.currentPauseReason === "Shift Over") {
+      if (action === "resume") {
         const selectedOps = Array.isArray(qtyData.opsName)
-          ? qtyData.opsName.map((name) => String(name || "").trim()).filter(Boolean).slice(0, 1)
+          ? qtyData.opsName.map((name) => String(name || "").trim()).filter(Boolean)
           : [];
         const normalizedCurrentUser = String(currentUserDisplayName || "").trim().toLowerCase();
         const hasCurrentUserName =
@@ -381,8 +385,8 @@ export const useOperatorViewActions = ({ jobs, cutInputs, setValidationErrors, c
 
       return true;
     } catch (error) {
-      console.error("Failed to process shift over action", error);
-      showAndHideToast(setActionToast, "Failed to process shift over action.", "error", 3000);
+      console.error("Failed to process operator action", error);
+      showAndHideToast(setActionToast, `Failed to ${action === "resume" ? "resume" : "shift over"} quantity.`, "error", 3000);
       return false;
     }
   }, [activeOperatorLogIds, currentUserDisplayName, cutInputs, jobs]);
@@ -405,6 +409,6 @@ export const useOperatorViewActions = ({ jobs, cutInputs, setValidationErrors, c
     handleSaveRange,
     handleUpdateQaStatus,
     handleStartTimeCaptured,
-    handleShiftOverAction,
+    handlePauseResumeAction,
   };
 };

@@ -27,8 +27,10 @@ type OperatorInputSectionProps = {
   onShowToast?: (message: string, variant?: "success" | "error" | "info") => void;
   onRequestResetTimer?: (cutId: number | string, quantityIndex: number) => void;
   onRequestShiftOver?: (cutId: number | string, quantityIndex: number) => void;
+  onRequestResume?: (cutId: number | string, quantityIndex: number) => void;
   onStartTimeCaptured?: (cutId: number | string, quantityIndex: number) => void;
   requiredHoursPerQuantity?: number;
+  currentUserDisplayName: string;
 };
 
 const createFallbackQuantity = () => ({
@@ -70,8 +72,10 @@ export const OperatorInputSection: React.FC<OperatorInputSectionProps> = ({
   onShowToast,
   onRequestResetTimer,
   onRequestShiftOver,
+  onRequestResume,
   onStartTimeCaptured,
   requiredHoursPerQuantity = 0,
+  currentUserDisplayName,
 }) => {
   const [captureMode, setCaptureMode] = useState<"PER_QUANTITY" | "RANGE">("PER_QUANTITY");
   const [rangeFrom, setRangeFrom] = useState("1");
@@ -198,10 +202,13 @@ export const OperatorInputSection: React.FC<OperatorInputSectionProps> = ({
             requiredHoursPerQuantity={requiredHoursPerQuantity}
             onRequestResetTimer={onRequestResetTimer}
             onRequestShiftOver={onRequestShiftOver}
+            onRequestResume={onRequestResume}
             onSaveQuantity={onSaveQuantity}
             onSaveRange={onSaveRange}
             savedRanges={savedRanges}
             canReset={isAdmin}
+            isAdmin={isAdmin}
+            currentUserDisplayName={currentUserDisplayName}
           />
         );
       })}

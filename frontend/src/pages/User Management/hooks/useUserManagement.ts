@@ -2,8 +2,9 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getUsers, createUser, updateUser, deleteUser, getNextEmpId } from "../../../services/userApi";
 import type { User, CreateUserData, UpdateUserData } from "../../../types/user";
-import { sanitizePhoneInput } from "../utils/tableUtils";
+import { isValidIndianPhone, sanitizePhoneInput } from "../utils/tableUtils";
 import { formatEmployeeId } from "../../../utils/employeeId";
+import { normalizeIndianPhone } from "../../../utils/phone";
 
 /**
  * Hook for user management data and operations
@@ -20,7 +21,7 @@ export const useUserManagement = () => {
     password: "",
     firstName: "",
     lastName: "",
-    phone: "",
+    phone: "+91 ",
     empId: "Auto Generated",
     role: "OPERATOR",
   });
@@ -76,7 +77,7 @@ export const useUserManagement = () => {
       password: "",
       firstName: "",
       lastName: "",
-      phone: "",
+      phone: "+91 ",
       empId: "Auto Generated",
       role: "OPERATOR",
     });
@@ -89,6 +90,10 @@ export const useUserManagement = () => {
     setSaving(true);
 
     try {
+      if (!isValidIndianPhone(formData.phone)) {
+        throw new Error("Phone number must be in +91 format with 10 digits");
+      }
+
       if (editingUser) {
         const updateData: UpdateUserData = { ...formData };
         if (!updateData.password) {
@@ -117,7 +122,7 @@ export const useUserManagement = () => {
       password: "",
       firstName: user.firstName,
       lastName: user.lastName,
-      phone: user.phone,
+      phone: normalizeIndianPhone(user.phone),
       empId: formatEmployeeId(user.empId),
       role: user.role,
     });

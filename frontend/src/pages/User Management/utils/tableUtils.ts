@@ -1,11 +1,14 @@
 import type { User } from "../../../types/user";
 import { formatEmployeeId, getEmployeeIdSequence } from "../../../utils/employeeId";
+import { isValidIndianPhone, normalizeIndianPhone } from "../../../utils/phone";
 
 export type SortDirection = "asc" | "desc";
 
 export const sanitizePhoneInput = (value: string) => {
-  return value.replace(/\D/g, "").slice(0, 10);
+  return normalizeIndianPhone(value);
 };
+
+export { isValidIndianPhone };
 
 export const filterUsers = (
   users: User[],

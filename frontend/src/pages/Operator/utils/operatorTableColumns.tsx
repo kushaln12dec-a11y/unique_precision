@@ -3,6 +3,7 @@ import ActionButtons from "../../Programmer/components/ActionButtons";
 import CreatedByBadge from "../../../components/CreatedByBadge";
 import MarqueeCopyText from "../../../components/MarqueeCopyText";
 import SelectDropdown from "../../Programmer/components/SelectDropdown";
+import { MultiSelectOperators } from "../components/MultiSelectOperators";
 import type { OperatorDisplayRow } from "../hooks/useOperatorTable";
 import { formatJobRefDisplay, formatMachineLabel, toYN } from "../../../utils/jobFormatting";
 import { getDispatchableQuantityNumbers, getGroupQaProgressCounts, getQaProgressCounts, getQaStatusBadges } from "./qaProgress";
@@ -10,6 +11,7 @@ import { getThicknessDisplayValue } from "../../Programmer/programmerUtils";
 import {
   getOperatorMachineNumber,
   getOperatorHistoryNames,
+  hasOperatorJobStarted,
   normalizeAssignedOperators,
   renderEstimatedTime,
   renderOperatorCustomerCell,
@@ -39,7 +41,7 @@ export const buildBaseOperatorColumns = ({
   operatorNameLookup: Map<string, string>;
   canAssign: boolean;
   operatorUsers: Array<{ id: string | number; name: string }>;
-  handleAssignChange: (jobId: number | string, value: string) => void;
+  handleAssignChange: (jobId: number | string, value: string | string[]) => void;
   currentUserName: string;
   machineDropdownOptions: string[];
   handleMachineNumberChange: (groupId: string, machineNumber: string) => void;
@@ -106,18 +108,11 @@ export const buildBaseOperatorColumns = ({
         (activeOperatorName ? activeOperatorName.toUpperCase() : "") ||
         latestWorkedByName ||
         "Unassign";
-      const normalizedDisplayAssignedValue = String(displayAssignedValue || "").trim().toUpperCase();
-      const shouldShowOperatorHistory =
-        operatorHistory.length > 1 ||
-        (operatorHistory.length === 1 &&
-          operatorHistory[0].trim().toUpperCase() !== normalizedDisplayAssignedValue &&
-          normalizedDisplayAssignedValue !== "UNASSIGN");
       const normalizedCurrentUser = String(currentUserName || "").trim();
-      const assignableOperators = isAdmin
-        ? [...new Set(operatorUsers.map((item) => String(item.name || "").trim()).filter(Boolean))]
-        : (normalizedCurrentUser ? [normalizedCurrentUser] : []);
+      const hasStarted = hasOperatorJobStarted(row.entry, activeRunsByJobId);
+      const assignableOperators = normalizedCurrentUser ? [normalizedCurrentUser] : [];
       const dropdownOptions = [
-        { label: "UNASSIGN", value: "Unassign" },
+        ...(hasStarted ? [] : [{ label: "UNASSIGN", value: "Unassign" }]),
         ...(
           displayAssignedValue &&
           displayAssignedValue.toLowerCase() !== "unassign" &&
@@ -128,20 +123,37 @@ export const buildBaseOperatorColumns = ({
         ...assignableOperators.map((name) => ({ label: String(name || "").toUpperCase(), value: name })),
       ];
 
-      return canAssign ? (
+      const shouldAllowTableAssignment = canAssign && (!hasStarted || isAdmin);
+
+      return shouldAllowTableAssignment ? (
         <div className="operator-assigned-cell-stack" title={operatorHistory.length ? `Worked By: ${operatorHistory.join(", ")}` : undefined}>
-          <SelectDropdown
-            className="operator-assigned-dropdown"
-            value={displayAssignedValue}
-            onChange={(nextValue) => handleAssignChange(row.entry.id, String(nextValue || "Unassign"))}
-            options={dropdownOptions}
-            placeholder="Unassign"
-            align="left"
-          />
-          {shouldShowOperatorHistory ? <div className="operator-history-inline">WORKED BY: {operatorHistory.join(", ")}</div> : null}
+          {isAdmin ? (
+            <SelectDropdown
+              className="operator-assigned-dropdown"
+              value={displayAssignedValue}
+              onChange={(nextValue) => handleAssignChange(row.entry.id, String(nextValue || "Unassign"))}
+              options={dropdownOptions}
+              placeholder="Unassign"
+              align="left"
+            />
+          ) : (
+            <MultiSelectOperators
+              className="operator-assigned-dropdown"
+              selectedOperators={assignedOperators}
+              availableOperators={operatorUsers}
+              onChange={(nextValue) => handleAssignChange(row.entry.id, nextValue)}
+              placeholder="Unassign"
+              compact={assignedOperators.length > 1}
+              assignToSelfName={normalizedCurrentUser}
+              showUnassign={!hasStarted}
+              selfToggleOnly={true}
+            />
+          )}
         </div>
       ) : (
-        <div className="assigned-operators-readonly">{operatorHistory.length ? `WORKED BY: ${operatorHistory.join(", ")}` : ""}</div>
+        <div className="assigned-operators-readonly" title={operatorHistory.length ? `Worked By: ${operatorHistory.join(", ")}` : undefined}>
+          {displayAssignedValue}
+        </div>
       );
     },
   },

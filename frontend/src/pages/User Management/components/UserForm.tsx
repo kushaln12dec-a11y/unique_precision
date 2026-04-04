@@ -91,16 +91,16 @@ export const UserForm: React.FC<UserFormProps> = ({
           <div className="form-group">
             <label>Phone Number *</label>
             <input
-              type="tel"
+              type="text"
               name="phone"
               value={formData.phone}
               onChange={onInputChange}
               disabled={saving}
-              placeholder="Enter phone number"
-              pattern="[0-9]{10}"
-              maxLength={10}
+              placeholder="+91 9876543210"
+              pattern="^\\+91\\s\\d{10}$"
+              maxLength={14}
               required
-              title="Please enter phone number"
+              title="Please enter a valid Indian phone number"
             />
           </div>
         </div>

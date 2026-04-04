@@ -23,7 +23,7 @@ type UseOperatorTableProps = {
   operatorUsers: Array<{ id: string | number; name: string }>;
   machineOptions: string[];
   currentUserName: string;
-  handleAssignChange: (jobId: number | string, value: string) => void;
+  handleAssignChange: (jobId: number | string, value: string | string[]) => void;
   handleMachineNumberChange: (groupId: string, machineNumber: string) => void;
   handleChildMachineNumberChange: (jobId: number | string, machineNumber: string) => void;
   handleViewJob: (row: OperatorTableRow) => void;

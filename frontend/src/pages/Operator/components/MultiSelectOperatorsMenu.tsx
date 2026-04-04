@@ -7,6 +7,8 @@ type MultiSelectOperatorsMenuProps = {
   menuStyle: CSSProperties;
   menuRef: RefObject<HTMLDivElement | null>;
   assignToSelfName?: string;
+  showUnassign: boolean;
+  selfToggleOnly: boolean;
   normalizedSelectedOperators: string[];
   normalizedAvailableOperators: Array<{ id: string | number; name: string }>;
   onMarkUnassigned: () => void;
@@ -20,6 +22,8 @@ const MultiSelectOperatorsMenu = ({
   menuStyle,
   menuRef,
   assignToSelfName,
+  showUnassign,
+  selfToggleOnly,
   normalizedSelectedOperators,
   normalizedAvailableOperators,
   onMarkUnassigned,
@@ -41,37 +45,46 @@ const MultiSelectOperatorsMenu = ({
         <div className="dropdown-empty">No operators available</div>
       ) : (
         <>
-          <div className="dropdown-option" onClick={onMarkUnassigned}>
-            <input type="checkbox" checked={normalizedSelectedOperators.length === 0} readOnly />
-            <span>Unassign</span>
-          </div>
+          {showUnassign && (
+            <div className="dropdown-option" onClick={onMarkUnassigned}>
+              <input type="checkbox" checked={normalizedSelectedOperators.length === 0} readOnly />
+              <span>Unassign</span>
+            </div>
+          )}
           {assignToSelfName && (
             <div className="dropdown-option" onClick={onAssignToSelf}>
               <input
                 type="checkbox"
-                checked={
-                  normalizedSelectedOperators.length === 1 &&
-                  normalizeName(normalizedSelectedOperators[0]) === normalizeName(assignToSelfName)
-                }
+                checked={normalizedSelectedOperators.some((selectedName) => normalizeName(selectedName) === normalizeName(assignToSelfName))}
                 readOnly
               />
-              <span>Assign To Me ({assignToSelfName})</span>
+              <span>
+                {normalizedSelectedOperators.some((selectedName) => normalizeName(selectedName) === normalizeName(assignToSelfName))
+                  ? `Remove Me (${assignToSelfName})`
+                  : `Add Me (${assignToSelfName})`}
+              </span>
             </div>
           )}
           {normalizedAvailableOperators.map((operator) => {
             const isSelected = normalizedSelectedOperators.some(
               (selectedName) => normalizeName(selectedName) === normalizeName(operator.name)
             );
+            const isDisabled = selfToggleOnly;
             return (
               <div
                 key={operator.id}
-                className={`dropdown-option ${isSelected ? "selected" : ""}`}
-                onClick={() => onToggleOperator(operator.name)}
+                className={`dropdown-option ${isSelected ? "selected" : ""} ${isDisabled ? "readonly" : ""}`.trim()}
+                onClick={() => {
+                  if (!isDisabled) onToggleOperator(operator.name);
+                }}
               >
                 <input
                   type="checkbox"
                   checked={isSelected}
-                  onChange={() => onToggleOperator(operator.name)}
+                  disabled={isDisabled}
+                  onChange={() => {
+                    if (!isDisabled) onToggleOperator(operator.name);
+                  }}
                   onClick={(event) => event.stopPropagation()}
                 />
                 <span>{operator.name}</span>

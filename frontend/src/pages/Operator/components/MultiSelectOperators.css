@@ -145,11 +145,24 @@
   background: #e3f2fd;
 }
 
+.dropdown-option.readonly {
+  cursor: default;
+  opacity: 0.82;
+}
+
+.dropdown-option.readonly:hover {
+  background: #f8fafc;
+}
+
 .dropdown-option input[type="checkbox"] {
   cursor: pointer;
   width: 16px;
   height: 16px;
   flex-shrink: 0;
+}
+
+.dropdown-option.readonly input[type="checkbox"] {
+  cursor: default;
 }
 
 .dropdown-option span {
@@ -265,9 +278,14 @@
   border-color: #93c5fd;
   background: linear-gradient(180deg, #f8fbff 0%, #eef4ff 100%);
   box-shadow: inset 0 0 0 1px rgba(147, 197, 253, 0.3);
-  padding: 0.15rem 0.55rem;
+  padding: 0.2rem 0.55rem;
   min-width: 122px;
   max-width: 100%;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 4px;
 }
 
 .multi-select-operators.operator-assigned-dropdown .selected-text,
@@ -280,6 +298,22 @@
 
 .multi-select-operators.operator-assigned-dropdown .dropdown-icon {
   color: #1d4ed8;
+}
+
+.multi-select-operators.operator-assigned-dropdown .multi-select-trigger {
+  min-height: 100%;
+  align-items: center;
+}
+
+.operator-input-card .multi-select-operators {
+  min-height: 58px;
+  display: flex;
+  align-items: center;
+}
+
+.operator-input-card .multi-select-trigger {
+  min-height: 100%;
+  align-items: center;
 }
 
 .multi-select-operators.operator-assigned-dropdown .selected-text,

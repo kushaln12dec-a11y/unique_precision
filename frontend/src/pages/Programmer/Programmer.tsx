@@ -215,12 +215,9 @@ const Programmer = () => {
   return (
     <div className="programmer-container">
       <Sidebar currentPath="/programmer" onNavigate={(path) => navigate(path)} />
-      <div className={`programmer-content ${isProgrammerFormRoute ? "programmer-content-scrollable" : ""}`}>
+      <div key={location.pathname} className={`programmer-content ${isProgrammerFormRoute ? "programmer-content-scrollable" : ""}`}>
         <Header title="Programmer" />
-        <div
-          key={location.pathname}
-          className={`programmer-panel ${isProgrammerFormRoute ? "programmer-panel-scrollable" : ""}`}
-        >
+        <div className={`programmer-panel ${isProgrammerFormRoute ? "programmer-panel-scrollable" : ""}`}>
           {isProgrammerListRoute && <ProgrammerTabs activeTab={activeTab} setActiveTab={setActiveTab} />}
 
           <ProgrammerFormSection

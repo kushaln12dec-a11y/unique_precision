@@ -242,6 +242,23 @@
   box-shadow: 0 4px 10px rgba(15, 23, 42, 0.08);
   border: 1px solid #e2e8f0;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100vh - 170px);
+  min-height: 0;
+}
+
+.users-table-container .data-table-shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1;
+}
+
+.users-table-container .data-table-wrapper {
+  max-height: min(52vh, calc(100vh - 350px));
+  min-height: 0;
+  flex: 1;
 }
 
 

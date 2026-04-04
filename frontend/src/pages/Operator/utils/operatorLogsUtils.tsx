@@ -1,5 +1,6 @@
 import type { Column } from "../../../components/DataTable";
 import MarqueeCopyText from "../../../components/MarqueeCopyText";
+import JobRefLink from "../../../components/JobRefLink";
 import type { EmployeeLog } from "../../../types/employeeLog";
 import { formatDisplayDateTime, getDisplayDateTimeParts } from "../../../utils/date";
 import { formatMachineLabel, getInitials, getLogUserDisplayName } from "../../../utils/jobFormatting";
@@ -38,7 +39,21 @@ export const buildOperatorLogsColumns = ({
     },
   },
   { key: "machineNumber", label: "MACH #", sortable: false, render: (row) => formatMachineLabel(getMachineNumberForLog(row)) },
-  { key: "workItemTitle", label: "Job Ref", sortable: false, className: "operator-log-text-col", render: (row) => formatOperatorWorkItem(row.refNumber || row.workItemTitle) },
+  {
+    key: "workItemTitle",
+    label: "Job Ref",
+    sortable: false,
+    className: "operator-log-text-col",
+    render: (row) => (
+      <JobRefLink
+        role="OPERATOR"
+        jobGroupId={row.jobGroupId}
+        jobId={row.jobId}
+        refNumber={row.refNumber}
+        fallbackLabel={formatOperatorWorkItem(row.refNumber || row.workItemTitle)}
+      />
+    ),
+  },
   { key: "jobDescription", label: "Description", sortable: false, className: "operator-log-text-col", render: (row) => <MarqueeCopyText text={String(row.jobDescription || "-")} /> },
   { key: "workSummary", label: "Summary", sortable: false, className: "operator-log-text-col", render: (row) => <MarqueeCopyText text={String(row.workSummary || "-")} /> },
   {

@@ -78,6 +78,133 @@ const parseMachineHoursToSeconds = (value: unknown): number | null => {
   return Math.round(numeric * 3600);
 };
 
+export const getQuantityNumbersFromLog = (log: {
+  quantityFrom?: number | null;
+  quantityTo?: number | null;
+  quantityCount?: number | null;
+  metadata?: any;
+}): number[] => {
+  const metadata = (log.metadata || {}) as Record<string, any>;
+  const fromMeta = Array.isArray(metadata.quantityNumbers)
+    ? metadata.quantityNumbers
+        .map((qty) => Number(qty))
+        .filter((qty) => Number.isInteger(qty) && qty >= 1)
+    : [];
+  if (fromMeta.length > 0) return fromMeta;
+
+  const from = Number(log.quantityFrom || 0);
+  const to = Number(log.quantityTo || 0);
+  if (from >= 1 && to >= from) {
+    return Array.from({ length: to - from + 1 }, (_, index) => from + index);
+  }
+
+  const count = Number(log.quantityCount || 0);
+  if (count >= 1) return Array.from({ length: count }, (_, index) => index + 1);
+  return [];
+};
+
+export const getWorkedSecondsForOperatorLog = (log: {
+  durationSeconds?: number | null;
+  metadata?: any;
+}) => {
+  const metadata = (log.metadata || {}) as Record<string, any>;
+  const fromMachineHours = parseMachineHoursToSeconds(metadata.machineHrs);
+  if (fromMachineHours !== null && fromMachineHours > 0) return fromMachineHours;
+
+  const fromWorkedSeconds = Number(metadata.workedSeconds || 0);
+  if (Number.isFinite(fromWorkedSeconds) && fromWorkedSeconds > 0) {
+    return Math.max(0, Math.round(fromWorkedSeconds));
+  }
+
+  return Math.max(0, Number(log.durationSeconds || 0));
+};
+
+export const rebalanceOperatorRevenueForJob = async (
+  tx: any,
+  job: {
+    id: string;
+    qty?: number | null;
+    totalHrs?: unknown;
+    rate?: unknown;
+  }
+) => {
+  const jobId = String(job.id || "").trim();
+  if (!jobId) return;
+
+  const totalQuantity = Math.max(1, Number(job.qty || 1));
+  const perQuantityRevenue =
+    Math.max(0, Number(job.totalHrs || 0)) * Math.max(0, Number(job.rate || 0)) / totalQuantity;
+
+  const logs = await tx.employeeLog.findMany({
+    where: {
+      jobId,
+      role: "OPERATOR",
+      activityType: "OPERATOR_PRODUCTION",
+      status: { in: ["COMPLETED", "REJECTED"] },
+    },
+    select: {
+      id: true,
+      durationSeconds: true,
+      quantityFrom: true,
+      quantityTo: true,
+      quantityCount: true,
+      metadata: true,
+    },
+  });
+
+  const workedByQuantity = new Map<number, Array<{ logId: string; workedSeconds: number }>>();
+  logs.forEach((log: any) => {
+    const quantityNumbers = getQuantityNumbersFromLog(log);
+    if (quantityNumbers.length === 0) return;
+    const workedSeconds = getWorkedSecondsForOperatorLog(log);
+    const workedSecondsPerQuantity = quantityNumbers.length > 0 ? workedSeconds / quantityNumbers.length : workedSeconds;
+
+    quantityNumbers.forEach((quantityNumber) => {
+      const entries = workedByQuantity.get(quantityNumber) || [];
+      entries.push({ logId: String(log.id), workedSeconds: Math.max(0, workedSecondsPerQuantity) });
+      workedByQuantity.set(quantityNumber, entries);
+    });
+  });
+
+  const revenueByLogId = new Map<string, Record<string, number>>();
+  workedByQuantity.forEach((entries, quantityNumber) => {
+    const totalWorkedSeconds = entries.reduce((sum, entry) => sum + Math.max(0, entry.workedSeconds), 0);
+    const fallbackShare = entries.length > 0 ? perQuantityRevenue / entries.length : 0;
+
+    entries.forEach((entry) => {
+      const current = revenueByLogId.get(entry.logId) || {};
+      const allocated =
+        totalWorkedSeconds > 0
+          ? perQuantityRevenue * (Math.max(0, entry.workedSeconds) / totalWorkedSeconds)
+          : fallbackShare;
+      current[String(quantityNumber)] = Number(allocated.toFixed(2));
+      revenueByLogId.set(entry.logId, current);
+    });
+  });
+
+  for (const log of logs) {
+    const metadata = ((log as any).metadata || {}) as Record<string, any>;
+    const quantityNumbers = getQuantityNumbersFromLog(log as any);
+    const revenueByQuantity = revenueByLogId.get(String(log.id)) || {};
+    const revenue = Object.values(revenueByQuantity).reduce((sum, amount) => sum + Number(amount || 0), 0);
+
+    await tx.employeeLog.update({
+      where: { id: String(log.id) },
+      data: {
+        metadata: {
+          ...metadata,
+          quantityNumbers,
+          perQuantityRevenue: Number(perQuantityRevenue.toFixed(2)),
+          revenueByQuantity,
+          revenue: Number(revenue.toFixed(2)),
+          workedSeconds: getWorkedSecondsForOperatorLog(log as any),
+          quantityRevenueModel: "WEDM_TIME_SPLIT",
+        },
+      },
+    });
+  }
+};
+
 export const resolveCaptureRange = ({
   totalQty,
   captureMode,
