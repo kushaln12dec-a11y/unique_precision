@@ -134,7 +134,7 @@ export const useOperatorInputs = (
         }
 
         const selectedOps = Array.isArray(qtyData.opsName)
-          ? qtyData.opsName.map((name) => String(name || "").trim()).filter(Boolean).slice(0, 1)
+          ? qtyData.opsName.map((name) => String(name || "").trim()).filter(Boolean)
           : [];
         const normalizedCurrentUser = String(currentUserDisplayName || "").trim().toLowerCase();
         const hasCurrentUserName =
@@ -245,7 +245,7 @@ export const useOperatorInputs = (
 
       if (field === "opsName") {
         const nextOps = Array.isArray(value)
-          ? value.map((name) => String(name || "").trim()).filter(Boolean).slice(0, 1)
+          ? value.map((name) => String(name || "").trim()).filter(Boolean)
           : (String(value || "").trim() ? [String(value || "").trim()] : []);
         updatedQtyData.opsName = nextOps;
         updatedQtyData.operatorHistory = normalizeOperatorList([

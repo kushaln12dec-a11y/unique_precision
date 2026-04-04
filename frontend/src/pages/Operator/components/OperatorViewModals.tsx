@@ -1,9 +1,11 @@
 import ConfirmDeleteModal from "../../../components/ConfirmDeleteModal";
 import type { JobEntry } from "../../../types/job";
 import type { Dispatch, SetStateAction } from "react";
+import OperatorActionModal from "./OperatorActionModal";
 
 type PendingDispatch = { cutId: number | string; quantityNumbers: number[] } | null;
 type PendingQuantity = { cutId: number | string; quantityIndex: number } | null;
+type PendingOperatorAction = { cutId: number | string; quantityIndex: number; action: "shiftOver" | "resume" } | null;
 
 type OperatorViewModalsProps = {
   jobs: JobEntry[];
@@ -11,8 +13,8 @@ type OperatorViewModalsProps = {
   setPendingDispatch: Dispatch<SetStateAction<PendingDispatch>>;
   pendingReset: PendingQuantity;
   setPendingReset: Dispatch<SetStateAction<PendingQuantity>>;
-  pendingShiftOver: PendingQuantity;
-  setPendingShiftOver: Dispatch<SetStateAction<PendingQuantity>>;
+  pendingOperatorAction: PendingOperatorAction;
+  setPendingOperatorAction: Dispatch<SetStateAction<PendingOperatorAction>>;
   handleUpdateQaStatus: (cutId: number | string, quantityNumbers: number[], status: "SENT_TO_QA" | "SAVED" | "READY_FOR_QA") => Promise<void>;
   handleInputChange: (
     cutId: number | string,
@@ -20,7 +22,7 @@ type OperatorViewModalsProps = {
     field: "markShiftOver" | "resetTimer",
     value: string
   ) => void;
-  handleShiftOverAction: (cutId: number | string, quantityIndex: number) => Promise<boolean>;
+  handlePauseResumeAction: (cutId: number | string, quantityIndex: number, action: "shiftOver" | "resume") => Promise<boolean>;
   setActionToast: Dispatch<SetStateAction<{ message: string; variant: "success" | "error" | "info"; visible: boolean }>>;
 };
 
@@ -30,11 +32,11 @@ const OperatorViewModals = ({
   setPendingDispatch,
   pendingReset,
   setPendingReset,
-  pendingShiftOver,
-  setPendingShiftOver,
+  pendingOperatorAction,
+  setPendingOperatorAction,
   handleUpdateQaStatus,
   handleInputChange,
-  handleShiftOverAction,
+  handlePauseResumeAction,
   setActionToast,
 }: OperatorViewModalsProps) => {
   const pendingDispatchJob = pendingDispatch
@@ -82,30 +84,30 @@ const OperatorViewModals = ({
         />
       )}
 
-      {pendingShiftOver && (
-        <ConfirmDeleteModal
-          title="Confirm Shift Over Action"
-          message="Proceed with Shift Over action for this quantity? If it is already marked Shift Over, this will resume it."
-          details={[
-            { label: "Setting", value: String(jobs.findIndex((j) => String(j.id) === String(pendingShiftOver.cutId)) + 1) },
-            { label: "Quantity", value: String(pendingShiftOver.quantityIndex + 1) },
-          ]}
-          confirmButtonText="Confirm"
+      {pendingOperatorAction && (
+        <OperatorActionModal
+          action={pendingOperatorAction.action}
+          settingNumber={jobs.findIndex((j) => String(j.id) === String(pendingOperatorAction.cutId)) + 1}
+          quantityNumber={pendingOperatorAction.quantityIndex + 1}
           onConfirm={async () => {
-            const success = await handleShiftOverAction(pendingShiftOver.cutId, pendingShiftOver.quantityIndex);
+            const success = await handlePauseResumeAction(
+              pendingOperatorAction.cutId,
+              pendingOperatorAction.quantityIndex,
+              pendingOperatorAction.action
+            );
             if (!success) return;
-            handleInputChange(pendingShiftOver.cutId, pendingShiftOver.quantityIndex, "markShiftOver", "");
+            handleInputChange(pendingOperatorAction.cutId, pendingOperatorAction.quantityIndex, "markShiftOver", "");
             setActionToast({
-              message: "Shift Over action completed.",
+              message: pendingOperatorAction.action === "resume" ? "Quantity resumed." : "Shift over saved.",
               variant: "info",
               visible: true,
             });
             setTimeout(() => {
               setActionToast((prev) => ({ ...prev, visible: false }));
             }, 3200);
-            setPendingShiftOver(null);
+            setPendingOperatorAction(null);
           }}
-          onCancel={() => setPendingShiftOver(null)}
+          onCancel={() => setPendingOperatorAction(null)}
         />
       )}
     </>

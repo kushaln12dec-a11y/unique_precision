@@ -1,4 +1,5 @@
 import type { Column } from "../../../components/DataTable";
+import JobRefLink from "../../../components/JobRefLink";
 import MarqueeCopyText from "../../../components/MarqueeCopyText";
 import type { EmployeeLog } from "../../../types/employeeLog";
 import { getDisplayDateTimeParts } from "../../../utils/date";
@@ -98,7 +99,14 @@ export const createEmployeeLogColumns = ({
         className: "employee-work-item-cell",
         render: (row) => (
           <div className="employee-work-item">
-            <MarqueeCopyText text={normalizeJobReference(row.refNumber || row.workItemTitle)} className="job-ref-copy-text employee-job-ref-copy" />
+            <JobRefLink
+              role={row.role}
+              jobGroupId={row.jobGroupId}
+              jobId={row.jobId}
+              refNumber={row.refNumber}
+              fallbackLabel={normalizeJobReference(row.refNumber || row.workItemTitle)}
+              className="employee-job-ref-copy"
+            />
           </div>
         ),
       },
@@ -116,7 +124,24 @@ export const createEmployeeLogColumns = ({
 
   return [
     employeeColumn,
-    { key: "workItemTitle", label: "Job Ref", sortable: false, className: "employee-work-item-cell", render: (row) => <div className="employee-work-item"><MarqueeCopyText text={normalizeJobReference(row.refNumber)} className="job-ref-copy-text employee-job-ref-copy" /></div> },
+    {
+      key: "workItemTitle",
+      label: "Job Ref",
+      sortable: false,
+      className: "employee-work-item-cell",
+      render: (row) => (
+        <div className="employee-work-item">
+          <JobRefLink
+            role={row.role}
+            jobGroupId={row.jobGroupId}
+            jobId={row.jobId}
+            refNumber={row.refNumber}
+            fallbackLabel={normalizeJobReference(row.refNumber)}
+            className="employee-job-ref-copy"
+          />
+        </div>
+      ),
+    },
     { key: "jobDescription", label: "Description", sortable: false, render: (row) => <MarqueeCopyText text={String(row.jobDescription || "-")} /> },
     { key: "quantityCount", label: "Quantities", sortable: false, render: (row) => getQuantityLabel(row) || "-" },
     createDateColumn("startedAt", "Started At"),

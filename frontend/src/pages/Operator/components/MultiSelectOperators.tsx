@@ -13,6 +13,8 @@ type MultiSelectOperatorsProps = {
   className?: string;
   compact?: boolean;
   assignToSelfName?: string;
+  showUnassign?: boolean;
+  selfToggleOnly?: boolean;
 };
 
 export const MultiSelectOperators = ({
@@ -24,6 +26,8 @@ export const MultiSelectOperators = ({
   className = "",
   compact = false,
   assignToSelfName,
+  showUnassign = true,
+  selfToggleOnly = false,
 }: MultiSelectOperatorsProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [menuStyle, setMenuStyle] = useState<CSSProperties>({});
@@ -60,6 +64,7 @@ export const MultiSelectOperators = ({
   }, [canonicalOperatorNames, selectedOperators]);
 
   const normalizedAvailableOperators = useMemo(() => {
+    if (selfToggleOnly) return [];
     const seen = new Set<string>();
     return availableOperators.filter((operator) => {
       const normalizedName = String(operator.name || "").trim();
@@ -69,7 +74,7 @@ export const MultiSelectOperators = ({
       seen.add(key);
       return true;
     });
-  }, [availableOperators, normalizedSelfName]);
+  }, [availableOperators, normalizedSelfName, selfToggleOnly]);
 
   useEffect(() => {
     const incoming = [...new Set(selectedOperators.map((operator) => normalizeOperatorName(operator)).filter(Boolean))];
@@ -141,6 +146,8 @@ export const MultiSelectOperators = ({
   const toggleOperator = (operatorName: string) => {
     if (disabled) return;
     const normalizedTarget = normalizeOperatorName(operatorName);
+    const isSelfTarget = normalizedSelfName && normalizedTarget === normalizedSelfName;
+    if (selfToggleOnly && !isSelfTarget) return;
     const isSelected = normalizedSelectedOperators.some((name) => normalizeOperatorName(name) === normalizedTarget);
     onChange(
       isSelected
@@ -211,6 +218,8 @@ export const MultiSelectOperators = ({
         menuStyle={menuStyle}
         menuRef={menuRef}
         assignToSelfName={assignToSelfName}
+        showUnassign={showUnassign}
+        selfToggleOnly={selfToggleOnly}
         normalizedSelectedOperators={normalizedSelectedOperators}
         normalizedAvailableOperators={normalizedAvailableOperators}
         onMarkUnassigned={() => {
@@ -218,7 +227,15 @@ export const MultiSelectOperators = ({
           setIsOpen(false);
         }}
         onAssignToSelf={() => {
-          if (!disabled && assignToSelfName) onChange([assignToSelfName]);
+          if (!disabled && assignToSelfName) {
+            const normalizedAssigned = normalizeOperatorName(assignToSelfName);
+            const isSelected = normalizedSelectedOperators.some((name) => normalizeOperatorName(name) === normalizedAssigned);
+            onChange(
+              isSelected
+                ? normalizedSelectedOperators.filter((name) => normalizeOperatorName(name) !== normalizedAssigned)
+                : [...normalizedSelectedOperators, assignToSelfName]
+            );
+          }
           setIsOpen(false);
         }}
         onToggleOperator={toggleOperator}

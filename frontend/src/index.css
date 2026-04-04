@@ -61,3 +61,13 @@ select option,
 select optgroup {
   border-radius: var(--dropdown-radius);
 }
+
+.job-ref-link {
+  color: #175cd3;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.job-ref-link:hover {
+  text-decoration: underline;
+}

@@ -32,7 +32,7 @@ const OperatorViewPage = () => {
 
   const [validationErrors, setValidationErrors] = useState<Map<number | string, Record<string, Record<string, string>>>>(new Map());
   const [liveNowMs, setLiveNowMs] = useState<number>(Date.now());
-  const [pendingShiftOver, setPendingShiftOver] = useState<{ cutId: number | string; quantityIndex: number } | null>(null);
+  const [pendingOperatorAction, setPendingOperatorAction] = useState<{ cutId: number | string; quantityIndex: number; action: "shiftOver" | "resume" } | null>(null);
 
   const {
     jobs,
@@ -71,8 +71,18 @@ const OperatorViewPage = () => {
     handleSaveRange,
     handleUpdateQaStatus,
     handleStartTimeCaptured,
-    handleShiftOverAction,
+    handlePauseResumeAction,
   } = useOperatorViewActions({ jobs, cutInputs, setValidationErrors, currentUserDisplayName });
+  const allowedOperatorUsers = useMemo(() => {
+    const normalizedCurrentUser = String(currentUserDisplayName || "").trim().toLowerCase();
+    const matchingUsers = operatorUsers.filter(
+      (operator) => String(operator.name || "").trim().toLowerCase() === normalizedCurrentUser
+    );
+    if (matchingUsers.length > 0) return matchingUsers;
+    return currentUserDisplayName
+      ? [{ id: "self", name: currentUserDisplayName }]
+      : operatorUsers;
+  }, [currentUserDisplayName, isAdmin, operatorUsers]);
 
   const parentJob = jobs.length > 0 ? jobs[0] : null;
   const totalGroupQuantity = jobs.reduce((sum, job) => sum + Math.max(1, Number(job.qty || 1)), 0);
@@ -189,7 +199,7 @@ const OperatorViewPage = () => {
                         index={index}
                         cutData={cutData}
                         isExpanded={isExpanded}
-                        operatorUsers={operatorUsers}
+                        operatorUsers={allowedOperatorUsers}
                         machineOptions={machineOptions}
                         onToggleExpansion={() => toggleCutExpansion(cutItem.id)}
                         onImageChange={(files) => handleCutImageChange(cutItem.id, files)}
@@ -216,10 +226,14 @@ const OperatorViewPage = () => {
                           setPendingReset({ cutId, quantityIndex });
                         }}
                         onRequestShiftOver={(cutId, quantityIndex) => {
-                          setPendingShiftOver({ cutId, quantityIndex });
+                          setPendingOperatorAction({ cutId, quantityIndex, action: "shiftOver" });
+                        }}
+                        onRequestResume={(cutId, quantityIndex) => {
+                          setPendingOperatorAction({ cutId, quantityIndex, action: "resume" });
                         }}
                         onStartTimeCaptured={handleStartTimeCaptured}
                         isAdmin={isAdmin}
+                        currentUserDisplayName={currentUserDisplayName}
                       />
                     );
                   })}
@@ -261,11 +275,11 @@ const OperatorViewPage = () => {
         setPendingDispatch={setPendingDispatch}
         pendingReset={pendingReset}
         setPendingReset={setPendingReset}
-        pendingShiftOver={pendingShiftOver}
-        setPendingShiftOver={setPendingShiftOver}
+        pendingOperatorAction={pendingOperatorAction}
+        setPendingOperatorAction={setPendingOperatorAction}
         handleUpdateQaStatus={handleUpdateQaStatus}
         handleInputChange={handleInputChange}
-        handleShiftOverAction={handleShiftOverAction}
+        handlePauseResumeAction={handlePauseResumeAction}
         setActionToast={setActionToast}
       />
     </div>

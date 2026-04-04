@@ -23,6 +23,13 @@ export const getOperatorMachineNumber = (job: JobEntry): string => {
   return toMachineIndex(String(latest?.machineNumber || "").trim());
 };
 
+export const hasOperatorJobStarted = (entry: JobEntry, activeRunsByJobId?: Map<string, EmployeeLog>): boolean => {
+  if (activeRunsByJobId?.has(String(entry.id))) return true;
+  if (Array.isArray(entry.operatorCaptures) && entry.operatorCaptures.length > 0) return true;
+  if (String((entry as any).startTime || "").trim()) return true;
+  return false;
+};
+
 type ActiveCaptureSummary = {
   entry: JobEntry;
   startTime: string;

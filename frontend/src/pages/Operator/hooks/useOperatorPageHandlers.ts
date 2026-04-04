@@ -13,7 +13,6 @@ type Params = {
   setOperatorGridJobs: React.Dispatch<React.SetStateAction<JobEntry[]>>;
   setToast: ToastSetter;
   userRole: string;
-  currentUserDisplayName: string;
 };
 
 export const useOperatorPageHandlers = ({
@@ -23,7 +22,6 @@ export const useOperatorPageHandlers = ({
   setOperatorGridJobs,
   setToast,
   userRole,
-  currentUserDisplayName,
 }: Params) => {
   const syncJob = useCallback(
     (matcher: (job: JobEntry) => boolean, updater: (job: JobEntry) => JobEntry) => {
@@ -34,14 +32,26 @@ export const useOperatorPageHandlers = ({
   );
 
   const handleAssignChange = useCallback(
-    async (jobId: number | string, value: string) => {
+    async (jobId: number | string, value: string | string[]) => {
       try {
-        const normalizedValue = String(value || "").trim();
-        const isUnassign = !normalizedValue || normalizedValue.toLowerCase() === "unassign" || normalizedValue.toLowerCase() === "unassigned";
+        const nextAssignedList = Array.isArray(value)
+          ? value.map((entry) => String(entry || "").trim()).filter(Boolean)
+          : String(value || "")
+              .split(",")
+              .map((entry) => entry.trim())
+              .filter((entry) => entry && !/^unassign(?:ed)?$/i.test(entry));
+        const dedupedAssignedList = Array.from(
+          new Map(
+            nextAssignedList.map((entry) => {
+              const trimmed = String(entry || "").trim();
+              return [trimmed.toLowerCase(), trimmed];
+            })
+          ).values()
+        );
         const nextAssignedTo =
           userRole === "OPERATOR"
-            ? (isUnassign ? "Unassign" : String(currentUserDisplayName || "").trim().toUpperCase() || normalizedValue.toUpperCase())
-            : (isUnassign ? "Unassign" : normalizedValue.toUpperCase());
+            ? (dedupedAssignedList.join(", ") || "Unassign")
+            : (dedupedAssignedList.join(", ") || "Unassign");
         await updateOperatorJob(String(jobId), { assignedTo: nextAssignedTo });
         syncJob((job) => job.id === jobId, (job) => ({ ...job, assignedTo: nextAssignedTo }));
       } catch (error) {
@@ -49,7 +59,7 @@ export const useOperatorPageHandlers = ({
         setToast({ message: "Failed to update assignment. Please try again.", variant: "error", visible: true });
       }
     },
-    [currentUserDisplayName, setToast, syncJob, userRole]
+    [setToast, syncJob, userRole]
   );
 
   const handleMachineNumberChange = useCallback(

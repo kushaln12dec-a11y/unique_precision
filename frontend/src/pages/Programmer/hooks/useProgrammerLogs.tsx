@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import type { Column } from "../../../components/DataTable";
 import MarqueeCopyText from "../../../components/MarqueeCopyText";
+import JobRefLink from "../../../components/JobRefLink";
 import type { EmployeeLog } from "../../../types/employeeLog";
 import type { User } from "../../../types/user";
 import { formatDisplayDateTime, getDisplayDateTimeParts } from "../../../utils/date";
@@ -115,7 +116,15 @@ export const useProgrammerLogs = ({
         key: "jobNumber",
         label: "JOB #",
         sortable: false,
-        render: (row) => formatProgrammerJobRef(String(row.refNumber || row.workItemTitle || "")),
+        render: (row) => (
+          <JobRefLink
+            role="PROGRAMMER"
+            jobGroupId={row.jobGroupId}
+            jobId={row.jobId}
+            refNumber={row.refNumber}
+            fallbackLabel={formatProgrammerJobRef(String(row.refNumber || row.workItemTitle || ""))}
+          />
+        ),
       },
       {
         key: "description",

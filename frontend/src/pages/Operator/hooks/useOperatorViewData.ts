@@ -62,6 +62,86 @@ export const useOperatorViewData = (groupId: string | null, cutIdParam: string |
     return collected;
   };
 
+  const getDurationSeconds = (entry: {
+    startTime?: string | null;
+    endTime?: string | null;
+    machineHrs?: string | null;
+    startedAt?: string | null;
+    endedAt?: string | null;
+    durationSeconds?: number | null;
+  }) => {
+    const machineHours = Number(entry.machineHrs || 0);
+    if (Number.isFinite(machineHours) && machineHours > 0) {
+      return Math.max(0, Math.round(machineHours * 3600));
+    }
+
+    const directDuration = Number(entry.durationSeconds || 0);
+    if (Number.isFinite(directDuration) && directDuration > 0) {
+      return Math.max(0, Math.round(directDuration));
+    }
+
+    const startValue = String(entry.startTime || entry.startedAt || "").trim();
+    const endValue = String(entry.endTime || entry.endedAt || "").trim();
+    if (!startValue || !endValue) return 0;
+
+    const startDate = Number.isNaN(new Date(startValue).getTime()) ? null : new Date(startValue);
+    const endDate = Number.isNaN(new Date(endValue).getTime()) ? null : new Date(endValue);
+    if (startDate && endDate) {
+      return Math.max(0, Math.round((endDate.getTime() - startDate.getTime()) / 1000));
+    }
+    return 0;
+  };
+
+  const collectOperatorHistoryDetailsForQuantity = (
+    captures: any[],
+    quantityNumber: number,
+    assignedToArray: string[],
+    logsForJob: Array<{
+      quantityFrom?: number | null;
+      quantityTo?: number | null;
+      userName?: string | null;
+      metadata?: Record<string, any> | null;
+      startedAt?: string | null;
+      endedAt?: string | null;
+      durationSeconds?: number | null;
+    }>
+  ) => {
+    const summary = new Map<string, number>();
+    const addEntry = (rawName: unknown, durationSeconds: number) => {
+      const name = String(rawName || "").trim().toUpperCase();
+      if (!name) return;
+      summary.set(name, (summary.get(name) || 0) + Math.max(0, durationSeconds));
+    };
+
+    captures.forEach((capture: any) => {
+      const fromQty = Math.max(1, Number(capture?.fromQty || 1));
+      const toQty = Math.max(fromQty, Number(capture?.toQty || fromQty));
+      if (quantityNumber < fromQty || quantityNumber > toQty) return;
+      const rangeCount = Math.max(1, toQty - fromQty + 1);
+      addEntry(capture?.opsName, getDurationSeconds(capture) / rangeCount);
+    });
+
+    logsForJob.forEach((log) => {
+      const fromQty = Math.max(1, Number(log?.quantityFrom || 1));
+      const toQty = Math.max(fromQty, Number(log?.quantityTo || fromQty));
+      if (quantityNumber < fromQty || quantityNumber > toQty) return;
+      const rangeCount = Math.max(1, toQty - fromQty + 1);
+      const logDuration = Number((log.metadata as any)?.workedSeconds || 0) || getDurationSeconds(log);
+      addEntry(log?.userName, logDuration / rangeCount);
+    });
+
+    assignedToArray.forEach((value) => {
+      const normalized = String(value || "").trim().toUpperCase();
+      if (!normalized || summary.has(normalized)) return;
+      summary.set(normalized, 0);
+    });
+
+    return Array.from(summary.entries()).map(([name, durationSeconds]) => ({
+      name,
+      durationSeconds: Math.max(0, Math.round(durationSeconds)),
+    }));
+  };
+
   // Fetch idle time configs
   useEffect(() => {
     const fetchIdleTimeConfigs = async () => {
@@ -94,7 +174,15 @@ export const useOperatorViewData = (groupId: string | null, cutIdParam: string |
         setLoadingJobs(true);
         const fetchedJobs = await getOperatorJobsByGroupId(groupId);
         const operatorLogs = await getEmployeeLogs({ role: "OPERATOR", limit: 500 }).catch(() => []);
-        const logsByJobId = new Map<string, Array<{ quantityFrom?: number | null; quantityTo?: number | null; userName?: string | null }>>();
+        const logsByJobId = new Map<string, Array<{
+          quantityFrom?: number | null;
+          quantityTo?: number | null;
+          userName?: string | null;
+          metadata?: Record<string, any> | null;
+          startedAt?: string | null;
+          endedAt?: string | null;
+          durationSeconds?: number | null;
+        }>>();
         operatorLogs.forEach((log) => {
           const jobId = String(log.jobId || "").trim();
           if (!jobId) return;
@@ -150,6 +238,7 @@ export const useOperatorViewData = (groupId: string | null, cutIdParam: string |
                     operatorHistory: Array.isArray(qty.operatorHistory)
                       ? qty.operatorHistory.map((value) => String(value || "").trim().toUpperCase()).filter(Boolean)
                       : collectOperatorHistoryForQuantity(existing.operatorCaptures || [], index + 1, assignedToArray, logsByJobId.get(String(jobId)) || []),
+                    operatorHistoryDetails: collectOperatorHistoryDetailsForQuantity(existing.operatorCaptures || [], index + 1, assignedToArray, logsByJobId.get(String(jobId)) || []),
                 };
               }),
             });
@@ -201,6 +290,7 @@ export const useOperatorViewData = (groupId: string | null, cutIdParam: string |
                   machineNumber: capture.machineNumber || "",
                   opsName: opsNameArray,
                   operatorHistory: collectOperatorHistoryForQuantity(captures, idx + 1, assignedToArray, logsByJobId.get(String(jobId)) || []),
+                  operatorHistoryDetails: collectOperatorHistoryDetailsForQuantity(captures, idx + 1, assignedToArray, logsByJobId.get(String(jobId)) || []),
                   idleTime,
                   idleTimeDuration,
                   lastImage: capture.lastImage || null,
@@ -250,6 +340,7 @@ export const useOperatorViewData = (groupId: string | null, cutIdParam: string |
               machineNumber: existing.machineNumber || "",
               opsName: opsNameArray,
               operatorHistory: collectOperatorHistoryForQuantity(captures, 1, assignedToArray, logsByJobId.get(String(jobId)) || []),
+              operatorHistoryDetails: collectOperatorHistoryDetailsForQuantity(captures, 1, assignedToArray, logsByJobId.get(String(jobId)) || []),
               idleTime,
               idleTimeDuration,
               lastImage: existing.lastImage || null,

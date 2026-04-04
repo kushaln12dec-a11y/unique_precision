@@ -93,7 +93,7 @@ function DataTable<T extends Record<string, any>>({
     : data.length;
 
   return (
-    <>
+    <div className="data-table-shell">
       <div className={`data-table-wrapper ${className}`}>
         <table className="data-table">
           <thead>
@@ -212,7 +212,7 @@ function DataTable<T extends Record<string, any>>({
           entriesPerPageOptions={pagination.entriesPerPageOptions}
         />
       )}
-    </>
+    </div>
   );
 }
 

@@ -9,6 +9,11 @@ export type PauseSession = {
   reason: string; // Reason for pause
 };
 
+export type OperatorHistoryDetail = {
+  name: string;
+  durationSeconds: number;
+};
+
 export type QuantityInputData = {
   startTime: string;
   startTimeEpochMs: number | null;
@@ -18,6 +23,7 @@ export type QuantityInputData = {
   machineNumber: string;
   opsName: string[];
   operatorHistory: string[];
+  operatorHistoryDetails?: OperatorHistoryDetail[];
   idleTime: string;
   idleTimeDuration: string;
   lastImage: string | null;
@@ -43,6 +49,7 @@ export const createEmptyQuantityInputData = (): QuantityInputData => ({
   machineNumber: "",
   opsName: [],
   operatorHistory: [],
+  operatorHistoryDetails: [],
   idleTime: "",
   idleTimeDuration: "",
   lastImage: null,

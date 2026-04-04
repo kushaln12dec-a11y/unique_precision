@@ -3,6 +3,7 @@ import PauseIcon from "@mui/icons-material/Pause";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import DateTimeInput from "./DateTimeInput";
 import SelectDropdown from "../../Programmer/components/SelectDropdown";
+import { MultiSelectOperators } from "./MultiSelectOperators";
 import { decimalHoursToHHMM } from "../utils/machineHrsCalculation";
 import { useQuantityTimer } from "../hooks/useQuantityTimer";
 import { getQaStageLabel, type QuantityProgressStatus } from "../utils/qaProgress";
@@ -32,10 +33,13 @@ type Props = {
   requiredHoursPerQuantity: number;
   onRequestResetTimer?: (cutId: number | string, quantityIndex: number) => void;
   onRequestShiftOver?: (cutId: number | string, quantityIndex: number) => void;
+  onRequestResume?: (cutId: number | string, quantityIndex: number) => void;
   onSaveQuantity?: (cutId: number | string, quantityIndex: number) => void;
   onSaveRange?: (cutId: number | string, sourceQuantityIndex: number, fromQty: number, toQty: number) => void;
   savedRanges: Set<string>;
   canReset: boolean;
+  isAdmin: boolean;
+  currentUserDisplayName: string;
 };
 
 export const OperatorQuantityCard: React.FC<Props> = ({
@@ -57,10 +61,13 @@ export const OperatorQuantityCard: React.FC<Props> = ({
   requiredHoursPerQuantity,
   onRequestResetTimer,
   onRequestShiftOver,
+  onRequestResume,
   onSaveQuantity,
   onSaveRange,
   savedRanges,
   canReset,
+  isAdmin,
+  currentUserDisplayName,
 }) => {
   const rangeQuantityCount = isRangeMode && isRangeValid ? Math.max(1, rangeEndQty - rangeStartQty + 1) : 1;
   const quantityRequiredSeconds = estimatedDurationSecondsFromHours(
@@ -82,7 +89,35 @@ export const OperatorQuantityCard: React.FC<Props> = ({
   const operatorProofHistory = Array.isArray(qtyData.operatorHistory)
     ? qtyData.operatorHistory.map((name) => String(name || "").trim()).filter(Boolean)
     : [];
+  const operatorHistoryDetails = Array.isArray(qtyData.operatorHistoryDetails)
+    ? qtyData.operatorHistoryDetails
+        .map((entry) => ({
+          name: String(entry?.name || "").trim(),
+          durationSeconds: Math.max(0, Number(entry?.durationSeconds || 0)),
+        }))
+        .filter((entry) => entry.name)
+    : [];
+  const normalizedWorkedByNames = Array.from(
+    new Set(operatorProofHistory.map((name) => String(name || "").trim().toLowerCase()).filter(Boolean))
+  );
+  const normalizedHistoryDetailNames = Array.from(
+    new Set(operatorHistoryDetails.map((entry) => String(entry.name || "").trim().toLowerCase()).filter(Boolean))
+  );
+  const shouldShowWorkedBySummary =
+    operatorProofHistory.length > 0 &&
+    (
+      operatorHistoryDetails.length === 0 ||
+      normalizedWorkedByNames.join("|") !== normalizedHistoryDetailNames.join("|")
+    );
   const estimatedTimerLabel = hasOvertime ? "Overtime:" : "Remaining Time:";
+  const formatWorkedDuration = (seconds: number) => {
+    const safeSeconds = Math.max(0, Math.round(seconds));
+    const hours = Math.floor(safeSeconds / 3600);
+    const minutes = Math.floor((safeSeconds % 3600) / 60);
+    if (hours > 0) return `${hours}h ${minutes}m`;
+    if (minutes > 0) return `${minutes}m`;
+    return `${safeSeconds}s`;
+  };
 
   return (
     <div className="quantity-input-group">
@@ -189,22 +224,41 @@ export const OperatorQuantityCard: React.FC<Props> = ({
           </div>
           <div className="operator-input-card">
             <label>Ops Name</label>
-            <SelectDropdown
-              value={(qtyData.opsName || [])[0] || ""}
-              onChange={(nextValue) => onInputChange(cutId, qtyIndex, "opsName", nextValue ? [String(nextValue)] : [])}
-              options={operatorUsers.map((operator) => ({
-                label: String(operator.name || "").toUpperCase(),
-                value: String(operator.name || ""),
-              }))}
-              placeholder="SELECT OPERATOR"
-              align="left"
-              className={validationErrors.opsName ? "input-error" : ""}
-            />
+            {isAdmin ? (
+              <SelectDropdown
+                value={(qtyData.opsName || [])[0] || ""}
+                onChange={(nextValue) => onInputChange(cutId, qtyIndex, "opsName", nextValue ? [String(nextValue)] : [])}
+                options={operatorUsers.map((operator) => ({
+                  label: String(operator.name || "").toUpperCase(),
+                  value: String(operator.name || ""),
+                }))}
+                placeholder="SELECT OPERATOR"
+                align="left"
+                className={validationErrors.opsName ? "input-error" : ""}
+              />
+            ) : (
+              <MultiSelectOperators
+                selectedOperators={Array.isArray(qtyData.opsName) ? qtyData.opsName : []}
+                availableOperators={operatorUsers}
+                onChange={(nextValue) => onInputChange(cutId, qtyIndex, "opsName", nextValue)}
+                placeholder="SELECT OPERATOR"
+                className={validationErrors.opsName ? "input-error" : ""}
+                compact={(qtyData.opsName || []).length > 1}
+                assignToSelfName={currentUserDisplayName}
+                showUnassign={false}
+                selfToggleOnly={true}
+              />
+            )}
             {validationErrors.opsName && <p className="field-error">{validationErrors.opsName}</p>}
-            {operatorProofHistory.length > 0 ? (
+            {shouldShowWorkedBySummary ? (
               <p className="operator-history-proof" title={operatorProofHistory.join(", ")}>
                 Worked By: {operatorProofHistory.join(", ")}
               </p>
+            ) : null}
+            {operatorHistoryDetails.length > 0 ? (
+              <div className="operator-history-proof" title={operatorHistoryDetails.map((entry) => `${entry.name}: ${formatWorkedDuration(entry.durationSeconds)}`).join(" | ")}>
+                {operatorHistoryDetails.map((entry) => `${entry.name} (${formatWorkedDuration(entry.durationSeconds)})`).join(", ")}
+              </div>
             ) : null}
           </div>
           {qtyData.isPaused && !qtyData.endTime && (
@@ -268,7 +322,7 @@ export const OperatorQuantityCard: React.FC<Props> = ({
               <button
                 type="button"
                 className="mark-shift-over-button"
-                onClick={() => onRequestShiftOver?.(cutId, qtyIndex)}
+                onClick={() => (isShiftOverPause ? onRequestResume?.(cutId, qtyIndex) : onRequestShiftOver?.(cutId, qtyIndex))}
               >
                 {isShiftOverPause ? "Resume Quantity" : "Shift Over"}
               </button>
