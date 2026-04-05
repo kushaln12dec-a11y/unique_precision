@@ -1,7 +1,14 @@
 import type { QuantityInputData } from "../types/cutInput";
 import { parseOperatorInputStartTime } from "./operatorInputState";
 
-export const resumePausedQuantity = (qtyData: QuantityInputData, now: number): QuantityInputData => {
+const resolvePauseOperatorName = (qtyData: QuantityInputData, fallbackName?: string) => {
+  const explicitName = String(fallbackName || "").trim();
+  if (explicitName) return explicitName.toUpperCase();
+  const firstOpsName = Array.isArray(qtyData.opsName) ? String(qtyData.opsName[0] || "").trim() : "";
+  return firstOpsName ? firstOpsName.toUpperCase() : "";
+};
+
+export const resumePausedQuantity = (qtyData: QuantityInputData, now: number, operatorName?: string): QuantityInputData => {
   if (!qtyData.pauseStartTime) {
     return {
       ...qtyData,
@@ -23,6 +30,7 @@ export const resumePausedQuantity = (qtyData: QuantityInputData, now: number): Q
         pauseEndTime: now,
         pauseDuration,
         reason: qtyData.currentPauseReason || "",
+        operatorName: resolvePauseOperatorName(qtyData, operatorName),
       },
     ],
     currentPauseReason: "",
@@ -45,7 +53,7 @@ export const pauseRunningQuantity = (qtyData: QuantityInputData, now: number): Q
   };
 };
 
-export const closePauseOnEndTime = (qtyData: QuantityInputData, now: number): QuantityInputData => {
+export const closePauseOnEndTime = (qtyData: QuantityInputData, now: number, operatorName?: string): QuantityInputData => {
   if (!qtyData.pauseStartTime) {
     return {
       ...qtyData,
@@ -67,6 +75,7 @@ export const closePauseOnEndTime = (qtyData: QuantityInputData, now: number): Qu
         pauseEndTime: now,
         pauseDuration,
         reason: (qtyData.currentPauseReason || "").trim() || "Ended while idle",
+        operatorName: resolvePauseOperatorName(qtyData, operatorName),
       },
     ],
     currentPauseReason: "",

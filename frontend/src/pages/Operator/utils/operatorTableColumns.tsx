@@ -72,7 +72,7 @@ export const buildBaseOperatorColumns = ({
     render: (row) => {
       return (
         <div className="operator-job-ref-cell">
-          <MarqueeCopyText text={formatJobRefDisplay(row.entry.refNumber || "") || "-"} className="job-ref-copy-text" />
+          <MarqueeCopyText text={formatJobRefDisplay(row.entry.refNumber || "") || "-"} className="job-ref-copy-text" showCopyButton={false} />
         </div>
       );
     },

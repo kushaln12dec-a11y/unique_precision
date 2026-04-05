@@ -124,7 +124,7 @@
     width: calc(100% - 0.7rem);
     max-width: calc(100% - 0.7rem);
     padding: 0.75rem;
-    max-height: calc(100vh - 96px);
+    max-height: none;
   }
 
   .panel-header {

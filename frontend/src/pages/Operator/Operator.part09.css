@@ -123,12 +123,7 @@
   border-left: 3px solid #818cf8 !important;
 }
 
-.lazy-ag-grid-shell.operator-table-no-scroll .ag-center-cols-container .ag-row.group-row.priority-row.priority-high .ag-cell:first-child,
-.lazy-ag-grid-shell.operator-table-no-scroll .ag-pinned-left-cols-container .ag-row.group-row.priority-row.priority-high .ag-cell:first-child,
-.lazy-ag-grid-shell.operator-table-no-scroll .ag-center-cols-container .ag-row.child-row.child-priority-row.child-priority-high .ag-cell:first-child,
-.lazy-ag-grid-shell.operator-table-no-scroll .ag-pinned-left-cols-container .ag-row.child-row.child-priority-row.child-priority-high .ag-cell:first-child {
-  box-shadow: inset 3px 0 0 #ef4444 !important;
-}
+
 
 .lazy-ag-grid-shell.operator-table-no-scroll .ag-center-cols-container .ag-row.group-row.priority-row.priority-medium .ag-cell:first-child,
 .lazy-ag-grid-shell.operator-table-no-scroll .ag-pinned-left-cols-container .ag-row.group-row.priority-row.priority-medium .ag-cell:first-child,
@@ -158,12 +153,6 @@
   box-shadow: inset 3px 0 0 #f59e0b !important;
 }
 
-.lazy-ag-grid-shell.operator-table-no-scroll .ag-center-cols-container .ag-row.group-row.operator-stage-row-running:not(.priority-row):not(.critical-row) .ag-cell:first-child,
-.lazy-ag-grid-shell.operator-table-no-scroll .ag-pinned-left-cols-container .ag-row.group-row.operator-stage-row-running:not(.priority-row):not(.critical-row) .ag-cell:first-child,
-.lazy-ag-grid-shell.operator-table-no-scroll .ag-center-cols-container .ag-row.child-row.operator-stage-row-running:not(.child-priority-row):not(.child-critical-row) .ag-cell:first-child,
-.lazy-ag-grid-shell.operator-table-no-scroll .ag-pinned-left-cols-container .ag-row.child-row.operator-stage-row-running:not(.child-priority-row):not(.child-critical-row) .ag-cell:first-child {
-  box-shadow: inset 3px 0 0 #ef4444 !important;
-}
 
 .lazy-ag-grid-shell.operator-table-no-scroll .ag-center-cols-container .ag-row.group-row.operator-stage-row-hold:not(.priority-row):not(.critical-row) .ag-cell:first-child,
 .lazy-ag-grid-shell.operator-table-no-scroll .ag-pinned-left-cols-container .ag-row.group-row.operator-stage-row-hold:not(.priority-row):not(.critical-row) .ag-cell:first-child,

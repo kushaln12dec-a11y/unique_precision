@@ -7,6 +7,7 @@ export type PauseSession = {
   pauseEndTime: number | null; // Timestamp when resumed (null if currently paused)
   pauseDuration: number; // Duration in seconds
   reason: string; // Reason for pause
+  operatorName?: string; // User who kept the job idle
 };
 
 export type OperatorHistoryDetail = {

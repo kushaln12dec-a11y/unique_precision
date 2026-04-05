@@ -77,7 +77,7 @@ function LazyAgGrid<T extends object>({
       unSortIcon: true,
       resizable: false,
       suppressMovable: true,
-      minWidth: 80,
+      minWidth: 64,
       wrapHeaderText: true,
       autoHeaderHeight: true,
     }),

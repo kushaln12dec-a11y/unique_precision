@@ -32,22 +32,22 @@ const getProgrammerHeaderName = (column: Column<ProgrammerDisplayRow>) => {
 };
 
 const PROGRAMMER_GRID_COLUMN_WIDTHS: Record<string, number> = {
-  customer: 92,
-  programRef: 84,
-  programRefFileName: 112,
-  description: 116,
-  cut: 62,
-  thickness: 62,
-  passLevel: 50,
-  setting: 68,
-  qty: 42,
-  sedm: 48,
-  totalHrs: 84,
-  estimatedTime: 80,
-  totalAmount: 104,
-  createdBy: 72,
-  createdAt: 100,
-  action: 80,
+  customer: 84,
+  programRef: 76,
+  programRefFileName: 98,
+  description: 104,
+  cut: 56,
+  thickness: 56,
+  passLevel: 44,
+  setting: 58,
+  qty: 38,
+  sedm: 44,
+  totalHrs: 76,
+  estimatedTime: 72,
+  totalAmount: 92,
+  createdBy: 64,
+  createdAt: 92,
+  action: 116,
 };
 
 const getProgrammerGridColumnWidth = (columnKey: string) =>

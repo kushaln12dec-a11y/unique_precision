@@ -14,7 +14,7 @@
   padding: 1.5rem;
   box-shadow: 0 20px 40px rgba(15, 23, 42, 0.2) !important;
   color: #0f172a;
-  max-height: 90vh;
+  max-height: 92dvh;
   overflow-y: auto;
   box-sizing: border-box;
 }
@@ -30,7 +30,7 @@
 .modal-large {
   width: min(900px, 90vw) !important;
   max-width: 90vw !important;
-  max-height: 90vh;
+  max-height: 92dvh;
   display: flex;
   flex-direction: column;
 }
@@ -110,4 +110,12 @@
 
 .modal-content {
   color: #0f172a;
+}
+
+@media (max-width: 1024px) {
+  .modal-card {
+    width: min(94vw, 900px) !important;
+    max-width: 94vw !important;
+    padding: 1rem;
+  }
 }

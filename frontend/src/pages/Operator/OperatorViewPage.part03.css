@@ -25,18 +25,19 @@
 }
 
 .timer-label {
-  font-size: 0.875rem;
-  font-weight: 500;
+  font-size: 0.9rem;
+  font-weight: 600;
   color: #64748b;
 }
 
 .timer-value {
-  font-size: 1rem;
-  font-weight: 700;
+  font-size: 1.08rem;
+  font-weight: 800;
   font-family: 'Courier New', monospace;
   color: #1e293b;
   min-width: 80px;
   text-align: center;
+  letter-spacing: 0.02em;
 }
 
 .timer-value.running {

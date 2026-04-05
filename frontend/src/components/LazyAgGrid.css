@@ -1,7 +1,7 @@
 .lazy-ag-grid-shell {
   width: 100%;
   min-height: 180px;
-  height: calc(100vh - 280px);
+  height: min(560px, calc(100dvh - 280px));
   box-sizing: border-box;
   overflow: hidden;
 }
@@ -159,15 +159,24 @@
 
 .lazy-ag-grid-shell .ag-cell.operator-assigned-cell,
 .lazy-ag-grid-shell .ag-cell.operator-machine-cell,
+.lazy-ag-grid-shell .ag-cell.action-cell,
 .lazy-ag-grid-shell .ag-cell.operator-assigned-cell .ag-cell-value,
-.lazy-ag-grid-shell .ag-cell.operator-machine-cell .ag-cell-value {
+.lazy-ag-grid-shell .ag-cell.operator-machine-cell .ag-cell-value,
+.lazy-ag-grid-shell .ag-cell.action-cell .ag-cell-value {
   overflow: visible;
 }
 
 .lazy-ag-grid-shell .ag-cell.operator-assigned-cell,
-.lazy-ag-grid-shell .ag-cell.operator-machine-cell {
+.lazy-ag-grid-shell .ag-cell.operator-machine-cell,
+.lazy-ag-grid-shell .ag-cell.action-cell {
   padding-left: 0.32rem;
   padding-right: 0.32rem;
+}
+
+.lazy-ag-grid-shell .ag-cell.action-cell,
+.lazy-ag-grid-shell .ag-cell.action-cell .ag-cell-value {
+  justify-content: center;
+  text-align: center;
 }
 
 .lazy-ag-grid-shell .ag-cell-value .job-ref-copy-text {
@@ -305,70 +314,70 @@
 .lazy-ag-grid-shell .ag-row.child-row.child-priority-row.child-priority-high {
   background-image:
     linear-gradient(180deg, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0.08) 48%, rgba(255, 255, 255, 0) 100%),
-    linear-gradient(90deg, rgba(239, 68, 68, 0.18) 0%, rgba(239, 68, 68, 0.06) 38%, rgba(255, 255, 255, 0.96) 100%) !important;
+    linear-gradient(90deg, transparent 0 6px, rgba(239, 68, 68, 0.18) 6px, rgba(239, 68, 68, 0.06) 38%, rgba(255, 255, 255, 0.96) 100%) !important;
 }
 
 .lazy-ag-grid-shell .ag-row.group-row.priority-row.priority-medium,
 .lazy-ag-grid-shell .ag-row.child-row.child-priority-row.child-priority-medium {
   background-image:
     linear-gradient(180deg, rgba(255, 255, 255, 0.52) 0%, rgba(255, 255, 255, 0.08) 48%, rgba(255, 255, 255, 0) 100%),
-    linear-gradient(90deg, rgba(245, 158, 11, 0.2) 0%, rgba(245, 158, 11, 0.07) 38%, rgba(255, 255, 255, 0.96) 100%) !important;
+    linear-gradient(90deg, transparent 0 6px, rgba(245, 158, 11, 0.2) 6px, rgba(245, 158, 11, 0.07) 38%, rgba(255, 255, 255, 0.96) 100%) !important;
 }
 
 .lazy-ag-grid-shell .ag-row.group-row.priority-row.priority-low,
 .lazy-ag-grid-shell .ag-row.child-row.child-priority-row.child-priority-low {
   background-image:
     linear-gradient(180deg, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0.08) 48%, rgba(255, 255, 255, 0) 100%),
-    linear-gradient(90deg, rgba(16, 185, 129, 0.19) 0%, rgba(16, 185, 129, 0.065) 38%, rgba(255, 255, 255, 0.96) 100%) !important;
+    linear-gradient(90deg, transparent 0 6px, rgba(16, 185, 129, 0.19) 6px, rgba(16, 185, 129, 0.065) 38%, rgba(255, 255, 255, 0.96) 100%) !important;
 }
 
 .lazy-ag-grid-shell .ag-row.group-row.critical-row,
 .lazy-ag-grid-shell .ag-row.child-row.child-critical-row {
   background-image:
     linear-gradient(180deg, rgba(255, 255, 255, 0.54) 0%, rgba(255, 255, 255, 0.08) 48%, rgba(255, 255, 255, 0) 100%),
-    linear-gradient(90deg, rgba(220, 38, 38, 0.2) 0%, rgba(220, 38, 38, 0.07) 38%, rgba(255, 255, 255, 0.95) 100%) !important;
+    linear-gradient(90deg, transparent 0 6px, rgba(220, 38, 38, 0.2) 6px, rgba(220, 38, 38, 0.07) 38%, rgba(255, 255, 255, 0.95) 100%) !important;
 }
 
 .lazy-ag-grid-shell .ag-row.group-row.operator-stage-row-not-started,
 .lazy-ag-grid-shell .ag-row.child-row.operator-stage-row-not-started {
   background-image:
     linear-gradient(180deg, rgba(255, 255, 255, 0.54) 0%, rgba(255, 255, 255, 0.1) 48%, rgba(255, 255, 255, 0) 100%),
-    linear-gradient(90deg, rgba(245, 158, 11, 0.2) 0%, rgba(245, 158, 11, 0.07) 38%, rgba(255, 255, 255, 0.96) 100%) !important;
+    linear-gradient(90deg, transparent 0 6px, rgba(245, 158, 11, 0.2) 6px, rgba(245, 158, 11, 0.07) 38%, rgba(255, 255, 255, 0.96) 100%) !important;
 }
 
 .lazy-ag-grid-shell .ag-row.group-row.operator-stage-row-logged,
 .lazy-ag-grid-shell .ag-row.child-row.operator-stage-row-logged {
   background-image:
     linear-gradient(180deg, rgba(255, 255, 255, 0.54) 0%, rgba(255, 255, 255, 0.1) 48%, rgba(255, 255, 255, 0) 100%),
-    linear-gradient(90deg, rgba(56, 189, 248, 0.18) 0%, rgba(56, 189, 248, 0.06) 38%, rgba(255, 255, 255, 0.96) 100%) !important;
+    linear-gradient(90deg, transparent 0 6px, rgba(56, 189, 248, 0.18) 6px, rgba(56, 189, 248, 0.06) 38%, rgba(255, 255, 255, 0.96) 100%) !important;
 }
 
 .lazy-ag-grid-shell .ag-row.group-row.operator-stage-row-running,
 .lazy-ag-grid-shell .ag-row.child-row.operator-stage-row-running {
   background-image:
     linear-gradient(180deg, rgba(255, 255, 255, 0.54) 0%, rgba(255, 255, 255, 0.1) 48%, rgba(255, 255, 255, 0) 100%),
-    linear-gradient(90deg, rgba(239, 68, 68, 0.18) 0%, rgba(239, 68, 68, 0.06) 38%, rgba(255, 255, 255, 0.96) 100%) !important;
+    linear-gradient(90deg, transparent 0 6px, rgba(239, 68, 68, 0.18) 6px, rgba(239, 68, 68, 0.06) 38%, rgba(255, 255, 255, 0.96) 100%) !important;
 }
 
 .lazy-ag-grid-shell .ag-row.group-row.operator-stage-row-hold,
 .lazy-ag-grid-shell .ag-row.child-row.operator-stage-row-hold {
   background-image:
     linear-gradient(180deg, rgba(255, 255, 255, 0.54) 0%, rgba(255, 255, 255, 0.1) 48%, rgba(255, 255, 255, 0) 100%),
-    linear-gradient(90deg, rgba(249, 115, 22, 0.18) 0%, rgba(249, 115, 22, 0.07) 38%, rgba(255, 255, 255, 0.96) 100%) !important;
+    linear-gradient(90deg, transparent 0 6px, rgba(249, 115, 22, 0.18) 6px, rgba(249, 115, 22, 0.07) 38%, rgba(255, 255, 255, 0.96) 100%) !important;
 }
 
 .lazy-ag-grid-shell .ag-row.group-row.operator-stage-row-qc,
 .lazy-ag-grid-shell .ag-row.child-row.operator-stage-row-qc {
   background-image:
     linear-gradient(180deg, rgba(255, 255, 255, 0.54) 0%, rgba(255, 255, 255, 0.1) 48%, rgba(255, 255, 255, 0) 100%),
-    linear-gradient(90deg, rgba(129, 140, 248, 0.18) 0%, rgba(129, 140, 248, 0.06) 38%, rgba(255, 255, 255, 0.96) 100%) !important;
+    linear-gradient(90deg, transparent 0 6px, rgba(129, 140, 248, 0.18) 6px, rgba(129, 140, 248, 0.06) 38%, rgba(255, 255, 255, 0.96) 100%) !important;
 }
 
 .lazy-ag-grid-shell .ag-row.group-row.operator-stage-row-dispatched,
 .lazy-ag-grid-shell .ag-row.child-row.operator-stage-row-dispatched {
   background-image:
     linear-gradient(180deg, rgba(255, 255, 255, 0.54) 0%, rgba(255, 255, 255, 0.1) 48%, rgba(255, 255, 255, 0) 100%),
-    linear-gradient(90deg, rgba(129, 140, 248, 0.18) 0%, rgba(129, 140, 248, 0.06) 38%, rgba(255, 255, 255, 0.96) 100%) !important;
+    linear-gradient(90deg, transparent 0 6px, rgba(129, 140, 248, 0.18) 6px, rgba(129, 140, 248, 0.06) 38%, rgba(255, 255, 255, 0.96) 100%) !important;
 }
 
 .lazy-ag-grid-shell .ag-row.group-row.operator-stage-row-not-started:not(.priority-row):not(.critical-row),
@@ -433,6 +442,22 @@
   border-left: 3px solid #818cf8 !important;
 }
 
+.lazy-ag-grid-shell .ag-row.child-row .ag-cell:first-child,
+.lazy-ag-grid-shell .ag-pinned-left-cols-container .ag-row.child-row .ag-cell:first-child {
+  box-shadow: none !important;
+}
+
+.lazy-ag-grid-shell .ag-row.child-row:not(.child-priority-row):not(.child-critical-row):not(.operator-stage-row-not-started):not(.operator-stage-row-logged):not(.operator-stage-row-running):not(.operator-stage-row-hold):not(.operator-stage-row-qc):not(.operator-stage-row-dispatched),
+.lazy-ag-grid-shell .ag-pinned-left-cols-container .ag-row.child-row:not(.child-priority-row):not(.child-critical-row):not(.operator-stage-row-not-started):not(.operator-stage-row-logged):not(.operator-stage-row-running):not(.operator-stage-row-hold):not(.operator-stage-row-qc):not(.operator-stage-row-dispatched) {
+  background-color: #f0f4ff !important;
+  border-left: 4px solid #6366f1 !important;
+}
+
+.lazy-ag-grid-shell .ag-row-hover.child-row:not(.child-priority-row):not(.child-critical-row):not(.operator-stage-row-not-started):not(.operator-stage-row-logged):not(.operator-stage-row-running):not(.operator-stage-row-hold):not(.operator-stage-row-qc):not(.operator-stage-row-dispatched),
+.lazy-ag-grid-shell .ag-pinned-left-cols-container .ag-row-hover.child-row:not(.child-priority-row):not(.child-critical-row):not(.operator-stage-row-not-started):not(.operator-stage-row-logged):not(.operator-stage-row-running):not(.operator-stage-row-hold):not(.operator-stage-row-qc):not(.operator-stage-row-dispatched) {
+  background-color: #e0e7ff !important;
+}
+
 @media (hover: hover) and (pointer: fine) {
   .lazy-ag-grid-shell .ag-row .description-marquee:hover .marquee-static,
   .lazy-ag-grid-shell .ag-row .description-marquee:focus-within .marquee-static {
@@ -448,5 +473,11 @@
   .lazy-ag-grid-shell .ag-row .description-marquee:focus-within .marquee-copy-btn {
     opacity: 1;
     pointer-events: auto;
+  }
+}
+
+@media (max-width: 1024px) {
+  .lazy-ag-grid-shell {
+    height: min(480px, calc(100dvh - 250px));
   }
 }

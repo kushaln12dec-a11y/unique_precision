@@ -109,19 +109,21 @@ const SEDMModal = ({
         </button>
       </div>
 
-      {sedmEntries.map((entry, index) => (
-        <SedmEntrySection
-          key={index}
-          entry={entry}
-          index={index}
-          cutThickness={cut.thickness || ""}
-          resolvedElectrodeOptions={resolvedElectrodeOptions}
-          normalizedThOptions={normalizedThOptions}
-          showRemove={sedmEntries.length > 1}
-          onRemove={() => setSedmEntries((prev) => (prev.length <= 1 ? prev : prev.filter((_, idx) => idx !== index)))}
-          onChange={(field, value) => handleEntryChange(index, field, value)}
-        />
-      ))}
+      <div className="sedm-entry-list">
+        {sedmEntries.map((entry, index) => (
+          <SedmEntrySection
+            key={index}
+            entry={entry}
+            index={index}
+            cutThickness={cut.thickness || ""}
+            resolvedElectrodeOptions={resolvedElectrodeOptions}
+            normalizedThOptions={normalizedThOptions}
+            showRemove={sedmEntries.length > 1}
+            onRemove={() => setSedmEntries((prev) => (prev.length <= 1 ? prev : prev.filter((_, idx) => idx !== index)))}
+            onChange={(field, value) => handleEntryChange(index, field, value)}
+          />
+        ))}
+      </div>
 
       <p className="sedm-meta">Job Quantity: {cut.qty || "0"} | Total Holes: {totalHoles}</p>
       {isAdmin && <p className="sedm-amount">Total SEDM Amount: Rs. {totalSedmAmount.toFixed(2)}</p>}

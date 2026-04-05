@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import CodeIcon from '@mui/icons-material/Code';
 import BuildIcon from '@mui/icons-material/Build';
@@ -7,14 +8,16 @@ import PeopleIcon from '@mui/icons-material/People';
 import GroupsIcon from '@mui/icons-material/Groups';
 import SettingsSuggestIcon from '@mui/icons-material/SettingsSuggest';
 import LogoutIcon from '@mui/icons-material/Logout';
+import MenuOpenRoundedIcon from '@mui/icons-material/MenuOpenRounded';
 import { useLocation, useNavigate } from 'react-router-dom';
 import type { SidebarProps } from '../types/sidebar';
 import { getUserRoleFromToken } from '../utils/auth';
 import './Sidebar.css';
 
-const Sidebar = ({ onNavigate }: SidebarProps) => {
+const Sidebar = ({ onNavigate, className = "" }: SidebarProps) => {
   const navigate = useNavigate();
   const location = useLocation();
+  const [isTabletOpen, setIsTabletOpen] = useState(false);
   const role = getUserRoleFromToken()?.toUpperCase();
   const dashboardPath = role === 'OPERATOR' ? '/operator-dashboard' : '/dashboard';
   const menuItems = [
@@ -53,18 +56,27 @@ const Sidebar = ({ onNavigate }: SidebarProps) => {
     } else {
       navigate(path);
     }
+    setIsTabletOpen(false);
     window.scrollTo(0, 0);
   };
 
   const handleLogout = () => {
     localStorage.removeItem('token');
+    setIsTabletOpen(false);
     navigate('/login', { replace: true });
   };
 
   return (
-    <div className="sidebar collapsed">
+    <>
+      <div className={`sidebar ${isTabletOpen ? 'expanded tablet-open' : 'collapsed'} ${className}`.trim()}>
       <div className="sidebar-header">
-        <div className="sidebar-logo">
+        <button
+          type="button"
+          className="sidebar-logo"
+          onClick={() => setIsTabletOpen((prev) => !prev)}
+          aria-label={isTabletOpen ? "Close navigation" : "Open navigation"}
+          title={isTabletOpen ? "Close navigation" : "Open navigation"}
+        >
           <img
             src="/output-onlinepngtools.svg"
             alt="Unique Precision"
@@ -81,7 +93,10 @@ const Sidebar = ({ onNavigate }: SidebarProps) => {
               <span className="sidebar-company-name-line">Precision</span>
             </span>
           </div>
-        </div>
+          <span className="sidebar-toggle-icon" aria-hidden="true">
+            <MenuOpenRoundedIcon />
+          </span>
+        </button>
       </div>
 
       <nav className="sidebar-nav">
@@ -114,7 +129,9 @@ const Sidebar = ({ onNavigate }: SidebarProps) => {
           <span className="nav-label">Logout</span>
         </button>
       </div>
-    </div>
+      </div>
+      {isTabletOpen ? <button type="button" className="sidebar-tablet-backdrop" aria-label="Close navigation" onClick={() => setIsTabletOpen(false)} /> : null}
+    </>
   );
 };
 

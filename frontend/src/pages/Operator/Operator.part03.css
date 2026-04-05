@@ -111,15 +111,23 @@
 
 .operator-table-no-scroll .data-table td.action-cell .action-icon-button,
 .operator-table-no-scroll .data-table td.action-cell .operator-action-button {
-  width: 1.5rem;
-  height: 1.5rem;
-  min-width: 1.5rem;
-  min-height: 1.5rem;
-  padding: 0.2rem;
+  width: 1.85rem;
+  height: 1.85rem;
+  min-width: 1.85rem;
+  min-height: 1.85rem;
+  padding: 0.24rem;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  margin: 0 0.1rem;
+  margin: 0 0.22rem;
+  border-radius: 8px;
+}
+
+.operator-table-no-scroll .data-table td.action-cell,
+.lazy-ag-grid-shell.operator-table-no-scroll .ag-cell.action-cell,
+.lazy-ag-grid-shell.operator-table-no-scroll .ag-cell.action-cell .ag-cell-value {
+  text-align: center;
+  justify-content: center;
 }
 
 .operator-table-no-scroll
