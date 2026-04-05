@@ -13,7 +13,7 @@ import {
   getOperatorHistoryNames,
   hasOperatorJobStarted,
   normalizeAssignedOperators,
-  renderEstimatedTime,
+  renderEstimatedTimeWithLogs,
   renderOperatorCustomerCell,
 } from "./operatorTableHelpers";
 
@@ -173,7 +173,7 @@ export const buildBaseOperatorColumns = ({
       />
     ),
   },
-  { key: "estimatedTime", label: <>Estimated<br />Time</>, sortable: false, render: renderEstimatedTime },
+  { key: "estimatedTime", label: <>Estimated<br />Time</>, sortable: false, render: (row) => renderEstimatedTimeWithLogs(row, activeRunsByJobId) },
   ...(isAdmin ? [{ key: "totalAmount", label: "Amount (Rs.)", sortable: false, sortKey: "totalAmount", className: "operator-amount-cell", headerClassName: "operator-amount-header", render: (row: OperatorDisplayRow) => row.kind === "parent" ? row.tableRow.groupTotalAmount ? `Rs. ${Math.round(row.tableRow.groupTotalAmount)}` : "-" : row.entry.totalAmount ? `Rs. ${Math.round(row.entry.totalAmount)}` : "-" } as Column<OperatorDisplayRow>] : []),
   {
     key: "productionStage",
@@ -182,7 +182,9 @@ export const buildBaseOperatorColumns = ({
     className: "status-cell",
     headerClassName: "status-header",
     render: (row) => {
-      const counts = row.kind === "parent" ? getGroupQaProgressCounts(row.tableRow.entries) : getQaProgressCounts(row.entry, Math.max(1, Number(row.entry.qty || 1)));
+      const counts = row.kind === "parent"
+        ? getGroupQaProgressCounts(row.tableRow.entries, activeRunsByJobId)
+        : getQaProgressCounts(row.entry, Math.max(1, Number(row.entry.qty || 1)), activeRunsByJobId.get(String(row.entry.id)));
       const badges = getQaStatusBadges(counts);
       return <div className="child-stage-summary"><div className="qa-badge-ticker" title={badges.map((badge) => badge.label).join(" | ")}><div className="qa-badge-track">{[...badges, ...badges].map((badge, index) => <span key={`${badge.className}-${index}`} className={`qa-mini ${badge.className}`}>{badge.label}</span>)}</div></div></div>;
     },
@@ -197,7 +199,7 @@ export const buildBaseOperatorColumns = ({
     render: (row) => {
       const isChild = row.kind === "child";
       const targetEntries = isChild ? [row.entry] : row.tableRow.entries;
-      const canSendToQa = targetEntries.some((entry) => getDispatchableQuantityNumbers(entry).length > 0);
+      const canSendToQa = targetEntries.some((entry) => getDispatchableQuantityNumbers(entry, activeRunsByJobId.get(String(entry.id))).length > 0);
       return (
         <ActionButtons
           onView={() => (isChild ? handleViewEntry(row.entry) : handleViewJob(row.tableRow))}

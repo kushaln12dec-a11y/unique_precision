@@ -4,6 +4,7 @@ import Sidebar from "../../components/Sidebar";
 import Header from "../../components/Header";
 import Toast from "../../components/Toast";
 import AppLoader from "../../components/AppLoader";
+import { resetOperatorQuantity } from "../../services/operatorApi";
 import { useOperatorViewData } from "./hooks/useOperatorViewData";
 import { useOperatorInputs } from "./hooks/useOperatorInputs";
 import { useOperatorViewActions } from "./hooks/useOperatorViewActions";
@@ -42,6 +43,7 @@ const OperatorViewPage = () => {
     setCutInputs,
     expandedCuts,
     toggleCutExpansion,
+    reloadOperatorViewData,
   } = useOperatorViewData(groupId, cutIdParam);
 
   const { handleCutImageChange, handleInputChange, copyQuantityToAll, copyQuantityToCount } = useOperatorInputs(
@@ -144,6 +146,32 @@ const OperatorViewPage = () => {
 
   const getCutInputData = (cutId: number | string, quantity: number = 1): CutInputData => {
     return cutInputs.get(cutId) || createEmptyCutInputData(quantity);
+  };
+
+  const handleResetQuantity = async (cutId: number | string, quantityIndex: number) => {
+    try {
+      await resetOperatorQuantity(String(cutId), { quantityNumber: quantityIndex + 1 });
+      handleInputChange(cutId, quantityIndex, "resetTimer", "");
+      await reloadOperatorViewData();
+      setActionToast({
+        message: `Quantity ${quantityIndex + 1} reset successfully.`,
+        variant: "success",
+        visible: true,
+      });
+      window.setTimeout(() => {
+        setActionToast((prev) => ({ ...prev, visible: false }));
+      }, 2400);
+    } catch (error) {
+      console.error("Failed to reset operator quantity", error);
+      setActionToast({
+        message: "Failed to reset quantity. Please try again.",
+        variant: "error",
+        visible: true,
+      });
+      window.setTimeout(() => {
+        setActionToast((prev) => ({ ...prev, visible: false }));
+      }, 3000);
+    }
   };
 
   return (
@@ -278,6 +306,7 @@ const OperatorViewPage = () => {
         pendingOperatorAction={pendingOperatorAction}
         setPendingOperatorAction={setPendingOperatorAction}
         handleUpdateQaStatus={handleUpdateQaStatus}
+        handleResetQuantity={handleResetQuantity}
         handleInputChange={handleInputChange}
         handlePauseResumeAction={handlePauseResumeAction}
         setActionToast={setActionToast}

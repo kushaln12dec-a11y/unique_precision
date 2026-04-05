@@ -20,12 +20,12 @@ const OPERATOR_GRID_COLUMN_WIDTHS: Record<string, number> = {
   qty: 44,
   sedm: 50,
   assignedTo: 142,
-  machineNumber: 104,
+  machineNumber: 70,
   estimatedTime: 92,
   totalAmount: 84,
   productionStage: 88,
   createdBy: 68,
-  action: 70,
+  action: 132,
 };
 
 const getOperatorGridColumnWidth = (columnKey: string) => OPERATOR_GRID_COLUMN_WIDTHS[columnKey] ?? 70;

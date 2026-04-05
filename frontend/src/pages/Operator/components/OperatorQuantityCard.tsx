@@ -109,6 +109,7 @@ export const OperatorQuantityCard: React.FC<Props> = ({
       operatorHistoryDetails.length === 0 ||
       normalizedWorkedByNames.join("|") !== normalizedHistoryDetailNames.join("|")
     );
+  const shouldShowOperatorHistory = shouldShowWorkedBySummary || operatorHistoryDetails.length > 0;
   const estimatedTimerLabel = hasOvertime ? "Overtime:" : "Remaining Time:";
   const formatWorkedDuration = (seconds: number) => {
     const safeSeconds = Math.max(0, Math.round(seconds));
@@ -250,16 +251,6 @@ export const OperatorQuantityCard: React.FC<Props> = ({
               />
             )}
             {validationErrors.opsName && <p className="field-error">{validationErrors.opsName}</p>}
-            {shouldShowWorkedBySummary ? (
-              <p className="operator-history-proof" title={operatorProofHistory.join(", ")}>
-                Worked By: {operatorProofHistory.join(", ")}
-              </p>
-            ) : null}
-            {operatorHistoryDetails.length > 0 ? (
-              <div className="operator-history-proof" title={operatorHistoryDetails.map((entry) => `${entry.name}: ${formatWorkedDuration(entry.durationSeconds)}`).join(" | ")}>
-                {operatorHistoryDetails.map((entry) => `${entry.name} (${formatWorkedDuration(entry.durationSeconds)})`).join(", ")}
-              </div>
-            ) : null}
           </div>
           {qtyData.isPaused && !qtyData.endTime && (
             <div className="operator-input-card pause-reason-card">
@@ -277,30 +268,51 @@ export const OperatorQuantityCard: React.FC<Props> = ({
           )}
         </div>
 
-        {qtyData.pauseSessions && qtyData.pauseSessions.length > 0 && (
-          <div className="pause-history-sidebar">
-            <div className="pause-history-header">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="pause-history-icon"><rect x="6" y="4" width="4" height="16" rx="1" fill="currentColor" /><rect x="14" y="4" width="4" height="16" rx="1" fill="currentColor" /></svg>
-              <h6 className="pause-history-title">Idel Time</h6>
-              <span className="pause-history-count">{qtyData.pauseSessions.length}</span>
-            </div>
-            <div className="pause-sessions-list">
-              {qtyData.pauseSessions.map((session, sessionIndex) => (
-                <div key={sessionIndex} className="pause-session-item">
-                  <div className="pause-session-badge"><span className="pause-session-number">#{sessionIndex + 1}</span></div>
-                  <div className="pause-session-content">
-                    <div className="pause-session-duration-badge">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" /><path d="M12 6v6l4 2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg>
-                      {formatIdleDuration(session.pauseDuration)}
-                    </div>
-                    {session.reason && <div className="pause-session-reason">{session.reason}</div>}
-                  </div>
+        {shouldShowOperatorHistory ? (
+          <div className="quantity-side-panel">
+            <div className="operator-history-panel">
+              {shouldShowWorkedBySummary ? (
+                <div className="operator-history-proof" title={operatorProofHistory.join(", ")}>
+                  <span className="operator-history-proof-line">Worked By:</span>
+                  {operatorProofHistory.map((name) => (
+                    <span key={name} className="operator-history-proof-line">
+                      {name}
+                    </span>
+                  ))}
                 </div>
-              ))}
+              ) : null}
+              {operatorHistoryDetails.length > 0 ? (
+                <div className="operator-history-proof" title={operatorHistoryDetails.map((entry) => `${entry.name}: ${formatWorkedDuration(entry.durationSeconds)}`).join(" | ")}>
+                  <span className="operator-history-proof-line">Worked Time:</span>
+                  {operatorHistoryDetails.map((entry) => (
+                    <span key={`${entry.name}-${entry.durationSeconds}`} className="operator-history-proof-line">
+                      {entry.name} ({formatWorkedDuration(entry.durationSeconds)})
+                    </span>
+                  ))}
+                </div>
+              ) : null}
             </div>
           </div>
-        )}
+        ) : null}
       </div>
+
+      {qtyData.pauseSessions && qtyData.pauseSessions.length > 0 ? (
+        <div className="idle-history-inline-section">
+          <div className="idle-history-inline-header">
+            <span className="idle-history-inline-title">Idle Time</span>
+            <span className="idle-history-inline-count">{qtyData.pauseSessions.length}</span>
+          </div>
+          <div className="idle-history-inline-list">
+            {qtyData.pauseSessions.map((session, sessionIndex) => (
+              <div key={sessionIndex} className="idle-history-inline-item">
+                <span className="idle-history-inline-index">#{sessionIndex + 1}</span>
+                <span className="idle-history-inline-duration">{formatIdleDuration(session.pauseDuration)}</span>
+                <span className="idle-history-inline-reason">{session.reason || "Idle"}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
 
       <div className="quantity-save-section">
         {isRangeMode ? (

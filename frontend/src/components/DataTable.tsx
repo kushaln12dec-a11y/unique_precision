@@ -1,6 +1,7 @@
 import React from "react";
 import type { ReactNode } from "react";
 import AccordionToggle from "../pages/Programmer/components/AccordionToggle";
+import { copyTextWithFallback, getCopyableCellText } from "../utils/clipboard";
 import Pagination from "./Pagination";
 import "./DataTable.css";
 
@@ -65,6 +66,12 @@ function DataTable<T extends Record<string, any>>({
   onRowSelect,
   onRowClick,
 }: DataTableProps<T>) {
+  const handleCellCopy = async (event: React.MouseEvent<HTMLTableCellElement>) => {
+    const text = getCopyableCellText(event.target, event.currentTarget);
+    if (!text) return;
+    await copyTextWithFallback(text);
+  };
+
   const handleSort = (column: Column<T>) => {
     if (column.sortable && onSort) {
       onSort(column.sortKey || column.key);
@@ -179,7 +186,12 @@ function DataTable<T extends Record<string, any>>({
                       <td className="accordion-toggle-cell" />
                     )}
                     {columns.map((mappedColumn) => (
-                      <td key={mappedColumn.key} className={mappedColumn.className || ""}>
+                      <td
+                        key={mappedColumn.key}
+                        className={mappedColumn.className || ""}
+                        onClick={handleCellCopy}
+                        title="Click text to copy"
+                      >
                         {mappedColumn.render
                           ? mappedColumn.render(row, index)
                           : String(row[mappedColumn.key] ?? "-")}

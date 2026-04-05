@@ -20,29 +20,6 @@
   overflow-x: hidden;
 }
 
-/* Hover to expand feature */
-.sidebar.collapsed:hover {
-  width: 240px !important;
-  overflow-x: visible !important;
-}
-
-.sidebar.collapsed:hover .nav-label {
-  opacity: 1 !important;
-  visibility: visible !important;
-  width: auto !important;
-  margin-left: 0.625rem !important;
-}
-
-.sidebar.collapsed:hover .logo-collapsed {
-  display: none !important;
-}
-
-.sidebar.collapsed:hover .logo-expanded {
-  display: inline-flex !important;
-  opacity: 1 !important;
-  visibility: visible !important;
-}
-
 .sidebar::before {
   content: '';
   position: absolute;
@@ -126,15 +103,6 @@
   font-weight: inherit;
 }
 
-/* Show full logo on hover */
-.sidebar.collapsed:hover .logo-collapsed {
-  display: none;
-}
-
-.sidebar.collapsed:hover .logo-expanded {
-  display: inline-flex;
-}
-
 .sidebar-nav {
   flex: 1;
   padding: 10px;
@@ -158,10 +126,6 @@
 .sidebar-nav::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.2);
   border-radius: 3px;
-}
-
-.sidebar-nav::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.3);
 }
 
 .nav-item {
@@ -195,12 +159,6 @@
   transition: transform 0.3s ease;
 }
 
-.nav-item:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: #ffffff;
-  transform: translateX(4px);
-}
-
 .nav-item.active {
   background: rgba(220, 38, 38, 0.15);
   color: #ffffff;
@@ -219,10 +177,6 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-}
-
-.nav-item:hover .nav-icon {
-  transform: scale(1.1);
 }
 
 .nav-label {
@@ -259,9 +213,47 @@
   color: #fca5a5;
 }
 
-.logout-item:hover {
-  background: rgba(220, 38, 38, 0.2);
-  color: #ef4444;
+@media (hover: hover) and (pointer: fine) {
+  .sidebar.collapsed:hover {
+    width: 240px !important;
+    overflow-x: visible !important;
+  }
+
+  .sidebar.collapsed:hover .nav-label {
+    opacity: 1 !important;
+    visibility: visible !important;
+    width: auto !important;
+    margin-left: 0.625rem !important;
+  }
+
+  .sidebar.collapsed:hover .logo-collapsed {
+    display: none !important;
+  }
+
+  .sidebar.collapsed:hover .logo-expanded {
+    display: inline-flex !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+  }
+
+  .sidebar-nav::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.3);
+  }
+
+  .nav-item:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #ffffff;
+    transform: translateX(4px);
+  }
+
+  .nav-item:hover .nav-icon {
+    transform: scale(1.1);
+  }
+
+  .logout-item:hover {
+    background: rgba(220, 38, 38, 0.2);
+    color: #ef4444;
+  }
 }
 
 /* Responsive */

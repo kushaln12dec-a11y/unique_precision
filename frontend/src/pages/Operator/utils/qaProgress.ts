@@ -1,3 +1,4 @@
+import type { EmployeeLog } from "../../../types/employeeLog";
 import type { JobEntry, QuantityQaStatus } from "../../../types/job";
 
 export type QuantityProgressStatus = QuantityQaStatus | "EMPTY" | "RUNNING";
@@ -35,7 +36,11 @@ const getCoveredQuantities = (job: JobEntry, totalQty: number): Set<number> => {
   return covered;
 };
 
-const getRunningQuantities = (job: JobEntry, totalQty: number): Set<number> => {
+const getRunningQuantities = (
+  job: JobEntry,
+  totalQty: number,
+  activeRun?: EmployeeLog | null
+): Set<number> => {
   const running = new Set<number>();
   const captures = Array.isArray(job.operatorCaptures) ? job.operatorCaptures : [];
   captures.forEach((entry) => {
@@ -46,12 +51,20 @@ const getRunningQuantities = (job: JobEntry, totalQty: number): Set<number> => {
       running.add(qty);
     }
   });
+  if (activeRun && String(activeRun.status || "").toUpperCase() === "IN_PROGRESS") {
+    const from = Math.max(1, Number(activeRun.quantityFrom || 1));
+    const to = Math.min(totalQty, Math.max(from, Number(activeRun.quantityTo || from)));
+    for (let qty = from; qty <= to; qty += 1) {
+      running.add(qty);
+    }
+  }
   return running;
 };
 
 export const getQuantityProgressStatuses = (
   job: JobEntry,
-  totalQty: number
+  totalQty: number,
+  activeRun?: EmployeeLog | null
 ): QuantityProgressStatus[] => {
   const boundedTotalQty = Math.max(1, totalQty);
   const rawStates: any = job.quantityQaStates || {};
@@ -60,7 +73,7 @@ export const getQuantityProgressStatuses = (
       ? Object.fromEntries(rawStates.entries())
       : rawStates;
   const covered = getCoveredQuantities(job, boundedTotalQty);
-  const running = getRunningQuantities(job, boundedTotalQty);
+  const running = getRunningQuantities(job, boundedTotalQty, activeRun);
   const statuses: QuantityProgressStatus[] = [];
 
   for (let qty = 1; qty <= boundedTotalQty; qty += 1) {
@@ -79,8 +92,12 @@ export const getQuantityProgressStatuses = (
   return statuses;
 };
 
-export const getQaProgressCounts = (job: JobEntry, totalQty: number): QaProgressCounts => {
-  const statuses = getQuantityProgressStatuses(job, totalQty);
+export const getQaProgressCounts = (
+  job: JobEntry,
+  totalQty: number,
+  activeRun?: EmployeeLog | null
+): QaProgressCounts => {
+  const statuses = getQuantityProgressStatuses(job, totalQty, activeRun);
   return statuses.reduce<QaProgressCounts>(
     (acc, status) => {
       if (status === "RUNNING") acc.running += 1;
@@ -97,24 +114,27 @@ export const getQaProgressCounts = (job: JobEntry, totalQty: number): QaProgress
 export const isDispatchableQaStatus = (status: QuantityProgressStatus): boolean =>
   status === "SAVED" || status === "READY_FOR_QA";
 
-export const getDispatchableQuantityNumbers = (job: JobEntry): number[] => {
+export const getDispatchableQuantityNumbers = (job: JobEntry, activeRun?: EmployeeLog | null): number[] => {
   const qty = Math.max(1, Number(job.qty || 1));
-  return getQuantityProgressStatuses(job, qty)
+  return getQuantityProgressStatuses(job, qty, activeRun)
     .map((status, index) => (isDispatchableQaStatus(status) ? index + 1 : null))
     .filter((value): value is number => value !== null);
 };
 
-export const isJobFullySentToQa = (job: JobEntry): boolean => {
+export const isJobFullySentToQa = (job: JobEntry, activeRun?: EmployeeLog | null): boolean => {
   const qty = Math.max(1, Number(job.qty || 1));
-  const counts = getQaProgressCounts(job, qty);
+  const counts = getQaProgressCounts(job, qty, activeRun);
   return counts.sent === qty && counts.saved === 0 && counts.ready === 0 && counts.running === 0 && counts.empty === 0;
 };
 
-export const getGroupQaProgressCounts = (entries: JobEntry[]): QaProgressCounts => {
+export const getGroupQaProgressCounts = (
+  entries: JobEntry[],
+  activeRunsByJobId?: Map<string, EmployeeLog>
+): QaProgressCounts => {
   return entries.reduce<QaProgressCounts>(
     (acc, entry) => {
       const qty = Math.max(1, Number(entry.qty || 1));
-      const counts = getQaProgressCounts(entry, qty);
+      const counts = getQaProgressCounts(entry, qty, activeRunsByJobId?.get(String(entry.id)));
       acc.running += counts.running;
       acc.saved += counts.saved;
       acc.ready += counts.ready;

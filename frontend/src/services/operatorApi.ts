@@ -31,6 +31,10 @@ export type UpdateQaStatusPayload = {
   status: "READY_FOR_QA" | "SENT_TO_QA";
 };
 
+export type ResetOperatorQuantityPayload = {
+  quantityNumber: number;
+};
+
 const getAuthHeaders = () => {
   const token = localStorage.getItem("token");
   return {
@@ -210,6 +214,30 @@ export const updateOperatorQaStatus = async (
   if (!res.ok) {
     const error = await res.json();
     throw new Error(error.message || "Failed to update QC status");
+  }
+
+  const job = await res.json();
+  return {
+    ...job,
+    id: job._id || job.id,
+    groupId: String(job.groupId ?? job.id),
+    assignedTo: job.assignedTo || "Unassign",
+  };
+};
+
+export const resetOperatorQuantity = async (
+  id: string,
+  payload: ResetOperatorQuantityPayload
+): Promise<JobEntry> => {
+  const res = await fetch(apiUrl(`/api/operator/jobs/${id}/reset-quantity`), {
+    method: "POST",
+    headers: getAuthHeaders(),
+    body: JSON.stringify(payload),
+  });
+
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({ message: "Failed to reset quantity" }));
+    throw new Error(error.message || "Failed to reset quantity");
   }
 
   const job = await res.json();

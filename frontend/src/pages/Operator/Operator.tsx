@@ -96,27 +96,46 @@ const Operator = () => {
 
   useEffect(() => {
     let isMounted = true;
-    const loadActiveRuns = async () => {
+    const loadOperatorHistory = async () => {
       try {
         const logs = await getEmployeeLogs({ role: "OPERATOR", limit: 500 });
         if (!isMounted) return;
         setOperatorHistoryLogs(logs.filter((log) => String(log.jobId || "").trim()));
-        setActiveOperatorRuns(
-          logs.filter(
-            (log) =>
-              String(log.jobId || "").trim() &&
-              String(log.status || "").toUpperCase() === "IN_PROGRESS"
-          )
-        );
       } catch {
         if (isMounted) {
-          setActiveOperatorRuns([]);
           setOperatorHistoryLogs([]);
         }
       }
     };
 
+    void loadOperatorHistory();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadActiveRuns = async () => {
+      try {
+        const logs = await getEmployeeLogs({ role: "OPERATOR", status: "IN_PROGRESS", limit: 250 });
+        if (!isMounted) return;
+        setActiveOperatorRuns(logs.filter((log) => String(log.jobId || "").trim()));
+      } catch {
+        if (isMounted) {
+          setActiveOperatorRuns([]);
+        }
+      }
+    };
+
     void loadActiveRuns();
+    if (activeTab !== "jobs") {
+      return () => {
+        isMounted = false;
+      };
+    }
+
     const intervalId = window.setInterval(() => {
       void loadActiveRuns();
     }, 5000);
@@ -125,7 +144,7 @@ const Operator = () => {
       isMounted = false;
       window.clearInterval(intervalId);
     };
-  }, []);
+  }, [activeTab]);
 
   const activeRunsByJobId = useMemo(() => {
     const map = new Map<string, EmployeeLog>();

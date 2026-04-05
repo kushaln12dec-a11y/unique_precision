@@ -46,11 +46,6 @@
   color: #64748b;
 }
 
-.breadcrumb-item:not(.active):hover {
-  background: #f8fafc;
-  color: #1a1a2e;
-}
-
 .breadcrumb-item.active {
   color: #1a1a2e;
   font-weight: 600;
@@ -150,11 +145,6 @@
   transition: all 0.3s ease;
 }
 
-.calendar-button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(26, 26, 46, 0.3);
-}
-
 .calendar-button svg {
   font-size: 1.125rem;
 }
@@ -214,8 +204,20 @@
   background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%) !important;
 }
 
-.calendar-dropdown .MuiPickersDay-root:hover {
-  background: rgba(26, 26, 46, 0.1);
+@media (hover: hover) and (pointer: fine) {
+  .breadcrumb-item:not(.active):hover {
+    background: #f8fafc;
+    color: #1a1a2e;
+  }
+
+  .calendar-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(26, 26, 46, 0.3);
+  }
+
+  .calendar-dropdown .MuiPickersDay-root:hover {
+    background: rgba(26, 26, 46, 0.1);
+  }
 }
 
 .calendar-dropdown .MuiPickersDay-today {

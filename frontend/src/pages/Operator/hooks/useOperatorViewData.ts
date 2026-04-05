@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { getOperatorJobsByGroupId } from "../../../services/operatorApi";
 import { getIdleTimeConfigs } from "../../../services/idleTimeConfigApi";
 import { getEmployeeLogs } from "../../../services/employeeLogsApi";
@@ -12,6 +12,7 @@ export const useOperatorViewData = (groupId: string | null, cutIdParam: string |
   const [jobs, setJobs] = useState<JobEntry[]>([]);
   const [loadingJobs, setLoadingJobs] = useState(true);
   const [idleTimeConfigs, setIdleTimeConfigs] = useState<Map<string, number>>(new Map());
+  const [idleTimeConfigsLoaded, setIdleTimeConfigsLoaded] = useState(false);
   const [cutInputs, setCutInputs] = useState<Map<number | string, CutInputData>>(new Map());
   const [expandedCuts, setExpandedCuts] = useState<Set<number | string>>(new Set());
 
@@ -28,7 +29,6 @@ export const useOperatorViewData = (groupId: string | null, cutIdParam: string |
   const collectOperatorHistoryForQuantity = (
     captures: any[],
     quantityNumber: number,
-    assignedToArray: string[],
     logsForJob: Array<{ quantityFrom?: number | null; quantityTo?: number | null; userName?: string | null }>
   ): string[] => {
     const seen = new Set<string>();
@@ -58,7 +58,6 @@ export const useOperatorViewData = (groupId: string | null, cutIdParam: string |
       if (quantityNumber < fromQty || quantityNumber > toQty) return;
       pushName(log?.userName);
     });
-    assignedToArray.forEach((value) => pushName(value));
     return collected;
   };
 
@@ -95,7 +94,6 @@ export const useOperatorViewData = (groupId: string | null, cutIdParam: string |
   const collectOperatorHistoryDetailsForQuantity = (
     captures: any[],
     quantityNumber: number,
-    assignedToArray: string[],
     logsForJob: Array<{
       quantityFrom?: number | null;
       quantityTo?: number | null;
@@ -130,12 +128,6 @@ export const useOperatorViewData = (groupId: string | null, cutIdParam: string |
       addEntry(log?.userName, logDuration / rangeCount);
     });
 
-    assignedToArray.forEach((value) => {
-      const normalized = String(value || "").trim().toUpperCase();
-      if (!normalized || summary.has(normalized)) return;
-      summary.set(normalized, 0);
-    });
-
     return Array.from(summary.entries()).map(([name, durationSeconds]) => ({
       name,
       durationSeconds: Math.max(0, Math.round(durationSeconds)),
@@ -158,21 +150,23 @@ export const useOperatorViewData = (groupId: string | null, cutIdParam: string |
         const defaultMap = new Map<string, number>();
         defaultMap.set("Vertical Dial", 20);
         setIdleTimeConfigs(defaultMap);
+      } finally {
+        setIdleTimeConfigsLoaded(true);
       }
     };
     fetchIdleTimeConfigs();
   }, []);
 
   // Fetch jobs and initialize inputs
-  useEffect(() => {
-    const fetchJobs = async () => {
-      if (!groupId) {
-        setLoadingJobs(false);
-        return;
-      }
-      try {
-        setLoadingJobs(true);
-        const fetchedJobs = await getOperatorJobsByGroupId(groupId);
+  const loadOperatorViewData = useCallback(async () => {
+    if (!idleTimeConfigsLoaded) return;
+    if (!groupId) {
+      setLoadingJobs(false);
+      return;
+    }
+    try {
+      setLoadingJobs(true);
+      const fetchedJobs = await getOperatorJobsByGroupId(groupId);
         const operatorLogs = await getEmployeeLogs({ role: "OPERATOR", limit: 500 }).catch(() => []);
         const logsByJobId = new Map<string, Array<{
           quantityFrom?: number | null;
@@ -237,8 +231,8 @@ export const useOperatorViewData = (groupId: string | null, cutIdParam: string |
                     opsName: qtyOps.length > 0 ? qtyOps : assignedToArray,
                     operatorHistory: Array.isArray(qty.operatorHistory)
                       ? qty.operatorHistory.map((value) => String(value || "").trim().toUpperCase()).filter(Boolean)
-                      : collectOperatorHistoryForQuantity(existing.operatorCaptures || [], index + 1, assignedToArray, logsByJobId.get(String(jobId)) || []),
-                    operatorHistoryDetails: collectOperatorHistoryDetailsForQuantity(existing.operatorCaptures || [], index + 1, assignedToArray, logsByJobId.get(String(jobId)) || []),
+                      : collectOperatorHistoryForQuantity(existing.operatorCaptures || [], index + 1, logsByJobId.get(String(jobId)) || []),
+                    operatorHistoryDetails: collectOperatorHistoryDetailsForQuantity(existing.operatorCaptures || [], index + 1, logsByJobId.get(String(jobId)) || []),
                 };
               }),
             });
@@ -289,8 +283,8 @@ export const useOperatorViewData = (groupId: string | null, cutIdParam: string |
                   machineHrs,
                   machineNumber: capture.machineNumber || "",
                   opsName: opsNameArray,
-                  operatorHistory: collectOperatorHistoryForQuantity(captures, idx + 1, assignedToArray, logsByJobId.get(String(jobId)) || []),
-                  operatorHistoryDetails: collectOperatorHistoryDetailsForQuantity(captures, idx + 1, assignedToArray, logsByJobId.get(String(jobId)) || []),
+                  operatorHistory: collectOperatorHistoryForQuantity(captures, idx + 1, logsByJobId.get(String(jobId)) || []),
+                  operatorHistoryDetails: collectOperatorHistoryDetailsForQuantity(captures, idx + 1, logsByJobId.get(String(jobId)) || []),
                   idleTime,
                   idleTimeDuration,
                   lastImage: capture.lastImage || null,
@@ -339,8 +333,8 @@ export const useOperatorViewData = (groupId: string | null, cutIdParam: string |
               machineHrs,
               machineNumber: existing.machineNumber || "",
               opsName: opsNameArray,
-              operatorHistory: collectOperatorHistoryForQuantity(captures, 1, assignedToArray, logsByJobId.get(String(jobId)) || []),
-              operatorHistoryDetails: collectOperatorHistoryDetailsForQuantity(captures, 1, assignedToArray, logsByJobId.get(String(jobId)) || []),
+              operatorHistory: collectOperatorHistoryForQuantity(captures, 1, logsByJobId.get(String(jobId)) || []),
+              operatorHistoryDetails: collectOperatorHistoryDetailsForQuantity(captures, 1, logsByJobId.get(String(jobId)) || []),
               idleTime,
               idleTimeDuration,
               lastImage: existing.lastImage || null,
@@ -359,20 +353,21 @@ export const useOperatorViewData = (groupId: string | null, cutIdParam: string |
           });
         });
         
-        setCutInputs(initialInputs);
-        setJobs(filteredJobs);
-        // Expand first cut by default
-        if (filteredJobs.length > 0) {
-          setExpandedCuts(new Set([filteredJobs[0].id]));
-        }
-      } catch (error) {
-        console.error("Failed to fetch jobs", error);
-      } finally {
-        setLoadingJobs(false);
+      setCutInputs(initialInputs);
+      setJobs(filteredJobs);
+      if (filteredJobs.length > 0) {
+        setExpandedCuts((prev) => (prev.size > 0 ? prev : new Set([filteredJobs[0].id])));
       }
-    };
-    fetchJobs();
-  }, [groupId, cutIdParam, idleTimeConfigs]);
+    } catch (error) {
+      console.error("Failed to fetch jobs", error);
+    } finally {
+      setLoadingJobs(false);
+    }
+  }, [cutIdParam, groupId, idleTimeConfigs, idleTimeConfigsLoaded]);
+
+  useEffect(() => {
+    void loadOperatorViewData();
+  }, [loadOperatorViewData]);
 
   useEffect(() => {
     if (!groupId) return;
@@ -426,5 +421,6 @@ export const useOperatorViewData = (groupId: string | null, cutIdParam: string |
     expandedCuts,
     setExpandedCuts,
     toggleCutExpansion,
+    reloadOperatorViewData: loadOperatorViewData,
   };
 };
