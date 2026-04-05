@@ -71,8 +71,10 @@ export const useOperatorFilters = () => {
 
   const handleRemoveFilter = (key: string, type: "inline" | "modal") => {
     if (type === "inline") {
-      if (key === "customer") dispatch(setOperatorCustomerFilter(""));
-      else if (key === "description") dispatch(setOperatorDescriptionFilter(""));
+      if (key === "customer" || key === "description" || key === "search") {
+        dispatch(setOperatorCustomerFilter(""));
+        dispatch(setOperatorDescriptionFilter(""));
+      }
       else if (key === "createdBy") dispatch(setOperatorCreatedByFilter(""));
       else if (key === "assignedTo") dispatch(setOperatorAssignedToFilter(""));
       return;

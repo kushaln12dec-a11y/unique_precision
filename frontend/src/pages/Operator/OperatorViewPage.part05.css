@@ -239,9 +239,10 @@
 /* Pause Reason Input */
 .pause-reason-card {
   grid-column: 1 / -1;
-  background: #fef3c7;
-  border: 2px solid #fcd34d;
+  background: #fff9e8;
+  border: 1px solid #fcd34d;
   animation: slideIn 0.3s ease-out;
+  padding: 0.75rem 0.85rem;
 }
 
 @keyframes slideIn {
@@ -257,10 +258,10 @@
 
 .pause-reason-input {
   width: 100%;
-  padding: 0.75rem;
+  padding: 0.55rem 0.7rem;
   border: 1px solid #fbbf24;
   border-radius: 6px;
-  font-size: 0.95rem;
+  font-size: 0.84rem;
   background: white;
   transition: all 0.2s ease;
 }
@@ -277,12 +278,12 @@
 
 .pause-reason-fixed-tag {
   width: 100%;
-  padding: 0.75rem;
+  padding: 0.55rem 0.7rem;
   border: 1px solid #f59e0b;
   border-radius: 6px;
   background: #fffbeb;
   color: #92400e;
-  font-size: 0.92rem;
+  font-size: 0.84rem;
   font-weight: 700;
   text-align: center;
 }

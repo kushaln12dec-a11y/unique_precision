@@ -174,7 +174,7 @@ export const useOperatorInputs = (
         if (setValidationErrors) clearOperatorPauseReasonError(setValidationErrors, cutId, quantityIndex);
         if (setValidationErrors) clearOperatorFieldError(validationErrors, setValidationErrors, cutId, quantityIndex, "opsName");
         if (setValidationErrors) clearOperatorFieldError(validationErrors, setValidationErrors, cutId, quantityIndex, "machineNumber");
-        quantities[quantityIndex] = resumePausedQuantity(qtyData, now);
+        quantities[quantityIndex] = resumePausedQuantity(qtyData, now, currentUserDisplayName);
         newMap.set(cutId, { ...current, quantities });
         return true;
       };
@@ -269,7 +269,7 @@ export const useOperatorInputs = (
       }
       if (field === "startTime" || field === "endTime") {
         if (field === "endTime" && typeof value === "string" && value && qtyData.isPaused && qtyData.pauseStartTime) {
-          Object.assign(updatedQtyData, closePauseOnEndTime(updatedQtyData, Date.now()));
+          Object.assign(updatedQtyData, closePauseOnEndTime(updatedQtyData, Date.now(), currentUserDisplayName));
         }
         if (updatedQtyData.startTime && updatedQtyData.endTime) Object.assign(updatedQtyData, updateQuantityMachineHours(updatedQtyData, "auto"));
       }

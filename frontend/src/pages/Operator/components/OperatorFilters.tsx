@@ -301,7 +301,7 @@ export const OperatorFilters: React.FC<OperatorFiltersProps> = ({
         isOpen={showRunningJobsModal}
         onClose={() => setShowRunningJobsModal(false)}
         title="Running Jobs"
-        size="medium"
+        size="large"
         className="operator-running-modal"
       >
         <div className="operator-running-modal-list">

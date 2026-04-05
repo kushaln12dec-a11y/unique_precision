@@ -307,6 +307,7 @@ export const OperatorQuantityCard: React.FC<Props> = ({
               <div key={sessionIndex} className="idle-history-inline-item">
                 <span className="idle-history-inline-index">#{sessionIndex + 1}</span>
                 <span className="idle-history-inline-duration">{formatIdleDuration(session.pauseDuration)}</span>
+                {session.operatorName ? <span className="idle-history-inline-user">{session.operatorName}</span> : null}
                 <span className="idle-history-inline-reason">{session.reason || "Idle"}</span>
               </div>
             ))}

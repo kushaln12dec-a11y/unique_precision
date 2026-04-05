@@ -286,6 +286,19 @@
   box-shadow: inset 3px 0 0 #818cf8;
 }
 
+.programmer-container .jobs-table-wrapper .child-row {
+  background-color: #f8faff;
+  border-left: 4px solid #6366f1;
+}
+
+.programmer-container .jobs-table-wrapper .child-row:hover {
+  background-color: #eef2ff;
+}
+
+.programmer-container .jobs-table-wrapper .child-row td:first-child {
+  box-shadow: none !important;
+}
+
 .btn-danger.small {
   padding: 0.35rem 0.8rem;
   font-size: 0.75rem;

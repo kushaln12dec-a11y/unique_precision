@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import Sidebar from "../../components/Sidebar";
 import Header from "../../components/Header";
 import { getUserRoleFromToken } from "../../utils/auth";
@@ -22,7 +22,6 @@ import { useProgrammerPageController } from "./hooks/useProgrammerPageController
 import { useProgrammerReduxDispatchers } from "./hooks/useProgrammerReduxDispatchers";
 
 const Programmer = () => {
-  const location = useLocation();
   const navigate = useNavigate();
   const params = useParams<{ groupId?: string }>();
   const dispatch = useAppDispatch();
@@ -119,7 +118,6 @@ const Programmer = () => {
     handleNewJobState,
     handleCancelState,
     setToast,
-    savingJob,
     setSavingJob,
   });
 
@@ -215,7 +213,7 @@ const Programmer = () => {
   return (
     <div className="programmer-container">
       <Sidebar currentPath="/programmer" onNavigate={(path) => navigate(path)} />
-      <div key={location.pathname} className={`programmer-content ${isProgrammerFormRoute ? "programmer-content-scrollable" : ""}`}>
+      <div className={`programmer-content ${isProgrammerFormRoute ? "programmer-content-scrollable" : ""}`}>
         <Header title="Programmer" />
         <div className={`programmer-panel ${isProgrammerFormRoute ? "programmer-panel-scrollable" : ""}`}>
           {isProgrammerListRoute && <ProgrammerTabs activeTab={activeTab} setActiveTab={setActiveTab} />}

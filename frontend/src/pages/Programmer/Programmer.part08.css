@@ -89,9 +89,12 @@
 .programmer-container .jobs-table-wrapper .child-row-content .child-jobs-table {
   width: calc(100% - 91px) !important;
   margin-left: 64px;
-  border-left: 2px solid #dbeafe;
+  border-left: none;
   border-radius: 14px;
   box-shadow: 0 10px 24px rgba(148, 163, 184, 0.12);
+  background:
+    linear-gradient(90deg, rgba(99, 102, 241, 0.14) 0, rgba(99, 102, 241, 0.14) 4px, transparent 4px),
+    #ffffff;
 }
 
 .child-jobs-table th,

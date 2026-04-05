@@ -35,10 +35,12 @@ export const useJobHandlers = ({
   const navigate = useNavigate();
 
   const navigateToProgrammerTable = useCallback(() => {
-    navigate("/programmer", {
-      replace: true,
-      state: { refreshedAt: Date.now() },
-    });
+    window.setTimeout(() => {
+      navigate("/programmer", {
+        replace: true,
+        state: { refreshedAt: Date.now() },
+      });
+    }, 0);
   }, [navigate]);
 
   const handleSaveJob = useCallback(async () => {

@@ -82,6 +82,14 @@
   padding: 0.14rem 0.5rem;
 }
 
+.idle-history-inline-user {
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #92400e;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
 .idle-history-inline-reason {
   font-size: 0.75rem;
   font-weight: 600;
@@ -205,6 +213,14 @@
   .operator-inputs-grid,
   .operator-totals-section {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .quantity-timers {
+    width: 100%;
+  }
+
+  .quantity-timer {
+    flex: 1 1 220px;
   }
 
 }

@@ -34,7 +34,6 @@ type UseProgrammerPageControllerParams = {
       visible: boolean;
     }>
   >;
-  savingJob: boolean;
   setSavingJob: React.Dispatch<React.SetStateAction<boolean>>;
 };
 
@@ -52,7 +51,6 @@ export const useProgrammerPageController = ({
   handleNewJobState,
   handleCancelState,
   setToast,
-  savingJob,
   setSavingJob,
 }: UseProgrammerPageControllerParams) => {
   const location = useLocation();
@@ -72,6 +70,7 @@ export const useProgrammerPageController = ({
   const [logStatus, setLogStatus] = useState<"" | "IN_PROGRESS" | "COMPLETED" | "REJECTED">("");
   const [logUserId, setLogUserId] = useState("");
   const previousProgrammerFormRouteRef = useRef(false);
+  const filtersKey = useMemo(() => JSON.stringify(filters || {}), [filters]);
 
   const activeFilterCount = useMemo(() => countActiveFilters(filters), [filters]);
   const isNewJobRoute = location.pathname.startsWith("/programmer/newjob");
@@ -169,7 +168,7 @@ export const useProgrammerPageController = ({
       { offset, limit }
     );
     return { items: page.items, hasMore: page.hasMore };
-  }, [createdByFilter, criticalFilter, customerFilter, descriptionFilter, filters]);
+  }, [createdByFilter, criticalFilter, customerFilter, descriptionFilter, filters, filtersKey]);
 
   const logsFetchPage = useCallback(async (offset: number, limit: number) => {
     if (logSearch || logUserId) {
@@ -214,19 +213,8 @@ export const useProgrammerPageController = ({
   }, [isProgrammerFormRoute]);
 
   useEffect(() => {
-    if (!savingJob || isProgrammerFormRoute) return;
-    if (programmerGridJobs.length > 0) {
-      setSavingJob(false);
-      return;
-    }
-    if (!loadingJobs) {
-      const timeoutId = window.setTimeout(() => setSavingJob(false), 900);
-      return () => window.clearTimeout(timeoutId);
-    }
-  }, [savingJob, isProgrammerFormRoute, programmerGridJobs.length, loadingJobs]);
-
-  useEffect(() => {
     if (previousProgrammerFormRouteRef.current && !isProgrammerFormRoute) {
+      setSavingJob(false);
       setProgrammerGridJobs([]);
       setExpandedGroups(new Set());
       setSelectedJobIds(new Set());
@@ -234,7 +222,7 @@ export const useProgrammerPageController = ({
       setProgrammerGridRefreshKey((prev) => prev + 1);
     }
     previousProgrammerFormRouteRef.current = isProgrammerFormRoute;
-  }, [isProgrammerFormRoute]);
+  }, [isProgrammerFormRoute, setSavingJob]);
 
   return {
     users,

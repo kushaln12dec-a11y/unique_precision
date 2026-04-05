@@ -1,46 +1,61 @@
 .form-actions {
   grid-column: 1 / -1;
   display: flex;
-  justify-content: flex-end;
-  gap: 0.75rem;
-  align-items: center;
-  position: relative;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  position: static;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(148, 163, 184, 0.18);
 }
 
 .form-totals {
-  display: flex;
-  gap: 2rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 0.9rem 1.15rem;
   color: #e0e7ff;
   font-weight: 600;
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
-  background: rgba(15, 23, 42, 0.35);
-  border: 1px solid rgba(148, 163, 184, 0.2);
-  padding: 0.65rem 1rem;
-  border-radius: 12px;
-  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.25);
+  position: static;
+  left: auto;
+  transform: none;
+  flex: 1 1 620px;
+  min-width: min(100%, 620px);
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.32) 0%, rgba(15, 23, 42, 0.18) 100%);
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  padding: 0.85rem 1rem;
+  border-radius: 16px;
+  box-shadow: 0 12px 26px rgba(15, 23, 42, 0.22);
+  box-sizing: border-box;
 }
 
 .form-total-label {
   display: block;
-  font-size: 0.85rem;
-  opacity: 0.85;
+  font-size: 0.72rem;
+  opacity: 0.9;
   text-transform: uppercase;
-  letter-spacing: 0.4px;
+  letter-spacing: 0.05em;
+  line-height: 1.35;
+  color: #cbd5e1;
 }
 
 .form-total-value {
   display: block;
-  font-size: 1.05rem;
-  margin-top: 0.2rem;
+  font-size: 0.96rem;
+  margin-top: 0.28rem;
   color: #ffffff;
+  font-weight: 800;
+  line-height: 1.2;
 }
 
 .form-action-buttons {
   display: inline-flex;
   align-items: center;
   gap: 0.75rem;
+  justify-content: flex-end;
+  flex: 0 0 auto;
+  margin-left: auto;
 }
 
 @media (max-width: 920px) {
@@ -52,11 +67,13 @@
   .form-totals {
     position: static;
     transform: none;
-    justify-content: center;
+    min-width: 0;
   }
 
   .form-action-buttons {
     justify-content: flex-end;
+    width: 100%;
+    margin-left: 0;
   }
 }
 

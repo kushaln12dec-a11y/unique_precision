@@ -175,9 +175,29 @@
   overflow-y: auto;
 }
 
+.sedm-entry-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 0.9rem;
+}
+
+.sedm-entry-list .sedm-entry-section {
+  margin-bottom: 0;
+}
+
 @media (max-width: 520px) {
   .sedm-grid {
     grid-template-columns: 1fr;
+  }
+
+  .sedm-entry-list {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1024px) {
+  .sedm-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
