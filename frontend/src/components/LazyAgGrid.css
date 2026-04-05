@@ -83,6 +83,7 @@
   padding-left: 0.2rem;
   padding-right: 0.2rem;
   font-size: 0.8rem;
+  cursor: copy;
 }
 
 .lazy-ag-grid-shell.left-align .ag-cell {
@@ -427,58 +428,25 @@
   border-left: 3px solid #38bdf8 !important;
 }
 
-.lazy-ag-grid-shell .ag-center-cols-container .ag-row.group-row.operator-stage-row-not-started .ag-cell:first-child,
-.lazy-ag-grid-shell .ag-pinned-left-cols-container .ag-row.group-row.operator-stage-row-not-started .ag-cell:first-child,
-.lazy-ag-grid-shell .ag-center-cols-container .ag-row.child-row.operator-stage-row-not-started .ag-cell:first-child,
-.lazy-ag-grid-shell .ag-pinned-left-cols-container .ag-row.child-row.operator-stage-row-not-started .ag-cell:first-child {
-  box-shadow: inset 3px 0 0 #f59e0b;
-}
-
-.lazy-ag-grid-shell .ag-center-cols-container .ag-row.group-row.operator-stage-row-running .ag-cell:first-child,
-.lazy-ag-grid-shell .ag-pinned-left-cols-container .ag-row.group-row.operator-stage-row-running .ag-cell:first-child,
-.lazy-ag-grid-shell .ag-center-cols-container .ag-row.child-row.operator-stage-row-running .ag-cell:first-child,
-.lazy-ag-grid-shell .ag-pinned-left-cols-container .ag-row.child-row.operator-stage-row-running .ag-cell:first-child {
-  box-shadow: inset 3px 0 0 #ef4444;
-}
-
-.lazy-ag-grid-shell .ag-center-cols-container .ag-row.group-row.operator-stage-row-hold .ag-cell:first-child,
-.lazy-ag-grid-shell .ag-pinned-left-cols-container .ag-row.group-row.operator-stage-row-hold .ag-cell:first-child,
-.lazy-ag-grid-shell .ag-center-cols-container .ag-row.child-row.operator-stage-row-hold .ag-cell:first-child,
-.lazy-ag-grid-shell .ag-pinned-left-cols-container .ag-row.child-row.operator-stage-row-hold .ag-cell:first-child {
-  box-shadow: inset 3px 0 0 #f97316;
-}
-
-.lazy-ag-grid-shell .ag-center-cols-container .ag-row.group-row.operator-stage-row-logged .ag-cell:first-child,
-.lazy-ag-grid-shell .ag-pinned-left-cols-container .ag-row.group-row.operator-stage-row-logged .ag-cell:first-child,
-.lazy-ag-grid-shell .ag-center-cols-container .ag-row.child-row.operator-stage-row-logged .ag-cell:first-child,
-.lazy-ag-grid-shell .ag-pinned-left-cols-container .ag-row.child-row.operator-stage-row-logged .ag-cell:first-child {
-  box-shadow: inset 3px 0 0 #38bdf8;
-}
-
-.lazy-ag-grid-shell .ag-center-cols-container .ag-row.group-row.operator-stage-row-qc .ag-cell:first-child,
-.lazy-ag-grid-shell .ag-pinned-left-cols-container .ag-row.group-row.operator-stage-row-qc .ag-cell:first-child,
-.lazy-ag-grid-shell .ag-center-cols-container .ag-row.child-row.operator-stage-row-qc .ag-cell:first-child,
-.lazy-ag-grid-shell .ag-pinned-left-cols-container .ag-row.child-row.operator-stage-row-qc .ag-cell:first-child {
-  box-shadow: inset 3px 0 0 #818cf8;
-}
-
 .lazy-ag-grid-shell .ag-pinned-left-cols-container .ag-row.group-row.operator-stage-row-dispatched:not(.priority-row):not(.critical-row),
 .lazy-ag-grid-shell .ag-pinned-left-cols-container .ag-row.child-row.operator-stage-row-dispatched:not(.child-priority-row):not(.child-critical-row) {
   border-left: 3px solid #818cf8 !important;
 }
 
-.lazy-ag-grid-shell .ag-row .description-marquee:hover .marquee-static,
-.lazy-ag-grid-shell .ag-row .description-marquee:focus-within .marquee-static {
-  display: block;
-}
+@media (hover: hover) and (pointer: fine) {
+  .lazy-ag-grid-shell .ag-row .description-marquee:hover .marquee-static,
+  .lazy-ag-grid-shell .ag-row .description-marquee:focus-within .marquee-static {
+    display: block;
+  }
 
-.lazy-ag-grid-shell .ag-row .description-marquee:hover .marquee-animated,
-.lazy-ag-grid-shell .ag-row .description-marquee:focus-within .marquee-animated {
-  visibility: hidden;
-}
+  .lazy-ag-grid-shell .ag-row .description-marquee:hover .marquee-animated,
+  .lazy-ag-grid-shell .ag-row .description-marquee:focus-within .marquee-animated {
+    visibility: hidden;
+  }
 
-.lazy-ag-grid-shell .ag-row .description-marquee:hover .marquee-copy-btn,
-.lazy-ag-grid-shell .ag-row .description-marquee:focus-within .marquee-copy-btn {
-  opacity: 1;
-  pointer-events: auto;
+  .lazy-ag-grid-shell .ag-row .description-marquee:hover .marquee-copy-btn,
+  .lazy-ag-grid-shell .ag-row .description-marquee:focus-within .marquee-copy-btn {
+    opacity: 1;
+    pointer-events: auto;
+  }
 }

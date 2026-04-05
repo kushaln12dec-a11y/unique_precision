@@ -20,3 +20,35 @@ export const copyTextWithFallback = async (text: string): Promise<boolean> => {
     }
   }
 };
+
+const INTERACTIVE_SELECTOR = [
+  "button",
+  "a",
+  "input",
+  "textarea",
+  "select",
+  "label",
+  "[role='button']",
+  "[role='link']",
+  "[data-no-cell-copy='true']",
+].join(", ");
+
+export const isInteractiveCopyTarget = (target: EventTarget | null): boolean => {
+  if (!(target instanceof HTMLElement)) return false;
+  return Boolean(target.closest(INTERACTIVE_SELECTOR));
+};
+
+export const getCopyableCellText = (target: EventTarget | null, container: HTMLElement | null): string => {
+  if (!(container instanceof HTMLElement)) return "";
+  if (!(target instanceof HTMLElement)) return "";
+  if (isInteractiveCopyTarget(target)) return "";
+
+  const selection = window.getSelection?.();
+  if (selection && String(selection).trim()) return "";
+
+  const clone = container.cloneNode(true) as HTMLElement;
+  clone.querySelectorAll(INTERACTIVE_SELECTOR).forEach((node) => node.remove());
+  return String(clone.textContent || "")
+    .replace(/\s+/g, " ")
+    .trim();
+};

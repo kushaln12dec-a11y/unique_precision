@@ -2,6 +2,7 @@ import React from "react";
 import LazyAgGrid from "../../../components/LazyAgGrid";
 import AppLoader from "../../../components/AppLoader";
 import { OperatorFilters } from "./OperatorFilters";
+import { formatEstimatedTime } from "../../../utils/jobFormatting";
 import { getDominantQaStageClass, getGroupQaProgressCounts, getQaProgressCounts } from "../utils/qaProgress";
 import { getParentRowClassName, getRowClassName } from "../../Programmer/utils/priorityUtils";
 import type { FilterValues } from "../../../components/FilterModal";
@@ -94,7 +95,15 @@ export const OperatorJobsSection: React.FC<Props> = ({
   const runningMachineAlerts = React.useMemo(() => {
     const alertsByMachine = new Map<
       string,
-      { machineNumber: string; jobRef: string; customer: string; description: string; quantityLabel: string; operatorName?: string }
+      {
+        machineNumber: string;
+        jobRef: string;
+        customer: string;
+        description: string;
+        quantityLabel: string;
+        operatorName?: string;
+        estimatedTime: string;
+      }
     >();
     activeOperatorRuns.forEach((log) => {
       const entry = operatorGridJobs.find((job) => String(job.id) === String(log.jobId));
@@ -102,6 +111,8 @@ export const OperatorJobsSection: React.FC<Props> = ({
       const metadata = (log.metadata || {}) as Record<string, any>;
       const quantityFrom = Math.max(1, Number(log.quantityFrom || 1));
       const quantityTo = Math.max(quantityFrom, Number(log.quantityTo || quantityFrom));
+      const quantityCount = Math.max(1, quantityTo - quantityFrom + 1);
+      const perQuantityHours = Number(entry.totalHrs || 0) / Math.max(1, Number(entry.qty || 1));
       alertsByMachine.set(String(entry.id), {
         machineNumber: String(metadata.machineNumber || entry.machineNumber || "Machine Pending"),
         jobRef: String(entry.refNumber || ""),
@@ -109,10 +120,16 @@ export const OperatorJobsSection: React.FC<Props> = ({
         description: entry.description || "",
         quantityLabel: quantityFrom === quantityTo ? `QTY ${quantityFrom}` : `QTY ${quantityFrom}-${quantityTo}`,
         operatorName: String(log.userName || entry.assignedTo || "").trim(),
+        estimatedTime: formatEstimatedTime(perQuantityHours * quantityCount),
       });
     });
     return Array.from(alertsByMachine.values());
   }, [activeOperatorRuns, operatorGridJobs]);
+
+  const activeRunsByJobId = React.useMemo(
+    () => new Map(activeOperatorRuns.map((log) => [String(log.jobId || ""), log])),
+    [activeOperatorRuns]
+  );
 
   return (
     <>
@@ -165,19 +182,23 @@ export const OperatorJobsSection: React.FC<Props> = ({
         getRowClass={(params) => {
           if (params.data?.kind === "child") {
             const childFlagClass = getRowClassName([params.data.entry], false, true);
-            const childCounts = getQaProgressCounts(params.data.entry, Math.max(1, Number(params.data.entry.qty || 1)));
+            const childCounts = getQaProgressCounts(
+              params.data.entry,
+              Math.max(1, Number(params.data.entry.qty || 1)),
+              activeRunsByJobId.get(String(params.data.entry.id))
+            );
             const childStageClass = getDominantQaStageClass(childCounts);
             return `${childFlagClass} ${childStageClass}`;
           }
 
           const row = params.data.tableRow as OperatorTableRow;
           const flagClass = getParentRowClassName(row.parent, row.entries, expandedGroups.has(row.groupId));
-          const c = getGroupQaProgressCounts(row.entries);
+          const c = getGroupQaProgressCounts(row.entries, activeRunsByJobId);
           const stageClass = getDominantQaStageClass(c);
           return `${flagClass} ${stageClass}`;
         }}
         className="jobs-table-wrapper operator-table-no-scroll"
-        rowHeight={88}
+        rowHeight={60}
         fitColumns={true}
         refreshKey={createdByRefreshKey}
       />

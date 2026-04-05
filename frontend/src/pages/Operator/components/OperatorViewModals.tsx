@@ -16,10 +16,11 @@ type OperatorViewModalsProps = {
   pendingOperatorAction: PendingOperatorAction;
   setPendingOperatorAction: Dispatch<SetStateAction<PendingOperatorAction>>;
   handleUpdateQaStatus: (cutId: number | string, quantityNumbers: number[], status: "SENT_TO_QA" | "SAVED" | "READY_FOR_QA") => Promise<void>;
+  handleResetQuantity: (cutId: number | string, quantityIndex: number) => Promise<void>;
   handleInputChange: (
     cutId: number | string,
     quantityIndex: number,
-    field: "markShiftOver" | "resetTimer",
+    field: "markShiftOver",
     value: string
   ) => void;
   handlePauseResumeAction: (cutId: number | string, quantityIndex: number, action: "shiftOver" | "resume") => Promise<boolean>;
@@ -35,6 +36,7 @@ const OperatorViewModals = ({
   pendingOperatorAction,
   setPendingOperatorAction,
   handleUpdateQaStatus,
+  handleResetQuantity,
   handleInputChange,
   handlePauseResumeAction,
   setActionToast,
@@ -76,8 +78,8 @@ const OperatorViewModals = ({
             { label: "Quantity", value: String(pendingReset.quantityIndex + 1) },
           ]}
           confirmButtonText="Reset Timer"
-          onConfirm={() => {
-            handleInputChange(pendingReset.cutId, pendingReset.quantityIndex, "resetTimer", "");
+          onConfirm={async () => {
+            await handleResetQuantity(pendingReset.cutId, pendingReset.quantityIndex);
             setPendingReset(null);
           }}
           onCancel={() => setPendingReset(null)}

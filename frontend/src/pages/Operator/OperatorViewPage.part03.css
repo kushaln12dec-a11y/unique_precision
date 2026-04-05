@@ -85,8 +85,8 @@
 }
 
 .quantity-save-section {
-  margin-top: 1rem;
-  padding-top: 1rem;
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
   border-top: 1px solid #e2e8f0;
   display: flex;
   justify-content: flex-end;
@@ -154,7 +154,7 @@
 }
 
 .operator-cut-inputs-section {
-  padding: 1.5rem;
+  padding: 1rem;
   background: #f8fafc;
   border-top: 2px solid #e2e8f0;
 }

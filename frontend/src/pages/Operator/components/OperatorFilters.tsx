@@ -2,7 +2,10 @@ import React, { useMemo } from "react";
 import FilterModal from "../../../components/FilterModal";
 import FilterButton from "../../../components/FilterButton";
 import FilterBadges from "../../../components/FilterBadges";
+import Modal from "../../../components/Modal";
 import DownloadIcon from "@mui/icons-material/Download";
+import PrecisionManufacturingRoundedIcon from "@mui/icons-material/PrecisionManufacturingRounded";
+import RadioButtonCheckedRoundedIcon from "@mui/icons-material/RadioButtonCheckedRounded";
 import { OperatorTaskTimer } from "./OperatorTaskTimer";
 import SelectDropdown, { type SelectOption } from "../../Programmer/components/SelectDropdown";
 import { MultiSelectOperators } from "./MultiSelectOperators";
@@ -49,6 +52,7 @@ type OperatorFiltersProps = {
     description: string;
     quantityLabel: string;
     operatorName?: string;
+    estimatedTime: string;
   }>;
   onClearAllFilters: () => void;
 };
@@ -85,6 +89,7 @@ export const OperatorFilters: React.FC<OperatorFiltersProps> = ({
 }) => {
   const [bulkOperator, setBulkOperator] = React.useState("");
   const [bulkMachineNumber, setBulkMachineNumber] = React.useState("");
+  const [showRunningJobsModal, setShowRunningJobsModal] = React.useState(false);
 
   const selectedCreatedByUsers = useMemo(
     () =>
@@ -194,25 +199,6 @@ export const OperatorFilters: React.FC<OperatorFiltersProps> = ({
             <span className="operator-stage-chip saved">LOGGED</span>
             <span className="operator-stage-chip sent">QC</span>
           </div>
-          {runningMachineAlerts.length > 0 ? (
-            <div className="operator-running-strip" aria-label="Running machine updates">
-              {runningMachineAlerts.map((alert) => (
-                <div
-                  key={`${alert.machineNumber}-${alert.jobRef}-${alert.quantityLabel}`}
-                  className="operator-running-pill"
-                  title={`${alert.machineNumber} | ${alert.jobRef || "-"} | ${alert.description || "-"} | ${alert.quantityLabel}`}
-                >
-                  <span className="operator-running-dot" aria-hidden="true" />
-                  <span className="operator-running-pill-text">
-                    {(alert.machineNumber || "MACHINE PENDING").toUpperCase()}
-                    {alert.quantityLabel ? ` | ${String(alert.quantityLabel).toUpperCase()}` : ""}
-                    {alert.customer ? ` | ${String(alert.customer).toUpperCase()}` : ""}
-                    {alert.operatorName ? ` | ${String(alert.operatorName).toUpperCase()}` : ""}
-                  </span>
-                </div>
-              ))}
-            </div>
-          ) : null}
         </div>
 
         <div className="panel-header-actions">
@@ -255,6 +241,20 @@ export const OperatorFilters: React.FC<OperatorFiltersProps> = ({
                 </button>
               </div>
             )}
+            <button
+              type="button"
+              className="btn-download-csv operator-running-info-btn"
+              onClick={() => setShowRunningJobsModal(true)}
+              disabled={runningMachineAlerts.length === 0}
+              title={runningMachineAlerts.length > 0 ? "Show running machine info" : "No running machines"}
+            >
+              <span className="operator-running-info-icon-wrap" aria-hidden="true">
+                <PrecisionManufacturingRoundedIcon sx={{ fontSize: "1rem" }} />
+                {runningMachineAlerts.length > 0 ? (
+                  <RadioButtonCheckedRoundedIcon className="operator-running-info-icon-pulse" sx={{ fontSize: "0.46rem" }} />
+                ) : null}
+              </span>
+            </button>
             <button className="btn-download-csv" onClick={onDownloadCSV} title="Download CSV">
               <DownloadIcon sx={{ fontSize: "1rem" }} />
               CSV
@@ -297,6 +297,58 @@ export const OperatorFilters: React.FC<OperatorFiltersProps> = ({
           ) : null
         }
       />
+      <Modal
+        isOpen={showRunningJobsModal}
+        onClose={() => setShowRunningJobsModal(false)}
+        title="Running Jobs"
+        size="medium"
+        className="operator-running-modal"
+      >
+        <div className="operator-running-modal-list">
+          {runningMachineAlerts.map((alert) => (
+            <div
+              key={`${alert.machineNumber}-${alert.jobRef}-${alert.quantityLabel}`}
+              className="operator-running-modal-card"
+            >
+              <div className="operator-running-modal-card-header">
+                <div className="operator-running-modal-machine">
+                  <PrecisionManufacturingRoundedIcon sx={{ fontSize: "1rem" }} />
+                </div>
+                <div className="operator-running-modal-title-block">
+                  <strong>{alert.machineNumber || "-"}</strong>
+                  <span>{alert.jobRef || alert.customer || "Running job"}</span>
+                </div>
+                <span className="operator-running-modal-live-pill">
+                  <span className="operator-running-dot" aria-hidden="true" />
+                  Running
+                </span>
+              </div>
+              <div className="operator-running-modal-grid">
+                <div className="operator-running-modal-meta">
+                  <span>Customer</span>
+                  <strong>{alert.customer || "-"}</strong>
+                </div>
+                <div className="operator-running-modal-meta">
+                  <span>Qty</span>
+                  <strong>{alert.quantityLabel || "-"}</strong>
+                </div>
+                <div className="operator-running-modal-meta operator-running-modal-meta-wide">
+                  <span>Description</span>
+                  <strong>{alert.description || "-"}</strong>
+                </div>
+                <div className="operator-running-modal-meta">
+                  <span>Operator</span>
+                  <strong>{alert.operatorName || "-"}</strong>
+                </div>
+                <div className="operator-running-modal-meta">
+                  <span>Est. Time</span>
+                  <strong>{alert.estimatedTime || "-"}</strong>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </Modal>
     </>
   );
 };

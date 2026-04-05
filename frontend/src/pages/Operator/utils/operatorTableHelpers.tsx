@@ -1,7 +1,6 @@
 import ArrowForwardIosSharpIcon from "@mui/icons-material/ArrowForwardIosSharp";
 import type { JobEntry } from "../../../types/job";
 import {
-  estimatedDurationSecondsFromHours,
   estimatedHoursFromAmount,
   formatEstimatedTime,
   MACHINE_OPTIONS,
@@ -182,15 +181,6 @@ export const normalizeAssignedOperators = (
 export const getGroupExpectedHours = (entries: JobEntry[]): number =>
   estimatedHoursFromAmount(entries.reduce((sum, entry) => sum + Number(entry.totalHrs || 0) * Number(entry.rate || 0), 0));
 
-export const getLatestActiveCaptureStartedAt = (entries: JobEntry[]): string | null => {
-  return getLatestActiveCaptureSummary(entries)?.startTime || null;
-};
-
-export const formatOperatorDurationMinutes = (minutes: number): string => {
-  const safeMinutes = Math.max(1, Math.ceil(minutes));
-  return safeMinutes === 1 ? "1 min" : `${safeMinutes} mins`;
-};
-
 export const renderOperatorCustomerCell = (
   row: OperatorDisplayRow,
   toggleGroup: (groupId: string) => void,
@@ -241,17 +231,12 @@ export const renderOperatorCustomerCell = (
 export const renderEstimatedTime = (row: OperatorDisplayRow) => {
   const sourceEntries = row.kind === "parent" ? row.tableRow.entries : [row.entry];
   const expectedHours = getGroupExpectedHours(sourceEntries);
-  const expectedSeconds = estimatedDurationSecondsFromHours(expectedHours);
-  const activeStartedAt = getLatestActiveCaptureStartedAt(sourceEntries);
-  if (activeStartedAt && expectedSeconds > 0) {
-    const elapsedSeconds = Math.max(0, Math.floor((Date.now() - new Date(activeStartedAt).getTime()) / 1000));
-    if (elapsedSeconds > expectedSeconds) {
-      return (
-        <span className="operator-overtime-value" title={`Expected ${formatEstimatedTime(expectedHours)}`}>
-          Overtime {formatOperatorDurationMinutes((elapsedSeconds - expectedSeconds) / 60)}
-        </span>
-      );
-    }
-  }
   return formatEstimatedTime(expectedHours);
+};
+
+export const renderEstimatedTimeWithLogs = (
+  row: OperatorDisplayRow,
+  _activeRunsByJobId: Map<string, EmployeeLog>
+) => {
+  return renderEstimatedTime(row);
 };

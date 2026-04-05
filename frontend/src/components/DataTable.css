@@ -99,20 +99,12 @@
   transition: background 0.2s ease;
 }
 
-.data-table th.sortable:hover {
-  background: rgba(255, 255, 255, 0.1);
-}
-
-.data-table tbody tr:hover {
-  background: #f8fafc;
+.data-table td {
+  cursor: copy;
 }
 
 .data-table tbody tr td.checkbox-cell {
   overflow: visible;
-}
-
-.data-table tbody tr:hover td {
-  background: #f8fafc;
 }
 
 .data-table tbody tr td.checkbox-cell input[type="checkbox"] {
@@ -308,6 +300,20 @@
 .data-table tbody tr .description-marquee:focus-within .marquee-copy-btn {
   opacity: 1;
   pointer-events: auto;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .data-table th.sortable:hover {
+    background: rgba(255, 255, 255, 0.1);
+  }
+
+  .data-table tbody tr:hover {
+    background: #f8fafc;
+  }
+
+  .data-table tbody tr:hover td {
+    background: #f8fafc;
+  }
 }
 
 @media (hover: none) {

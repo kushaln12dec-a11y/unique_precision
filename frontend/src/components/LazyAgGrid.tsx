@@ -4,12 +4,14 @@ import {
   AllCommunityModule,
   ModuleRegistry,
   themeQuartz,
+  type CellClickedEvent,
   type GridOptions,
   type ColDef,
   type GetRowIdParams,
   type GridApi,
   type RowClassParams,
 } from "ag-grid-community";
+import { copyTextWithFallback, getCopyableCellText } from "../utils/clipboard";
 import "./LazyAgGrid.css";
 
 ModuleRegistry.registerModules([AllCommunityModule]);
@@ -234,6 +236,15 @@ function LazyAgGrid<T extends object>({
     return () => viewport.removeEventListener("scroll", handleScroll);
   }, []);
 
+  const handleCellClicked = async (event: CellClickedEvent<T>) => {
+    const cellElement = event.event?.target instanceof HTMLElement
+      ? event.event.target.closest(".ag-cell")
+      : null;
+    const text = getCopyableCellText(event.event?.target || null, cellElement as HTMLElement | null);
+    if (!text) return;
+    await copyTextWithFallback(text);
+  };
+
   return (
     <div
       ref={containerRef}
@@ -270,6 +281,7 @@ function LazyAgGrid<T extends object>({
         onGridSizeChanged={() => {
           sizeColumns();
         }}
+        onCellClicked={handleCellClicked}
       />
     </div>
   );
