@@ -1,0 +1,186 @@
+[
+  {
+    "employeeId": "1076",
+    "name": "MITHUN B",
+    "gender": "MALE",
+    "mobile": "7026447709",
+    "email": "mithunb.basur@gmail.com",
+    "dept": "Operator"
+  },
+  {
+    "employeeId": "1044",
+    "name": "KARAN",
+    "gender": "MALE",
+    "mobile": "7498769335",
+    "email": "karanrathod1234k@gmail.com",
+    "dept": "Operator"
+  },
+  {
+    "employeeId": "1057",
+    "name": "MANJUNATHA K P",
+    "gender": "MALE",
+    "mobile": "9148184920",
+    "email": "kpmanju386@gmail.com",
+    "dept": "Operator"
+  },
+  {
+    "employeeId": "1054",
+    "name": "ANAND S DEVARAMANI",
+    "gender": "MALE",
+    "mobile": "9353294494",
+    "email": "devaramanianand0@gmail.com",
+    "dept": "Operator"
+  },
+  {
+    "employeeId": "1028",
+    "name": "GAGAN NAIK",
+    "gender": "MALE",
+    "mobile": "7483720012",
+    "email": "gaganarnaikgagan@gmail.com",
+    "dept": "Operator"
+  },
+  {
+    "employeeId": "1010",
+    "name": "UDAYA K M",
+    "gender": "MALE",
+    "mobile": "7676691139",
+    "email": "uday23281@gmail.com",
+    "dept": "Operator"
+  },
+  {
+    "employeeId": "1023",
+    "name": "BASAVARAJU A H",
+    "gender": "MALE",
+    "mobile": "9620667021",
+    "email": "basavarajupft@gamil.com",
+    "dept": "Programmer"
+  },
+  {
+    "employeeId": "1018",
+    "name": "PRAMOD H K",
+    "gender": "MALE",
+    "mobile": "8618345814",
+    "email": "hkpramod1718@gmail.com",
+    "dept": "Operator"
+  },
+  {
+    "employeeId": "1006",
+    "name": "THIMMESH K L",
+    "gender": "MALE",
+    "mobile": "6361067148",
+    "email": "thimmeshkl@gmail.com",
+    "dept": "Programmer"
+  },
+  {
+    "employeeId": "1007",
+    "name": "MANU K.C.",
+    "gender": "MALE",
+    "mobile": "9148251410",
+    "email": "manukumar51210@gmail.com",
+    "dept": "Operator"
+  },
+  {
+    "employeeId": "1019",
+    "name": "K NAVEENAKUMARA",
+    "gender": "MALE",
+    "mobile": "9632124376",
+    "email": "kn4567333@gmail.com",
+    "dept": "Operator"
+  },
+  {
+    "employeeId": "1022",
+    "name": "MERAVANIGE NANDISH",
+    "gender": "MALE",
+    "mobile": "8147209237",
+    "email": "nandishnandim9400@gmail.com",
+    "dept": "Operator"
+  },
+  {
+    "employeeId": "1042",
+    "name": "BASAVANAGOUDA",
+    "gender": "MALE",
+    "mobile": "8722875359",
+    "email": "basavag044@gmail.com",
+    "dept": "Operator"
+  },
+  {
+    "employeeId": "1033",
+    "name": "PRATHAP SONNADA MURADIMATA",
+    "gender": "MALE",
+    "mobile": "6362556410",
+    "email": "prathapasm235@gmail.com",
+    "dept": "Operator"
+  },
+  {
+    "employeeId": "1091",
+    "name": "Rakshitha   B H",
+    "gender": "MALE",
+    "mobile": "8431624930",
+    "email": "r4207207@gmail.com",
+    "dept": "QC"
+  },
+  {
+    "employeeId": "1092",
+    "name": "Darshan  M",
+    "gender": "MALE",
+    "mobile": "6360118822",
+    "email": "dd051383@gmail.com",
+    "dept": "Operator"
+  },
+  {
+    "employeeId": "1093",
+    "name": "PRADEEP  Meti",
+    "gender": "MALE",
+    "mobile": "6360159055",
+    "email": "pradeepmpradeeepm57@gmail.com",
+    "dept": "Operator"
+  },
+  {
+    "employeeId": "1097",
+    "name": "Rudrappa Badiger",
+    "gender": "MALE",
+    "mobile": "8495030822",
+    "email": "brudresh54@gmail.com",
+    "dept": "Operator"
+  },
+  {
+    "employeeId": "1099",
+    "name": "Darshan Somalingappa Olekar",
+    "gender": "MALE",
+    "mobile": "9019712307",
+    "email": "darshanolekar99@gmail.com",
+    "dept": "Operator"
+  },
+  {
+    "employeeId": "1100",
+    "name": "Basavaraj   A",
+    "gender": "MALE",
+    "mobile": "9611495498",
+    "email": "basavarjbasava5847@gmail.com",
+    "dept": "Operator"
+  },
+  {
+    "employeeId": "1102",
+    "name": "Chethana Kumar T",
+    "gender": "MALE",
+    "mobile": "9620245658",
+    "email": "",
+    "dept": "Operator"
+  },
+  {
+    "employeeId": "1104",
+    "name": "Darshan  S H",
+    "gender": "MALE",
+    "mobile": "9110419164",
+    "email": "shdarshand@gmail.com",
+    "dept": "Operator"
+  },
+  {
+    "employeeId": "1105",
+    "name": "Ranjith   P",
+    "gender": "MALE",
+    "mobile": "9844980855",
+    "email": "",
+    "dept": ""
+  }
+]

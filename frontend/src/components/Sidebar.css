@@ -311,11 +311,16 @@
     padding: 0.25rem 0.4rem;
     justify-content: center;
     gap: 0.35rem;
+    position: relative;
   }
 
   .logo-collapsed {
     width: 42px;
     height: 42px;
+  }
+
+  .sidebar.collapsed .logo-collapsed {
+    display: none;
   }
 
   .sidebar.expanded.tablet-open .logo-collapsed {
@@ -365,8 +370,14 @@
     align-items: center;
     justify-content: center;
     min-width: 24px;
-    margin-left: auto;
+    width: 24px;
+    height: 24px;
     color: #102a63;
+    position: absolute;
+    inset: 0;
+    margin: auto;
+    background: rgba(16, 42, 99, 0.08);
+    border-radius: 999px;
   }
 
   .nav-item {
@@ -379,6 +390,14 @@
     justify-content: flex-start;
     padding: 0.85rem 1rem;
     gap: 1rem;
+  }
+
+  .sidebar.expanded.tablet-open .sidebar-toggle-icon {
+    position: static;
+    inset: auto;
+    margin-left: auto;
+    background: transparent;
+    border-radius: 0;
   }
 
   .sidebar-footer {
