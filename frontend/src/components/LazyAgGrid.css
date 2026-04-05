@@ -323,42 +323,50 @@
 .lazy-ag-grid-shell .ag-row.group-row.priority-row.priority-high,
 .lazy-ag-grid-shell .ag-row.child-row.child-priority-row.child-priority-high {
   --row-flag-color: #ef4444;
+  background-color: #fff1f2;
 }
 
 .lazy-ag-grid-shell .ag-row.group-row.priority-row.priority-medium,
 .lazy-ag-grid-shell .ag-row.child-row.child-priority-row.child-priority-medium {
   --row-flag-color: #f59e0b;
+  background-color: #fffbeb;
 }
 
 .lazy-ag-grid-shell .ag-row.group-row.priority-row.priority-low,
 .lazy-ag-grid-shell .ag-row.child-row.child-priority-row.child-priority-low {
   --row-flag-color: #10b981;
+  background-color: #ecfdf5;
 }
 
 .lazy-ag-grid-shell .ag-row.group-row.critical-row,
 .lazy-ag-grid-shell .ag-row.child-row.child-critical-row {
   --row-flag-color: #dc2626;
   --row-flag-width: 4px;
+  background-color: #fef2f2;
 }
 
 .lazy-ag-grid-shell .ag-row.group-row.operator-stage-row-not-started:not(.priority-row):not(.critical-row),
 .lazy-ag-grid-shell .ag-row.child-row.operator-stage-row-not-started:not(.child-priority-row):not(.child-critical-row) {
   --row-flag-color: #f59e0b;
+  background-color: #ffefbf;
 }
 
 .lazy-ag-grid-shell .ag-row.group-row.operator-stage-row-logged:not(.priority-row):not(.critical-row),
 .lazy-ag-grid-shell .ag-row.child-row.operator-stage-row-logged:not(.child-priority-row):not(.child-critical-row) {
   --row-flag-color: #38bdf8;
+  background-color: #dbeafe;
 }
 
 .lazy-ag-grid-shell .ag-row.group-row.operator-stage-row-running:not(.priority-row):not(.critical-row),
 .lazy-ag-grid-shell .ag-row.child-row.operator-stage-row-running:not(.child-priority-row):not(.child-critical-row) {
   --row-flag-color: #ef4444;
+  background-color: #ffe4e6;
 }
 
 .lazy-ag-grid-shell .ag-row.group-row.operator-stage-row-hold:not(.priority-row):not(.critical-row),
 .lazy-ag-grid-shell .ag-row.child-row.operator-stage-row-hold:not(.child-priority-row):not(.child-critical-row) {
   --row-flag-color: #f97316;
+  background-color: #fff7ed;
 }
 
 .lazy-ag-grid-shell .ag-row.group-row.operator-stage-row-qc:not(.priority-row):not(.critical-row),
@@ -366,6 +374,7 @@
 .lazy-ag-grid-shell .ag-row.group-row.operator-stage-row-dispatched:not(.priority-row):not(.critical-row),
 .lazy-ag-grid-shell .ag-row.child-row.operator-stage-row-dispatched:not(.child-priority-row):not(.child-critical-row) {
   --row-flag-color: #818cf8;
+  background-color: #eef2ff;
 }
 
 .lazy-ag-grid-shell .ag-row.child-row:not(.child-priority-row):not(.child-critical-row):not(.operator-stage-row-not-started):not(.operator-stage-row-logged):not(.operator-stage-row-running):not(.operator-stage-row-hold):not(.operator-stage-row-qc):not(.operator-stage-row-dispatched) {
