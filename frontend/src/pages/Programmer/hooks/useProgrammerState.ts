@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useLocation, useParams } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import { getJobsByGroupId, getProgrammerJobs } from "../../../services/jobApi";
 import type { JobEntry } from "../../../types/job";
 import type { FilterValues } from "../../../components/FilterModal";
@@ -39,7 +39,6 @@ export const useProgrammerState = (
   criticalFilter: boolean
 ) => {
   const location = useLocation();
-  const params = useParams<{ groupId?: string }>();
   const [jobs, setJobs] = useState<JobEntry[]>([]);
   const [loadingJobs, setLoadingJobs] = useState(true);
   const [loadingEditGroup, setLoadingEditGroup] = useState(false);
@@ -53,6 +52,10 @@ export const useProgrammerState = (
   const isNewJobRoute = location.pathname.startsWith("/programmer/newjob");
   const isEditRoute = location.pathname.startsWith("/programmer/edit/");
   const isCloneRoute = location.pathname.startsWith("/programmer/clone/");
+  const editMatch = location.pathname.match(/^\/programmer\/edit\/([^/]+)$/);
+  const cloneMatch = location.pathname.match(/^\/programmer\/clone\/([^/]+)$/);
+  const editGroupIdFromPath = editMatch?.[1] ? String(editMatch[1]) : "";
+  const cloneGroupIdFromPath = cloneMatch?.[1] ? String(cloneMatch[1]) : "";
 
   useEffect(() => {
     const fetchJobs = async () => {
@@ -98,8 +101,8 @@ export const useProgrammerState = (
   }, [filters, customerFilter, descriptionFilter, createdByFilter, criticalFilter]);
 
   useEffect(() => {
-    if (isEditRoute && params.groupId) {
-      const groupId = String(params.groupId);
+    if (isEditRoute && editGroupIdFromPath) {
+      const groupId = editGroupIdFromPath;
       if (loadedEditGroupRef.current === groupId) {
         setEditGroupError(null);
         setLoadingEditGroup(false);
@@ -157,7 +160,7 @@ export const useProgrammerState = (
     } else if (isNewJobRoute || isCloneRoute) {
       loadedEditGroupRef.current = null;
       setEditGroupError(null);
-      const cloneGroupId = isCloneRoute ? String(params.groupId || "").trim() : "";
+      const cloneGroupId = isCloneRoute ? cloneGroupIdFromPath.trim() : "";
 
       if (cloneGroupId) {
         if (loadedCloneGroupRef.current === cloneGroupId) {
@@ -227,7 +230,7 @@ export const useProgrammerState = (
         setCuts([DEFAULT_CUT]);
       }
     }
-  }, [location.pathname, isEditRoute, isCloneRoute, params.groupId, isNewJobRoute]);
+  }, [location.pathname, isEditRoute, isCloneRoute, editGroupIdFromPath, cloneGroupIdFromPath, isNewJobRoute]);
 
   const handleNewJob = () => {
     loadedCloneGroupRef.current = null;

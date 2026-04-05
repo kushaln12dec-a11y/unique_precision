@@ -61,6 +61,7 @@
   display: none;
   margin-left: auto;
   color: #102a63;
+  flex-shrink: 0;
 }
 
 .logo-expanded {
@@ -281,7 +282,7 @@
   }
 
   .sidebar.expanded.tablet-open {
-    width: 220px;
+    width: 248px;
     overflow-x: visible;
   }
 
@@ -307,8 +308,8 @@
 
   .sidebar-logo {
     min-height: 64px;
-    padding: 0.25rem 0.35rem;
-    justify-content: flex-start;
+    padding: 0.25rem 0.4rem;
+    justify-content: center;
     gap: 0.35rem;
   }
 
@@ -323,6 +324,33 @@
 
   .sidebar.expanded.tablet-open .logo-expanded {
     display: inline-flex;
+    align-items: center;
+    justify-content: flex-start;
+    width: auto;
+    max-width: none;
+    flex: 1;
+    min-width: 0;
+    gap: 0.5rem;
+  }
+
+  .sidebar.expanded.tablet-open .sidebar-logo {
+    justify-content: flex-start;
+    padding-inline: 0.6rem 0.7rem;
+  }
+
+  .sidebar.expanded.tablet-open .sidebar-header {
+    justify-content: flex-start;
+  }
+
+  .sidebar.expanded.tablet-open .logo-expanded-image {
+    width: 50px;
+    height: 50px;
+  }
+
+  .sidebar.expanded.tablet-open .sidebar-company-name {
+    font-size: 1.2rem;
+    line-height: 0.98;
+    letter-spacing: 0.05px;
   }
 
   .sidebar.expanded.tablet-open .nav-label {
@@ -337,6 +365,8 @@
     align-items: center;
     justify-content: center;
     min-width: 24px;
+    margin-left: auto;
+    color: #102a63;
   }
 
   .nav-item {

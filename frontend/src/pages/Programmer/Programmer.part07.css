@@ -243,43 +243,40 @@
   background: #ffffff;
 }
 
+.programmer-container .jobs-table-wrapper .group-row,
+.programmer-container .jobs-table-wrapper .child-row {
+  --row-flag-color: transparent;
+  --row-flag-width: 3px;
+  background-color: #ffffff;
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+  background-image: linear-gradient(
+    90deg,
+    var(--row-flag-color) 0,
+    var(--row-flag-color) var(--row-flag-width),
+    transparent var(--row-flag-width),
+    transparent 100%
+  );
+}
+
 .programmer-container .jobs-table-wrapper .group-row.critical-row {
-  border-left: 1px solid #dc2626 !important;
-  background-image:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.54) 0%, rgba(255, 255, 255, 0.08) 48%, rgba(255, 255, 255, 0) 100%),
-    linear-gradient(90deg, rgba(220, 38, 38, 0.2) 0%, rgba(220, 38, 38, 0.07) 38%, rgba(255, 255, 255, 0.95) 100%);
-}
-.programmer-container .jobs-table-wrapper .group-row.critical-row td:first-child {
-  box-shadow: none;
+  --row-flag-color: #dc2626;
+  --row-flag-width: 4px;
+  background-color: #fef2f2;
 }
 
-.programmer-container .jobs-table-wrapper .group-row.critical-row td {
-  background: transparent !important;
-  color: #0f172a !important;
-}
-
-/* Priority-based row colors (only when not complex) */
-.programmer-container .jobs-table-wrapper .group-row.priority-row.priority-high {
-  border-left: 3px solid #ef4444;
-  background-image:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0.08) 48%, rgba(255, 255, 255, 0) 100%),
-    linear-gradient(90deg, rgba(239, 68, 68, 0.18) 0%, rgba(239, 68, 68, 0.06) 38%, rgba(255, 255, 255, 0.96) 100%);
-}
-.programmer-container .jobs-table-wrapper .group-row.priority-row.priority-high td:first-child {
-  box-shadow: none;
-}
-
-.programmer-container .jobs-table-wrapper .group-row.priority-row.priority-high td {
-  background: transparent !important;
+.programmer-container .jobs-table-wrapper .group-row.critical-row td,
+.programmer-container .jobs-table-wrapper .group-row.priority-row td {
+  background: transparent;
   color: #0f172a;
 }
 
-.programmer-container .jobs-table-wrapper .group-row.priority-row.priority-medium {
-  border-left: 3px solid #f59e0b;
-  background-image:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.52) 0%, rgba(255, 255, 255, 0.08) 48%, rgba(255, 255, 255, 0) 100%),
-    linear-gradient(90deg, rgba(245, 158, 11, 0.2) 0%, rgba(245, 158, 11, 0.07) 38%, rgba(255, 255, 255, 0.96) 100%);
+.programmer-container .jobs-table-wrapper .group-row.priority-row.priority-high {
+  --row-flag-color: #ef4444;
+  background-color: #fff1f2;
 }
-.programmer-container .jobs-table-wrapper .group-row.priority-row.priority-medium td:first-child {
-  box-shadow: none;
+
+.programmer-container .jobs-table-wrapper .group-row.priority-row.priority-medium {
+  --row-flag-color: #f59e0b;
+  background-color: #fffbeb;
 }

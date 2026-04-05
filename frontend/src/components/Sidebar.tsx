@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import CodeIcon from '@mui/icons-material/Code';
 import BuildIcon from '@mui/icons-material/Build';
@@ -18,6 +18,9 @@ const Sidebar = ({ onNavigate, className = "" }: SidebarProps) => {
   const navigate = useNavigate();
   const location = useLocation();
   const [isTabletOpen, setIsTabletOpen] = useState(false);
+  const [isTabletViewport, setIsTabletViewport] = useState(() =>
+    typeof window !== 'undefined' ? window.matchMedia('(max-width: 1024px)').matches : false
+  );
   const role = getUserRoleFromToken()?.toUpperCase();
   const dashboardPath = role === 'OPERATOR' ? '/operator-dashboard' : '/dashboard';
   const menuItems = [
@@ -44,6 +47,27 @@ const Sidebar = ({ onNavigate, className = "" }: SidebarProps) => {
         )
       : menuItems;
 
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+
+    const mediaQuery = window.matchMedia('(max-width: 1024px)');
+    const updateViewport = (matches: boolean) => {
+      setIsTabletViewport(matches);
+      if (!matches) {
+        setIsTabletOpen(false);
+      }
+    };
+
+    updateViewport(mediaQuery.matches);
+
+    const handleChange = (event: MediaQueryListEvent) => {
+      updateViewport(event.matches);
+    };
+
+    mediaQuery.addEventListener('change', handleChange);
+    return () => mediaQuery.removeEventListener('change', handleChange);
+  }, []);
+
   const isPathActive = (path: string) => {
     if (location.pathname === path) return true;
     return path !== dashboardPath && location.pathname.startsWith(`${path}/`);
@@ -66,6 +90,11 @@ const Sidebar = ({ onNavigate, className = "" }: SidebarProps) => {
     navigate('/login', { replace: true });
   };
 
+  const handleTabletToggle = () => {
+    if (!isTabletViewport) return;
+    setIsTabletOpen((prev) => !prev);
+  };
+
   return (
     <>
       <div className={`sidebar ${isTabletOpen ? 'expanded tablet-open' : 'collapsed'} ${className}`.trim()}>
@@ -73,9 +102,9 @@ const Sidebar = ({ onNavigate, className = "" }: SidebarProps) => {
         <button
           type="button"
           className="sidebar-logo"
-          onClick={() => setIsTabletOpen((prev) => !prev)}
-          aria-label={isTabletOpen ? "Close navigation" : "Open navigation"}
-          title={isTabletOpen ? "Close navigation" : "Open navigation"}
+          onClick={handleTabletToggle}
+          aria-label={isTabletViewport ? (isTabletOpen ? "Close navigation" : "Open navigation") : undefined}
+          title={undefined}
         >
           <img
             src="/output-onlinepngtools.svg"

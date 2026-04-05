@@ -38,31 +38,7 @@ function AppRoutes() {
         }
       />
       <Route
-        path="/programmer"
-        element={
-          <ProtectedRoute>
-            <Programmer />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/programmer/newjob"
-        element={
-          <ProtectedRoute>
-            <Programmer />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/programmer/clone/:groupId"
-        element={
-          <ProtectedRoute>
-            <Programmer />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/programmer/edit/:groupId"
+        path="/programmer/*"
         element={
           <ProtectedRoute>
             <Programmer />
