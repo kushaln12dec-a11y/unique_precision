@@ -1,5 +1,6 @@
 import { useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+import { flushSync } from "react-dom";
 import { getUserDisplayNameFromToken } from "../../../utils/auth";
 import { createJobs, updateJobsByGroupId, deleteJobsByGroupId } from "../../../services/jobApi";
 import { completeProgrammerJobLog } from "../../../services/employeeLogsApi";
@@ -34,14 +35,20 @@ export const useJobHandlers = ({
 }: UseJobHandlersProps) => {
   const navigate = useNavigate();
 
-  const navigateToProgrammerTable = useCallback(() => {
-    window.setTimeout(() => {
-      navigate("/programmer", {
-        replace: true,
-        state: { refreshedAt: Date.now() },
-      });
-    }, 0);
-  }, [navigate]);
+  const finishSaveAndReturnToProgrammerTable = useCallback((message: string) => {
+    flushSync(() => {
+      resetProgrammerFormState();
+      setSavingJob(false);
+    });
+
+    navigate("/programmer", {
+      replace: true,
+      state: { refreshedAt: Date.now() },
+    });
+
+    setToast({ message, variant: "success", visible: true });
+    window.setTimeout(() => setToast({ message: "", variant: "success", visible: false }), 3000);
+  }, [navigate, resetProgrammerFormState, setSavingJob, setToast]);
 
   const handleSaveJob = useCallback(async () => {
     const invalidCustomerIndex = cuts.findIndex((cut) => !isValidCustomerUpcCode(cut.customer));
@@ -92,11 +99,7 @@ export const useJobHandlers = ({
           ...updatedJobs,
           ...prev.filter((job) => String(job.groupId) !== editingGroupId),
         ]);
-        resetProgrammerFormState();
-        setSavingJob(false);
-        setToast({ message: "Job updated successfully!", variant: "success", visible: true });
-        setTimeout(() => setToast({ message: "", variant: "success", visible: false }), 3000);
-        navigateToProgrammerTable();
+        finishSaveAndReturnToProgrammerTable("Job updated successfully!");
       } else {
         const createdJobs = await createJobs(entries);
         setJobs((prev) => [...createdJobs, ...prev]);
@@ -114,11 +117,7 @@ export const useJobHandlers = ({
           console.error("Failed to complete programmer job log", logError);
         }
 
-        resetProgrammerFormState();
-        setSavingJob(false);
-        setToast({ message: "Job created successfully!", variant: "success", visible: true });
-        setTimeout(() => setToast({ message: "", variant: "success", visible: false }), 3000);
-        navigateToProgrammerTable();
+        finishSaveAndReturnToProgrammerTable("Job created successfully!");
       }
     } catch (error) {
       console.error("Failed to save job", error);
@@ -139,8 +138,7 @@ export const useJobHandlers = ({
     setJobs,
     setToast,
     setSavingJob,
-    navigateToProgrammerTable,
-    resetProgrammerFormState,
+    finishSaveAndReturnToProgrammerTable,
   ]);
 
   const handleDeleteJob = useCallback(

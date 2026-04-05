@@ -13,6 +13,7 @@ import './Header.css';
 
 interface HeaderProps {
   title: string;
+  onNavigate?: (path: string) => void;
 }
 
 interface BreadcrumbItem {
@@ -90,7 +91,7 @@ const BREADCRUMB_MAP: Record<string, BreadcrumbItem[]> = {
   ],
 };
 
-const Header = ({ title }: HeaderProps) => {
+const Header = ({ title, onNavigate }: HeaderProps) => {
   const navigate = useNavigate();
   const location = useLocation();
   const displayName = getUserDisplayNameFromToken();
@@ -134,7 +135,8 @@ const Header = ({ title }: HeaderProps) => {
 
   const handleBreadcrumbClick = (path: string, isLast: boolean) => {
     if (!isLast) {
-      navigate(path);
+      if (onNavigate) onNavigate(path);
+      else navigate(path);
     }
   };
 

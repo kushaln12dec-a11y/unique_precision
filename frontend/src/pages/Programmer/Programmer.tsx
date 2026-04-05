@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import Sidebar from "../../components/Sidebar";
 import Header from "../../components/Header";
 import { getUserRoleFromToken } from "../../utils/auth";
@@ -23,7 +23,7 @@ import { useProgrammerReduxDispatchers } from "./hooks/useProgrammerReduxDispatc
 
 const Programmer = () => {
   const navigate = useNavigate();
-  const params = useParams<{ groupId?: string }>();
+  const location = useLocation();
   const dispatch = useAppDispatch();
 
   const [sortField] = useState<keyof JobEntry | null>(null);
@@ -60,7 +60,8 @@ const Programmer = () => {
     handleCancel: handleCancelState,
   } = useProgrammerState(filters, customerFilter, descriptionFilter, createdByFilter, criticalFilter);
 
-  const routeEditGroupId = params.groupId ? String(params.groupId) : null;
+  const editMatch = location.pathname.match(/^\/programmer\/edit\/([^/]+)$/);
+  const routeEditGroupId = editMatch?.[1] ? String(editMatch[1]) : null;
 
   const {
     users,
@@ -209,12 +210,21 @@ const Programmer = () => {
 
   const handleDownloadCSV = () => exportJobsToCSV(filteredProgrammerTableData, isAdmin);
   const dispatchers = useProgrammerReduxDispatchers(dispatch, filters);
+  const handleProgrammerNavigate = (path: string) => {
+    if (isProgrammerFormRoute) {
+      handleCancelState();
+      setSavingJob(false);
+      navigate(path, { replace: true, state: { refreshedAt: Date.now() } });
+      return;
+    }
+    navigate(path);
+  };
 
   return (
     <div className="programmer-container">
-      <Sidebar currentPath="/programmer" onNavigate={(path) => navigate(path)} />
+      <Sidebar currentPath="/programmer" onNavigate={handleProgrammerNavigate} />
       <div className={`programmer-content ${isProgrammerFormRoute ? "programmer-content-scrollable" : ""}`}>
-        <Header title="Programmer" />
+        <Header title="Programmer" onNavigate={handleProgrammerNavigate} />
         <div className={`programmer-panel ${isProgrammerFormRoute ? "programmer-panel-scrollable" : ""}`}>
           {isProgrammerListRoute && <ProgrammerTabs activeTab={activeTab} setActiveTab={setActiveTab} />}
 
