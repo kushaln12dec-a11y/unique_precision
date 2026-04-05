@@ -10,7 +10,8 @@
     "test": "jest",
     "seed-admin": "ts-node-dev --transpile-only server/src/scripts/seedAdminUser.ts",
     "update-user-role": "ts-node-dev --transpile-only server/src/scripts/updateUserRole.ts",
-    "seed-idle-time-config": "ts-node-dev --transpile-only server/src/scripts/seedIdleTimeConfig.ts"
+    "seed-idle-time-config": "ts-node-dev --transpile-only server/src/scripts/seedIdleTimeConfig.ts",
+    "import-active-members": "ts-node-dev --transpile-only server/src/scripts/importActiveMembers.ts"
   },
   "keywords": [],
   "author": "",
