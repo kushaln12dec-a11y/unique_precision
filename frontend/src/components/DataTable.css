@@ -4,7 +4,7 @@
   max-height: 75vh;
   width: 100%;
   border-radius: 12px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--color-border);
   box-sizing: border-box;
   position: relative;
   padding-bottom: 0.55rem;
@@ -29,7 +29,7 @@
   border-spacing: 0;
   font-size: 0.9rem;
   border-radius: 18px;
-  background: #ffffff;
+  background: var(--color-surface);
   overflow: visible;
   table-layout: auto;
 }
@@ -37,7 +37,7 @@
 .data-table th,
 .data-table td {
   padding: 0.75rem 1rem;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--color-border);
   text-align: center;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -59,7 +59,7 @@
 }
 
 .data-table thead {
-  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  background: linear-gradient(135deg, var(--color-table-head-start) 0%, var(--color-table-head-end) 100%);
   border-radius: 18px 18px 0 0;
 }
 
@@ -67,7 +67,7 @@
   position: sticky;
   top: 0;
   z-index: 60;
-  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  background: linear-gradient(135deg, var(--color-table-head-start) 0%, var(--color-table-head-end) 100%);
 }
 
 .data-table th {
@@ -76,7 +76,7 @@
   font-size: 0.8125rem;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  border-bottom: 2px solid #16213e;
+  border-bottom: 2px solid var(--color-table-head-start);
   text-align: center;
 }
 
@@ -100,7 +100,8 @@
 }
 
 .data-table td {
-  cursor: copy;
+  cursor: text;
+  user-select: text;
 }
 
 .data-table tbody tr td.checkbox-cell {
@@ -130,25 +131,25 @@
 
 .empty-state-row {
   padding: 3rem 0;
-  color: #475569;
+  color: var(--color-text-muted);
   text-align: center;
 }
 
 .group-row {
-  background: #ffffff;
+  background: var(--color-surface);
 }
 
 .group-row-expanded {
-  background: #f9fafb;
+  background: var(--color-surface-muted);
 }
 
 .child-row {
-  background: #f9fafb;
+  background: var(--color-surface-muted);
 }
 
 .child-row-content {
   padding: 0;
-  background: #f9fafb;
+  background: var(--color-surface-muted);
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
@@ -192,7 +193,7 @@
 .action-icon-button {
   border: none;
   background: transparent;
-  color: #2563eb;
+  color: var(--color-primary);
   cursor: pointer;
   display: inline-flex;
   align-items: center;
@@ -203,20 +204,21 @@
   min-height: 1.9rem;
   border-radius: 8px;
   transition: all 0.2s ease;
+  user-select: none;
 }
 
 .action-icon-button.danger {
-  color: #dc2626;
+  color: var(--color-danger);
 }
 
 .action-icon-button:hover {
-  color: #1d4ed8;
+  color: var(--color-primary-strong);
   background: rgba(37, 99, 235, 0.15);
   border-radius: 6px;
 }
 
 .action-icon-button.danger:hover {
-  color: #b91c1c;
+  color: var(--color-danger);
   background: rgba(220, 38, 38, 0.15);
 }
 
@@ -259,8 +261,8 @@
   padding: 0;
   border-radius: 999px;
   border: 1px solid #93c5fd;
-  background: #eff6ff;
-  color: #1d4ed8;
+  background: color-mix(in srgb, var(--color-primary) 14%, var(--color-surface));
+  color: var(--color-primary-strong);
   line-height: 1;
   opacity: 0;
   pointer-events: none;
@@ -271,13 +273,13 @@
 }
 
 .description-marquee .marquee-copy-btn:hover {
-  background: #dbeafe;
+  background: color-mix(in srgb, var(--color-primary) 20%, var(--color-surface));
 }
 
 .description-marquee .marquee-copy-btn.copied {
   border-color: #86efac;
-  background: #dcfce7;
-  color: #166534;
+  background: color-mix(in srgb, var(--color-success) 18%, var(--color-surface));
+  color: var(--color-success);
 }
 
 .job-ref-copy-text {
@@ -317,11 +319,11 @@
   }
 
   .data-table tbody tr:hover {
-    background: #f8fafc;
+    background: var(--color-table-row-hover);
   }
 
   .data-table tbody tr:hover td {
-    background: #f8fafc;
+    background: var(--color-table-row-hover);
   }
 }
 

@@ -15,6 +15,7 @@ import {
   ensureCutInputState,
   updateQuantityMachineHours,
 } from "../utils/operatorInputState";
+import { getPrimaryPersonName } from "../../../utils/jobFormatting";
 
 export const useOperatorInputs = (
   _cutInputs: Map<number | string, CutInputData>,
@@ -27,7 +28,7 @@ export const useOperatorInputs = (
   const normalizeOperatorList = (values: unknown[]): string[] => {
     const seen = new Set<string>();
     return values
-      .map((value) => String(value || "").trim().toUpperCase())
+      .map((value) => getPrimaryPersonName(value, ""))
       .filter((value) => {
         if (!value) return false;
         const key = value.toLowerCase();
@@ -245,8 +246,8 @@ export const useOperatorInputs = (
 
       if (field === "opsName") {
         const nextOps = Array.isArray(value)
-          ? value.map((name) => String(name || "").trim()).filter(Boolean)
-          : (String(value || "").trim() ? [String(value || "").trim()] : []);
+          ? value.map((name) => getPrimaryPersonName(name, "")).filter(Boolean)
+          : (String(value || "").trim() ? [getPrimaryPersonName(value, "")] : []);
         updatedQtyData.opsName = nextOps;
         updatedQtyData.operatorHistory = normalizeOperatorList([
           ...(qtyData.operatorHistory || []),

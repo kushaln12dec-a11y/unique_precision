@@ -8,7 +8,8 @@ import { formatEmployeeId } from "../../../utils/employeeId";
  */
 export const useUserTable = (
   handleEdit: (user: User) => void,
-  handleDeleteClick: (user: User) => void
+  handleDeleteClick: (user: User) => void,
+  canManageUsers: boolean
 ): Column<User>[] => {
   const getDisplayName = (user: User) => {
     const fullName = `${user.firstName || ""} ${user.lastName || ""}`.trim();
@@ -64,24 +65,27 @@ export const useUserTable = (
         sortable: false,
         className: "action-cell",
         headerClassName: "action-header",
-        render: (user) => (
-          <div className="action-buttons">
-            <button
-              className="btn-edit"
-              onClick={() => handleEdit(user)}
-            >
-              Edit
-            </button>
-            <button
-              className="btn-delete"
-              onClick={() => handleDeleteClick(user)}
-            >
-              Delete
-            </button>
-          </div>
-        ),
+        render: (user) =>
+          canManageUsers ? (
+            <div className="action-buttons">
+              <button
+                className="btn-edit"
+                onClick={() => handleEdit(user)}
+              >
+                Edit
+              </button>
+              <button
+                className="btn-delete"
+                onClick={() => handleDeleteClick(user)}
+              >
+                Delete
+              </button>
+            </div>
+          ) : (
+            <span>-</span>
+          ),
       },
     ],
-    [handleEdit, handleDeleteClick]
+    [canManageUsers, handleEdit, handleDeleteClick]
   );
 };

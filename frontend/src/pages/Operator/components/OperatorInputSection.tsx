@@ -13,6 +13,8 @@ type OperatorInputSectionProps = {
   quantity: number;
   operatorUsers: Array<{ id: string | number; name: string }>;
   machineOptions: string[];
+  canEditAssignments: boolean;
+  canOperateInputs: boolean;
   isAdmin: boolean;
   onInputChange: (cutId: number | string, quantityIndex: number, field: OperatorInputField, value: string | string[]) => void;
   onApplyToAllQuantities: (cutId: number | string, sourceQuantityIndex: number, totalQuantity: number) => void;
@@ -59,6 +61,8 @@ export const OperatorInputSection: React.FC<OperatorInputSectionProps> = ({
   quantity,
   operatorUsers,
   machineOptions,
+  canEditAssignments,
+  canOperateInputs,
   isAdmin,
   onInputChange,
   onApplyToAllQuantities: _onApplyToAllQuantities,
@@ -195,6 +199,8 @@ export const OperatorInputSection: React.FC<OperatorInputSectionProps> = ({
             getStatus={getStatus}
             operatorUsers={operatorUsers}
             machineOptions={machineOptions}
+            canEditAssignments={canEditAssignments}
+            canOperateInputs={canOperateInputs}
             onInputChange={onInputChange}
             onShowToast={onShowToast}
             onStartTimeCaptured={onStartTimeCaptured}

@@ -1,12 +1,20 @@
 export const normalizeIndianPhone = (value: unknown): string => {
-  const digits = String(value || "").replace(/\D/g, "");
-  if (!digits) return "";
+  const raw = String(value || "");
+  const trimmed = raw.trim();
+  if (!trimmed) return "";
 
-  const normalizedDigits = digits.startsWith("91") && digits.length > 10
-    ? digits.slice(-10)
-    : digits.slice(-10);
+  let digits = raw.replace(/\D/g, "");
 
-  return normalizedDigits ? `+91 ${normalizedDigits}` : "";
+  // When the user types into a field that already shows "+91 ",
+  // don't treat that prefix as part of the local 10-digit number.
+  if (trimmed.startsWith("+91")) {
+    digits = digits.slice(2);
+  } else if (digits.length > 10 && digits.startsWith("91")) {
+    digits = digits.slice(2);
+  }
+
+  const normalizedDigits = digits.slice(0, 10);
+  return `+91 ${normalizedDigits}`.trimEnd();
 };
 
 export const isValidIndianPhone = (value: unknown): boolean =>

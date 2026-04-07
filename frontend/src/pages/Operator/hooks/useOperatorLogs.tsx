@@ -6,6 +6,7 @@ import { formatDisplayDateTime } from "../../../utils/date";
 import {
   formatMachineLabel,
   getEmailLocalPart,
+  getFirstNameDisplay,
   getLogUserDisplayName,
   toMachineIndex,
 } from "../../../utils/jobFormatting";
@@ -25,6 +26,7 @@ type Params = {
   users: Array<{ firstName?: string | null; lastName?: string | null; email: string; role?: string | null }>;
   machineOptionsForDropdown: string[];
   operatorLogSearch: string;
+  operatorLogUser: string;
   operatorLogStatus: "" | "IN_PROGRESS" | "COMPLETED" | "REJECTED";
   operatorLogMachine: string;
   setToast: React.Dispatch<
@@ -37,6 +39,7 @@ export const useOperatorLogs = ({
   users,
   machineOptionsForDropdown,
   operatorLogSearch,
+  operatorLogUser,
   operatorLogStatus,
   operatorLogMachine,
   setToast,
@@ -55,14 +58,6 @@ export const useOperatorLogs = ({
     });
     return map;
   }, [users]);
-
-  const wedmByJobId = useMemo(() => {
-    const map = new Map<string, number>();
-    jobs.forEach((entry) => {
-      map.set(String(entry.id), Number(entry.totalHrs || 0) * Number(entry.rate || 0));
-    });
-    return map;
-  }, [jobs]);
 
   const getMachineNumberForLog = useCallback(
     (log: EmployeeLog): string => {
@@ -89,14 +84,26 @@ export const useOperatorLogs = ({
         if (Number.isFinite(numericValue)) return `Rs. ${numericValue.toFixed(2)}`;
         return String(explicitRevenue);
       }
-      const jobId = String(log.jobId || "").trim();
-      const wedm = jobId ? wedmByJobId.get(jobId) || 0 : 0;
-      return wedm > 0 ? `Rs. ${wedm.toFixed(2)}` : "-";
+
+      return "-";
     },
-    [wedmByJobId]
+    []
   );
 
   const machineFilterOptions = machineOptionsForDropdown;
+
+  const userFilterOptions = useMemo(() => {
+    const seen = new Set<string>();
+    return users
+      .map((user) => getFirstNameDisplay(user.firstName, user.email, "USER"))
+      .filter((name) => {
+        const key = String(name || "").trim().toLowerCase();
+        if (!key || seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      })
+      .sort((left, right) => left.localeCompare(right));
+  }, [users]);
 
   const logsColumns = useMemo<Column<EmployeeLog>[]>(() => buildOperatorLogsColumns({
     designationByUserName,
@@ -110,12 +117,14 @@ export const useOperatorLogs = ({
         designationByUserName,
         getMachineNumberForLog,
         getRevenueForLog,
+        operatorLogUser,
         operatorLogSearch,
       }),
-    [designationByUserName, getMachineNumberForLog, getRevenueForLog, operatorLogSearch]
+    [designationByUserName, getMachineNumberForLog, getRevenueForLog, operatorLogSearch, operatorLogUser]
   );
 
   const hasOperatorLogSearch = operatorLogSearch.trim().length > 0;
+  const hasOperatorLogUserFilter = operatorLogUser.trim().length > 0;
 
   const handleExportOperatorLogsCsv = useCallback(() => {
     void (async () => {
@@ -182,7 +191,7 @@ export const useOperatorLogs = ({
 
   const logsFetchPage = useCallback(
     async (offset: number, limit: number) => {
-      if (hasOperatorLogSearch) {
+      if (hasOperatorLogSearch || hasOperatorLogUserFilter) {
         const allLogs = await fetchAllPaginatedItems<EmployeeLog>(
           async (pageOffset, pageLimit) => {
             const page = await getEmployeeLogsPage({
@@ -208,11 +217,12 @@ export const useOperatorLogs = ({
       });
       return { items: page.items, hasMore: page.hasMore };
     },
-    [hasOperatorLogSearch, operatorLogMachine, operatorLogStatus]
+    [hasOperatorLogSearch, hasOperatorLogUserFilter, operatorLogMachine, operatorLogStatus]
   );
 
   return {
     machineFilterOptions,
+    userFilterOptions,
     filterOperatorLogs,
     hasOperatorLogSearch,
     handleExportOperatorLogsCsv,

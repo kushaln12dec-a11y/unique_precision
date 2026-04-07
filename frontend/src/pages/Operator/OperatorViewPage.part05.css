@@ -238,11 +238,14 @@
 
 /* Pause Reason Input */
 .pause-reason-card {
-  grid-column: 1 / -1;
+  grid-column: span 2;
   background: #fff9e8;
   border: 1px solid #fcd34d;
   animation: slideIn 0.3s ease-out;
   padding: 0.75rem 0.85rem;
+  max-width: 360px;
+  width: 100%;
+  justify-self: start;
 }
 
 @keyframes slideIn {
@@ -286,6 +289,13 @@
   font-size: 0.84rem;
   font-weight: 700;
   text-align: center;
+}
+
+@media screen and (max-width: 1024px) {
+  .pause-reason-card {
+    grid-column: 1 / -1;
+    max-width: 100%;
+  }
 }
 
 /* Pause History Sidebar - Right Side */

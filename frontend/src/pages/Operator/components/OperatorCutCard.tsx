@@ -17,6 +17,8 @@ type OperatorCutCardProps = {
   isExpanded: boolean;
   operatorUsers: Array<{ id: string | number; name: string }>;
   machineOptions: string[];
+  canEditAssignments: boolean;
+  canOperateInputs: boolean;
   onToggleExpansion: () => void;
   onImageChange: (files: File[]) => void;
   onInputChange: (
@@ -64,6 +66,8 @@ export const OperatorCutCard: React.FC<OperatorCutCardProps> = ({
   isExpanded,
   operatorUsers,
   machineOptions,
+  canEditAssignments,
+  canOperateInputs,
   onToggleExpansion,
   onImageChange,
   onInputChange,
@@ -148,6 +152,8 @@ export const OperatorCutCard: React.FC<OperatorCutCardProps> = ({
             requiredHoursPerQuantity={expectedHoursPerQuantity}
             operatorUsers={operatorUsers}
             machineOptions={machineOptions}
+            canEditAssignments={canEditAssignments}
+            canOperateInputs={canOperateInputs}
             isAdmin={isAdmin}
             onInputChange={onInputChange}
             onApplyToAllQuantities={onApplyToAllQuantities}

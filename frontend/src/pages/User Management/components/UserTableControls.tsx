@@ -6,6 +6,7 @@ type UserTableControlsProps = {
   searchQuery: string;
   roleFilter: string;
   roles: UserRole[];
+  canManageUsers: boolean;
   onSearchChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onRoleFilterChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
   onDownloadCSV: () => void;
@@ -16,6 +17,7 @@ export const UserTableControls: React.FC<UserTableControlsProps> = ({
   searchQuery,
   roleFilter,
   roles,
+  canManageUsers,
   onSearchChange,
   onRoleFilterChange,
   onDownloadCSV,
@@ -73,9 +75,11 @@ export const UserTableControls: React.FC<UserTableControlsProps> = ({
           <DownloadIcon sx={{ fontSize: "1rem" }} />
           CSV
         </button>
-        <button className="btn-add-user" onClick={onNewUser}>
-          + Add New User
-        </button>
+        {canManageUsers ? (
+          <button className="btn-add-user" onClick={onNewUser}>
+            + Add New User
+          </button>
+        ) : null}
       </div>
     </div>
   );

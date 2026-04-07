@@ -48,7 +48,7 @@ export const UserForm: React.FC<UserFormProps> = ({
     <div className="user-form-container">
       <h2>{editingUser ? "Edit User" : "Create New User"}</h2>
       {error && <div className="error-message">{error}</div>}
-      <form onSubmit={onSubmit} className="user-form">
+      <form onSubmit={onSubmit} className="user-form" noValidate>
         <div className="form-row">
           <div className="form-group">
             <label>First Name *</label>
@@ -97,26 +97,26 @@ export const UserForm: React.FC<UserFormProps> = ({
               onChange={onInputChange}
               disabled={saving}
               placeholder="+91 9876543210"
-              pattern="^\\+91\\s\\d{10}$"
               maxLength={14}
               required
-              title="Please enter a valid Indian phone number"
+              inputMode="numeric"
+              aria-invalid={error.toLowerCase().includes("phone") ? true : undefined}
             />
           </div>
         </div>
 
         <div className="form-row">
           <div className="form-group">
-            <label>Employee ID (Auto Generated)</label>
+            <label>Employee ID *</label>
             <div className="input-action-wrapper">
               <input
                 type="text"
                 name="empId"
                 value={formData.empId}
                 onChange={onInputChange}
-                disabled={true}
-                placeholder="Auto generated"
-                readOnly
+                disabled={saving}
+                placeholder="EMP0001"
+                required
               />
               <button
                 type="button"

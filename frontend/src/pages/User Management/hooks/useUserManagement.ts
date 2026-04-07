@@ -5,12 +5,15 @@ import type { User, CreateUserData, UpdateUserData } from "../../../types/user";
 import { isValidIndianPhone, sanitizePhoneInput } from "../utils/tableUtils";
 import { formatEmployeeId } from "../../../utils/employeeId";
 import { normalizeIndianPhone } from "../../../utils/phone";
+import { getUserRoleFromToken } from "../../../utils/auth";
 
 /**
  * Hook for user management data and operations
  */
 export const useUserManagement = () => {
   const navigate = useNavigate();
+  const currentRole = (getUserRoleFromToken() || "").toUpperCase();
+  const canManageUsers = currentRole === "ADMIN";
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>("");
@@ -22,7 +25,7 @@ export const useUserManagement = () => {
     firstName: "",
     lastName: "",
     phone: "+91 ",
-    empId: "Auto Generated",
+    empId: "",
     role: "OPERATOR",
   });
   const [showPassword, setShowPassword] = useState(false);
@@ -68,7 +71,10 @@ export const useUserManagement = () => {
       return;
     }
 
-    setFormData((prev) => ({ ...prev, [name]: value }));
+      setFormData((prev) => ({
+        ...prev,
+        [name]: name === "empId" ? value.toUpperCase() : value,
+      }));
   };
 
   const resetForm = () => {
@@ -78,7 +84,7 @@ export const useUserManagement = () => {
       firstName: "",
       lastName: "",
       phone: "+91 ",
-      empId: "Auto Generated",
+      empId: "",
       role: "OPERATOR",
     });
   };
@@ -86,12 +92,19 @@ export const useUserManagement = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (saving) return;
+    if (!canManageUsers) {
+      setError("Only admins can manage users.");
+      return;
+    }
     setError("");
     setSaving(true);
 
     try {
       if (!isValidIndianPhone(formData.phone)) {
         throw new Error("Phone number must be in +91 format with 10 digits");
+      }
+      if (!String(formData.empId || "").trim()) {
+        throw new Error("Employee ID is required");
       }
 
       if (editingUser) {
@@ -142,7 +155,7 @@ export const useUserManagement = () => {
           setFormData((prev) => ({ ...prev, empId: formatEmployeeId(nextEmpId) }));
         }
       } catch {
-        setFormData((prev) => ({ ...prev, empId: "Auto Generated" }));
+        setFormData((prev) => ({ ...prev, empId: "" }));
       }
     })();
   };
@@ -198,6 +211,7 @@ export const useUserManagement = () => {
     showDeleteModal,
     userToDelete,
     deleting,
+    canManageUsers,
     handleInputChange,
     handleSubmit,
     handleEdit,

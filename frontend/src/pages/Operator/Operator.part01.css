@@ -34,13 +34,13 @@
   table-layout: auto;
   border-collapse: separate;
   border-spacing: 0;
-  background: #ffffff;
+  background: var(--color-surface);
   box-sizing: border-box;
 }
 
 /* Table Headers */
 .operator-table-no-scroll .data-table thead {
-  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  background: linear-gradient(135deg, var(--color-table-head-start) 0%, var(--color-table-head-end) 100%);
 }
 
 .operator-table-no-scroll .data-table th {
@@ -52,7 +52,7 @@
   padding: 0.5rem 0.35rem;
   text-align: left;
   vertical-align: middle;
-  border-bottom: 2px solid #16213e;
+  border-bottom: 2px solid var(--color-table-head-start);
   white-space: nowrap;
   word-wrap: normal;
   word-break: normal;
@@ -81,7 +81,7 @@
   font-size: 0.9rem;
   text-align: center;
   vertical-align: middle;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--color-border);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: normal;
@@ -99,7 +99,7 @@
   position: sticky;
   top: 0;
   z-index: 25;
-  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  background: linear-gradient(135deg, var(--color-table-head-start) 0%, var(--color-table-head-end) 100%);
 }
 
 /* ============================================

@@ -11,7 +11,7 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  background: #f5f6fb;
+  background: var(--color-page-bg);
   padding-bottom: 0;
   overflow: hidden;
   min-height: 0;
@@ -31,11 +31,11 @@
 
 .programmer-panel {
   margin: 1rem 0.5rem;
-  background: #ffffff;
+  background: var(--color-surface);
   border-radius: 12px;
   padding: 1rem;
-  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.1);
-  border: 1px solid #e2e8f0;
+  box-shadow: var(--card-shadow);
+  border: 1px solid var(--color-border);
   max-height: none;
   overflow: visible;
   width: calc(100% - 1rem);
@@ -59,7 +59,7 @@
 .panel-header h2 {
   margin: 0;
   font-size: 1.5rem;
-  color: #0f172a;
+  color: var(--color-text);
   flex-shrink: 0;
 }
 
@@ -83,10 +83,10 @@
   align-items: center;
   gap: 0.5rem;
   padding: 0.5rem 1rem;
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
   border-radius: 6px;
-  color: #1e293b;
+  color: var(--color-text);
   font-size: 0.875rem;
   font-weight: 600;
   cursor: pointer;
@@ -96,9 +96,9 @@
 }
 
 .btn-download-csv:hover {
-  background: #f8fafc;
-  border-color: #cbd5e1;
-  color: #1a1a2e;
+  background: var(--color-surface-muted);
+  border-color: var(--color-border-strong);
+  color: var(--color-text);
 }
 
 .programmer-subtabs {
@@ -108,9 +108,9 @@
 }
 
 .programmer-subtab {
-  border: 1px solid #cbd5e1;
-  background: #f8fafc;
-  color: #334155;
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-surface-muted);
+  color: var(--color-text-muted);
   border-radius: 8px;
   padding: 0.35rem 0.8rem;
   font-weight: 700;
@@ -118,8 +118,8 @@
 }
 
 .programmer-subtab.active {
-  background: #1a1a2e;
-  border-color: #1a1a2e;
+  background: var(--color-table-head-start);
+  border-color: var(--color-table-head-start);
   color: #ffffff;
 }
 
@@ -169,13 +169,13 @@
 
 .log-user-stack strong {
   font-size: 0.98rem;
-  color: #0f172a;
+  color: var(--color-text);
   font-weight: 700;
 }
 
 .log-user-stack span {
   font-size: 0.78rem;
-  color: #64748b;
+  color: var(--color-text-soft);
   text-transform: uppercase;
   letter-spacing: 0.4px;
   font-weight: 700;
@@ -192,8 +192,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: #e2e8f0;
-  color: #0f172a;
+  background: var(--color-border);
+  color: var(--color-text);
   font-size: 0.72rem;
   font-weight: 800;
   letter-spacing: 0.4px;
@@ -271,8 +271,8 @@
   min-width: 28px;
   height: 28px;
   border-radius: 999px;
-  background: #e2e8f0;
-  color: #1e293b;
+  background: var(--color-border);
+  color: var(--color-text);
   font-size: 0.72rem;
   font-weight: 800;
   letter-spacing: 0.4px;

@@ -38,7 +38,7 @@ const Sidebar = ({ onNavigate, className = "" }: SidebarProps) => {
     { icon: GroupsIcon, label: 'Job Logs', path: '/jobLogs' },
   ];
   const filteredMenuItems =
-    role && role !== 'ADMIN'
+    role && role !== 'ADMIN' && role !== 'ACCOUNTANT'
       ? menuItems.filter(
           (item) =>
             item.path === dashboardPath ||

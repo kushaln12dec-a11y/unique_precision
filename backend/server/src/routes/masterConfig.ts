@@ -285,6 +285,8 @@ router.put("/", adminMiddleware, async (req, res) => {
         customer: c.customer,
         rate: c.rate ? String(c.rate) : "",
         settingHours: c.settingHours ? String(c.settingHours) : "",
+        thicknessRateUpto100: c.thicknessRateUpto100 ? String(c.thicknessRateUpto100) : "",
+        thicknessRateAbove100: c.thicknessRateAbove100 ? String(c.thicknessRateAbove100) : "",
       })),
       materials: config.materials.map((m) => m.value),
       passOptions: config.passOptions.map((p) => p.value),

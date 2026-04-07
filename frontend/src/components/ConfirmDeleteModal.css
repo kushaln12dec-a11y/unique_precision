@@ -4,7 +4,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(15, 23, 42, 0.58);
+  background: var(--color-modal-backdrop);
   backdrop-filter: blur(2px);
   z-index: 1300;
   display: flex;
@@ -19,10 +19,10 @@
   transform: translate(-50%, -50%);
   width: 90%;
   max-width: 500px;
-  background: #ffffff;
-  border: 1px solid rgba(148, 163, 184, 0.22);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
   border-radius: 16px;
-  box-shadow: 0 28px 80px rgba(15, 23, 42, 0.26);
+  box-shadow: var(--card-shadow-strong);
   z-index: 1301;
   animation: modal-fade-in 0.2s ease-out;
 }
@@ -43,21 +43,21 @@
   justify-content: space-between;
   align-items: center;
   padding: 1.5rem 1.5rem 1rem 1.5rem;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid var(--color-border);
 }
 
 .confirm-delete-header h3 {
   margin: 0;
   font-size: 1.25rem;
   font-weight: 700;
-  color: #1e293b;
+  color: var(--color-text);
 }
 
 .confirm-delete-close {
   background: transparent;
   border: none;
   font-size: 1.5rem;
-  color: #64748b;
+  color: var(--color-text-soft);
   cursor: pointer;
   padding: 0;
   width: 32px;
@@ -70,8 +70,8 @@
 }
 
 .confirm-delete-close:hover {
-  background: #f1f5f9;
-  color: #1e293b;
+  background: var(--color-surface-muted);
+  color: var(--color-text);
 }
 
 .confirm-delete-body {
@@ -79,14 +79,14 @@
 }
 
 .delete-warning {
-  color: #dc2626;
+  color: var(--color-danger);
   font-size: 1rem;
   font-weight: 600;
   margin: 0 0 1.25rem 0;
 }
 
 .user-details {
-  background: #f8fafc;
+  background: var(--color-surface-muted);
   border-radius: 8px;
   padding: 1rem;
   margin-bottom: 1rem;
@@ -94,7 +94,7 @@
 
 .user-details p {
   margin: 0.5rem 0;
-  color: #475569;
+  color: var(--color-text-muted);
   font-size: 0.9rem;
 }
 
@@ -107,12 +107,12 @@
 }
 
 .user-details strong {
-  color: #1e293b;
+  color: var(--color-text);
   font-weight: 600;
 }
 
 .delete-note {
-  color: #64748b;
+  color: var(--color-text-soft);
   font-size: 0.85rem;
   font-style: italic;
   margin: 0;
@@ -123,7 +123,7 @@
   justify-content: flex-end;
   gap: 0.75rem;
   padding: 1rem 1.5rem 1.5rem 1.5rem;
-  border-top: 1px solid #e2e8f0;
+  border-top: 1px solid var(--color-border);
 }
 
 .btn-secondary {

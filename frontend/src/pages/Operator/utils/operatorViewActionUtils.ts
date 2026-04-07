@@ -1,5 +1,5 @@
 import { getUsers } from "../../../services/userApi";
-import { getDisplayName } from "../../../utils/jobFormatting";
+import { getFirstNameDisplay } from "../../../utils/jobFormatting";
 import type { JobEntry } from "../../../types/job";
 import { getQuantityProgressStatuses, type QuantityProgressStatus } from "./qaProgress";
 
@@ -21,7 +21,7 @@ export const loadOperatorUsers = async () => {
     .filter((user) => user.role === "OPERATOR" || user.role === "ADMIN")
     .map((user) => ({
       id: user._id,
-      name: getDisplayName(user.firstName, user.lastName, user.email, String(user._id)).toUpperCase(),
+      name: getFirstNameDisplay(user.firstName, user.email, String(user._id)).toUpperCase(),
     }));
 };
 

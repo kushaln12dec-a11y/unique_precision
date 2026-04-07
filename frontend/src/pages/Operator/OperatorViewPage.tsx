@@ -15,8 +15,9 @@ import OperatorViewModals from "./components/OperatorViewModals";
 import type { CutInputData } from "./types/cutInput";
 import { createEmptyCutInputData } from "./types/cutInput";
 import { getUserDisplayNameFromToken, getUserRoleFromToken } from "../../utils/auth";
-import { estimatedDurationSecondsFromHours, estimatedHoursFromAmount, MACHINE_OPTIONS, toMachineIndex } from "../../utils/jobFormatting";
+import { estimatedDurationSecondsFromHours, estimatedHoursFromAmount, getPrimaryPersonName, MACHINE_OPTIONS, toMachineIndex } from "../../utils/jobFormatting";
 import { getQuantityElapsedSeconds, parseOperatorDateTime } from "./utils/operatorTimeUtils";
+import { updateOperatorJob } from "../../services/operatorApi";
 import "../RoleBoard.css";
 import "../Programmer/Programmer.css";
 import "../Programmer/components/JobDetailsModal.css";
@@ -28,8 +29,11 @@ const OperatorViewPage = () => {
   const [searchParams] = useSearchParams();
   const groupId = searchParams.get("groupId");
   const cutIdParam = searchParams.get("cutId");
-  const isAdmin = getUserRoleFromToken() === "ADMIN";
-  const currentUserDisplayName = getUserDisplayNameFromToken() || "";
+  const userRole = (getUserRoleFromToken() || "").toUpperCase();
+  const isAdmin = userRole === "ADMIN";
+  const canOperateInputs = userRole === "ADMIN" || userRole === "OPERATOR";
+  const canEditAssignments = userRole === "ADMIN" || userRole === "PROGRAMMER" || userRole === "OPERATOR";
+  const currentUserDisplayName = getPrimaryPersonName(getUserDisplayNameFromToken() || "", "USER");
 
   const [validationErrors, setValidationErrors] = useState<Map<number | string, Record<string, Record<string, string>>>>(new Map());
   const [liveNowMs, setLiveNowMs] = useState<number>(Date.now());
@@ -76,6 +80,9 @@ const OperatorViewPage = () => {
     handlePauseResumeAction,
   } = useOperatorViewActions({ jobs, cutInputs, setValidationErrors, currentUserDisplayName });
   const allowedOperatorUsers = useMemo(() => {
+    if (userRole === "ADMIN" || userRole === "PROGRAMMER" || userRole === "ACCOUNTANT") {
+      return operatorUsers;
+    }
     const normalizedCurrentUser = String(currentUserDisplayName || "").trim().toLowerCase();
     const matchingUsers = operatorUsers.filter(
       (operator) => String(operator.name || "").trim().toLowerCase() === normalizedCurrentUser
@@ -84,7 +91,40 @@ const OperatorViewPage = () => {
     return currentUserDisplayName
       ? [{ id: "self", name: currentUserDisplayName }]
       : operatorUsers;
-  }, [currentUserDisplayName, isAdmin, operatorUsers]);
+  }, [currentUserDisplayName, operatorUsers, userRole]);
+
+  useEffect(() => {
+    if (!canEditAssignments || jobs.length === 0 || cutInputs.size === 0) return;
+
+    const timeoutId = window.setTimeout(() => {
+      jobs.forEach((job) => {
+        const cutData = cutInputs.get(job.id);
+        if (!cutData) return;
+        const assignedNames = (cutData.quantities || [])
+          .flatMap((quantity) => (Array.isArray(quantity.opsName) ? quantity.opsName : []))
+          .reduce<Map<string, string>>((map, name) => {
+            const trimmed = String(name || "").trim().toUpperCase();
+            if (!trimmed) return map;
+            map.set(trimmed.toLowerCase(), trimmed);
+            return map;
+          }, new Map<string, string>());
+        const nextAssignedTo = Array.from(assignedNames.values()).join(", ") || "Unassign";
+        const nextMachineNumber =
+          (cutData.quantities || [])
+            .map((quantity) => String(quantity.machineNumber || "").trim())
+            .find(Boolean) || "";
+        if (String(job.assignedTo || "Unassign").trim() === nextAssignedTo && String(job.machineNumber || "").trim() === nextMachineNumber) {
+          return;
+        }
+        void updateOperatorJob(String(job.id), {
+          assignedTo: nextAssignedTo,
+          machineNumber: nextMachineNumber,
+        }).catch(() => undefined);
+      });
+    }, 250);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [canEditAssignments, cutInputs, jobs]);
 
   const parentJob = jobs.length > 0 ? jobs[0] : null;
   const totalGroupQuantity = jobs.reduce((sum, job) => sum + Math.max(1, Number(job.qty || 1)), 0);
@@ -229,6 +269,8 @@ const OperatorViewPage = () => {
                         isExpanded={isExpanded}
                         operatorUsers={allowedOperatorUsers}
                         machineOptions={machineOptions}
+                        canEditAssignments={canEditAssignments}
+                        canOperateInputs={canOperateInputs}
                         onToggleExpansion={() => toggleCutExpansion(cutItem.id)}
                         onImageChange={(files) => handleCutImageChange(cutItem.id, files)}
                         onInputChange={handleInputChange}

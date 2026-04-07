@@ -7,6 +7,7 @@ import type { CutInputData, QuantityInputData } from "../types/cutInput";
 import { createEmptyQuantityInputData } from "../types/cutInput";
 import { calculateMachineHrs } from "../utils/machineHrsCalculation";
 import { loadOperatorInputsFromLocalStorage, saveOperatorInputsToLocalStorage } from "../utils/operatorViewStorage";
+import { getPrimaryPersonName } from "../../../utils/jobFormatting";
 
 export const useOperatorViewData = (groupId: string | null, cutIdParam: string | null) => {
   const [jobs, setJobs] = useState<JobEntry[]>([]);
@@ -16,14 +17,16 @@ export const useOperatorViewData = (groupId: string | null, cutIdParam: string |
   const [cutInputs, setCutInputs] = useState<Map<number | string, CutInputData>>(new Map());
   const [expandedCuts, setExpandedCuts] = useState<Set<number | string>>(new Set());
 
+  const normalizeOperatorName = (value: unknown) => getPrimaryPersonName(value, "");
+
   const parseAssignedOperators = (rawAssignedTo: unknown): string[] => {
     if (Array.isArray(rawAssignedTo)) {
-      return [...new Set(rawAssignedTo.map((value) => String(value || "").trim().toUpperCase()).filter(Boolean))].slice(0, 1);
+      return [...new Set(rawAssignedTo.map((value) => normalizeOperatorName(value)).filter(Boolean))];
     }
     const normalized = String(rawAssignedTo || "").trim();
     const normalizedLower = normalized.toLowerCase();
     if (!normalized || normalizedLower === "unassigned" || normalizedLower === "unassign") return [];
-    return [...new Set(normalized.split(",").map((value) => value.trim().toUpperCase()).filter(Boolean))].slice(0, 1);
+    return [...new Set(normalized.split(",").map((value) => normalizeOperatorName(value)).filter(Boolean))];
   };
 
   const collectOperatorHistoryForQuantity = (
@@ -36,7 +39,7 @@ export const useOperatorViewData = (groupId: string | null, cutIdParam: string |
     const pushName = (rawValue: unknown) => {
       String(rawValue || "")
         .split(",")
-        .map((value) => value.trim().toUpperCase())
+        .map((value) => normalizeOperatorName(value))
         .filter(Boolean)
         .forEach((value) => {
           const key = value.toLowerCase();
@@ -106,7 +109,7 @@ export const useOperatorViewData = (groupId: string | null, cutIdParam: string |
   ) => {
     const summary = new Map<string, number>();
     const addEntry = (rawName: unknown, durationSeconds: number) => {
-      const name = String(rawName || "").trim().toUpperCase();
+      const name = normalizeOperatorName(rawName);
       if (!name) return;
       summary.set(name, (summary.get(name) || 0) + Math.max(0, durationSeconds));
     };
@@ -199,12 +202,12 @@ export const useOperatorViewData = (groupId: string | null, cutIdParam: string |
           const jobId = job.id;
           const existing = job as any;
           const getOpsNameArray = (rawOpsName: string | string[]) => {
-            if (Array.isArray(rawOpsName)) return rawOpsName.map((value) => String(value || "").trim().toUpperCase()).filter(Boolean).slice(0, 1);
+            if (Array.isArray(rawOpsName)) return rawOpsName.map((value) => normalizeOperatorName(value)).filter(Boolean);
             return rawOpsName && rawOpsName !== "Unassigned" && rawOpsName !== "Unassign"
-              ? rawOpsName.split(",").map((value) => value.trim().toUpperCase()).filter(Boolean).slice(0, 1)
+              ? rawOpsName.split(",").map((value) => normalizeOperatorName(value)).filter(Boolean)
               : [];
           };
-          const assignedToArray = parseAssignedOperators(existing.assignedTo || "");
+          const assignedToArray = parseAssignedOperators(existing.assignedTo || "").slice(0, 1);
           
           // If we have saved data for this cut, use it
           if (savedInputs && savedInputs.has(jobId)) {
@@ -223,14 +226,14 @@ export const useOperatorViewData = (groupId: string | null, cutIdParam: string |
                   };
                 }
                 const qtyOps = Array.isArray(qty.opsName)
-                  ? qty.opsName.map((value) => String(value || "").trim()).filter(Boolean)
+                  ? qty.opsName.map((value) => normalizeOperatorName(value)).filter(Boolean)
                   : [];
                 return {
                     ...qty,
                     machineNumber: String(qty.machineNumber || "").trim() || sharedMachine,
                     opsName: qtyOps.length > 0 ? qtyOps : assignedToArray,
                     operatorHistory: Array.isArray(qty.operatorHistory)
-                      ? qty.operatorHistory.map((value) => String(value || "").trim().toUpperCase()).filter(Boolean)
+                      ? qty.operatorHistory.map((value) => normalizeOperatorName(value)).filter(Boolean)
                       : collectOperatorHistoryForQuantity(existing.operatorCaptures || [], index + 1, logsByJobId.get(String(jobId)) || []),
                     operatorHistoryDetails: collectOperatorHistoryDetailsForQuantity(existing.operatorCaptures || [], index + 1, logsByJobId.get(String(jobId)) || []),
                 };

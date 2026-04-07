@@ -3,7 +3,7 @@ import MarqueeCopyText from "../../../components/MarqueeCopyText";
 import JobRefLink from "../../../components/JobRefLink";
 import type { EmployeeLog } from "../../../types/employeeLog";
 import { formatDisplayDateTime, getDisplayDateTimeParts } from "../../../utils/date";
-import { formatMachineLabel, getInitials, getLogUserDisplayName } from "../../../utils/jobFormatting";
+import { formatMachineLabel, getInitials, getLogUserDisplayName, getPrimaryPersonName } from "../../../utils/jobFormatting";
 import {
   formatOperatorDuration,
   formatOperatorLogStatus,
@@ -127,18 +127,30 @@ export const buildOperatorLogFilter =
     designationByUserName,
     getMachineNumberForLog,
     getRevenueForLog,
+    operatorLogUser,
     operatorLogSearch,
   }: {
     designationByUserName: Map<string, string>;
     getMachineNumberForLog: (log: EmployeeLog) => string;
     getRevenueForLog: (log: EmployeeLog, workedSecondsMap?: Map<string, number>) => string;
+    operatorLogUser: string;
     operatorLogSearch: string;
   }) =>
   (logs: EmployeeLog[]) =>
-    logs.filter((log) =>
-      matchesSearchQuery(
+    logs.filter((log) => {
+      const normalizedUserName = getPrimaryPersonName(
+        getLogUserDisplayName(log.userName, log.userEmail, "Operator"),
+        ""
+      );
+      const matchesUser =
+        !operatorLogUser ||
+        normalizedUserName.toLowerCase() === String(operatorLogUser || "").trim().toLowerCase();
+
+      if (!matchesUser) return false;
+
+      return matchesSearchQuery(
         [
-          getLogUserDisplayName(log.userName, log.userEmail, "Operator"),
+          normalizedUserName,
           designationByUserName.get(getLogUserDisplayName(log.userName, log.userEmail, "Operator").toLowerCase()) || "Operator",
           formatMachineLabel(getMachineNumberForLog(log)),
           formatOperatorWorkItem(log.refNumber || log.workItemTitle),
@@ -156,5 +168,5 @@ export const buildOperatorLogFilter =
           formatOperatorLogStatus(log.status),
         ],
         operatorLogSearch
-      )
-    );
+      );
+    });

@@ -5,10 +5,12 @@ import { companySlides } from "../../data/companySlides";
 import { useCarousel } from "../../utils/useCarousel";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
+import { useTheme } from "../../theme/ThemeProvider";
 import "./Login.css";
 
 const Login = () => {
   const navigate = useNavigate();
+  const { setTheme } = useTheme();
   const [empId, setEmpId] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -22,6 +24,10 @@ const Login = () => {
       navigate("/dashboard");
     }
   }, [navigate]);
+
+  useEffect(() => {
+    setTheme("light");
+  }, [setTheme]);
 
   // Use carousel hook
   const {

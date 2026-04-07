@@ -9,15 +9,15 @@ import './EmployeeLogs.css';
 const EmployeeLogs = () => {
   const navigate = useNavigate();
   const role = (getUserRoleFromToken() || '').toUpperCase();
-  const isAdmin = role === 'ADMIN';
+  const canViewLogs = role === 'ADMIN' || role === 'ACCOUNTANT';
 
   useEffect(() => {
-    if (isAdmin) return;
+    if (canViewLogs) return;
     const fallbackPath = role === 'OPERATOR' ? '/operator' : '/dashboard';
     navigate(fallbackPath, { replace: true });
-  }, [isAdmin, navigate, role]);
+  }, [canViewLogs, navigate, role]);
 
-  if (!isAdmin) return null;
+  if (!canViewLogs) return null;
 
   return (
     <div className="employee-logs-page-container">

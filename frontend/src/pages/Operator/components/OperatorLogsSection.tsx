@@ -7,10 +7,13 @@ import { formatMachineLabel } from "../../../utils/jobFormatting";
 type Props = {
   operatorLogSearch: string;
   setOperatorLogSearch: React.Dispatch<React.SetStateAction<string>>;
+  operatorLogUser: string;
+  setOperatorLogUser: React.Dispatch<React.SetStateAction<string>>;
   operatorLogStatus: "" | "IN_PROGRESS" | "COMPLETED" | "REJECTED";
   setOperatorLogStatus: React.Dispatch<React.SetStateAction<"" | "IN_PROGRESS" | "COMPLETED" | "REJECTED">>;
   operatorLogMachine: string;
   setOperatorLogMachine: React.Dispatch<React.SetStateAction<string>>;
+  userFilterOptions: string[];
   machineFilterOptions: string[];
   handleExportOperatorLogsCsv: () => void;
   operatorLogColumnDefs: any[];
@@ -21,10 +24,13 @@ type Props = {
 export const OperatorLogsSection: React.FC<Props> = ({
   operatorLogSearch,
   setOperatorLogSearch,
+  operatorLogUser,
+  setOperatorLogUser,
   operatorLogStatus,
   setOperatorLogStatus,
   operatorLogMachine,
   setOperatorLogMachine,
+  userFilterOptions,
   machineFilterOptions,
   handleExportOperatorLogsCsv,
   operatorLogColumnDefs,
@@ -41,6 +47,18 @@ export const OperatorLogsSection: React.FC<Props> = ({
           placeholder="Search any column..."
           className="filter-input operator-logs-search"
         />
+        <select
+          value={operatorLogUser}
+          onChange={(e) => setOperatorLogUser(e.target.value)}
+          className="filter-select"
+        >
+          <option value="">All Users</option>
+          {userFilterOptions.map((userName) => (
+            <option key={userName} value={userName}>
+              {userName}
+            </option>
+          ))}
+        </select>
         <select
           value={operatorLogStatus}
           onChange={(e) => setOperatorLogStatus(e.target.value as "" | "IN_PROGRESS" | "COMPLETED" | "REJECTED")}
@@ -72,7 +90,7 @@ export const OperatorLogsSection: React.FC<Props> = ({
         getRowId={(row) => row._id}
         className="operator-logs-table logs-center"
         rowHeight={84}
-        refreshKey={`${operatorLogStatus}|${operatorLogMachine}`}
+        refreshKey={`${operatorLogUser}|${operatorLogStatus}|${operatorLogMachine}`}
       />
     </>
   );

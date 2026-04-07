@@ -11,7 +11,7 @@
   flex: 1;
   min-width: 0;
   min-height: 0;
-  background: #f5f6fb;
+  background: var(--color-page-bg);
   padding: 0.25rem;
   box-sizing: border-box;
   overflow-y: auto;
@@ -21,12 +21,12 @@
 
 .roleboard-body {
   margin-top: 2rem;
-  background: #ffffff;
+  background: var(--color-surface);
   padding: 2rem;
   border-radius: 16px;
-  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.1);
-  border: 1px solid #e2e8f0;
-  color: #111827;
+  box-shadow: var(--card-shadow);
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
 }
 
 @media (min-width: 1025px) {
@@ -95,6 +95,6 @@
 
 @media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
   .roleboard-body {
-    box-shadow: 0 12px 30px rgba(15, 23, 42, 0.1);
+    box-shadow: var(--card-shadow);
   }
 }

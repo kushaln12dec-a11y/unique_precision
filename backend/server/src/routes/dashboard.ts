@@ -4,7 +4,7 @@ import { prisma } from "../lib/prisma";
 
 const router = Router();
 
-type DashboardView = "ADMIN" | "OPERATOR" | "PROGRAMMER" | "QC";
+type DashboardView = "ADMIN" | "ACCOUNTANT" | "OPERATOR" | "PROGRAMMER" | "QC";
 type DateRangePreset = "TODAY" | "THIS_WEEK" | "THIS_MONTH" | "YTD" | "CUSTOM";
 
 type DashboardJobRecord = {
@@ -379,7 +379,7 @@ router.get("/summary", async (req, res) => {
     const reqRole = String(reqUser?.role || "").toUpperCase() as DashboardView;
     const requestedView = String(req.query.view || reqRole || "ADMIN").toUpperCase() as DashboardView;
     const activeView =
-      reqRole === "ADMIN"
+      reqRole === "ADMIN" || reqRole === "ACCOUNTANT"
         ? requestedView
         : reqRole === "PROGRAMMER" || reqRole === "OPERATOR" || reqRole === "QC"
           ? reqRole
@@ -704,7 +704,7 @@ router.get("/summary", async (req, res) => {
     const operator = {
       profile: {
         name: operatorFocusName || "Operator",
-        badge: reqRole === "ADMIN" ? "Admin View" : "Operator",
+        badge: reqRole === "ADMIN" || reqRole === "ACCOUNTANT" ? "Admin View" : "Operator",
         todayRevenue: operatorRevenueToday,
         machineHoursToday: operatorHoursToday,
         jobsCompletedToday: operatorJobsCompletedToday,
@@ -895,7 +895,7 @@ router.get("/summary", async (req, res) => {
       meta: {
         generatedAt: new Date().toISOString(),
         activeView,
-        allowedViews: reqRole === "ADMIN" ? ["ADMIN", "OPERATOR", "PROGRAMMER", "QC"] : [activeView],
+        allowedViews: reqRole === "ADMIN" || reqRole === "ACCOUNTANT" ? ["ADMIN", "OPERATOR", "PROGRAMMER", "QC"] : [activeView],
         dateRange: {
           preset: dateRange.preset,
           label: dateRange.label,

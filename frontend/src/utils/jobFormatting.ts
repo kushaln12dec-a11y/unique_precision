@@ -27,6 +27,16 @@ export const getFirstNameDisplay = (
   return String(emailLocalPart || fallback).toUpperCase();
 };
 
+export const getPrimaryPersonName = (
+  value: unknown,
+  fallback = "User"
+): string => {
+  const normalized = String(value || "").trim();
+  if (!normalized) return fallback.toUpperCase();
+  const firstToken = normalized.split(/[\s,]+/).find(Boolean);
+  return String(firstToken || fallback).toUpperCase();
+};
+
 export const getInitials = (value: string): string => {
   const full = String(value || "").trim();
   if (!full) return "--";
@@ -88,7 +98,10 @@ export const toMachineIndex = (value: unknown): string => {
   const raw = String(value || "").trim().toUpperCase();
   if (!raw) return "";
   const normalized = raw.startsWith("M") ? raw.slice(1) : raw;
-  return MACHINE_OPTIONS.includes(normalized as (typeof MACHINE_OPTIONS)[number]) ? normalized : "";
+  if (!/^\d+$/.test(normalized)) return "";
+  const numberValue = Number(normalized);
+  if (!Number.isInteger(numberValue) || numberValue <= 0) return "";
+  return String(numberValue);
 };
 
 export const formatMachineLabel = (value: unknown): string => {

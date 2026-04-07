@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { getMasterConfig } from "../../../services/masterConfigApi";
 import type { MasterConfig } from "../../../types/masterConfig";
-import { MACHINE_OPTIONS, getDisplayName, toMachineIndex } from "../../../utils/jobFormatting";
+import { MACHINE_OPTIONS, getFirstNameDisplay, getPrimaryPersonName, toMachineIndex } from "../../../utils/jobFormatting";
 
 export const useOperatorPageConfig = (
   operatorUsers: Array<{ _id: string; firstName?: string; lastName?: string; email?: string }>,
@@ -18,7 +18,7 @@ export const useOperatorPageConfig = (
     () =>
       operatorUsers.map((user) => ({
         id: user._id,
-        name: getDisplayName(user.firstName, user.lastName, user.email, String(user._id)).toUpperCase(),
+        name: getFirstNameDisplay(user.firstName, user.email, String(user._id)).toUpperCase(),
       })),
     [operatorUsers]
   );
@@ -29,8 +29,11 @@ export const useOperatorPageConfig = (
   }, [masterConfig]);
 
   return {
-    currentUserDisplayName,
+    currentUserDisplayName: getPrimaryPersonName(currentUserDisplayName, "USER"),
     isAdmin: userRole === "ADMIN",
+    canEditAssignments: userRole === "ADMIN" || userRole === "PROGRAMMER" || userRole === "OPERATOR",
+    canOperateInputs: userRole === "ADMIN" || userRole === "OPERATOR",
+    isAccountant: userRole === "ACCOUNTANT",
     canUseTaskSwitchTimer: userRole === "ADMIN" || userRole === "OPERATOR",
     operatorOptionUsers,
     machineOptionsForDropdown,

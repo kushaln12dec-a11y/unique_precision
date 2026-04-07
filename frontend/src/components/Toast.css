@@ -7,7 +7,7 @@
   max-width: 360px;
   padding: 0.85rem 1rem;
   border-radius: 12px;
-  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.2);
+  box-shadow: var(--card-shadow-strong);
   animation: toast-slide 0.2s ease-out;
 }
 
@@ -34,15 +34,15 @@
 }
 
 .toast-success {
-  background: linear-gradient(135deg, #10b981, #059669);
+  background: linear-gradient(135deg, #10b981, var(--color-success));
 }
 
 .toast-error {
-  background: linear-gradient(135deg, #ef4444, #dc2626);
+  background: linear-gradient(135deg, #ef4444, var(--color-danger));
 }
 
 .toast-info {
-  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  background: linear-gradient(135deg, #3b82f6, var(--color-info));
 }
 
 @keyframes toast-slide {
