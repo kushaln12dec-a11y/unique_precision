@@ -118,7 +118,7 @@ router.get("/:id", adminMiddleware, async (req, res) => {
 // Create user
 router.post("/", adminMiddleware, async (req, res) => {
   try {
-    const { email, password, firstName, lastName, phone, image, role } = req.body;
+    const { email, password, firstName, lastName, phone, image, role, empId } = req.body;
 
     if (!password || !firstName || !lastName || !phone) {
       return res.status(400).json({ message: "All required fields must be provided" });
@@ -135,9 +135,20 @@ router.post("/", adminMiddleware, async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
     const imageUrl = await resolveStoredFile(image, "users");
 
+    const requestedEmpId = String(empId || "").trim().toUpperCase();
+    if (requestedEmpId) {
+      const existingEmpIdUser = await prisma.user.findFirst({
+        where: { empId: requestedEmpId },
+        select: { id: true },
+      });
+      if (existingEmpIdUser) {
+        return res.status(400).json({ message: "Employee ID already exists" });
+      }
+    }
+
     let user = null as any;
     for (let attempt = 0; attempt < 3; attempt += 1) {
-      const generatedEmpId = await reserveNextEmpId();
+      const generatedEmpId = requestedEmpId || await reserveNextEmpId();
       let emailToUse = normalizedEmail || `${generatedEmpId.toLowerCase()}@uniqueprecision.local`;
       if (!normalizedEmail) {
         let suffix = 1;
@@ -164,7 +175,7 @@ router.post("/", adminMiddleware, async (req, res) => {
       } catch (createError: any) {
         if (createError?.code === "P2002") {
           const target = String(createError?.meta?.target || "");
-          if (target.includes("empId")) continue;
+          if (!requestedEmpId && target.includes("empId")) continue;
         }
         throw createError;
       }
@@ -186,7 +197,7 @@ router.post("/", adminMiddleware, async (req, res) => {
 // Update user
 router.put("/:id", adminMiddleware, async (req, res) => {
   try {
-    const { email, password, firstName, lastName, phone, image, role } = req.body;
+    const { email, password, firstName, lastName, phone, image, role, empId } = req.body;
 
     const updateData: any = {};
     if (firstName) updateData.firstName = firstName;
@@ -197,6 +208,9 @@ router.put("/:id", adminMiddleware, async (req, res) => {
     }
     if (role) updateData.role = role;
     if (String(email || "").trim()) updateData.email = String(email).trim().toLowerCase();
+    if (String(empId || "").trim()) {
+      updateData.empId = String(empId).trim().toUpperCase();
+    }
 
     if (password) {
       updateData.passwordHash = await bcrypt.hash(password, 10);
@@ -205,6 +219,18 @@ router.put("/:id", adminMiddleware, async (req, res) => {
     const id = getParamId(req.params.id);
     if (!id) {
       return res.status(400).json({ message: "Invalid user id" });
+    }
+    if (updateData.empId) {
+      const conflictingUser = await prisma.user.findFirst({
+        where: {
+          empId: updateData.empId,
+          NOT: { id },
+        },
+        select: { id: true },
+      });
+      if (conflictingUser) {
+        return res.status(400).json({ message: "Employee ID already exists" });
+      }
     }
     const user = await prisma.user.update({
       where: { id },
@@ -217,7 +243,10 @@ router.put("/:id", adminMiddleware, async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
     if (error.code === "P2002") {
-      return res.status(400).json({ message: "User with this email already exists" });
+      const target = String(error?.meta?.target || "");
+      return res.status(400).json({
+        message: target.includes("empId") ? "Employee ID already exists" : "User with this email already exists",
+      });
     }
     res.status(500).json({ message: "Error updating user" });
   }

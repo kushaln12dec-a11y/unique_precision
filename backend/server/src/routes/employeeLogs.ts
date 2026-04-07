@@ -116,6 +116,56 @@ const getOperatorRevenueValue = (log: any): number | null => {
   return Number.isFinite(numericRevenue) ? numericRevenue : null;
 };
 
+const normalizeMachineNumber = (value: unknown): string => {
+  const raw = String(value || "").trim().toUpperCase();
+  if (!raw) return "";
+  const mcMatch = raw.match(/^MC-?0*([1-9]\d*)$/);
+  if (mcMatch?.[1]) return mcMatch[1];
+  const mMatch = raw.match(/^M0*([1-9]\d*)$/);
+  if (mMatch?.[1]) return mMatch[1];
+  const plainMatch = raw.match(/^0*([1-9]\d*)$/);
+  if (plainMatch?.[1]) return plainMatch[1];
+  return raw;
+};
+
+const getMachineNumberFromOperatorLog = (log: any): string => {
+  const metadata = (log?.metadata || {}) as Record<string, any>;
+  return normalizeMachineNumber(metadata.machineNumber);
+};
+
+const findActiveMachineConflict = async (
+  machineNumber: unknown,
+  options: { excludeLogId?: string } = {}
+) => {
+  const normalizedMachineNumber = normalizeMachineNumber(machineNumber);
+  if (!normalizedMachineNumber) return null;
+
+  const activeLogs = await prisma.employeeLog.findMany({
+    where: {
+      role: "OPERATOR",
+      activityType: "OPERATOR_PRODUCTION",
+      status: "IN_PROGRESS",
+    },
+    select: {
+      id: true,
+      jobId: true,
+      refNumber: true,
+      settingLabel: true,
+      userName: true,
+      endedAt: true,
+      metadata: true,
+    },
+  });
+
+  return (
+    activeLogs.find((log) => {
+      if (options.excludeLogId && String(log.id) === String(options.excludeLogId)) return false;
+      if (log.endedAt) return false;
+      return getMachineNumberFromOperatorLog(log) === normalizedMachineNumber;
+    }) || null
+  );
+};
+
 const buildOperatorLogCompletionKey = (log: any): string[] => {
   const jobId = String(log?.jobId || "").trim();
   const quantityNumbers = getQuantityNumbersFromLog(log);
@@ -582,10 +632,22 @@ router.post("/operator/start", async (req, res) => {
       toQty,
       quantityCount,
       startedAt,
+      machineNumber,
+      opsName,
     } = req.body || {};
 
     const userId = toUuid(reqUser?.userId);
     const resolvedJobId = toUuid(jobId);
+    const normalizedMachineNumber = normalizeMachineNumber(machineNumber);
+
+    if (normalizedMachineNumber) {
+      const conflict = await findActiveMachineConflict(normalizedMachineNumber);
+      if (conflict) {
+        return res.status(409).json({
+          message: `Machine M${normalizedMachineNumber} is already running for ${String(conflict.refNumber || "another job")} (${String(conflict.userName || "operator")}).`,
+        });
+      }
+    }
 
     const parsedStartedAt = startedAt ? new Date(startedAt) : new Date();
     const safeStartedAt = Number.isNaN(parsedStartedAt.getTime()) ? new Date() : parsedStartedAt;
@@ -610,8 +672,12 @@ router.post("/operator/start", async (req, res) => {
         jobCustomer: String(customer || ""),
         jobDescription: String(description || ""),
         workItemTitle: `Job #${String(refNumber || "-")}`,
-        workSummary: "Operator started production input",
+        workSummary: `Machine ${normalizedMachineNumber ? `M${normalizedMachineNumber}` : "-"} | Ops ${String(opsName || resolveReqUserName(reqUser) || "-")} | Running`,
         startedAt: safeStartedAt,
+        metadata: {
+          machineNumber: normalizedMachineNumber,
+          opsName: String(opsName || resolveReqUserName(reqUser) || ""),
+        },
       },
     });
 
@@ -684,8 +750,8 @@ router.get("/", async (req, res) => {
   try {
     const reqUser = req.user as any;
     const reqRole = String(reqUser?.role || "").toUpperCase();
-    if (reqRole !== "ADMIN" && reqRole !== "OPERATOR") {
-      return res.status(403).json({ message: "Only operators and admins can view logs." });
+    if (!["ADMIN", "ACCOUNTANT", "PROGRAMMER", "OPERATOR"].includes(reqRole)) {
+      return res.status(403).json({ message: "Only operators, programmers, accountants, and admins can view logs." });
     }
 
     const where: any = {};
@@ -761,15 +827,9 @@ router.get("/", async (req, res) => {
         mappedLogs
           .filter((log: any) => String(log.role || "").toUpperCase() === "OPERATOR" && log.jobGroupId !== null && log.jobGroupId !== undefined)
           .map((log: any) => String(log.jobGroupId))
-          .filter(Boolean)
+        .filter(Boolean)
       )
     );
-
-    if (operatorGroupIds.length === 0) {
-      return res.json(createPaginatedResponse(mappedLogs, total, offset, limit));
-    }
-
-    const operatorGroupIdsAsBigInt = operatorGroupIds.map((value) => toBigInt(value)).filter((value): value is bigint => value !== undefined);
     const operatorJobIds = Array.from(
       new Set(
         mappedLogs
@@ -779,16 +839,27 @@ router.get("/", async (req, res) => {
       )
     );
 
-    const [groupJobs, operatorGroupLogs, operatorJobsById] = await prisma.$transaction([
+    if (operatorGroupIds.length === 0 && operatorJobIds.length === 0) {
+      return res.json(createPaginatedResponse(mappedLogs, total, offset, limit));
+    }
+
+    const operatorGroupIdsAsBigInt = operatorGroupIds.map((value) => toBigInt(value)).filter((value): value is bigint => value !== undefined);
+
+    const scopedOperatorLogWhere: any = {
+      role: "OPERATOR",
+      OR: [
+        ...(operatorGroupIdsAsBigInt.length > 0 ? [{ jobGroupId: { in: operatorGroupIdsAsBigInt } }] : []),
+        ...(operatorJobIds.length > 0 ? [{ jobId: { in: operatorJobIds } }] : []),
+      ],
+    };
+
+    const [groupJobs, scopedOperatorLogs, operatorJobsById] = await prisma.$transaction([
       prisma.job.findMany({
-        where: { groupId: { in: operatorGroupIdsAsBigInt } },
+        where: operatorGroupIdsAsBigInt.length > 0 ? { groupId: { in: operatorGroupIdsAsBigInt } } : { id: { in: [] } },
         select: { id: true, groupId: true, totalHrs: true, rate: true },
       }),
       prisma.employeeLog.findMany({
-        where: {
-          role: "OPERATOR",
-          jobGroupId: { in: operatorGroupIdsAsBigInt },
-        },
+        where: scopedOperatorLogWhere,
       }),
       prisma.job.findMany({
         where: { id: { in: operatorJobIds } },
@@ -810,17 +881,32 @@ router.get("/", async (req, res) => {
     const completedLogKeys = new Set<string>();
     const totalWorkedSecondsByGroupId = new Map<string, number>();
     const totalWorkedSecondsByJobId = new Map<string, number>();
-    operatorGroupLogs.forEach((log) => {
+    scopedOperatorLogs.forEach((log) => {
       const status = String(log.status || "").toUpperCase();
-      const groupId = String(log.jobGroupId || "").trim();
-      const jobId = String(log.jobId || "").trim();
 
       if (status === "COMPLETED") {
         buildOperatorLogCompletionKey(log).forEach((key) => completedLogKeys.add(key));
       }
+    });
 
-      if (status !== "COMPLETED") return;
+    const visibleScopedOperatorLogs = scopedOperatorLogs.filter((log) => {
+      const status = String(log.status || "").toUpperCase();
+      if (status === "IN_PROGRESS" && log.endedAt) return false;
+      if (status !== "IN_PROGRESS") return true;
+      const completionKeys = buildOperatorLogCompletionKey(log);
+      if (completionKeys.length === 0) return true;
+      return !completionKeys.some((key) => completedLogKeys.has(key));
+    });
+
+    visibleScopedOperatorLogs.forEach((log) => {
+      const status = String(log.status || "").toUpperCase();
+      const groupId = String(log.jobGroupId || "").trim();
+      const jobId = String(log.jobId || "").trim();
+
+      if (status === "IN_PROGRESS" && log.endedAt) return;
+      if (status !== "COMPLETED" && status !== "IN_PROGRESS" && status !== "REJECTED") return;
       const workedSeconds = getWorkedSecondsForOperatorLog(log);
+      if (workedSeconds <= 0) return;
       if (groupId) {
         totalWorkedSecondsByGroupId.set(groupId, (totalWorkedSecondsByGroupId.get(groupId) || 0) + workedSeconds);
       }
@@ -831,6 +917,7 @@ router.get("/", async (req, res) => {
 
     const visibleLogs = mappedLogs.filter((log: any) => {
       if (String(log.role || "").toUpperCase() !== "OPERATOR") return true;
+      if (String(log.status || "").toUpperCase() === "IN_PROGRESS" && log.endedAt) return false;
       if (String(log.status || "").toUpperCase() !== "IN_PROGRESS") return true;
       const completionKeys = buildOperatorLogCompletionKey(log);
       if (completionKeys.length === 0) return true;
@@ -839,8 +926,13 @@ router.get("/", async (req, res) => {
 
     const responseItems = visibleLogs.map((log: any) => {
       if (String(log.role || "").toUpperCase() !== "OPERATOR") return log;
+      const jobId = String(log.jobId || "").trim();
+      const groupId = String(log.jobGroupId || "").trim();
+      const wedmAmount = (jobId ? wedmAmountByJobId.get(jobId) : 0) || (groupId ? wedmAmountByGroupId.get(groupId) : 0) || 0;
+      const totalWorkedSeconds = (jobId ? totalWorkedSecondsByJobId.get(jobId) : 0) || (groupId ? totalWorkedSecondsByGroupId.get(groupId) : 0) || 0;
       const explicitRevenue = getOperatorRevenueValue(log);
-      if (explicitRevenue !== null) {
+      if (!wedmAmount || totalWorkedSeconds <= 0) {
+        if (explicitRevenue === null) return log;
         return {
           ...log,
           revenue: Number(explicitRevenue.toFixed(2)),
@@ -850,12 +942,6 @@ router.get("/", async (req, res) => {
           },
         };
       }
-
-      const jobId = String(log.jobId || "").trim();
-      const groupId = String(log.jobGroupId || "").trim();
-      const wedmAmount = (jobId ? wedmAmountByJobId.get(jobId) : 0) || (groupId ? wedmAmountByGroupId.get(groupId) : 0) || 0;
-      const totalWorkedSeconds = (jobId ? totalWorkedSecondsByJobId.get(jobId) : 0) || (groupId ? totalWorkedSecondsByGroupId.get(groupId) : 0) || 0;
-      if (!wedmAmount || totalWorkedSeconds <= 0) return log;
       const workedSeconds = getWorkedSecondsForOperatorLog(log);
       const revenue = Math.max(0, Number(((wedmAmount * workedSeconds) / totalWorkedSeconds).toFixed(2)));
       return {

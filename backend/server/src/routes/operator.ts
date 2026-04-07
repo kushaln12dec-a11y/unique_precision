@@ -20,6 +20,17 @@ const router = Router();
 
 router.use(authMiddleware);
 
+const getRequestRole = (req: any) => String(req?.user?.role || "").toUpperCase();
+
+const canViewOperatorScreen = (req: any) =>
+  ["ADMIN", "PROGRAMMER", "OPERATOR", "ACCOUNTANT"].includes(getRequestRole(req));
+
+const canEditOperatorAssignments = (req: any) =>
+  ["ADMIN", "PROGRAMMER", "OPERATOR"].includes(getRequestRole(req));
+
+const canOperateOperatorInputs = (req: any) =>
+  ["ADMIN", "OPERATOR"].includes(getRequestRole(req));
+
 const getContiguousRanges = (quantityNumbers: number[]) => {
   const sorted = Array.from(
     new Set(
@@ -162,6 +173,9 @@ const canOperatorAdjustOwnAssignment = (req: any, currentValue: unknown, request
 
 router.get("/jobs", async (req, res) => {
   try {
+    if (!canViewOperatorScreen(req)) {
+      return res.status(403).json({ message: "Forbidden" });
+    }
     const where: any = {};
     const andConditions: any[] = [];
     const orConditions: any[] = [];
@@ -229,6 +243,9 @@ router.get("/jobs", async (req, res) => {
 
 router.get("/jobs/:id", async (req, res) => {
   try {
+    if (!canViewOperatorScreen(req)) {
+      return res.status(403).json({ message: "Forbidden" });
+    }
     const job = await prisma.job.findUnique({
       where: { id: req.params.id },
       include: operatorJobInclude,
@@ -244,6 +261,9 @@ router.get("/jobs/:id", async (req, res) => {
 
 router.get("/jobs/group/:groupId", async (req, res) => {
   try {
+    if (!canViewOperatorScreen(req)) {
+      return res.status(403).json({ message: "Forbidden" });
+    }
     const groupId = parseGroupIdOrNull(req.params.groupId);
     if (groupId === null) {
       return res.status(400).json({ message: "Invalid groupId" });
@@ -262,7 +282,15 @@ router.get("/jobs/group/:groupId", async (req, res) => {
 
 router.put("/jobs/:id", async (req, res) => {
   try {
+    if (!canEditOperatorAssignments(req)) {
+      return res.status(403).json({ message: "Only admins, programmers, and operators can update operator jobs." });
+    }
     const { id, _id, operatorCaptures, quantityQaStates, qaStates, ...updateData } = req.body;
+    const allowedFields = new Set(["assignedTo", "machineNumber", "startTime", "endTime", "machineHrs", "opsName", "idleTime", "idleTimeDuration", "lastImage", "updatedBy"]);
+    const invalidField = Object.keys(updateData || {}).find((field) => !allowedFields.has(field));
+    if (invalidField) {
+      return res.status(400).json({ message: `Field ${invalidField} cannot be updated from the operator screen.` });
+    }
     if (updateData.assignedTo !== undefined) {
       const existingJob = await prisma.job.findUnique({
         where: { id: req.params.id },
@@ -305,6 +333,9 @@ router.put("/jobs/:id", async (req, res) => {
 
 router.post("/jobs/:id/capture-input", async (req, res) => {
   try {
+    if (!canOperateOperatorInputs(req)) {
+      return res.status(403).json({ message: "Only admins and operators can capture operator inputs." });
+    }
     const {
       startTime,
       endTime,
@@ -474,6 +505,9 @@ router.post("/jobs/:id/capture-input", async (req, res) => {
 
 router.post("/jobs/:id/reset-quantity", async (req, res) => {
   try {
+    if (!canOperateOperatorInputs(req)) {
+      return res.status(403).json({ message: "Only admins and operators can reset quantities." });
+    }
     const quantityNumber = Number(req.body?.quantityNumber || 0);
     if (!Number.isInteger(quantityNumber) || quantityNumber < 1) {
       return res.status(400).json({ message: "quantityNumber must be a positive integer" });
@@ -582,6 +616,9 @@ router.post("/jobs/:id/reset-quantity", async (req, res) => {
 
 router.post("/jobs/:id/qa-status", async (req, res) => {
   try {
+    if (!canOperateOperatorInputs(req)) {
+      return res.status(403).json({ message: "Only admins and operators can update QA status." });
+    }
     const { quantityNumbers, status } = req.body as {
       quantityNumbers?: number[];
       status?: "READY_FOR_QA" | "SENT_TO_QA";
@@ -650,6 +687,9 @@ router.post("/jobs/:id/qa-status", async (req, res) => {
 
 router.put("/jobs/bulk", async (req, res) => {
   try {
+    if (!canEditOperatorAssignments(req)) {
+      return res.status(403).json({ message: "Only admins, programmers, and operators can bulk update operator jobs." });
+    }
     const { jobIds, updateData } = req.body;
 
     if (!Array.isArray(jobIds) || jobIds.length === 0) {
@@ -660,6 +700,11 @@ router.put("/jobs/bulk", async (req, res) => {
     const updatedBy = getUpdatedByName(req);
 
     const { operatorCaptures, quantityQaStates, qaStates, ...safeUpdateData } = updateData || {};
+    const allowedBulkFields = new Set(["assignedTo", "machineNumber"]);
+    const invalidField = Object.keys(safeUpdateData || {}).find((field) => !allowedBulkFields.has(field));
+    if (invalidField) {
+      return res.status(400).json({ message: `Field ${invalidField} cannot be bulk updated from the operator screen.` });
+    }
     const finalUpdateData = {
       ...safeUpdateData,
       updatedAt,

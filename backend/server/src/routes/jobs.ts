@@ -7,12 +7,12 @@ const router = Router();
 
 router.use(authenticate);
 
-router.get("/", authorize("ADMIN", "PROGRAMMER", "OPERATOR", "QC"), jobController.getJobs);
-router.get("/programmer", authorize("ADMIN", "PROGRAMMER"), jobController.getProgrammerJobs);
-router.get("/operator", authorize("ADMIN", "PROGRAMMER", "OPERATOR"), jobController.getOperatorJobs);
-router.get("/qc", authorize("ADMIN", "PROGRAMMER", "QC"), jobController.getQcJobs);
-router.get("/group/:groupId", authorize("ADMIN", "PROGRAMMER", "OPERATOR", "QC"), jobController.getJobsByGroupId);
-router.get("/:id", authorize("ADMIN", "PROGRAMMER", "OPERATOR", "QC"), jobController.getJobById);
+router.get("/", authorize("ADMIN", "ACCOUNTANT", "PROGRAMMER", "OPERATOR", "QC"), jobController.getJobs);
+router.get("/programmer", authorize("ADMIN", "ACCOUNTANT", "PROGRAMMER"), jobController.getProgrammerJobs);
+router.get("/operator", authorize("ADMIN", "ACCOUNTANT", "PROGRAMMER", "OPERATOR"), jobController.getOperatorJobs);
+router.get("/qc", authorize("ADMIN", "ACCOUNTANT", "PROGRAMMER", "QC"), jobController.getQcJobs);
+router.get("/group/:groupId", authorize("ADMIN", "ACCOUNTANT", "PROGRAMMER", "OPERATOR", "QC"), jobController.getJobsByGroupId);
+router.get("/:id", authorize("ADMIN", "ACCOUNTANT", "PROGRAMMER", "OPERATOR", "QC"), jobController.getJobById);
 router.post("/", authorize("ADMIN", "PROGRAMMER"), jobController.createJob);
 router.put("/:id", authorize("ADMIN", "PROGRAMMER"), jobController.updateJob);
 router.put("/group/:groupId/qc-decision", authorize("ADMIN", "QC"), jobController.updateGroupQcDecision);

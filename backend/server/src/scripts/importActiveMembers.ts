@@ -17,16 +17,17 @@ type ImportRow = {
 };
 
 const IMPORT_FILE = path.resolve(process.cwd(), "server/src/scripts/activeMembers1.import.json");
-const DEFAULT_PASSWORD = String(process.env.USER_IMPORT_DEFAULT_PASSWORD || "raki123");
 const AUTO_EMAIL_DOMAIN = "uniqueprecision.local";
 
-const VALID_ROLES = new Set(["ADMIN", "PROGRAMMER", "OPERATOR", "QC"]);
+const VALID_ROLES = new Set(["ADMIN", "PROGRAMMER", "OPERATOR", "QC", "ACCOUNTANT"]);
 
 const normalizeRole = (value: unknown): string => {
   const cleaned = String(value || "").trim().toUpperCase();
   if (VALID_ROLES.has(cleaned)) return cleaned;
   return "OPERATOR";
 };
+
+const getRolePassword = (role: string): string => role.trim().toLowerCase();
 
 const splitName = (value: unknown): { firstName: string; lastName: string } => {
   const cleaned = String(value || "")
@@ -101,7 +102,6 @@ const readRows = (): ImportRow[] => {
 
 const importUsers = async () => {
   const rows = readRows();
-  const passwordHash = await bcrypt.hash(DEFAULT_PASSWORD, 10);
 
   let created = 0;
   let updated = 0;
@@ -118,6 +118,7 @@ const importUsers = async () => {
     const { firstName, lastName } = splitName(row.name);
     const phone = normalizePhone(row.mobile);
     const role = normalizeRole(row.dept);
+    const passwordHash = await bcrypt.hash(getRolePassword(role), 10);
 
     const existing = await prisma.user.findFirst({
       where: {
@@ -140,6 +141,7 @@ const importUsers = async () => {
           lastName,
           phone,
           role,
+          passwordHash,
         },
       });
       updated += 1;
@@ -169,7 +171,7 @@ const importUsers = async () => {
         created,
         updated,
         skipped,
-        defaultPasswordUsed: DEFAULT_PASSWORD,
+        passwordRule: "designation in lowercase",
         appEnv: process.env.APP_ENV || "development",
       },
       null,

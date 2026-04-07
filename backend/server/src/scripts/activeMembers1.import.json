@@ -48,6 +48,14 @@
     "dept": "Operator"
   },
   {
+    "employeeId": "1020",
+    "name": "GURUPRASAD POOJARI",
+    "gender": "MALE",
+    "mobile": "7338510126",
+    "email": "GURUPRASAD961206@GMAIL.COM",
+    "dept": "Accountant"
+  },
+  {
     "employeeId": "1023",
     "name": "BASAVARAJU A H",
     "gender": "MALE",
@@ -109,6 +117,30 @@
     "gender": "MALE",
     "mobile": "6362556410",
     "email": "prathapasm235@gmail.com",
+    "dept": "Operator"
+  },
+  {
+    "employeeId": "1078",
+    "name": "Pradeep S",
+    "gender": "MALE",
+    "mobile": "9663950983",
+    "email": "pradeep.skp.1990@gmail.com",
+    "dept": "Operator"
+  },
+  {
+    "employeeId": "1088",
+    "name": "Rajanikantha N",
+    "gender": "MALE",
+    "mobile": "7349318797",
+    "email": "rajanikantharajanikantha471@gmail.com",
+    "dept": "Operator"
+  },
+  {
+    "employeeId": "1089",
+    "name": "Vinay  S V",
+    "gender": "MALE",
+    "mobile": "7676625710",
+    "email": "",
     "dept": "Operator"
   },
   {
@@ -181,6 +213,6 @@
     "gender": "MALE",
     "mobile": "9844980855",
     "email": "",
-    "dept": ""
+    "dept": "Operator"
   }
 ]
