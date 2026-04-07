@@ -20,6 +20,8 @@ export type OperatorDisplayRow = {
 
 type UseOperatorTableProps = {
   canAssign: boolean;
+  userRole: string;
+  canOperateInputs: boolean;
   operatorUsers: Array<{ id: string | number; name: string }>;
   machineOptions: string[];
   currentUserName: string;
@@ -40,6 +42,8 @@ type UseOperatorTableProps = {
 
 export const useOperatorTable = ({
   canAssign,
+  userRole,
+  canOperateInputs,
   operatorUsers,
   machineOptions,
   currentUserName,
@@ -67,7 +71,7 @@ export const useOperatorTable = ({
       lookup.set(fullName.toLowerCase(), fullName);
       const firstToken = fullName.split(/\s+/).filter(Boolean)[0];
       if (firstToken) {
-        lookup.set(firstToken.toLowerCase(), fullName);
+        lookup.set(firstToken.toLowerCase(), firstToken);
       }
     });
     return lookup;
@@ -78,6 +82,7 @@ export const useOperatorTable = ({
       toggleGroup,
       operatorNameLookup,
       canAssign,
+      userRole,
       operatorUsers,
       handleAssignChange,
       currentUserName,
@@ -91,11 +96,13 @@ export const useOperatorTable = ({
       handleImageInput,
       handleOpenQaModal,
       isImageInputDisabled,
+      canOperateInputs,
       activeRunsByJobId,
       operatorHistoryByJobId,
     }),
     [
       canAssign,
+      canOperateInputs,
       operatorUsers,
       machineDropdownOptions,
       currentUserName,
@@ -109,6 +116,7 @@ export const useOperatorTable = ({
       handleOpenQaModal,
       isAdmin,
       isImageInputDisabled,
+      userRole,
       activeRunsByJobId,
       operatorHistoryByJobId,
       operatorNameLookup,

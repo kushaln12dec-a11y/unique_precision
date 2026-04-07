@@ -40,7 +40,9 @@ const sanitizeMachineOptions = (values: string[]): string[] => {
 
 const AdminConsole = () => {
   const navigate = useNavigate();
-  const isAdmin = useMemo(() => getUserRoleFromToken() === "ADMIN", []);
+  const role = useMemo(() => (getUserRoleFromToken() || "").toUpperCase(), []);
+  const canManageConfig = role === "ADMIN";
+  const canViewConfig = canManageConfig || role === "ACCOUNTANT";
   const [config, setConfig] = useState<MasterConfig | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -66,7 +68,7 @@ const AdminConsole = () => {
   });
 
   useEffect(() => {
-    if (!isAdmin) {
+    if (!canViewConfig) {
       navigate("/dashboard");
       return;
     }
@@ -97,7 +99,7 @@ const AdminConsole = () => {
     };
 
     void load();
-  }, [isAdmin, navigate]);
+  }, [canViewConfig, navigate]);
 
   const normalizedCustomers = useMemo(() => normalizeCustomerRows(customers), [customers]);
   const normalizedMaterials = useMemo(() => sanitizeOptions(materials), [materials]);
@@ -197,7 +199,7 @@ const AdminConsole = () => {
   };
 
   const summaryCards = [
-    { title: "Customers & Rates", value: `${normalizedCustomers.length} customer profiles`, detail: "Customer rate and customer-specific setting hrs stay together.", dirty: sectionDirty.customers, onClick: () => setActiveSection("customers") },
+    { title: "Customers & Rates", value: `${normalizedCustomers.length} customer profiles`, detail: "Customer rate, setting hrs, and customer-specific SEDM up to/above 20mm stay together.", dirty: sectionDirty.customers, onClick: () => setActiveSection("customers") },
     { title: "Thickness Pricing", value: `${normalizedThicknessConfig.thicknessRateUpto100} / ${normalizedThicknessConfig.thicknessRateAbove100}`, detail: "Global pricing divisor for thickness <= 100 and > 100.", dirty: sectionDirty.thickness, onClick: () => setActiveSection("thickness") },
     { title: "Material Options", value: `${normalizedMaterials.length} material presets`, detail: "Used in Programmer forms and standardizes entries.", dirty: sectionDirty.materials, onClick: () => setActiveSection("materials") },
     { title: "Pass Options", value: `${normalizedPassOptions.length} pass presets`, detail: "Controls pass dropdown values in the job form.", dirty: sectionDirty.pass, onClick: () => setActiveSection("pass") },
@@ -218,9 +220,12 @@ const AdminConsole = () => {
             <>
               <AdminSummaryCards cards={summaryCards} />
               <div className="admin-console-actions">
-                <button type="button" className="btn-primary" disabled={saving || loading || activeSection !== null} onClick={() => void handleSave()}>
-                  {saving ? "Saving..." : "Save All Changes"}
-                </button>
+                {canManageConfig ? (
+                  <button type="button" className="admin-save-button admin-save-button-hero" disabled={saving || loading || activeSection !== null} onClick={() => void handleSave()}>
+                    <span className="admin-save-button-shine" aria-hidden="true" />
+                    <span className="admin-save-button-label">{saving ? "Saving..." : "Save All Changes"}</span>
+                  </button>
+                ) : null}
               </div>
             </>
           )}
@@ -230,6 +235,7 @@ const AdminConsole = () => {
       <AdminSectionModals
         activeSection={activeSection}
         setActiveSection={setActiveSection}
+        readOnly={!canManageConfig}
         customers={customers}
         updateCustomerRow={(index, field, value) =>
           setCustomers((prev) => prev.map((row, idx) => (idx === index ? { ...row, [field]: field === "customer" ? value.toUpperCase() : value } : row)))

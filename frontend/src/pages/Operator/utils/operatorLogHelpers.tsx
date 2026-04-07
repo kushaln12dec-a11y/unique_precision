@@ -58,12 +58,12 @@ export const getOperatorShiftLabel = (startedAt?: string): string => {
   const date = new Date(startedAt);
   if (Number.isNaN(date.getTime())) return "-";
   const hour = date.getHours();
-  return hour >= 6 && hour < 18 ? "Day" : "Night";
+  return hour >= 8 && hour < 20 ? "Morning" : "Night";
 };
 
 export const renderOperatorShiftBadge = (startedAt?: string) => {
   const shift = getOperatorShiftLabel(startedAt);
-  if (shift === "Day") return <span className="shift-icon-badge day" title="Day Shift"><WbSunnyOutlinedIcon sx={{ fontSize: "1rem" }} /></span>;
+  if (shift === "Morning") return <span className="shift-icon-badge day" title="Morning Shift"><WbSunnyOutlinedIcon sx={{ fontSize: "1rem" }} /></span>;
   if (shift === "Night") return <span className="shift-icon-badge night" title="Night Shift"><DarkModeOutlinedIcon sx={{ fontSize: "1rem" }} /></span>;
   return "-";
 };

@@ -10,7 +10,7 @@ import { OperatorTaskTimer } from "./OperatorTaskTimer";
 import SelectDropdown, { type SelectOption } from "../../Programmer/components/SelectDropdown";
 import { MultiSelectOperators } from "./MultiSelectOperators";
 import type { FilterField, FilterCategory, FilterValues } from "../../../components/FilterModal";
-import { getDisplayName } from "../../../utils/jobFormatting";
+import { formatMachineLabel, getDisplayName, getFirstNameDisplay } from "../../../utils/jobFormatting";
 
 type OperatorFiltersProps = {
   filters: FilterValues;
@@ -31,6 +31,8 @@ type OperatorFiltersProps = {
   onCreatedByFilterChange: (value: string) => void;
   onAssignedToFilterChange: (value: string) => void;
   canUseTaskSwitchTimer: boolean;
+  canOperateInputs: boolean;
+  canEditAssignments: boolean;
   onSaveTaskSwitch: (payload: {
     idleTime: string;
     remark: string;
@@ -46,6 +48,8 @@ type OperatorFiltersProps = {
   machineOptions: string[];
   onApplyBulkAssignment: (payload: { operators: string[]; machineNumber: string }) => void;
   runningMachineAlerts: Array<{
+    groupId: string;
+    cutId?: string;
     machineNumber: string;
     jobRef: string;
     customer: string;
@@ -53,7 +57,10 @@ type OperatorFiltersProps = {
     quantityLabel: string;
     operatorName?: string;
     estimatedTime: string;
+    severity: "safe" | "warning" | "danger";
+    statusLabel: string;
   }>;
+  onOpenRunningJob: (groupId: string, cutId?: string) => void;
   onClearAllFilters: () => void;
 };
 
@@ -76,6 +83,8 @@ export const OperatorFilters: React.FC<OperatorFiltersProps> = ({
   onCreatedByFilterChange,
   onAssignedToFilterChange,
   canUseTaskSwitchTimer,
+  canOperateInputs,
+  canEditAssignments,
   onSaveTaskSwitch,
   onShowToast,
   onTimerRunningChange,
@@ -85,6 +94,7 @@ export const OperatorFilters: React.FC<OperatorFiltersProps> = ({
   machineOptions,
   onApplyBulkAssignment,
   runningMachineAlerts,
+  onOpenRunningJob,
   onClearAllFilters,
 }) => {
   const [bulkOperator, setBulkOperator] = React.useState("");
@@ -119,7 +129,7 @@ export const OperatorFilters: React.FC<OperatorFiltersProps> = ({
     const source = operatorUsers.length > 0 ? operatorUsers : users;
     const items = source.map((user) => ({
       id: user._id,
-      name: getDisplayName(user.firstName, user.lastName, user.email),
+      name: getFirstNameDisplay(user.firstName, user.email, String(user._id)),
     }));
     return [{ id: "__unassign__", name: "UNASSIGN" }, ...items];
   }, [operatorUsers, users]);
@@ -140,7 +150,7 @@ export const OperatorFilters: React.FC<OperatorFiltersProps> = ({
       { label: "Unassign", value: "Unassign" },
     ];
     source.forEach((user) => {
-      const displayName = getDisplayName(user.firstName, user.lastName, user.email, String(user._id));
+      const displayName = getFirstNameDisplay(user.firstName, user.email, String(user._id));
       const key = displayName.toLowerCase();
       if (!displayName || seen.has(key)) return;
       seen.add(key);
@@ -212,7 +222,7 @@ export const OperatorFilters: React.FC<OperatorFiltersProps> = ({
             </div>
           )}
           <div className="operator-actions-row">
-            {selectedRowsCount > 0 && (
+            {canEditAssignments && selectedRowsCount > 0 && (
               <div className="operator-bulk-assign-group operator-bulk-assign-banner">
                 <span className="operator-bulk-selected-pill">{selectedRowsCount} selected</span>
                 <SelectDropdown
@@ -259,14 +269,16 @@ export const OperatorFilters: React.FC<OperatorFiltersProps> = ({
               <DownloadIcon sx={{ fontSize: "1rem" }} />
               CSV
             </button>
-            <button
-              className="btn-download-csv operator-send-qa-btn"
-              onClick={onSendSelectedRowsToQa}
-              disabled={selectedRowsCount === 0}
-              title="Move selected rows to QC"
-            >
-              Send To QC{selectedRowsCount > 0 ? ` (${selectedRowsCount})` : ""}
-            </button>
+            {canOperateInputs ? (
+              <button
+                className="btn-download-csv operator-send-qa-btn"
+                onClick={onSendSelectedRowsToQa}
+                disabled={selectedRowsCount === 0}
+                title="Move selected rows to QC"
+              >
+                Send To QC{selectedRowsCount > 0 ? ` (${selectedRowsCount})` : ""}
+              </button>
+            ) : null}
             <FilterButton onClick={() => onShowFilterModal(true)} activeFilterCount={activeFilterCount} />
           </div>
         </div>
@@ -306,24 +318,28 @@ export const OperatorFilters: React.FC<OperatorFiltersProps> = ({
       >
         <div className="operator-running-modal-list">
           {runningMachineAlerts.map((alert) => (
-            <div
+            <article
               key={`${alert.machineNumber}-${alert.jobRef}-${alert.quantityLabel}`}
-              className="operator-running-modal-card"
+              className={`operator-running-modal-card operator-running-status-${alert.severity}`.trim()}
             >
               <div className="operator-running-modal-card-header">
-                <div className="operator-running-modal-machine">
+                <div className={`operator-running-modal-machine operator-running-modal-machine-${alert.severity}`.trim()}>
                   <PrecisionManufacturingRoundedIcon sx={{ fontSize: "1rem" }} />
                 </div>
                 <div className="operator-running-modal-title-block">
-                  <strong>{alert.machineNumber || "-"}</strong>
-                  <span>{alert.jobRef || alert.customer || "Running job"}</span>
+                  <strong>{alert.jobRef || alert.customer || "Running job"}</strong>
+                  <span>{formatMachineLabel(alert.machineNumber) || alert.machineNumber || "-"}</span>
                 </div>
-                <span className="operator-running-modal-live-pill">
+                <span className={`operator-running-modal-live-pill ${alert.severity}`.trim()}>
                   <span className="operator-running-dot" aria-hidden="true" />
-                  Running
+                  {alert.statusLabel}
                 </span>
               </div>
               <div className="operator-running-modal-grid">
+                <div className="operator-running-modal-meta">
+                  <span>Machine</span>
+                  <strong>{formatMachineLabel(alert.machineNumber) || alert.machineNumber || "-"}</strong>
+                </div>
                 <div className="operator-running-modal-meta">
                   <span>Customer</span>
                   <strong>{alert.customer || "-"}</strong>
@@ -345,7 +361,16 @@ export const OperatorFilters: React.FC<OperatorFiltersProps> = ({
                   <strong>{alert.estimatedTime || "-"}</strong>
                 </div>
               </div>
-            </div>
+              <div className="operator-running-modal-actions">
+                <button
+                  type="button"
+                  className="operator-running-modal-open-btn"
+                  onClick={() => onOpenRunningJob(alert.groupId, alert.cutId)}
+                >
+                  Open Job
+                </button>
+              </div>
+            </article>
           ))}
         </div>
       </Modal>

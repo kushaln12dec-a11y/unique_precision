@@ -154,6 +154,8 @@ export const startOperatorProductionLog = async (payload: {
   toQty?: number;
   quantityCount?: number;
   startedAt?: string;
+  machineNumber?: string;
+  opsName?: string;
 }): Promise<EmployeeLog> => {
   const res = await fetch(apiUrl("/api/employee-logs/operator/start"), {
     method: "POST",
@@ -162,7 +164,8 @@ export const startOperatorProductionLog = async (payload: {
   });
 
   if (!res.ok) {
-    throw new Error("Failed to start operator production log");
+    const error = await res.json().catch(() => ({ message: "Failed to start operator production log" }));
+    throw new Error(error.message || "Failed to start operator production log");
   }
 
   return res.json();

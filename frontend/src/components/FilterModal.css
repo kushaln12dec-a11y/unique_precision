@@ -12,7 +12,7 @@
   flex-shrink: 0;
   padding: 1rem 1.5rem;
   margin-bottom: 0;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid var(--color-border);
 }
 
 .filter-modal .modal-content {
@@ -42,8 +42,8 @@
 .filter-sidebar {
   width: 220px !important;
   flex-shrink: 0;
-  border-right: 1px solid #e2e8f0;
-  background: #f8fafc;
+  border-right: 1px solid var(--color-border);
+  background: var(--color-surface-muted);
   overflow-y: auto;
 }
 
@@ -61,7 +61,7 @@
   padding: 0.75rem 1rem;
   border: none;
   background: transparent;
-  color: #64748b;
+  color: var(--color-text-soft);
   font-size: 0.875rem;
   font-weight: 500;
   text-align: left;
@@ -71,17 +71,17 @@
 }
 
 .filter-category-tab:hover {
-  background: #e2e8f0;
-  color: #1e293b;
+  background: var(--color-border);
+  color: var(--color-text);
 }
 
 .filter-category-tab.active {
-  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  background: linear-gradient(135deg, var(--color-table-head-start) 0%, var(--color-table-head-end) 100%);
   color: #ffffff;
 }
 
 .filter-category-tab.active:hover {
-  background: linear-gradient(135deg, #16213e 0%, #1a1a2e 100%);
+  background: linear-gradient(135deg, var(--color-table-head-end) 0%, var(--color-table-head-start) 100%);
 }
 
 .category-icon {
@@ -127,7 +127,7 @@
 .filter-field label {
   font-size: 0.875rem;
   font-weight: 600;
-  color: #1e293b;
+  color: var(--color-text);
   margin-bottom: 0.25rem;
   white-space: nowrap;
 }
@@ -135,12 +135,12 @@
 .filter-field input,
 .filter-field select {
   padding: 0.625rem;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--color-input-border);
   border-radius: 6px;
   font-size: 0.875rem;
-  color: #1e293b;
+  color: var(--color-input-text);
   transition: all 0.2s ease;
-  background: #ffffff;
+  background: var(--color-input-bg);
   width: 100%;
   min-width: 0;
   box-sizing: border-box;
@@ -149,12 +149,12 @@
 .filter-field input:focus,
 .filter-field select:focus {
   outline: none;
-  border-color: #1a1a2e;
+  border-color: var(--color-primary);
   box-shadow: 0 0 0 3px rgba(26, 26, 46, 0.1);
 }
 
 .filter-field input::placeholder {
-  color: #94a3b8;
+  color: var(--color-placeholder);
 }
 
 .filter-range {
@@ -178,18 +178,18 @@
   flex: 1;
   min-width: 140px;
   padding: 0.625rem;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--color-input-border);
   border-radius: 6px;
   font-size: 0.875rem;
-  color: #1e293b;
+  color: var(--color-input-text);
   transition: all 0.2s ease;
-  background: #ffffff;
+  background: var(--color-input-bg);
   box-sizing: border-box;
 }
 
 .filter-range .range-inputs input[type="date"]:focus {
   outline: none;
-  border-color: #1a1a2e;
+  border-color: var(--color-primary);
   box-shadow: 0 0 0 3px rgba(26, 26, 46, 0.1);
 }
 
@@ -197,28 +197,28 @@
   flex: 1;
   min-width: 120px;
   padding: 0.625rem;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--color-input-border);
   border-radius: 6px;
   font-size: 0.875rem;
-  color: #1e293b;
+  color: var(--color-input-text);
   transition: all 0.2s ease;
-  background: #ffffff;
+  background: var(--color-input-bg);
   box-sizing: border-box;
 }
 
 .filter-range .range-inputs input:focus {
   outline: none;
-  border-color: #1a1a2e;
+  border-color: var(--color-primary);
   box-shadow: 0 0 0 3px rgba(26, 26, 46, 0.1);
 }
 
 .filter-range .range-inputs input::placeholder {
-  color: #94a3b8;
+  color: var(--color-placeholder);
 }
 
 .filter-range .range-inputs span {
   font-size: 0.875rem;
-  color: #64748b;
+  color: var(--color-text-soft);
   font-weight: 500;
   white-space: nowrap;
   flex-shrink: 0;
@@ -233,13 +233,13 @@
   justify-content: flex-end;
   gap: 0.75rem;
   padding: 1rem 1.5rem;
-  border-top: 1px solid #e2e8f0;
-  background: #ffffff;
+  border-top: 1px solid var(--color-border);
+  background: var(--color-surface);
   flex-shrink: 0;
 }
 
 .btn-apply {
-  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  background: linear-gradient(135deg, var(--color-table-head-start) 0%, var(--color-table-head-end) 100%);
   color: #ffffff;
   border: none;
   padding: 0.625rem 1.5rem;
@@ -256,9 +256,9 @@
 }
 
 .btn-clear {
-  background: #ffffff;
-  color: #64748b;
-  border: 1px solid #e2e8f0;
+  background: var(--color-surface);
+  color: var(--color-text-soft);
+  border: 1px solid var(--color-border);
   padding: 0.625rem 1.5rem;
   border-radius: 6px;
   font-size: 0.875rem;
@@ -268,9 +268,9 @@
 }
 
 .btn-clear:hover {
-  background: #f8fafc;
-  border-color: #cbd5e1;
-  color: #1e293b;
+  background: var(--color-surface-muted);
+  border-color: var(--color-border-strong);
+  color: var(--color-text);
 }
 
 @media (max-width: 768px) {
@@ -281,7 +281,7 @@
   .filter-sidebar {
     width: 100%;
     border-right: none;
-    border-bottom: 1px solid #e2e8f0;
+    border-bottom: 1px solid var(--color-border);
     max-height: 150px;
   }
 
@@ -325,7 +325,7 @@
   .filter-sidebar {
     width: 100% !important;
     border-right: none;
-    border-bottom: 1px solid #e2e8f0;
+    border-bottom: 1px solid var(--color-border);
     max-height: 180px;
   }
 

@@ -3,12 +3,12 @@
   left: 0;
   top: 0;
   height: 100dvh;
-  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+  background: linear-gradient(135deg, var(--color-shell-start) 0%, var(--color-shell-mid) 50%, var(--color-shell-end) 100%);
   transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   z-index: 1000;
   display: flex;
   flex-direction: column;
-  box-shadow: 4px 0 20px rgba(0, 0, 0, 0.3);
+  box-shadow: 4px 0 20px var(--color-shadow);
 }
 
 .sidebar.expanded {
@@ -37,10 +37,10 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid var(--color-shell-border);
   position: relative;
   z-index: 1;
-  background: #ababab;
+  background: color-mix(in srgb, var(--color-surface) 92%, #94a3b8);
 }
 
 .sidebar-logo {
@@ -60,7 +60,7 @@
 .sidebar-toggle-icon {
   display: none;
   margin-left: auto;
-  color: #102a63;
+  color: var(--color-primary-strong);
   flex-shrink: 0;
 }
 
@@ -93,7 +93,7 @@
   font-family: var(--brand-script-font) !important;
   font-size: 1.56rem;
   line-height: 1.02;
-  color: #102a63;
+  color: var(--color-primary-strong);
   letter-spacing: 0.18px;
   font-weight: 800;
   text-shadow:
@@ -147,7 +147,7 @@
   background: transparent;
   border: none;
   border-radius: 12px;
-  color: #e2e8f0;
+  color: var(--color-shell-text);
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
@@ -172,7 +172,7 @@
 .nav-item.active {
   background: rgba(220, 38, 38, 0.15);
   color: #ffffff;
-  border-left: 4px solid #dc2626;
+  border-left: 4px solid var(--color-accent);
 }
 
 .nav-item.active::before {
@@ -214,7 +214,7 @@
 
 .sidebar-footer {
   padding: 1rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-top: 1px solid var(--color-shell-border);
   position: relative;
   z-index: 1;
 }
@@ -266,7 +266,7 @@
 
   .logout-item:hover {
     background: rgba(220, 38, 38, 0.2);
-    color: #ef4444;
+    color: var(--color-danger);
   }
 }
 
@@ -372,11 +372,11 @@
     min-width: 24px;
     width: 24px;
     height: 24px;
-    color: #102a63;
+    color: var(--color-primary-strong);
     position: absolute;
     inset: 0;
     margin: auto;
-    background: rgba(16, 42, 99, 0.08);
+    background: var(--theme-toggle-bg);
     border-radius: 999px;
   }
 
@@ -408,7 +408,7 @@
     display: block;
     position: fixed;
     inset: 0;
-    background: rgba(15, 23, 42, 0.24);
+    background: var(--color-overlay);
     z-index: 999;
     border: none;
   }

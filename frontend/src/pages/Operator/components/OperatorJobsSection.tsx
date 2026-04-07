@@ -8,8 +8,10 @@ import { getParentRowClassName, getRowClassName } from "../../Programmer/utils/p
 import type { FilterValues } from "../../../components/FilterModal";
 import type { JobEntry } from "../../../types/job";
 import type { OperatorDisplayRow } from "../hooks/useOperatorTable";
-import type { OperatorTableRow } from "../types";
+import type { OperatorCompletionAlert, OperatorTableRow } from "../types";
 import type { EmployeeLog } from "../../../types/employeeLog";
+
+const COMPLETION_ALERT_TOAST_COOLDOWN_MS = 60_000;
 
 type Props = {
   loadingJobs: boolean;
@@ -33,6 +35,8 @@ type Props = {
   setCreatedByFilter: (value: string) => void;
   setAssignedToFilter: (value: string) => void;
   canUseTaskSwitchTimer: boolean;
+  canOperateInputs: boolean;
+  canEditAssignments: boolean;
   handleSaveTaskSwitch: (payload: { idleTime: string; remark: string; startedAt: string; endedAt: string; durationSeconds: number }) => Promise<void>;
   setIsTaskTimerRunning: (running: boolean) => void;
   setToast: React.Dispatch<React.SetStateAction<{ message: string; variant: "success" | "error" | "info"; visible: boolean }>>;
@@ -48,6 +52,8 @@ type Props = {
   expandedGroups: Set<string>;
   createdByRefreshKey: string;
   activeOperatorRuns: EmployeeLog[];
+  onOpenRunningJob: (groupId: string, cutId?: string) => void;
+  completionAlerts: OperatorCompletionAlert[];
 };
 
 export const OperatorJobsSection: React.FC<Props> = ({
@@ -72,6 +78,8 @@ export const OperatorJobsSection: React.FC<Props> = ({
   setCreatedByFilter,
   setAssignedToFilter,
   canUseTaskSwitchTimer,
+  canOperateInputs,
+  canEditAssignments,
   handleSaveTaskSwitch,
   setIsTaskTimerRunning,
   setToast,
@@ -87,15 +95,17 @@ export const OperatorJobsSection: React.FC<Props> = ({
   expandedGroups,
   createdByRefreshKey,
   activeOperatorRuns,
+  onOpenRunningJob,
+  completionAlerts,
 }) => {
-  if (loadingJobs && operatorGridJobs.length === 0) {
-    return <AppLoader message="Loading operator jobs..." />;
-  }
+  const alertToastHistoryRef = React.useRef<Map<string, number>>(new Map());
 
   const runningMachineAlerts = React.useMemo(() => {
     const alertsByMachine = new Map<
       string,
       {
+        groupId: string;
+        cutId?: string;
         machineNumber: string;
         jobRef: string;
         customer: string;
@@ -103,8 +113,13 @@ export const OperatorJobsSection: React.FC<Props> = ({
         quantityLabel: string;
         operatorName?: string;
         estimatedTime: string;
+        severity: "safe" | "warning" | "danger";
+        statusLabel: string;
       }
     >();
+    const completionAlertByCutId = new Map(
+      completionAlerts.map((alert) => [String(alert.cutId || ""), alert])
+    );
     activeOperatorRuns.forEach((log) => {
       const entry = operatorGridJobs.find((job) => String(job.id) === String(log.jobId));
       if (!entry) return;
@@ -113,7 +128,10 @@ export const OperatorJobsSection: React.FC<Props> = ({
       const quantityTo = Math.max(quantityFrom, Number(log.quantityTo || quantityFrom));
       const quantityCount = Math.max(1, quantityTo - quantityFrom + 1);
       const perQuantityHours = Number(entry.totalHrs || 0) / Math.max(1, Number(entry.qty || 1));
+      const completionAlert = completionAlertByCutId.get(String(entry.id));
       alertsByMachine.set(String(entry.id), {
+        groupId: String(entry.groupId),
+        cutId: String(entry.id),
         machineNumber: String(metadata.machineNumber || entry.machineNumber || "Machine Pending"),
         jobRef: String(entry.refNumber || ""),
         customer: String(entry.customer || ""),
@@ -121,15 +139,65 @@ export const OperatorJobsSection: React.FC<Props> = ({
         quantityLabel: quantityFrom === quantityTo ? `QTY ${quantityFrom}` : `QTY ${quantityFrom}-${quantityTo}`,
         operatorName: String(log.userName || entry.assignedTo || "").trim(),
         estimatedTime: formatEstimatedTime(perQuantityHours * quantityCount),
+        severity:
+          completionAlert?.severity === "danger"
+            ? "danger"
+            : completionAlert?.severity === "warning"
+              ? "warning"
+              : "safe",
+        statusLabel:
+          completionAlert?.severity === "danger"
+            ? "Overdue"
+            : completionAlert?.severity === "warning"
+              ? "Due Soon"
+              : "Running",
       });
     });
     return Array.from(alertsByMachine.values());
-  }, [activeOperatorRuns, operatorGridJobs]);
+  }, [activeOperatorRuns, completionAlerts, operatorGridJobs]);
 
   const activeRunsByJobId = React.useMemo(
     () => new Map(activeOperatorRuns.map((log) => [String(log.jobId || ""), log])),
     [activeOperatorRuns]
   );
+
+  React.useEffect(() => {
+    if (completionAlerts.length === 0) {
+      alertToastHistoryRef.current.clear();
+      return;
+    }
+
+    const now = Date.now();
+    const activeAlertIds = new Set(completionAlerts.map((alert) => alert.alertId));
+
+    Array.from(alertToastHistoryRef.current.keys()).forEach((alertId) => {
+      if (!activeAlertIds.has(alertId)) {
+        alertToastHistoryRef.current.delete(alertId);
+      }
+    });
+
+    const nextToastAlert = completionAlerts.find((alert) => {
+      const lastShownAt = alertToastHistoryRef.current.get(alert.alertId) || 0;
+      return now - lastShownAt >= COMPLETION_ALERT_TOAST_COOLDOWN_MS;
+    });
+
+    if (!nextToastAlert) return;
+
+    alertToastHistoryRef.current.set(nextToastAlert.alertId, now);
+    const variant = nextToastAlert.severity === "danger" ? "error" : "info";
+    setToast({
+      message: `${nextToastAlert.jobRef || "Job"} on ${nextToastAlert.machineNumber} is ${nextToastAlert.statusLabel.toLowerCase()}.`,
+      variant,
+      visible: true,
+    });
+    const timeoutId = window.setTimeout(() => setToast((prev) => ({ ...prev, visible: false })), 3500);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [completionAlerts, setToast]);
+
+  if (loadingJobs && operatorGridJobs.length === 0) {
+    return <AppLoader message="Loading operator jobs..." />;
+  }
 
   return (
     <>
@@ -154,7 +222,9 @@ export const OperatorJobsSection: React.FC<Props> = ({
         }}
         onCreatedByFilterChange={setCreatedByFilter}
         onAssignedToFilterChange={setAssignedToFilter}
-        canUseTaskSwitchTimer={canUseTaskSwitchTimer}
+        canUseTaskSwitchTimer={canUseTaskSwitchTimer && canOperateInputs}
+        canOperateInputs={canOperateInputs}
+        canEditAssignments={canEditAssignments}
         onSaveTaskSwitch={handleSaveTaskSwitch}
         onTimerRunningChange={setIsTaskTimerRunning}
         onShowToast={(message, variant = "info") => {
@@ -162,11 +232,12 @@ export const OperatorJobsSection: React.FC<Props> = ({
           setTimeout(() => setToast((prev) => ({ ...prev, visible: false })), 2500);
         }}
         onDownloadCSV={handleDownloadCSV}
-        onSendSelectedRowsToQa={handleSendSelectedRowsToQa}
+        onSendSelectedRowsToQa={canOperateInputs ? handleSendSelectedRowsToQa : () => undefined}
         selectedRowsCount={selectedEntryIds.size}
         machineOptions={machineOptionsForDropdown}
-        onApplyBulkAssignment={handleApplyBulkAssignment}
+        onApplyBulkAssignment={canEditAssignments ? handleApplyBulkAssignment : () => undefined}
         runningMachineAlerts={runningMachineAlerts}
+        onOpenRunningJob={onOpenRunningJob}
         onClearAllFilters={handleClearFilters}
       />
       <LazyAgGrid

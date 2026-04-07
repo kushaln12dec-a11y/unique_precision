@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import RefreshRoundedIcon from "@mui/icons-material/RefreshRounded";
 import Sidebar from "../../components/Sidebar";
+import Header from "../../components/Header";
 import Toast from "../../components/Toast";
 import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import {
@@ -80,6 +81,7 @@ const Dashboard = ({ mode = "shared" }: DashboardProps) => {
         onNavigate={(path) => navigate(path)}
       />
       <div className="roleboard-content dashboard-shell">
+        <Header title={isOperatorRoute ? "Operator Dashboard" : "Dashboard"} />
         <div className="dashboard-page-shell">
           <section className="dashboard-command-bar">
             <div>

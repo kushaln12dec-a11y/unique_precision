@@ -3,6 +3,7 @@ import type { JobEntry } from "../../../types/job";
 import {
   estimatedHoursFromAmount,
   formatEstimatedTime,
+  getPrimaryPersonName,
   MACHINE_OPTIONS,
   toMachineIndex,
 } from "../../../utils/jobFormatting";
@@ -43,6 +44,8 @@ const formatCaptureQuantityLabel = (capture: any) => {
   return fromQty === toQty ? `Qty ${fromQty}` : `Qty ${fromQty}-${toQty}`;
 };
 
+const normalizeOperatorLabel = (value: unknown) => getPrimaryPersonName(value, "");
+
 export const getLatestActiveCaptureSummary = (entries: JobEntry[]): ActiveCaptureSummary | null => {
   let latestCapture: ActiveCaptureSummary | null = null;
 
@@ -58,7 +61,7 @@ export const getLatestActiveCaptureSummary = (entries: JobEntry[]): ActiveCaptur
           entry,
           startTime: capture.startTime,
           machineNumber: toMachineIndex(String(capture.machineNumber || "").trim()),
-          operatorName: String(capture.opsName || "").trim(),
+          operatorName: normalizeOperatorLabel(capture.opsName),
           quantityLabel: formatCaptureQuantityLabel(capture),
         };
       }
@@ -80,7 +83,7 @@ export const getOperatorHistoryNames = (entry: JobEntry): string[] => {
         const key = value.toLowerCase();
         if (seen.has(key) || key === "unassign" || key === "unassigned") return;
         seen.add(key);
-        history.push(value);
+        history.push(normalizeOperatorLabel(value));
       });
   };
 
@@ -103,7 +106,7 @@ export const getActiveOperatorLogSummary = (
     entry,
     startTime: String(activeLog.startedAt || ""),
     machineNumber: toMachineIndex(String(metadata.machineNumber || entry.machineNumber || "").trim()),
-    operatorName: String(activeLog.userName || entry.assignedTo || "").trim(),
+    operatorName: normalizeOperatorLabel(activeLog.userName || entry.assignedTo || ""),
     quantityLabel: quantityFrom === quantityTo ? `Qty ${quantityFrom}` : `Qty ${quantityFrom}-${quantityTo}`,
   };
 };

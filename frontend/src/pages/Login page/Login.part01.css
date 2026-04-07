@@ -4,12 +4,34 @@
   width: 100vw;
   overflow: hidden;
   position: relative;
+  background: var(--color-page-bg);
+  color: var(--color-text);
+}
+
+.login-theme-toggle {
+  position: absolute;
+  top: 1.25rem;
+  right: 1.25rem;
+  z-index: 12;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.55rem 0.9rem;
+  border-radius: 999px;
+  border: 1px solid var(--theme-toggle-border);
+  background: color-mix(in srgb, var(--color-surface-elevated) 80%, transparent);
+  color: var(--theme-toggle-text);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.16);
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 700;
 }
 
 /* Left Side - Company Section */
 .company-section {
   width: 50%;
-  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+  background: linear-gradient(135deg, var(--color-shell-start) 0%, var(--color-shell-mid) 50%, var(--color-shell-end) 100%);
   position: relative;
   overflow: hidden;
   display: flex;
@@ -109,7 +131,7 @@
 
 .slide-subtitle {
   font-size: 1.1rem;
-  color: #94a3b8;
+  color: #c5d4eb;
   margin-bottom: 1rem;
   font-weight: 300;
   line-height: 1.4;
@@ -182,7 +204,7 @@
 }
 
 .bullet-icon {
-  color: #dc2626;
+  color: #f97316;
   font-size: 1.2rem;
   margin-right: 0.6rem;
   flex-shrink: 0;
@@ -196,10 +218,10 @@
 
 .slide-highlight {
   background: rgba(220, 38, 38, 0.1);
-  border-left: 3px solid #dc2626;
+  border-left: 3px solid #fb7185;
   padding: 0.6rem 1rem;
   border-radius: 6px;
-  color: #fbbf24;
+  color: #fde68a;
   font-weight: 500;
   font-size: 0.75rem;
   margin-top: 0.8rem;
@@ -252,7 +274,7 @@
 /* Right Side - Login Section */
 .login-section {
   width: 50%;
-  background: #ffffff;
+  background: var(--color-surface);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -268,7 +290,7 @@
   right: 0;
   width: 200px;
   height: 200px;
-  background: radial-gradient(circle, rgba(220, 38, 38, 0.05) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(220, 38, 38, 0.08) 0%, transparent 70%);
   border-radius: 50%;
   transform: translate(30%, -30%);
 }

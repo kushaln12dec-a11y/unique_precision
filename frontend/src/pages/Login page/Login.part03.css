@@ -1,4 +1,10 @@
 @media (max-width: 1024px) {
+  .login-theme-toggle {
+    top: 1rem;
+    right: 1rem;
+    padding: 0.5rem 0.75rem;
+  }
+
   .company-section,
   .login-section {
     height: 100vh;
@@ -77,6 +83,15 @@
 }
 
 @media (max-width: 700px) {
+  .login-theme-toggle {
+    top: 0.85rem;
+    right: 0.85rem;
+  }
+
+  .login-theme-toggle span {
+    display: none;
+  }
+
   .login-container {
     flex-direction: column;
     height: auto;

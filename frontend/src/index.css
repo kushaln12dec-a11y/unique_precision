@@ -11,11 +11,90 @@
   font-weight: 400;
   --dropdown-radius: 12px;
   --brand-script-font: "Lucida Calligraphy", "Segoe Script", "Lucida Handwriting", "Monotype Corsiva", "Apple Chancery", "Brush Script MT", cursive;
+  --color-text: #0f172a;
+  --color-text-muted: #475569;
+  --color-text-soft: #64748b;
+  --color-page-bg: #edf2f8;
+  --color-surface: #ffffff;
+  --color-surface-muted: #f8fafc;
+  --color-surface-elevated: rgba(255, 255, 255, 0.9);
+  --color-border: #dbe3ef;
+  --color-border-strong: #c7d2e2;
+  --color-shadow: rgba(15, 23, 42, 0.12);
+  --color-overlay: rgba(15, 23, 42, 0.38);
+  --color-shell-start: #16213e;
+  --color-shell-mid: #1a3158;
+  --color-shell-end: #2456a8;
+  --color-shell-text: #e2e8f0;
+  --color-shell-border: rgba(255, 255, 255, 0.12);
+  --color-primary: #2563eb;
+  --color-primary-strong: #1d4ed8;
+  --color-accent: #dc2626;
+  --color-success: #059669;
+  --color-warning: #d97706;
+  --color-danger: #dc2626;
+  --color-info: #2563eb;
+  --color-input-bg: #ffffff;
+  --color-input-border: #d9e2ee;
+  --color-input-text: #0f172a;
+  --color-placeholder: #94a3b8;
+  --color-table-head-start: #16213e;
+  --color-table-head-end: #1f3f73;
+  --color-table-row-hover: #f5f9ff;
+  --color-modal-backdrop: rgba(15, 23, 42, 0.46);
+  --color-selection-bg: rgba(37, 99, 235, 0.22);
+  --header-backdrop: rgba(255, 255, 255, 0.88);
+  --card-shadow: 0 14px 38px rgba(15, 23, 42, 0.1);
+  --card-shadow-strong: 0 20px 45px rgba(15, 23, 42, 0.18);
+  --theme-toggle-bg: rgba(37, 99, 235, 0.08);
+  --theme-toggle-border: rgba(37, 99, 235, 0.16);
+  --theme-toggle-text: #1d4ed8;
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+[data-theme="dark"] {
+  --color-text: #e2e8f0;
+  --color-text-muted: #cbd5e1;
+  --color-text-soft: #94a3b8;
+  --color-page-bg: #09111f;
+  --color-surface: #111c2f;
+  --color-surface-muted: #162338;
+  --color-surface-elevated: rgba(17, 28, 47, 0.92);
+  --color-border: #223453;
+  --color-border-strong: #324766;
+  --color-shadow: rgba(2, 6, 23, 0.5);
+  --color-overlay: rgba(2, 6, 23, 0.68);
+  --color-shell-start: #08111f;
+  --color-shell-mid: #10233d;
+  --color-shell-end: #163662;
+  --color-shell-text: #dbe7f5;
+  --color-shell-border: rgba(148, 163, 184, 0.14);
+  --color-primary: #60a5fa;
+  --color-primary-strong: #93c5fd;
+  --color-accent: #f87171;
+  --color-success: #34d399;
+  --color-warning: #f59e0b;
+  --color-danger: #f87171;
+  --color-info: #60a5fa;
+  --color-input-bg: #0d1728;
+  --color-input-border: #2b3b58;
+  --color-input-text: #e2e8f0;
+  --color-placeholder: #7f8ea7;
+  --color-table-head-start: #10223c;
+  --color-table-head-end: #16355d;
+  --color-table-row-hover: #17253b;
+  --color-modal-backdrop: rgba(2, 6, 23, 0.74);
+  --color-selection-bg: rgba(96, 165, 250, 0.3);
+  --header-backdrop: rgba(17, 28, 47, 0.86);
+  --card-shadow: 0 16px 34px rgba(2, 6, 23, 0.38);
+  --card-shadow-strong: 0 24px 48px rgba(2, 6, 23, 0.5);
+  --theme-toggle-bg: rgba(96, 165, 250, 0.12);
+  --theme-toggle-border: rgba(96, 165, 250, 0.24);
+  --theme-toggle-text: #dbeafe;
 }
 
 body {
@@ -24,6 +103,10 @@ body {
   min-height: 100vh;
   overflow: hidden;
   font-family: "UP003", sans-serif;
+  background: radial-gradient(circle at top, rgba(37, 99, 235, 0.08), transparent 30%),
+    linear-gradient(180deg, var(--color-page-bg) 0%, color-mix(in srgb, var(--color-page-bg) 86%, black 14%) 100%);
+  color: var(--color-text);
+  transition: background-color 0.25s ease, color 0.25s ease;
 }
 
 #root {
@@ -34,6 +117,36 @@ body {
 
 button {
   font-family: inherit;
+}
+
+button,
+input,
+select,
+textarea {
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+input,
+textarea,
+select {
+  color: var(--color-input-text);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--color-placeholder);
+}
+
+a {
+  color: inherit;
+}
+
+::selection {
+  background: var(--color-selection-bg);
 }
 
 select,
@@ -63,7 +176,7 @@ select optgroup {
 }
 
 .job-ref-link {
-  color: #175cd3;
+  color: var(--color-primary);
   font-weight: 700;
   text-decoration: none;
 }

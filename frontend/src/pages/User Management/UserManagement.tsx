@@ -13,6 +13,10 @@ import { filterUsers, sortUsers } from "./utils/tableUtils";
 import { exportUsersToCSV } from "./utils/csvExport";
 import type { User, UserRole } from "../../types/user";
 import "./UserManagement.css";
+import DashboardIcon from "@mui/icons-material/Dashboard";
+import PeopleIcon from "@mui/icons-material/People";
+import EditIcon from "@mui/icons-material/Edit";
+import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
 
 const UserManagement = () => {
   const navigate = useNavigate();
@@ -36,6 +40,7 @@ const UserManagement = () => {
     showDeleteModal,
     userToDelete,
     deleting,
+    canManageUsers,
     handleInputChange,
     handleSubmit,
     handleEdit,
@@ -46,7 +51,7 @@ const UserManagement = () => {
     handleDeleteCancel,
   } = useUserManagement();
 
-  const roles: UserRole[] = ["ADMIN", "PROGRAMMER", "OPERATOR", "QC"];
+  const roles: UserRole[] = ["ADMIN", "ACCOUNTANT", "PROGRAMMER", "OPERATOR", "QC"];
 
   const filteredUsers = useMemo(
     () => filterUsers(users, searchQuery, roleFilter),
@@ -58,7 +63,7 @@ const UserManagement = () => {
     [filteredUsers, sortField, sortDirection]
   );
 
-  const columns = useUserTable(handleEdit, handleDeleteClick);
+  const columns = useUserTable(handleEdit, handleDeleteClick, canManageUsers);
 
   const handlePageChange = (pageNumber: number) => {
     setCurrentPage(pageNumber);
@@ -98,12 +103,39 @@ const UserManagement = () => {
     { label: "Role", value: user.role },
   ];
 
+  const userManagementBreadcrumbs = useMemo(() => {
+    const base = [
+      { label: "Dashboard", path: "/dashboard", icon: DashboardIcon },
+      { label: "User Management", path: "/users", icon: PeopleIcon },
+    ];
+
+    if (!showForm) {
+      return [
+        ...base,
+        { label: "User List", path: "/users/list", icon: PeopleIcon },
+      ];
+    }
+
+    return [
+      ...base,
+      editingUser
+        ? { label: "Edit User", path: "/users/edit", icon: EditIcon }
+        : { label: "Add User", path: "/users/new", icon: AddCircleOutlineIcon },
+    ];
+  }, [editingUser, showForm]);
+
+  const headerTitle = showForm
+    ? editingUser
+      ? "Edit User"
+      : "Add User"
+    : "User Management";
+
   return (
     <div className="user-management-container">
       <Sidebar currentPath="/users" onNavigate={handleNavigation} />
 
       <div className="user-management-content">
-        <Header title="User Management" />
+        <Header title={headerTitle} breadcrumbsOverride={userManagementBreadcrumbs} />
 
         {showForm && (
           <UserForm
@@ -128,6 +160,7 @@ const UserManagement = () => {
               searchQuery={searchQuery}
               roleFilter={roleFilter}
               roles={roles}
+              canManageUsers={canManageUsers}
               onSearchChange={handleSearchChange}
               onRoleFilterChange={handleRoleFilterChange}
               onDownloadCSV={handleDownloadCSV}
@@ -160,7 +193,7 @@ const UserManagement = () => {
           </div>
         ))}
 
-        {showDeleteModal && userToDelete && (
+        {canManageUsers && showDeleteModal && userToDelete && (
           <ConfirmDeleteModal
             title="Confirm Delete"
             message="Are you sure you want to delete this user?"

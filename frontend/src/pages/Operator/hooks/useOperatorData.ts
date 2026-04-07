@@ -25,8 +25,8 @@ export const useOperatorData = (
   const [operatorUsers, setOperatorUsers] = useState<User[]>([]);
   const [users, setUsers] = useState<User[]>([]);
 
-  const userRole = getUserRoleFromToken();
-  const canAssign = userRole === "ADMIN" || userRole === "OPERATOR";
+  const userRole = (getUserRoleFromToken() || "").toUpperCase();
+  const canAssign = userRole === "ADMIN" || userRole === "PROGRAMMER" || userRole === "OPERATOR";
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -89,7 +89,7 @@ export const useOperatorData = (
       const fetchUsers = async () => {
         try {
           // Fetch only ADMIN and PROGRAMMER users for Created By filter
-          const userList = await getUsers(["ADMIN", "PROGRAMMER"]);
+          const userList = await getUsers(["ADMIN", "ACCOUNTANT", "PROGRAMMER"]);
           setUsers(userList);
         } catch (error) {
           console.error("Failed to fetch users", error);

@@ -4,6 +4,7 @@ import OperatorJobsSection from "./OperatorJobsSection";
 import OperatorLogsSection from "./OperatorLogsSection";
 import OperatorTabs from "./OperatorTabs";
 import type { EmployeeLog } from "../../../types/employeeLog";
+import type { OperatorCompletionAlert } from "../types";
 
 type OperatorPageContentProps = {
   activeTab: "jobs" | "logs";
@@ -29,6 +30,8 @@ type OperatorPageContentProps = {
   setCreatedByFilter: (value: string) => void;
   setAssignedToFilter: (value: string) => void;
   canUseTaskSwitchTimer: boolean;
+  canOperateInputs: boolean;
+  canEditAssignments: boolean;
   handleSaveTaskSwitch: (payload: any) => Promise<void>;
   setIsTaskTimerRunning: React.Dispatch<React.SetStateAction<boolean>>;
   setToast: React.Dispatch<React.SetStateAction<{ message: string; variant: "success" | "error" | "info"; visible: boolean }>>;
@@ -45,16 +48,21 @@ type OperatorPageContentProps = {
   createdByRefreshKey: string;
   operatorLogSearch: string;
   setOperatorLogSearch: React.Dispatch<React.SetStateAction<string>>;
+  operatorLogUser: string;
+  setOperatorLogUser: React.Dispatch<React.SetStateAction<string>>;
   operatorLogStatus: "" | "IN_PROGRESS" | "COMPLETED" | "REJECTED";
   setOperatorLogStatus: React.Dispatch<React.SetStateAction<"" | "IN_PROGRESS" | "COMPLETED" | "REJECTED">>;
   operatorLogMachine: string;
   setOperatorLogMachine: React.Dispatch<React.SetStateAction<string>>;
+  userFilterOptions: string[];
   machineFilterOptions: string[];
   handleExportOperatorLogsCsv: () => void;
   operatorLogColumnDefs: any[];
   filterOperatorLogs: (logs: EmployeeLog[]) => EmployeeLog[];
   logsFetchPage: (offset: number, limit: number) => Promise<{ items: EmployeeLog[]; hasMore: boolean }>;
   activeOperatorRuns: EmployeeLog[];
+  handleOpenRunningJob: (groupId: string, cutId?: string) => void;
+  completionAlerts: OperatorCompletionAlert[];
 };
 
 const OperatorPageContent = (props: OperatorPageContentProps) => {
@@ -82,6 +90,8 @@ const OperatorPageContent = (props: OperatorPageContentProps) => {
     setCreatedByFilter,
     setAssignedToFilter,
     canUseTaskSwitchTimer,
+    canOperateInputs,
+    canEditAssignments,
     handleSaveTaskSwitch,
     setIsTaskTimerRunning,
     setToast,
@@ -98,16 +108,21 @@ const OperatorPageContent = (props: OperatorPageContentProps) => {
     createdByRefreshKey,
     operatorLogSearch,
     setOperatorLogSearch,
+    operatorLogUser,
+    setOperatorLogUser,
     operatorLogStatus,
     setOperatorLogStatus,
     operatorLogMachine,
     setOperatorLogMachine,
+    userFilterOptions,
     machineFilterOptions,
     handleExportOperatorLogsCsv,
     operatorLogColumnDefs,
     filterOperatorLogs,
     logsFetchPage,
     activeOperatorRuns,
+    handleOpenRunningJob,
+    completionAlerts,
   } = props;
 
   return (
@@ -136,6 +151,8 @@ const OperatorPageContent = (props: OperatorPageContentProps) => {
           setCreatedByFilter={setCreatedByFilter}
           setAssignedToFilter={setAssignedToFilter}
           canUseTaskSwitchTimer={canUseTaskSwitchTimer}
+          canOperateInputs={canOperateInputs}
+          canEditAssignments={canEditAssignments}
           handleSaveTaskSwitch={handleSaveTaskSwitch}
           setIsTaskTimerRunning={setIsTaskTimerRunning}
           setToast={setToast}
@@ -151,15 +168,20 @@ const OperatorPageContent = (props: OperatorPageContentProps) => {
           expandedGroups={expandedGroups}
           createdByRefreshKey={createdByRefreshKey}
           activeOperatorRuns={activeOperatorRuns}
+          onOpenRunningJob={handleOpenRunningJob}
+          completionAlerts={completionAlerts}
         />
       ) : (
         <OperatorLogsSection
           operatorLogSearch={operatorLogSearch}
           setOperatorLogSearch={setOperatorLogSearch}
+          operatorLogUser={operatorLogUser}
+          setOperatorLogUser={setOperatorLogUser}
           operatorLogStatus={operatorLogStatus}
           setOperatorLogStatus={setOperatorLogStatus}
           operatorLogMachine={operatorLogMachine}
           setOperatorLogMachine={setOperatorLogMachine}
+          userFilterOptions={userFilterOptions}
           machineFilterOptions={machineFilterOptions}
           handleExportOperatorLogsCsv={handleExportOperatorLogsCsv}
           operatorLogColumnDefs={operatorLogColumnDefs}

@@ -81,6 +81,7 @@ export const getUserDesignationFromToken = (): string | null => {
 
   const role = String(decoded.role || "").toUpperCase();
   if (role === "ADMIN") return "Admin";
+  if (role === "ACCOUNTANT") return "Accountant";
   if (role === "PROGRAMMER") return "Programmer";
   if (role === "OPERATOR") return "Operator";
   if (role === "QC") return "QC";

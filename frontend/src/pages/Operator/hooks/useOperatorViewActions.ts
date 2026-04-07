@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { completeOperatorProductionLog, startOperatorProductionLog } from "../../../services/employeeLogsApi";
+import { completeOperatorProductionLog, getEmployeeLogs, startOperatorProductionLog } from "../../../services/employeeLogsApi";
 import { captureOperatorInput, updateOperatorJob, updateOperatorQaStatus } from "../../../services/operatorApi";
 import { validateQuantityInputs, validateRangeSelection } from "../utils/validation";
 import { calculateTotals, type CutForm } from "../../Programmer/programmerUtils";
@@ -60,6 +60,85 @@ export const useOperatorViewActions = ({ jobs, cutInputs, setValidationErrors, c
     });
   }, [jobs]);
 
+  useEffect(() => {
+    if (!jobs.length) {
+      setActiveOperatorLogIds(new Map());
+      return;
+    }
+
+    let isMounted = true;
+
+    const syncActiveOperatorLogs = async () => {
+      try {
+        const activeLogs = await getEmployeeLogs({
+          role: "OPERATOR",
+          status: "IN_PROGRESS",
+          limit: 500,
+        });
+        if (!isMounted) return;
+
+        const currentJobIds = new Set(jobs.map((job) => String(job.id)));
+        const nextMap = new Map<string, string>();
+
+        activeLogs.forEach((log) => {
+          if (log.endedAt) return;
+
+          const jobId = String(log.jobId || "").trim();
+          if (!jobId || !currentJobIds.has(jobId)) return;
+
+          const fromQty = Math.max(1, Number(log.quantityFrom || 1));
+          const toQty = Math.max(fromQty, Number(log.quantityTo || fromQty));
+          for (let quantityNumber = fromQty; quantityNumber <= toQty; quantityNumber += 1) {
+            nextMap.set(`${jobId}:${quantityNumber - 1}`, log._id);
+          }
+        });
+
+        setActiveOperatorLogIds(nextMap);
+      } catch {
+        if (isMounted) {
+          setActiveOperatorLogIds(new Map());
+        }
+      }
+    };
+
+    void syncActiveOperatorLogs();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [jobs]);
+
+  const resolveActiveOperatorLogId = useCallback(async (cutId: number | string, quantityIndex: number) => {
+    const key = `${String(cutId)}:${quantityIndex}`;
+    const existingLogId = activeOperatorLogIds.get(key);
+    if (existingLogId) return existingLogId;
+
+    const activeLogs = await getEmployeeLogs({
+      role: "OPERATOR",
+      status: "IN_PROGRESS",
+      limit: 500,
+    });
+
+    const matchingLog = activeLogs.find((log) => {
+      if (log.endedAt) return false;
+      if (String(log.jobId || "").trim() !== String(cutId)) return false;
+      const fromQty = Math.max(1, Number(log.quantityFrom || 1));
+      const toQty = Math.max(fromQty, Number(log.quantityTo || fromQty));
+      const quantityNumber = quantityIndex + 1;
+      return quantityNumber >= fromQty && quantityNumber <= toQty;
+    });
+
+    if (!matchingLog?._id) return undefined;
+
+    setActiveOperatorLogIds((prev) => {
+      const next = new Map(prev);
+      next.set(key, matchingLog._id);
+      return next;
+    });
+
+    return matchingLog._id;
+  }, [activeOperatorLogIds]);
+
   const amounts = useMemo(() => {
     if (jobs.length === 0) return { perCut: [], totalWedmAmount: 0, totalSedmAmount: 0 };
     const totals = jobs.map((entry) => calculateTotals(entry as CutForm));
@@ -104,11 +183,14 @@ export const useOperatorViewActions = ({ jobs, cutInputs, setValidationErrors, c
       let imageBase64 = qtyData.lastImage;
       if (qtyData.lastImageFile) imageBase64 = await readImageFileAsBase64(qtyData.lastImageFile);
       const opsName = getOperatorOpsName(qtyData.opsName);
+      const activeLogId =
+        activeOperatorLogIds.get(`${String(cutId)}:${quantityIndex}`) ||
+        await resolveActiveOperatorLogId(cutId, quantityIndex);
       const payload = buildSingleCapturePayload(
         qtyData,
         imageBase64,
         quantityIndex,
-        activeOperatorLogIds.get(`${String(cutId)}:${quantityIndex}`) || undefined
+        activeLogId
       );
 
       try {
@@ -144,7 +226,7 @@ export const useOperatorViewActions = ({ jobs, cutInputs, setValidationErrors, c
       console.error("Failed to save quantity", error);
       showAndHideToast(setSaveToast, "Failed to save quantity. Please try again.", "error", 3000);
     }
-  }, [activeOperatorLogIds, clearQuantityErrors, cutInputs, setValidationErrors]);
+  }, [activeOperatorLogIds, clearQuantityErrors, cutInputs, resolveActiveOperatorLogId, setValidationErrors]);
 
   const handleSaveRange = useCallback(async (cutId: number | string, sourceQuantityIndex: number, fromQty: number, toQty: number) => {
     const cutData = cutInputs.get(cutId);
@@ -174,6 +256,9 @@ export const useOperatorViewActions = ({ jobs, cutInputs, setValidationErrors, c
       let imageBase64 = qtyData.lastImage;
       if (qtyData.lastImageFile) imageBase64 = await readImageFileAsBase64(qtyData.lastImageFile);
       const opsName = getOperatorOpsName(qtyData.opsName);
+      const activeLogId =
+        activeOperatorLogIds.get(`${String(cutId)}:${sourceQuantityIndex}`) ||
+        await resolveActiveOperatorLogId(cutId, sourceQuantityIndex);
       await captureOperatorInput(
         String(cutId),
         buildRangeCapturePayload(
@@ -182,7 +267,7 @@ export const useOperatorViewActions = ({ jobs, cutInputs, setValidationErrors, c
           sourceQuantityIndex,
           fromQty,
           toQty,
-          activeOperatorLogIds.get(`${String(cutId)}:${sourceQuantityIndex}`) || undefined
+          activeLogId
         )
       );
       await updateOperatorJob(String(cutId), {
@@ -218,7 +303,7 @@ export const useOperatorViewActions = ({ jobs, cutInputs, setValidationErrors, c
         3000
       );
     }
-  }, [activeOperatorLogIds, cutInputs, jobs, setValidationErrors]);
+  }, [activeOperatorLogIds, cutInputs, jobs, resolveActiveOperatorLogId, setValidationErrors]);
 
   const handleUpdateQaStatus = useCallback(async (cutId: number | string, quantityNumbers: number[], status: QuantityQaStatus) => {
     if (!quantityNumbers.length) return;
@@ -244,9 +329,14 @@ export const useOperatorViewActions = ({ jobs, cutInputs, setValidationErrors, c
     if (activeOperatorLogIds.has(key)) return;
     const job = jobs.find((item) => String(item.id) === String(cutId));
     if (!job) return;
+    const qtyData = cutInputs.get(cutId)?.quantities?.[quantityIndex];
+    const nextMachineNumber = String(qtyData?.machineNumber || "").trim();
+    if (!nextMachineNumber) {
+      showAndHideToast(setActionToast, "Select machine number before starting.", "error", 3000);
+      return;
+    }
     try {
       const fromQty = quantityIndex + 1;
-      const qtyData = cutInputs.get(cutId)?.quantities?.[quantityIndex];
       const startedLog = await startOperatorProductionLog({
         jobId: String(job.id),
         jobGroupId: String(job.groupId ?? ""),
@@ -258,6 +348,8 @@ export const useOperatorViewActions = ({ jobs, cutInputs, setValidationErrors, c
         toQty: fromQty,
         quantityCount: 1,
         startedAt: new Date().toISOString(),
+        machineNumber: nextMachineNumber,
+        opsName: getOperatorOpsName(qtyData?.opsName || []),
       });
       if (startedLog?._id) {
         setActiveOperatorLogIds((prev) => {
@@ -268,7 +360,6 @@ export const useOperatorViewActions = ({ jobs, cutInputs, setValidationErrors, c
       }
 
       const nextAssignedTo = getAssignedToValue(getOperatorOpsName(qtyData?.opsName || []));
-      const nextMachineNumber = String(qtyData?.machineNumber || "").trim();
       if (nextAssignedTo || nextMachineNumber) {
         await updateOperatorJob(String(cutId), {
           ...(nextAssignedTo ? { assignedTo: nextAssignedTo } : {}),
@@ -277,6 +368,8 @@ export const useOperatorViewActions = ({ jobs, cutInputs, setValidationErrors, c
       }
     } catch (error) {
       console.error("Failed to start operator production log", error);
+      const message = error instanceof Error ? error.message : "Failed to start operator run.";
+      showAndHideToast(setActionToast, message, "error", 3500);
     }
   }, [activeOperatorLogIds, cutInputs, jobs]);
 
@@ -337,6 +430,8 @@ export const useOperatorViewActions = ({ jobs, cutInputs, setValidationErrors, c
           toQty: quantityIndex + 1,
           quantityCount: 1,
           startedAt: new Date().toISOString(),
+          machineNumber: String(qtyData.machineNumber || "").trim(),
+          opsName: getOperatorOpsName(qtyData.opsName),
         });
 
         if (startedLog?._id) {
@@ -355,7 +450,7 @@ export const useOperatorViewActions = ({ jobs, cutInputs, setValidationErrors, c
         return true;
       }
 
-      const activeLogId = activeOperatorLogIds.get(key);
+      const activeLogId = activeOperatorLogIds.get(key) || await resolveActiveOperatorLogId(cutId, quantityIndex);
       if (activeLogId) {
         await completeOperatorProductionLog({
           logId: activeLogId,
@@ -386,10 +481,14 @@ export const useOperatorViewActions = ({ jobs, cutInputs, setValidationErrors, c
       return true;
     } catch (error) {
       console.error("Failed to process operator action", error);
-      showAndHideToast(setActionToast, `Failed to ${action === "resume" ? "resume" : "shift over"} quantity.`, "error", 3000);
+      const message =
+        error instanceof Error && error.message
+          ? error.message
+          : `Failed to ${action === "resume" ? "resume" : "shift over"} quantity.`;
+      showAndHideToast(setActionToast, message, "error", 3500);
       return false;
     }
-  }, [activeOperatorLogIds, currentUserDisplayName, cutInputs, jobs]);
+  }, [activeOperatorLogIds, currentUserDisplayName, cutInputs, jobs, resolveActiveOperatorLogId]);
 
   return {
     operatorUsers,

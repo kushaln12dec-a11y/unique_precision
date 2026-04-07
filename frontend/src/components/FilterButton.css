@@ -3,10 +3,10 @@
   align-items: center;
   gap: 0.5rem;
   padding: 0.5rem 1rem;
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
   border-radius: 6px;
-  color: #1e293b;
+  color: var(--color-text);
   font-size: 0.875rem;
   font-weight: 600;
   cursor: pointer;
@@ -17,19 +17,19 @@
 }
 
 .filter-button:hover {
-  background: #f8fafc;
-  border-color: #cbd5e1;
-  color: #1a1a2e;
+  background: var(--color-surface-muted);
+  border-color: var(--color-border-strong);
+  color: var(--color-text);
 }
 
 .filter-button.active {
-  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  background: linear-gradient(135deg, var(--color-table-head-start) 0%, var(--color-table-head-end) 100%);
   color: #ffffff;
-  border-color: #1a1a2e;
+  border-color: var(--color-table-head-start);
 }
 
 .filter-button.active:hover {
-  background: linear-gradient(135deg, #16213e 0%, #1a1a2e 100%);
+  background: linear-gradient(135deg, var(--color-table-head-end) 0%, var(--color-table-head-start) 100%);
 }
 
 .filter-icon {
@@ -40,7 +40,7 @@
 }
 
 .filter-badge {
-  background: #ef4444;
+  background: var(--color-danger);
   color: #ffffff;
   border-radius: 10px;
   padding: 0.125rem 0.5rem;
@@ -53,5 +53,5 @@
 
 .filter-button.active .filter-badge {
   background: #ffffff;
-  color: #1a1a2e;
+  color: var(--color-table-head-start);
 }

@@ -6,6 +6,7 @@ import { getOperatorJobsPage } from "../../services/jobApi";
 import { getEmployeeLogs } from "../../services/employeeLogsApi";
 import { getUserDisplayNameFromToken, getUserRoleFromToken } from "../../utils/auth";
 import { fetchAllPaginatedItems } from "../../utils/paginationUtils";
+import { getPrimaryPersonName } from "../../utils/jobFormatting";
 import OperatorPageContent from "./components/OperatorPageContent";
 import OperatorPageOverlays from "./components/OperatorPageOverlays";
 import { useOperatorData } from "./hooks/useOperatorData";
@@ -18,9 +19,10 @@ import { useOperatorPageConfig } from "./hooks/useOperatorPageConfig";
 import { useOperatorTable } from "./hooks/useOperatorTable";
 import { useOperatorTableData } from "./hooks/useOperatorTableData.tsx";
 import { exportOperatorJobsToCSV } from "./utils/csvExport";
+import { buildOperatorCompletionAlerts } from "./utils/completionAlerts";
 import type { JobEntry } from "../../types/job";
 import type { EmployeeLog } from "../../types/employeeLog";
-import type { OperatorTableRow } from "./types";
+import type { OperatorCompletionAlert, OperatorTableRow } from "./types";
 import "../RoleBoard.css";
 import "../Programmer/Programmer.css";
 import "./Operator.css";
@@ -30,7 +32,7 @@ const SEARCH_FETCH_PAGE_SIZE = 100;
 const Operator = () => {
   const navigate = useNavigate();
   const userRole = (getUserRoleFromToken() || "").toUpperCase();
-  const currentUserDisplayName = (getUserDisplayNameFromToken() || "").trim();
+  const currentUserDisplayName = getPrimaryPersonName((getUserDisplayNameFromToken() || "").trim(), "USER");
   const [sortField] = useState<keyof JobEntry | null>(null);
   const [sortDirection] = useState<"asc" | "desc">("asc");
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(() => new Set());
@@ -40,6 +42,7 @@ const Operator = () => {
   const [isTaskTimerRunning, setIsTaskTimerRunning] = useState(false);
   const [activeTab, setActiveTab] = useState<"jobs" | "logs">("jobs");
   const [operatorLogSearch, setOperatorLogSearch] = useState("");
+  const [operatorLogUser, setOperatorLogUser] = useState("");
   const [operatorLogStatus, setOperatorLogStatus] = useState<"" | "IN_PROGRESS" | "COMPLETED" | "REJECTED">("");
   const [operatorLogMachine, setOperatorLogMachine] = useState("");
   const [toast, setToast] = useState<{ message: string; variant: "success" | "error" | "info"; visible: boolean }>({
@@ -88,7 +91,7 @@ const Operator = () => {
     });
   }, []);
 
-  const { isAdmin, canUseTaskSwitchTimer, operatorOptionUsers, machineOptionsForDropdown } = useOperatorPageConfig(
+  const { isAdmin, canEditAssignments, canOperateInputs, canUseTaskSwitchTimer, operatorOptionUsers, machineOptionsForDropdown } = useOperatorPageConfig(
     operatorUsers,
     currentUserDisplayName,
     userRole
@@ -121,7 +124,7 @@ const Operator = () => {
       try {
         const logs = await getEmployeeLogs({ role: "OPERATOR", status: "IN_PROGRESS", limit: 250 });
         if (!isMounted) return;
-        setActiveOperatorRuns(logs.filter((log) => String(log.jobId || "").trim()));
+        setActiveOperatorRuns(logs.filter((log) => String(log.jobId || "").trim() && !log.endedAt));
       } catch {
         if (isMounted) {
           setActiveOperatorRuns([]);
@@ -159,6 +162,11 @@ const Operator = () => {
     return map;
   }, [activeOperatorRuns]);
 
+  const completionAlerts = useMemo<OperatorCompletionAlert[]>(
+    () => buildOperatorCompletionAlerts(activeOperatorRuns, operatorGridJobs),
+    [activeOperatorRuns, operatorGridJobs]
+  );
+
   const operatorHistoryByJobId = useMemo(() => {
     const map = new Map<string, string[]>();
     const sortedLogs = [...operatorHistoryLogs].sort((left, right) => {
@@ -168,7 +176,7 @@ const Operator = () => {
     });
     sortedLogs.forEach((log) => {
       const jobId = String(log.jobId || "").trim();
-      const userName = String(log.userName || "").trim().toUpperCase();
+      const userName = getPrimaryPersonName(log.userName || "", "").toUpperCase();
       if (!jobId || !userName) return;
       const existing = map.get(jobId) || [];
       if (!existing.includes(userName)) existing.push(userName);
@@ -235,7 +243,9 @@ const Operator = () => {
   );
 
   const columns = useOperatorTable({
-    canAssign,
+    canAssign: canEditAssignments && canAssign,
+    userRole,
+    canOperateInputs,
     machineOptions: machineOptionsForDropdown,
     currentUserName: currentUserDisplayName,
     operatorUsers: operatorOptionUsers,
@@ -283,6 +293,7 @@ const Operator = () => {
   qaTableDataRef.current = filteredGridTableData;
 
   const {
+    userFilterOptions,
     machineFilterOptions,
     filterOperatorLogs,
     handleExportOperatorLogsCsv,
@@ -293,6 +304,7 @@ const Operator = () => {
     users,
     machineOptionsForDropdown,
     operatorLogSearch,
+    operatorLogUser,
     operatorLogStatus,
     operatorLogMachine,
     setToast,
@@ -347,6 +359,8 @@ const Operator = () => {
           setCreatedByFilter={setCreatedByFilter}
           setAssignedToFilter={setAssignedToFilter}
           canUseTaskSwitchTimer={canUseTaskSwitchTimer}
+          canOperateInputs={canOperateInputs}
+          canEditAssignments={canEditAssignments}
           handleSaveTaskSwitch={handleSaveTaskSwitch}
           setIsTaskTimerRunning={setIsTaskTimerRunning}
           setToast={setToast}
@@ -363,16 +377,21 @@ const Operator = () => {
           createdByRefreshKey={`${customerFilter}|${descriptionFilter}|${createdByFilter}|${assignedToFilter}|${JSON.stringify(filters)}`}
           operatorLogSearch={operatorLogSearch}
           setOperatorLogSearch={setOperatorLogSearch}
+          operatorLogUser={operatorLogUser}
+          setOperatorLogUser={setOperatorLogUser}
           operatorLogStatus={operatorLogStatus}
           setOperatorLogStatus={setOperatorLogStatus}
           operatorLogMachine={operatorLogMachine}
           setOperatorLogMachine={setOperatorLogMachine}
+          userFilterOptions={userFilterOptions}
           machineFilterOptions={machineFilterOptions}
           handleExportOperatorLogsCsv={handleExportOperatorLogsCsv}
           operatorLogColumnDefs={operatorLogColumnDefs}
           filterOperatorLogs={filterOperatorLogs}
           logsFetchPage={logsFetchPage}
           activeOperatorRuns={activeOperatorRuns}
+          handleOpenRunningJob={handleImageInput}
+          completionAlerts={completionAlerts}
         />
 
         <OperatorPageOverlays
