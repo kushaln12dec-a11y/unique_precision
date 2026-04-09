@@ -150,6 +150,11 @@ export const EmployeeLogsPanel = () => {
     document.body.removeChild(link);
   };
 
+  const handleClearAllFilters = () => {
+    setSearchQuery("");
+    setStatusFilter("");
+  };
+
   return (
     <div className="employee-logs-container">
       <div className="employee-role-tabs">
@@ -168,6 +173,11 @@ export const EmployeeLogsPanel = () => {
           <option value="IN_PROGRESS">RUNNING</option>
           <option value="REJECTED">HOLD</option>
         </select>
+        {(searchQuery || statusFilter) ? (
+          <button type="button" className="employee-csv-btn employee-clear-filters-btn" onClick={handleClearAllFilters}>
+            Clear All
+          </button>
+        ) : null}
         <button
           type="button"
           className="employee-csv-btn"

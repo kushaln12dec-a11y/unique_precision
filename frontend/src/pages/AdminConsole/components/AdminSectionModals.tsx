@@ -125,19 +125,8 @@ const AdminSectionModals = (props: Props) => {
       <Modal isOpen={activeSection === "customers"} onClose={() => setActiveSection(null)} title="Customers & Rates" className="admin-section-modal admin-customer-modal" size="large">
         <p className="admin-help">
           Programmer reads these values per customer. Default Setting Hrs stays global, and you can override the
-          customer rate, setting hours, and SEDM thickness pricing here whenever a customer needs a custom rule.
+          customer rate and setting hours here whenever a customer needs a custom rule.
         </p>
-        <div className="admin-customer-sedm-banner">
-          <div className="admin-customer-sedm-banner-copy">
-            <strong>Customer-specific SEDM pricing</strong>
-            <span>Use the two SEDM fields below to override the amount for up to 20mm and above 20mm for each customer.</span>
-          </div>
-          <div className="admin-customer-sedm-banner-defaults">
-            <span>Global default</span>
-            <strong>Up to 20mm: {config?.thicknessRateUpto100 ?? 1500}</strong>
-            <strong>Above 20mm: {config?.thicknessRateAbove100 ?? 1200}</strong>
-          </div>
-        </div>
         <div className="admin-customer-list">
           {customers.map((item, index) => (
             <div className="admin-customer-card" key={`customer-${index}`}>
@@ -164,22 +153,11 @@ const AdminSectionModals = (props: Props) => {
                   <input type="number" step="0.01" value={item.settingHours} placeholder="0.5" disabled={readOnly} onChange={(e) => updateCustomerRow(index, "settingHours", e.target.value)} />
                 </label>
               </div>
-              <div className="admin-customer-sedm-grid">
-                <label className="admin-customer-sedm-field">
-                  <span>SEDM Up to 20mm</span>
-                  <input type="number" value={item.thicknessRateUpto100} placeholder={String(config?.thicknessRateUpto100 ?? 1500)} disabled={readOnly} onChange={(e) => updateCustomerRow(index, "thicknessRateUpto100", e.target.value)} />
-                </label>
-                <label className="admin-customer-sedm-field">
-                  <span>SEDM Above 20mm</span>
-                  <input type="number" value={item.thicknessRateAbove100} placeholder={String(config?.thicknessRateAbove100 ?? 1200)} disabled={readOnly} onChange={(e) => updateCustomerRow(index, "thicknessRateAbove100", e.target.value)} />
-                </label>
-              </div>
             </div>
           ))}
         </div>
         <p className="admin-help">
-          Use uppercase customer codes like `UPC001`. `Rate`, `Setting Hrs`, `SEDM Up to 20mm`, and `SEDM Above 20mm`
-          accept numeric values only.
+          Use uppercase customer codes like `UPC001`. `Rate` and `Setting Hrs` accept numeric values only.
         </p>
         <div className="admin-modal-actions">
           <button type="button" className="admin-add-btn admin-modal-secondary" disabled={readOnly} onClick={addCustomerRow}>

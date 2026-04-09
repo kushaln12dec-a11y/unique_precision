@@ -27,6 +27,22 @@
   min-width: 180px;
 }
 
+.qc-clear-filters-btn {
+  height: 36px;
+  padding: 0 0.9rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #0f172a;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.qc-clear-filters-btn:hover {
+  background: #f8fafc;
+}
+
 .jobs-table-wrapper .data-table th.qc-job-ref-col,
 .jobs-table-wrapper .data-table td.qc-job-ref-cell {
   min-width: 132px;

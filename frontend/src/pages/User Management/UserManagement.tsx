@@ -93,6 +93,12 @@ const UserManagement = () => {
     exportUsersToCSV(sortedUsers);
   };
 
+  const handleClearAllFilters = () => {
+    setSearchQuery("");
+    setRoleFilter("");
+    setCurrentPage(1);
+  };
+
   const handleNavigation = (path: string) => {
     navigate(path);
   };
@@ -165,6 +171,7 @@ const UserManagement = () => {
               onRoleFilterChange={handleRoleFilterChange}
               onDownloadCSV={handleDownloadCSV}
               onNewUser={handleNewUser}
+              onClearAll={handleClearAllFilters}
             />
 
             <DataTable

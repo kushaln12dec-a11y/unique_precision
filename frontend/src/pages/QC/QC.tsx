@@ -185,6 +185,12 @@ const QC = () => {
     [updateDecision]
   );
 
+  const handleClearAllFilters = () => {
+    dispatch(setQcCustomerFilter(""));
+    dispatch(setQcDescriptionFilter(""));
+    dispatch(setQcOperatorFilter(""));
+  };
+
   const qcColumnDefs = useMemo(
     () =>
       columns.map((column: any) => ({
@@ -218,6 +224,7 @@ const QC = () => {
                   dispatch(setQcDescriptionFilter(value));
                 }}
                 onOperatorChange={(value) => dispatch(setQcOperatorFilter(value))}
+                onClearAll={handleClearAllFilters}
               />
               <LazyAgGrid
                 columnDefs={qcColumnDefs as any}
