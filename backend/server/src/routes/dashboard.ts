@@ -1,6 +1,8 @@
 import { Router } from "express";
+import crypto from "crypto";
 import { authMiddleware } from "../middleware/auth";
 import { prisma } from "../lib/prisma";
+import { cacheGet, cacheSet, CACHE_KEYS, CACHE_TTL } from "../lib/redis";
 
 const router = Router();
 
@@ -377,6 +379,17 @@ router.get("/summary", async (req, res) => {
   try {
     const reqUser = req.user as any;
     const reqRole = String(reqUser?.role || "").toUpperCase() as DashboardView;
+    const paramHash = crypto
+      .createHash("md5")
+      .update(JSON.stringify(req.query) + reqRole)
+      .digest("hex")
+      .slice(0, 8);
+    const cacheKey = CACHE_KEYS.DASHBOARD(reqRole || "UNKNOWN", paramHash);
+    const cached = await cacheGet(cacheKey);
+    if (cached) {
+      return res.json(cached);
+    }
+
     const requestedView = String(req.query.view || reqRole || "ADMIN").toUpperCase() as DashboardView;
     const activeView =
       reqRole === "ADMIN" || reqRole === "ACCOUNTANT"
@@ -891,7 +904,7 @@ router.get("/summary", async (req, res) => {
         })),
     };
 
-    res.json({
+    const result = {
       meta: {
         generatedAt: new Date().toISOString(),
         activeView,
@@ -919,7 +932,10 @@ router.get("/summary", async (req, res) => {
       operator,
       programmer,
       qc,
-    });
+    };
+
+    await cacheSet(cacheKey, result, CACHE_TTL.DASHBOARD);
+    return res.json(result);
   } catch (error: any) {
     console.error("Error building dashboard summary:", error);
     res.status(500).json({ message: "Error building dashboard summary" });

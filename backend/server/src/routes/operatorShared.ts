@@ -132,6 +132,7 @@ export const rebalanceOperatorRevenueForJob = async (
   if (!jobId) return;
 
   const totalQuantity = Math.max(1, Number(job.qty || 1));
+  const estimatedSecondsPerQuantity = Math.max(0, Math.round((Math.max(0, Number(job.totalHrs || 0)) * 3600) / totalQuantity));
   const perQuantityRevenue =
     Math.max(0, Number(job.totalHrs || 0)) * Math.max(0, Number(job.rate || 0)) / totalQuantity;
 
@@ -158,10 +159,14 @@ export const rebalanceOperatorRevenueForJob = async (
     if (quantityNumbers.length === 0) return;
     const workedSeconds = getWorkedSecondsForOperatorLog(log);
     const workedSecondsPerQuantity = quantityNumbers.length > 0 ? workedSeconds / quantityNumbers.length : workedSeconds;
+    const effectiveSecondsPerQuantity =
+      estimatedSecondsPerQuantity > 0
+        ? Math.min(workedSecondsPerQuantity, estimatedSecondsPerQuantity)
+        : workedSecondsPerQuantity;
 
     quantityNumbers.forEach((quantityNumber) => {
       const entries = workedByQuantity.get(quantityNumber) || [];
-      entries.push({ logId: String(log.id), workedSeconds: Math.max(0, workedSecondsPerQuantity) });
+      entries.push({ logId: String(log.id), workedSeconds: Math.max(0, effectiveSecondsPerQuantity) });
       workedByQuantity.set(quantityNumber, entries);
     });
   });
@@ -198,7 +203,9 @@ export const rebalanceOperatorRevenueForJob = async (
           revenueByQuantity,
           revenue: Number(revenue.toFixed(2)),
           workedSeconds: getWorkedSecondsForOperatorLog(log as any),
+          estimatedSecondsPerQuantity,
           quantityRevenueModel: "WEDM_TIME_SPLIT",
+          revenueCapMode: estimatedSecondsPerQuantity > 0 ? "CAP_TO_ESTIMATED_TIME" : "UNCAPPED",
         },
       },
     });

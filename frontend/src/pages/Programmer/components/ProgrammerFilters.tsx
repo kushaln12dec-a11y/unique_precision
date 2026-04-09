@@ -18,6 +18,7 @@ type ProgrammerFiltersProps = {
   onShowFilterModal: (show: boolean) => void;
   onApplyFilters: (filters: FilterValues) => void;
   onClearFilters: () => void;
+  onClearAllFilters: () => void;
   onRemoveFilter: (key: string, type: "inline" | "modal") => void;
   onJobSearchFilterChange: (value: string) => void;
   onCreatedByFilterChange: (value: string) => void;
@@ -37,6 +38,7 @@ export const ProgrammerFilters: React.FC<ProgrammerFiltersProps> = ({
   onShowFilterModal,
   onApplyFilters,
   onClearFilters,
+  onClearAllFilters,
   onRemoveFilter,
   onJobSearchFilterChange,
   onCreatedByFilterChange,
@@ -44,6 +46,8 @@ export const ProgrammerFilters: React.FC<ProgrammerFiltersProps> = ({
   onDownloadCSV,
   onNewJob,
 }) => {
+  const showClearAll = Boolean(activeFilterCount > 0 || jobSearchFilter || createdByFilter || criticalFilter);
+
   return (
     <>
       <div className="panel-header">
@@ -126,6 +130,13 @@ export const ProgrammerFilters: React.FC<ProgrammerFiltersProps> = ({
         createdByFilter={createdByFilter}
         searchFilterLabel="Search"
         onRemoveFilter={onRemoveFilter}
+        trailingAction={
+          showClearAll ? (
+            <button type="button" className="btn-download-csv" onClick={onClearAllFilters} title="Clear all filters">
+              Clear All
+            </button>
+          ) : null
+        }
       />
     </>
   );

@@ -1,6 +1,5 @@
 import { useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { flushSync } from "react-dom";
 import { getUserDisplayNameFromToken } from "../../../utils/auth";
 import { createJobs, updateJobsByGroupId, deleteJobsByGroupId } from "../../../services/jobApi";
 import { completeProgrammerJobLog } from "../../../services/employeeLogsApi";
@@ -36,10 +35,8 @@ export const useJobHandlers = ({
   const navigate = useNavigate();
 
   const finishSaveAndReturnToProgrammerTable = useCallback((message: string) => {
-    flushSync(() => {
-      resetProgrammerFormState();
-      setSavingJob(false);
-    });
+    resetProgrammerFormState();
+    setSavingJob(false);
 
     navigate("/programmer", {
       replace: true,

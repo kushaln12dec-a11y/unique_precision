@@ -221,6 +221,11 @@
   position: relative;
 }
 
+.lazy-ag-grid-shell.operator-logs-table {
+  min-height: 620px;
+  height: min(720px, calc(100dvh - 210px));
+}
+
 .operator-logs-table .data-table {
   overflow: visible;
   border-collapse: separate;
@@ -273,4 +278,11 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+@media (max-width: 1024px) {
+  .lazy-ag-grid-shell.operator-logs-table {
+    min-height: 520px;
+    height: min(620px, calc(100dvh - 190px));
+  }
 }

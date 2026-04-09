@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { prisma } from "../lib/prisma";
 import { authMiddleware, adminMiddleware } from "../middleware/auth";
+import { cacheDel, cacheGet, cacheSet, CACHE_KEYS, CACHE_TTL } from "../lib/redis";
 
 const router = Router();
 
@@ -86,7 +87,7 @@ const normalizeThOptions = (values: unknown): Array<{ value: string; label: stri
   return Array.from(unique.entries()).map(([value, label]) => ({ value, label }));
 };
 
-const getMasterConfig = async () => {
+const findOrCreateMasterConfigRecord = async () => {
   let config = await prisma.masterConfig.findUnique({
     where: { key: "global" },
     include: {
@@ -141,32 +142,46 @@ const getMasterConfig = async () => {
     });
   }
 
-  return {
-    _id: config.id,
-    key: config.key,
-    customers: (config.customers.length > 0 ? config.customers : DEFAULT_MASTER_CONFIG.customers as any[]).map((c) => ({
-      customer: c.customer,
-      rate: c.rate ? String(c.rate) : "",
-      settingHours: c.settingHours ? String(c.settingHours) : "",
-      thicknessRateUpto100: c.thicknessRateUpto100 ? String(c.thicknessRateUpto100) : "",
-      thicknessRateAbove100: c.thicknessRateAbove100 ? String(c.thicknessRateAbove100) : "",
-    })),
-    materials: config.materials.length > 0 ? config.materials.map((m) => m.value) : DEFAULT_MASTER_CONFIG.materials,
-    passOptions: config.passOptions.length > 0 ? config.passOptions.map((p) => p.value) : DEFAULT_MASTER_CONFIG.passOptions,
-    sedmElectrodeOptions:
-      config.sedmElectrodeOptions.length > 0
-        ? config.sedmElectrodeOptions.map((s) => s.value)
-        : DEFAULT_MASTER_CONFIG.sedmElectrodeOptions,
-    machineOptions: config.machineOptions.length > 0 ? config.machineOptions.map((m) => m.value) : DEFAULT_MASTER_CONFIG.machineOptions,
-    sedmThOptions: config.sedmThOptions.map((s) => ({ value: s.value, label: s.label })),
-    settingHoursPerSetting: Number(config.settingHoursPerSetting ?? 0.5) || 0.5,
-    thicknessRateUpto100: Number(config.thicknessRateUpto100 ?? DEFAULT_MASTER_CONFIG.thicknessRateUpto100) || DEFAULT_MASTER_CONFIG.thicknessRateUpto100,
-    thicknessRateAbove100: Number(config.thicknessRateAbove100 ?? DEFAULT_MASTER_CONFIG.thicknessRateAbove100) || DEFAULT_MASTER_CONFIG.thicknessRateAbove100,
-    complexExtraHours: Number(config.complexExtraHours ?? 1) || 1,
-    pipExtraHours: Number(config.pipExtraHours ?? 1) || 1,
-    createdAt: config.createdAt,
-    updatedAt: config.updatedAt,
-  };
+  return config;
+};
+
+const toMasterConfigResponse = (config: Awaited<ReturnType<typeof findOrCreateMasterConfigRecord>>) => ({
+  _id: config.id,
+  key: config.key,
+  customers: (config.customers.length > 0 ? config.customers : DEFAULT_MASTER_CONFIG.customers as any[]).map((c) => ({
+    customer: c.customer,
+    rate: c.rate ? String(c.rate) : "",
+    settingHours: c.settingHours ? String(c.settingHours) : "",
+    thicknessRateUpto100: c.thicknessRateUpto100 ? String(c.thicknessRateUpto100) : "",
+    thicknessRateAbove100: c.thicknessRateAbove100 ? String(c.thicknessRateAbove100) : "",
+  })),
+  materials: config.materials.length > 0 ? config.materials.map((m) => m.value) : DEFAULT_MASTER_CONFIG.materials,
+  passOptions: config.passOptions.length > 0 ? config.passOptions.map((p) => p.value) : DEFAULT_MASTER_CONFIG.passOptions,
+  sedmElectrodeOptions:
+    config.sedmElectrodeOptions.length > 0
+      ? config.sedmElectrodeOptions.map((s) => s.value)
+      : DEFAULT_MASTER_CONFIG.sedmElectrodeOptions,
+  machineOptions: config.machineOptions.length > 0 ? config.machineOptions.map((m) => m.value) : DEFAULT_MASTER_CONFIG.machineOptions,
+  sedmThOptions: config.sedmThOptions.map((s) => ({ value: s.value, label: s.label })),
+  settingHoursPerSetting: Number(config.settingHoursPerSetting ?? 0.5) || 0.5,
+  thicknessRateUpto100: Number(config.thicknessRateUpto100 ?? DEFAULT_MASTER_CONFIG.thicknessRateUpto100) || DEFAULT_MASTER_CONFIG.thicknessRateUpto100,
+  thicknessRateAbove100: Number(config.thicknessRateAbove100 ?? DEFAULT_MASTER_CONFIG.thicknessRateAbove100) || DEFAULT_MASTER_CONFIG.thicknessRateAbove100,
+  complexExtraHours: Number(config.complexExtraHours ?? 1) || 1,
+  pipExtraHours: Number(config.pipExtraHours ?? 1) || 1,
+  createdAt: config.createdAt,
+  updatedAt: config.updatedAt,
+});
+
+const getMasterConfig = async () => {
+  const cached = await cacheGet<ReturnType<typeof toMasterConfigResponse>>(CACHE_KEYS.MASTER_CONFIG);
+  if (cached) {
+    return cached;
+  }
+
+  const config = await findOrCreateMasterConfigRecord();
+  const response = toMasterConfigResponse(config);
+  await cacheSet(CACHE_KEYS.MASTER_CONFIG, response, CACHE_TTL.MASTER_CONFIG);
+  return response;
 };
 
 router.use(authMiddleware);
@@ -278,29 +293,10 @@ router.put("/", adminMiddleware, async (req, res) => {
       return res.status(500).json({ message: "Failed to update master config" });
     }
 
-    return res.json({
-      _id: config.id,
-      key: config.key,
-      customers: config.customers.map((c) => ({
-        customer: c.customer,
-        rate: c.rate ? String(c.rate) : "",
-        settingHours: c.settingHours ? String(c.settingHours) : "",
-        thicknessRateUpto100: c.thicknessRateUpto100 ? String(c.thicknessRateUpto100) : "",
-        thicknessRateAbove100: c.thicknessRateAbove100 ? String(c.thicknessRateAbove100) : "",
-      })),
-      materials: config.materials.map((m) => m.value),
-      passOptions: config.passOptions.map((p) => p.value),
-      sedmElectrodeOptions: config.sedmElectrodeOptions.map((s) => s.value),
-      machineOptions: config.machineOptions.map((m) => m.value),
-      sedmThOptions: config.sedmThOptions.map((s) => ({ value: s.value, label: s.label })),
-      settingHoursPerSetting: Number(config.settingHoursPerSetting ?? 0.5) || 0.5,
-      thicknessRateUpto100: Number(config.thicknessRateUpto100 ?? DEFAULT_MASTER_CONFIG.thicknessRateUpto100) || DEFAULT_MASTER_CONFIG.thicknessRateUpto100,
-      thicknessRateAbove100: Number(config.thicknessRateAbove100 ?? DEFAULT_MASTER_CONFIG.thicknessRateAbove100) || DEFAULT_MASTER_CONFIG.thicknessRateAbove100,
-      complexExtraHours: Number(config.complexExtraHours ?? 1) || 1,
-      pipExtraHours: Number(config.pipExtraHours ?? 1) || 1,
-      createdAt: config.createdAt,
-      updatedAt: config.updatedAt,
-    });
+    await cacheDel(CACHE_KEYS.MASTER_CONFIG);
+    const response = toMasterConfigResponse(config);
+    await cacheSet(CACHE_KEYS.MASTER_CONFIG, response, CACHE_TTL.MASTER_CONFIG);
+    return res.json(response);
   } catch (error: any) {
     console.error("Failed to update master config:", error);
     return res.status(500).json({ message: "Failed to update master config" });

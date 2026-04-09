@@ -11,6 +11,7 @@ type UserTableControlsProps = {
   onRoleFilterChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
   onDownloadCSV: () => void;
   onNewUser: () => void;
+  onClearAll: () => void;
 };
 
 export const UserTableControls: React.FC<UserTableControlsProps> = ({
@@ -22,7 +23,10 @@ export const UserTableControls: React.FC<UserTableControlsProps> = ({
   onRoleFilterChange,
   onDownloadCSV,
   onNewUser,
+  onClearAll,
 }) => {
+  const showClearAll = Boolean(searchQuery || roleFilter);
+
   return (
     <div className="table-header-controls">
       <div className="table-controls">
@@ -51,6 +55,15 @@ export const UserTableControls: React.FC<UserTableControlsProps> = ({
         </div>
       </div>
       <div style={{ display: "flex", gap: "0.75rem", alignItems: "center" }}>
+        {showClearAll ? (
+          <button
+            type="button"
+            className="btn-user-clear-all"
+            onClick={onClearAll}
+          >
+            Clear All
+          </button>
+        ) : null}
         <button
           className="btn-download-csv"
           onClick={onDownloadCSV}

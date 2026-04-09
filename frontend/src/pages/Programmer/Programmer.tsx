@@ -214,7 +214,9 @@ const Programmer = () => {
     if (isProgrammerFormRoute) {
       handleCancelState();
       setSavingJob(false);
-      navigate(path, { replace: true, state: { refreshedAt: Date.now() } });
+      window.setTimeout(() => {
+        navigate(path, { replace: true, state: { refreshedAt: Date.now() } });
+      }, 0);
       return;
     }
     navigate(path);

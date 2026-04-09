@@ -14,6 +14,14 @@ export const useProgrammerReduxDispatchers = (dispatch: Dispatch, filters: Filte
   setShowFilterModal: (show: boolean) => dispatch(setProgrammerShowFilterModal(show)),
   applyFilters: (newFilters: FilterValues) => dispatch(setProgrammerFilters(newFilters)),
   clearFilters: () => dispatch(setProgrammerFilters({})),
+  clearAllFilters: () => {
+    dispatch(setProgrammerFilters({}));
+    dispatch(setProgrammerCustomerFilter(""));
+    dispatch(setProgrammerDescriptionFilter(""));
+    dispatch(setProgrammerCreatedByFilter(""));
+    dispatch(setProgrammerCriticalFilter(false));
+    dispatch(setProgrammerShowFilterModal(false));
+  },
   removeFilter: (key: string, type: "inline" | "modal") => {
     if (type === "inline") {
       if (key === "customer") dispatch(setProgrammerCustomerFilter(""));

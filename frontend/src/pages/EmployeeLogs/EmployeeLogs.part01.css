@@ -121,6 +121,11 @@
   background: #f8fafc;
 }
 
+.employee-clear-filters-btn {
+  min-width: 108px;
+  justify-content: center;
+}
+
 .employee-search-input,
 .employee-status-select {
   height: 40px;
