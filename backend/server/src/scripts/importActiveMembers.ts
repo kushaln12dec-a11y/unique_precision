@@ -23,6 +23,8 @@ const VALID_ROLES = new Set(["ADMIN", "PROGRAMMER", "OPERATOR", "QC", "ACCOUNTAN
 
 const normalizeRole = (value: unknown): string => {
   const cleaned = String(value || "").trim().toUpperCase();
+  if (["WIRE CUTTING", "WIRECUTTING", "WEDM", "WIRE CUT"].includes(cleaned)) return "PROGRAMMER";
+  if (["OPERATOR", "OPERATORS"].includes(cleaned)) return "OPERATOR";
   if (VALID_ROLES.has(cleaned)) return cleaned;
   return "OPERATOR";
 };

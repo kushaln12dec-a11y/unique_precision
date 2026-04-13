@@ -37,17 +37,7 @@ const getRequestedOperatorNames = (value: unknown): string[] =>
     .filter((entry) => entry && entry !== "UNASSIGN" && entry !== "UNASSIGNED");
 
 const canOperatorAdjustOwnAssignment = (reqUser: any, currentValue: unknown, requestedValue: unknown) => {
-  const role = String(reqUser?.role || "").toUpperCase();
-  if (role !== "OPERATOR") return true;
-
-  const currentUserName = resolveReqUserName(reqUser);
-  if (!currentUserName) return false;
-
-  const currentNames = getRequestedOperatorNames(currentValue);
-  const requestedNames = getRequestedOperatorNames(requestedValue);
-  const withoutSelf = (values: string[]) => values.filter((entry) => entry !== currentUserName).sort();
-
-  return JSON.stringify(withoutSelf(currentNames)) === JSON.stringify(withoutSelf(requestedNames));
+  return true;
 };
 
 const parsePositiveInt = (value: unknown, fallback: number) => {
@@ -162,6 +152,47 @@ const findActiveMachineConflict = async (
       if (options.excludeLogId && String(log.id) === String(options.excludeLogId)) return false;
       if (log.endedAt) return false;
       return getMachineNumberFromOperatorLog(log) === normalizedMachineNumber;
+    }) || null
+  );
+};
+
+const findActiveQuantityConflict = async (
+  jobId: unknown,
+  fromQty: unknown,
+  toQty: unknown,
+  options: { excludeLogId?: string } = {}
+) => {
+  const normalizedJobId = String(jobId || "").trim();
+  const rangeStart = Math.max(1, Number(fromQty || 1));
+  const rangeEnd = Math.max(rangeStart, Number(toQty || rangeStart));
+  if (!normalizedJobId) return null;
+
+  const activeLogs = await prisma.employeeLog.findMany({
+    where: {
+      role: "OPERATOR",
+      activityType: "OPERATOR_PRODUCTION",
+      status: "IN_PROGRESS",
+      jobId: normalizedJobId,
+    },
+    select: {
+      id: true,
+      userName: true,
+      refNumber: true,
+      quantityFrom: true,
+      quantityTo: true,
+      quantityCount: true,
+      metadata: true,
+      endedAt: true,
+    },
+  });
+
+  return (
+    activeLogs.find((log) => {
+      if (options.excludeLogId && String(log.id) === String(options.excludeLogId)) return false;
+      if (log.endedAt) return false;
+      const logFrom = Math.max(1, Number(log.quantityFrom || 1));
+      const logTo = Math.max(logFrom, Number(log.quantityTo || logFrom));
+      return rangeStart <= logTo && rangeEnd >= logFrom;
     }) || null
   );
 };
@@ -639,6 +670,19 @@ router.post("/operator/start", async (req, res) => {
     const userId = toUuid(reqUser?.userId);
     const resolvedJobId = toUuid(jobId);
     const normalizedMachineNumber = normalizeMachineNumber(machineNumber);
+    const resolvedFromQty = Math.max(1, Number(fromQty || 1));
+    const resolvedToQty = Math.max(resolvedFromQty, Number(toQty || resolvedFromQty));
+
+    if (resolvedJobId) {
+      const quantityConflict = await findActiveQuantityConflict(resolvedJobId, resolvedFromQty, resolvedToQty);
+      if (quantityConflict) {
+        const conflictFromQty = Math.max(1, Number(quantityConflict.quantityFrom || 1));
+        const conflictToQty = Math.max(conflictFromQty, Number(quantityConflict.quantityTo || conflictFromQty));
+        return res.status(409).json({
+          message: `Qty ${conflictFromQty === conflictToQty ? conflictFromQty : `${conflictFromQty}-${conflictToQty}`} is already being worked on by ${String(quantityConflict.userName || "another operator")}.`,
+        });
+      }
+    }
 
     if (normalizedMachineNumber) {
       const conflict = await findActiveMachineConflict(normalizedMachineNumber);
@@ -758,6 +802,7 @@ router.get("/", async (req, res) => {
 
     const role = String(req.query.role || "").trim().toUpperCase();
     const status = String(req.query.status || "").trim().toUpperCase();
+    const activityType = String(req.query.activityType || "").trim().toUpperCase();
     const search = String(req.query.search || "").trim();
     const machine = String(req.query.machine || "").trim();
 
@@ -766,6 +811,11 @@ router.get("/", async (req, res) => {
     }
     if (!where.role && reqRole === "OPERATOR") {
       where.role = "OPERATOR";
+    }
+    if (activityType) {
+      where.activityType = activityType;
+    } else if (String(where.role || "").toUpperCase() === "OPERATOR") {
+      where.activityType = "OPERATOR_PRODUCTION";
     }
     if (status && ["IN_PROGRESS", "COMPLETED", "REJECTED"].includes(status)) {
       where.status = status;

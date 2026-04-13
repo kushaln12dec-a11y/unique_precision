@@ -15,6 +15,7 @@ import uploadRoutes from "./routes/upload";
 import dashboardRoutes from "./routes/dashboard";
 import { authMiddleware } from "./middleware/auth";
 import { errorHandler, jsonErrorHandler } from "./middleware/error.middleware";
+import { apiRateLimiter, authRateLimiter } from "./middleware/rateLimit.middleware";
 
 const compression = require("compression");
 const morgan = require("morgan");
@@ -38,7 +39,10 @@ app.get("/api/health", (_req, res) => {
 });
 
 // Auth routes
-app.use("/api/auth", authRoutes);
+app.use("/api/auth", authRateLimiter, authRoutes);
+
+// General API rate limiting (health and auth stay lightweight and independent)
+app.use("/api", apiRateLimiter);
 
 // User routes
 app.use("/api/users", userRoutes);
