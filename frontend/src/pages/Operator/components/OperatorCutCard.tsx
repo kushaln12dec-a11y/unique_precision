@@ -56,7 +56,6 @@ type OperatorCutCardProps = {
   onRequestResume?: (cutId: number | string, quantityIndex: number) => void;
   onStartTimeCaptured?: (cutId: number | string, quantityIndex: number) => void;
   isAdmin: boolean;
-  currentUserDisplayName: string;
 };
 
 export const OperatorCutCard: React.FC<OperatorCutCardProps> = ({
@@ -86,7 +85,6 @@ export const OperatorCutCard: React.FC<OperatorCutCardProps> = ({
   onRequestResume,
   onStartTimeCaptured,
   isAdmin,
-  currentUserDisplayName,
 }) => {
   const quantity = Number(cutItem.qty || 1);
   const cutEstimatedHrs = estimatedHoursFromAmount(calculateTotals(cutItem as any).wedmAmount);
@@ -170,7 +168,6 @@ export const OperatorCutCard: React.FC<OperatorCutCardProps> = ({
             onRequestShiftOver={onRequestShiftOver}
             onRequestResume={onRequestResume}
             onStartTimeCaptured={onStartTimeCaptured}
-            currentUserDisplayName={currentUserDisplayName}
           />
         </>
       )}

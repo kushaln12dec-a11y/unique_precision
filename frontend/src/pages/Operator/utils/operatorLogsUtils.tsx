@@ -3,7 +3,7 @@ import MarqueeCopyText from "../../../components/MarqueeCopyText";
 import JobRefLink from "../../../components/JobRefLink";
 import type { EmployeeLog } from "../../../types/employeeLog";
 import { formatDisplayDateTime, getDisplayDateTimeParts } from "../../../utils/date";
-import { formatMachineLabel, getInitials, getLogUserDisplayName, getPrimaryPersonName } from "../../../utils/jobFormatting";
+import { formatMachineLabel, getInitials, getLogUserDisplayName } from "../../../utils/jobFormatting";
 import {
   formatOperatorDuration,
   formatOperatorLogStatus,
@@ -78,13 +78,43 @@ export const buildOperatorLogsColumns = ({
   { key: "durationSeconds", label: "Duration", sortable: false, render: (row) => formatOperatorDuration(row.durationSeconds) },
   { key: "estimatedSeconds", label: "Estimated", sortable: false, render: (row) => formatOperatorDuration(Number((row.metadata as any)?.estimatedSeconds || 0)) },
   { key: "overtimeSeconds", label: "Overtime", sortable: false, render: (row) => formatOperatorDuration(Number((row.metadata as any)?.overtimeSeconds || 0)) },
+  {
+    key: "quantityNumbers",
+    label: "Qty Split",
+    sortable: false,
+    render: (row) => {
+      const quantities = Array.isArray((row.metadata as any)?.quantityNumbers)
+        ? (row.metadata as any).quantityNumbers
+        : [];
+      return quantities.length ? quantities.map((qty: number) => `Q${qty}`).join(", ") : "-";
+    },
+  },
   { key: "idleTime", label: "Idle Time", sortable: false, render: (row) => String((row.metadata as any)?.idleTime || "-") },
   { key: "remark", label: "Remark", sortable: false, render: (row) => String((row.metadata as any)?.remark || "-") },
   {
     key: "revenue",
     label: "Revenue",
     sortable: false,
-    render: (row: EmployeeLog) => <span className="log-revenue-value">{getRevenueForLog(row)}</span>,
+    render: (row: EmployeeLog) => {
+      const revenueByQuantity = ((row.metadata as any)?.revenueByQuantity || {}) as Record<string, number>;
+      const splitEntries = Object.entries(revenueByQuantity)
+        .map(([qty, amount]) => [Number(qty), Number(amount)] as const)
+        .filter(([qty, amount]) => Number.isInteger(qty) && Number.isFinite(amount))
+        .sort((left, right) => left[0] - right[0]);
+
+      if (splitEntries.length === 0) {
+        return <span className="log-revenue-value">{getRevenueForLog(row)}</span>;
+      }
+
+      return (
+        <div className="log-revenue-breakdown" title={splitEntries.map(([qty, amount]) => `Q${qty}: Rs. ${amount.toFixed(2)}`).join(" | ")}>
+          <span className="log-revenue-value">{getRevenueForLog(row)}</span>
+          <span className="log-revenue-split">
+            {splitEntries.map(([qty, amount]) => `Q${qty}: Rs. ${amount.toFixed(2)}`).join(" | ")}
+          </span>
+        </div>
+      );
+    },
   } as Column<EmployeeLog>,
   {
     key: "status",
@@ -135,13 +165,10 @@ export const buildOperatorLogFilter =
     getRevenueForLog: (log: EmployeeLog, workedSecondsMap?: Map<string, number>) => string;
     operatorLogUser: string;
     operatorLogSearch: string;
-  }) =>
+    }) =>
   (logs: EmployeeLog[]) =>
     logs.filter((log) => {
-      const normalizedUserName = getPrimaryPersonName(
-        getLogUserDisplayName(log.userName, log.userEmail, "Operator"),
-        ""
-      );
+      const normalizedUserName = getLogUserDisplayName(log.userName, log.userEmail, "Operator");
       const matchesUser =
         !operatorLogUser ||
         normalizedUserName.toLowerCase() === String(operatorLogUser || "").trim().toLowerCase();
@@ -162,6 +189,9 @@ export const buildOperatorLogFilter =
           formatOperatorDuration(log.durationSeconds),
           formatOperatorDuration(Number((log.metadata as any)?.estimatedSeconds || 0)),
           formatOperatorDuration(Number((log.metadata as any)?.overtimeSeconds || 0)),
+          Array.isArray((log.metadata as any)?.quantityNumbers)
+            ? (log.metadata as any).quantityNumbers.map((qty: number) => `Q${qty}`).join(", ")
+            : "-",
           String((log.metadata as any)?.idleTime || "-"),
           String((log.metadata as any)?.remark || "-"),
           getRevenueForLog(log),

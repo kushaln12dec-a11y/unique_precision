@@ -20,11 +20,9 @@ export type OperatorDisplayRow = {
 
 type UseOperatorTableProps = {
   canAssign: boolean;
-  userRole: string;
   canOperateInputs: boolean;
   operatorUsers: Array<{ id: string | number; name: string }>;
   machineOptions: string[];
-  currentUserName: string;
   handleAssignChange: (jobId: number | string, value: string | string[]) => void;
   handleMachineNumberChange: (groupId: string, machineNumber: string) => void;
   handleChildMachineNumberChange: (jobId: number | string, machineNumber: string) => void;
@@ -42,11 +40,9 @@ type UseOperatorTableProps = {
 
 export const useOperatorTable = ({
   canAssign,
-  userRole,
   canOperateInputs,
   operatorUsers,
   machineOptions,
-  currentUserName,
   handleAssignChange,
   handleMachineNumberChange,
   handleChildMachineNumberChange,
@@ -71,7 +67,7 @@ export const useOperatorTable = ({
       lookup.set(fullName.toLowerCase(), fullName);
       const firstToken = fullName.split(/\s+/).filter(Boolean)[0];
       if (firstToken) {
-        lookup.set(firstToken.toLowerCase(), firstToken);
+        lookup.set(firstToken.toLowerCase(), fullName);
       }
     });
     return lookup;
@@ -82,10 +78,8 @@ export const useOperatorTable = ({
       toggleGroup,
       operatorNameLookup,
       canAssign,
-      userRole,
       operatorUsers,
       handleAssignChange,
-      currentUserName,
       machineDropdownOptions,
       handleMachineNumberChange,
       handleChildMachineNumberChange,
@@ -105,7 +99,6 @@ export const useOperatorTable = ({
       canOperateInputs,
       operatorUsers,
       machineDropdownOptions,
-      currentUserName,
       handleAssignChange,
       handleMachineNumberChange,
       handleChildMachineNumberChange,
@@ -116,7 +109,6 @@ export const useOperatorTable = ({
       handleOpenQaModal,
       isAdmin,
       isImageInputDisabled,
-      userRole,
       activeRunsByJobId,
       operatorHistoryByJobId,
       operatorNameLookup,

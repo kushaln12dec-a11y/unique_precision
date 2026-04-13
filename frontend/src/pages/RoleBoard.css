@@ -16,7 +16,7 @@
   box-sizing: border-box;
   overflow-y: auto;
   overflow-x: hidden;
-  padding-bottom: 0.75rem;
+  padding:0px;
 }
 
 .roleboard-body {

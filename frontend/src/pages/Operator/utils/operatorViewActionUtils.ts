@@ -1,7 +1,7 @@
 import { getUsers } from "../../../services/userApi";
-import { getFirstNameDisplay } from "../../../utils/jobFormatting";
 import type { JobEntry } from "../../../types/job";
 import { getQuantityProgressStatuses, type QuantityProgressStatus } from "./qaProgress";
+import { getOperatorOptions } from "./operatorUserOptions";
 
 type ToastState = { message: string; variant: "success" | "error" | "info"; visible: boolean };
 
@@ -17,12 +17,7 @@ export const showAndHideToast = (
 
 export const loadOperatorUsers = async () => {
   const userList = await getUsers();
-  return userList
-    .filter((user) => user.role === "OPERATOR" || user.role === "ADMIN")
-    .map((user) => ({
-      id: user._id,
-      name: getFirstNameDisplay(user.firstName, user.email, String(user._id)).toUpperCase(),
-    }));
+  return getOperatorOptions(userList);
 };
 
 export const seedQaStatusesByCut = (jobs: JobEntry[]) => {

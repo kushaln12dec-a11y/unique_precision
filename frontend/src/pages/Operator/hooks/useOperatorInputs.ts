@@ -15,7 +15,6 @@ import {
   ensureCutInputState,
   updateQuantityMachineHours,
 } from "../utils/operatorInputState";
-import { getPrimaryPersonName } from "../../../utils/jobFormatting";
 
 export const useOperatorInputs = (
   _cutInputs: Map<number | string, CutInputData>,
@@ -25,10 +24,12 @@ export const useOperatorInputs = (
   setValidationErrors: React.Dispatch<React.SetStateAction<Map<number | string, Record<string, Record<string, string>>>>>,
   currentUserDisplayName: string
 ) => {
+  const normalizeOperatorName = (value: unknown): string => String(value || "").trim().toUpperCase();
+
   const normalizeOperatorList = (values: unknown[]): string[] => {
     const seen = new Set<string>();
     return values
-      .map((value) => getPrimaryPersonName(value, ""))
+      .map((value) => normalizeOperatorName(value))
       .filter((value) => {
         if (!value) return false;
         const key = value.toLowerCase();
@@ -137,21 +138,15 @@ export const useOperatorInputs = (
         const selectedOps = Array.isArray(qtyData.opsName)
           ? qtyData.opsName.map((name) => String(name || "").trim()).filter(Boolean)
           : [];
-        const normalizedCurrentUser = String(currentUserDisplayName || "").trim().toLowerCase();
-        const hasCurrentUserName =
-          !normalizedCurrentUser ||
-          selectedOps.some((name) => name.toLowerCase() === normalizedCurrentUser);
 
-        if (!selectedOps.length || !hasCurrentUserName) {
+        if (!selectedOps.length) {
           if (setValidationErrors) {
             setOperatorFieldError(
               setValidationErrors,
               cutId,
               quantityIndex,
               "opsName",
-              normalizedCurrentUser
-                ? `Add ${currentUserDisplayName} in Ops Name before resuming`
-                : "Select Ops Name before resuming"
+              "Select Ops Name before resuming"
             );
           }
           return false;
@@ -246,8 +241,8 @@ export const useOperatorInputs = (
 
       if (field === "opsName") {
         const nextOps = Array.isArray(value)
-          ? value.map((name) => getPrimaryPersonName(name, "")).filter(Boolean)
-          : (String(value || "").trim() ? [getPrimaryPersonName(value, "")] : []);
+          ? value.map((name) => normalizeOperatorName(name)).filter(Boolean)
+          : (String(value || "").trim() ? [normalizeOperatorName(value)] : []);
         updatedQtyData.opsName = nextOps;
         updatedQtyData.operatorHistory = normalizeOperatorList([
           ...(qtyData.operatorHistory || []),

@@ -26,6 +26,20 @@
   display: inline-block;
 }
 
+.operator-logs-table .log-revenue-breakdown {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.1rem;
+  line-height: 1.25;
+}
+
+.operator-logs-table .log-revenue-split {
+  font-size: 0.72rem;
+  color: #5b6478;
+  white-space: normal;
+}
+
 .operator-logs-table .ag-cell.operator-log-text-col .ag-cell-value {
   justify-content: flex-start;
   text-align: left;

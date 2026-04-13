@@ -20,6 +20,7 @@ const getAuthHeaders = () => {
 type GetEmployeeLogsParams = {
   role?: "PROGRAMMER" | "OPERATOR" | "QC";
   status?: EmployeeLogQueryStatus;
+  activityType?: "PROGRAMMER_JOB_CREATION" | "OPERATOR_PRODUCTION" | "OPERATOR_ASSIGNMENT" | "QA_REVIEW";
   search?: string;
   machine?: string;
   startDate?: string;
@@ -38,6 +39,7 @@ export const getEmployeeLogs = async (params: GetEmployeeLogsParams = {}): Promi
   const query = new URLSearchParams();
   if (params.role) query.append("role", params.role);
   if (params.status) query.append("status", params.status);
+  if (params.activityType) query.append("activityType", params.activityType);
   if (params.search) query.append("search", params.search);
   if (params.machine) query.append("machine", params.machine);
   if (params.startDate) query.append("startDate", params.startDate);
@@ -63,6 +65,7 @@ export const getEmployeeLogsPage = async (
   const query = new URLSearchParams();
   if (params.role) query.append("role", params.role);
   if (params.status) query.append("status", params.status);
+  if (params.activityType) query.append("activityType", params.activityType);
   if (params.search) query.append("search", params.search);
   if (params.machine) query.append("machine", params.machine);
   if (params.startDate) query.append("startDate", params.startDate);

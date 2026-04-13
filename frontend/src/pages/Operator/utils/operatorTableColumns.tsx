@@ -5,7 +5,7 @@ import MarqueeCopyText from "../../../components/MarqueeCopyText";
 import SelectDropdown from "../../Programmer/components/SelectDropdown";
 import { MultiSelectOperators } from "../components/MultiSelectOperators";
 import type { OperatorDisplayRow } from "../hooks/useOperatorTable";
-import { formatJobRefDisplay, formatMachineLabel, getPrimaryPersonName, toYN } from "../../../utils/jobFormatting";
+import { formatJobRefDisplay, formatMachineLabel, toYN } from "../../../utils/jobFormatting";
 import { getDispatchableQuantityNumbers, getGroupQaProgressCounts, getQaProgressCounts, getQaStatusBadges } from "./qaProgress";
 import { getThicknessDisplayValue } from "../../Programmer/programmerUtils";
 import {
@@ -21,10 +21,8 @@ export const buildBaseOperatorColumns = ({
   toggleGroup,
   operatorNameLookup,
   canAssign,
-  userRole,
   operatorUsers,
   handleAssignChange,
-  currentUserName,
   machineDropdownOptions,
   handleMachineNumberChange,
   handleChildMachineNumberChange,
@@ -42,10 +40,8 @@ export const buildBaseOperatorColumns = ({
   toggleGroup: (groupId: string) => void;
   operatorNameLookup: Map<string, string>;
   canAssign: boolean;
-  userRole: string;
   operatorUsers: Array<{ id: string | number; name: string }>;
   handleAssignChange: (jobId: number | string, value: string | string[]) => void;
-  currentUserName: string;
   machineDropdownOptions: string[];
   handleMachineNumberChange: (groupId: string, machineNumber: string) => void;
   handleChildMachineNumberChange: (jobId: number | string, machineNumber: string) => void;
@@ -96,55 +92,37 @@ export const buildBaseOperatorColumns = ({
     className: "operator-assigned-cell",
     render: (row) => {
       const assignedOperators = normalizeAssignedOperators(row.entry.assignedTo || "", operatorNameLookup);
-      const activeOperatorName = getPrimaryPersonName(activeRunsByJobId.get(String(row.entry.id))?.userName || "", "");
+      const activeOperatorName = String(activeRunsByJobId.get(String(row.entry.id))?.userName || "").trim().toUpperCase();
       const operatorHistory = Array.from(
         new Set(
           [
             ...getOperatorHistoryNames(row.entry),
-            ...((operatorHistoryByJobId.get(String(row.entry.id)) || []).map((name) => getPrimaryPersonName(name, ""))),
+            ...((operatorHistoryByJobId.get(String(row.entry.id)) || []).map((name) => String(name || "").trim().toUpperCase())),
             ...(activeOperatorName ? [activeOperatorName.toUpperCase()] : []),
           ].filter(Boolean)
         )
       );
       const latestWorkedByName = operatorHistory[operatorHistory.length - 1] || "";
       const displayAssignedValue =
-        assignedOperators[0] ||
+        assignedOperators.join(", ") ||
         (activeOperatorName ? activeOperatorName.toUpperCase() : "") ||
         latestWorkedByName ||
         "Unassign";
-      const normalizedCurrentUser = String(currentUserName || "").trim();
       const hasStarted = hasOperatorJobStarted(row.entry, activeRunsByJobId);
-      const normalizedRole = String(userRole || "").toUpperCase();
-      const isPrivilegedAssigner = normalizedRole === "ADMIN" || normalizedRole === "PROGRAMMER";
-
       const shouldAllowTableAssignment = canAssign;
 
       return shouldAllowTableAssignment ? (
         <div className="operator-assigned-cell-stack" title={operatorHistory.length ? `Worked By: ${operatorHistory.join(", ")}` : undefined}>
-          {isPrivilegedAssigner ? (
-            <MultiSelectOperators
-              className="operator-assigned-dropdown"
-              selectedOperators={assignedOperators}
-              availableOperators={operatorUsers}
-              onChange={(nextValue) => handleAssignChange(row.entry.id, nextValue)}
-              placeholder="Unassign"
-              compact={assignedOperators.length > 1}
-              showUnassign={!hasStarted}
-              selfToggleOnly={false}
-            />
-          ) : (
-            <MultiSelectOperators
-              className="operator-assigned-dropdown"
-              selectedOperators={assignedOperators}
-              availableOperators={operatorUsers}
-              onChange={(nextValue) => handleAssignChange(row.entry.id, nextValue)}
-              placeholder="Unassign"
-              compact={assignedOperators.length > 1}
-              assignToSelfName={normalizedCurrentUser}
-              showUnassign={!hasStarted}
-              selfToggleOnly={true}
-            />
-          )}
+          <MultiSelectOperators
+            className="operator-assigned-dropdown"
+            selectedOperators={assignedOperators}
+            availableOperators={operatorUsers}
+            onChange={(nextValue) => handleAssignChange(row.entry.id, nextValue)}
+            placeholder="Unassign"
+            compact={assignedOperators.length > 1}
+            showUnassign={!hasStarted}
+            selfToggleOnly={false}
+          />
         </div>
       ) : (
         <div className="assigned-operators-readonly" title={operatorHistory.length ? `Worked By: ${operatorHistory.join(", ")}` : undefined}>

@@ -10,7 +10,7 @@ import { OperatorTaskTimer } from "./OperatorTaskTimer";
 import SelectDropdown, { type SelectOption } from "../../Programmer/components/SelectDropdown";
 import { MultiSelectOperators } from "./MultiSelectOperators";
 import type { FilterField, FilterCategory, FilterValues } from "../../../components/FilterModal";
-import { formatMachineLabel, getDisplayName, getFirstNameDisplay } from "../../../utils/jobFormatting";
+import { formatMachineLabel, getDisplayName } from "../../../utils/jobFormatting";
 
 type OperatorFiltersProps = {
   filters: FilterValues;
@@ -129,7 +129,7 @@ export const OperatorFilters: React.FC<OperatorFiltersProps> = ({
     const source = operatorUsers.length > 0 ? operatorUsers : users;
     const items = source.map((user) => ({
       id: user._id,
-      name: getFirstNameDisplay(user.firstName, user.email, String(user._id)),
+      name: getDisplayName(user.firstName, user.lastName, user.email, String(user._id)),
     }));
     return [{ id: "__unassign__", name: "UNASSIGN" }, ...items];
   }, [operatorUsers, users]);
@@ -150,7 +150,7 @@ export const OperatorFilters: React.FC<OperatorFiltersProps> = ({
       { label: "Unassign", value: "Unassign" },
     ];
     source.forEach((user) => {
-      const displayName = getFirstNameDisplay(user.firstName, user.email, String(user._id));
+      const displayName = getDisplayName(user.firstName, user.lastName, user.email, String(user._id));
       const key = displayName.toLowerCase();
       if (!displayName || seen.has(key)) return;
       seen.add(key);

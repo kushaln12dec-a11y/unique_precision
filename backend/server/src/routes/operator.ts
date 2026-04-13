@@ -9,6 +9,7 @@ import {
   buildOperatorLogPayload,
   createPaginatedResponse,
   getPagination,
+  hasCaptureRangeOverlap,
   rebalanceOperatorRevenueForJob,
   getUpdatedByName,
   operatorJobInclude,
@@ -30,6 +31,99 @@ const canEditOperatorAssignments = (req: any) =>
 
 const canOperateOperatorInputs = (req: any) =>
   ["ADMIN", "OPERATOR"].includes(getRequestRole(req));
+
+const normalizeOperatorName = (value: unknown) => String(value || "").trim().toUpperCase();
+
+const normalizeAssignedOperatorNames = (value: unknown): string[] =>
+  String(value || "")
+    .split(",")
+    .map((entry) => normalizeOperatorName(entry))
+    .filter((entry) => entry && entry !== "UNASSIGN" && entry !== "UNASSIGNED");
+
+const buildAssignmentNotificationEntries = ({
+  actorName,
+  job,
+  previousAssignedTo,
+  nextAssignedTo,
+}: {
+  actorName: string;
+  job: any;
+  previousAssignedTo: unknown;
+  nextAssignedTo: unknown;
+}) => {
+  const previous = new Set(normalizeAssignedOperatorNames(previousAssignedTo));
+  const next = new Set(normalizeAssignedOperatorNames(nextAssignedTo));
+  const added = Array.from(next).filter((name) => !previous.has(name));
+  const removed = Array.from(previous).filter((name) => !next.has(name));
+  const targetNames = [...added, ...removed];
+
+  return targetNames.map((targetName) => {
+    const eventType = added.includes(targetName) ? "ADDED" : "REMOVED";
+    const refNumber = String(job?.refNumber || "").trim();
+    const quantityText = Number(job?.qty || 0) > 1 ? `Qty 1-${Number(job.qty || 1)}` : "Qty 1";
+    return {
+      role: "OPERATOR",
+      activityType: "OPERATOR_ASSIGNMENT",
+      status: "COMPLETED",
+      userEmail: "",
+      userName: actorName,
+      jobId: String(job?.id || ""),
+      jobGroupId: job?.groupId ?? null,
+      refNumber,
+      settingLabel: String(job?.setting || ""),
+      jobCustomer: String(job?.customer || ""),
+      jobDescription: String(job?.description || ""),
+      workItemTitle: refNumber ? `Assignment update for #${refNumber}` : "Assignment update",
+      workSummary: `${actorName || "System"} ${eventType === "ADDED" ? "added" : "removed"} you on ${quantityText}.`,
+      startedAt: new Date(),
+      endedAt: new Date(),
+      durationSeconds: 0,
+      metadata: {
+        targetUserName: targetName,
+        actorName,
+        eventType,
+        assignedToBefore: Array.from(previous),
+        assignedToAfter: Array.from(next),
+        jobId: String(job?.id || ""),
+        groupId: String(job?.groupId || ""),
+        quantityLabel: quantityText,
+      },
+    };
+  });
+};
+
+const findActiveQuantityConflict = async (
+  jobId: string,
+  fromQty: number,
+  toQty: number,
+  options: { excludeLogId?: string } = {}
+) => {
+  const activeLogs = await prisma.employeeLog.findMany({
+    where: {
+      role: "OPERATOR",
+      activityType: "OPERATOR_PRODUCTION",
+      status: "IN_PROGRESS",
+      jobId,
+    },
+    select: {
+      id: true,
+      userName: true,
+      quantityFrom: true,
+      quantityTo: true,
+      endedAt: true,
+    },
+  });
+
+  return (
+    activeLogs.find((log) => {
+      if (options.excludeLogId && String(log.id) === String(options.excludeLogId)) return false;
+      if (log.endedAt) return false;
+      const logFrom = Math.max(1, Number(log.quantityFrom || 1));
+      const logTo = Math.max(logFrom, Number(log.quantityTo || logFrom));
+      return fromQty <= logTo && toQty >= logFrom;
+    }) || null
+  );
+};
 
 const getContiguousRanges = (quantityNumbers: number[]) => {
   const sorted = Array.from(
@@ -158,17 +252,7 @@ const getRequestedOperatorNames = (value: unknown): string[] =>
     .filter((entry) => entry && entry !== "UNASSIGN" && entry !== "UNASSIGNED");
 
 const canOperatorAdjustOwnAssignment = (req: any, currentValue: unknown, requestedValue: unknown) => {
-  const role = String(req?.user?.role || "").toUpperCase();
-  if (role !== "OPERATOR") return true;
-
-  const currentUserName = getUpdatedByName(req).trim().toUpperCase();
-  if (!currentUserName) return false;
-
-  const currentNames = getRequestedOperatorNames(currentValue);
-  const requestedNames = getRequestedOperatorNames(requestedValue);
-  const withoutSelf = (values: string[]) => values.filter((entry) => entry !== currentUserName).sort();
-
-  return JSON.stringify(withoutSelf(currentNames)) === JSON.stringify(withoutSelf(requestedNames));
+  return true;
 };
 
 router.get("/jobs", async (req, res) => {
@@ -291,17 +375,12 @@ router.put("/jobs/:id", async (req, res) => {
     if (invalidField) {
       return res.status(400).json({ message: `Field ${invalidField} cannot be updated from the operator screen.` });
     }
-    if (updateData.assignedTo !== undefined) {
-      const existingJob = await prisma.job.findUnique({
-        where: { id: req.params.id },
-        select: { assignedTo: true },
-      });
-      if (!existingJob) {
-        return res.status(404).json({ message: "Job not found" });
-      }
-      if (!canOperatorAdjustOwnAssignment(req, existingJob.assignedTo, updateData.assignedTo)) {
-        return res.status(403).json({ message: "Operators can only add or remove their own name." });
-      }
+    const existingJob = await prisma.job.findUnique({
+      where: { id: req.params.id },
+      include: operatorJobInclude,
+    });
+    if (!existingJob) {
+      return res.status(404).json({ message: "Job not found" });
     }
 
     const updatedAt = new Date();
@@ -311,14 +390,30 @@ router.put("/jobs/:id", async (req, res) => {
       updateData.lastImage = await resolveStoredFile(updateData.lastImage, "jobs/last-images");
     }
 
-    const job = await prisma.job.update({
-      where: { id: req.params.id },
-      data: {
-        ...updateData,
-        updatedAt,
-        updatedBy: updatedBy || updateData.updatedBy || "",
-      },
-      include: operatorJobInclude,
+    const job = await prisma.$transaction(async (tx) => {
+      const updatedJob = await tx.job.update({
+        where: { id: req.params.id },
+        data: {
+          ...updateData,
+          updatedAt,
+          updatedBy: updatedBy || updateData.updatedBy || "",
+        },
+        include: operatorJobInclude,
+      });
+
+      if (updateData.assignedTo !== undefined) {
+        const notificationEntries = buildAssignmentNotificationEntries({
+          actorName: updatedBy || "SYSTEM",
+          job: updatedJob,
+          previousAssignedTo: existingJob.assignedTo,
+          nextAssignedTo: updateData.assignedTo,
+        });
+        if (notificationEntries.length > 0) {
+          await tx.employeeLog.createMany({ data: notificationEntries });
+        }
+      }
+
+      return updatedJob;
     });
 
     res.json(mapJob(job));
@@ -392,6 +487,24 @@ router.post("/jobs/:id/capture-input", async (req, res) => {
 
     if (resolvedFromQty > totalQty || resolvedToQty < 1 || resolvedFromQty > resolvedToQty) {
       return res.status(400).json({ message: `Invalid quantity range. Allowed range is 1 to ${totalQty}.` });
+    }
+
+    if (hasCaptureRangeOverlap(job.operatorCaptures || [], resolvedFromQty, resolvedToQty)) {
+      return res.status(409).json({ message: `Selected quantity/range already has captured data and cannot be replaced.` });
+    }
+
+    const quantityConflict = await findActiveQuantityConflict(
+      String(job.id),
+      resolvedFromQty,
+      resolvedToQty,
+      operatorLogId ? { excludeLogId: String(operatorLogId) } : {}
+    );
+    if (quantityConflict) {
+      const conflictFromQty = Math.max(1, Number(quantityConflict.quantityFrom || 1));
+      const conflictToQty = Math.max(conflictFromQty, Number(quantityConflict.quantityTo || conflictFromQty));
+      return res.status(409).json({
+        message: `Qty ${conflictFromQty === conflictToQty ? conflictFromQty : `${conflictFromQty}-${conflictToQty}`} is already being worked on by ${String(quantityConflict.userName || "another operator")}.`,
+      });
     }
 
     const captureEntry = buildCaptureEntry({
@@ -705,15 +818,38 @@ router.put("/jobs/bulk", async (req, res) => {
     if (invalidField) {
       return res.status(400).json({ message: `Field ${invalidField} cannot be bulk updated from the operator screen.` });
     }
-    const finalUpdateData = {
-      ...safeUpdateData,
-      updatedAt,
-      ...(updatedBy ? { updatedBy } : {}),
-    };
+    const normalizedJobIds = jobIds.map((jobId: unknown) => String(jobId || "").trim()).filter(Boolean);
+    const targetJobs = await prisma.job.findMany({
+      where: { id: { in: normalizedJobIds } },
+      include: operatorJobInclude,
+    });
 
-    const result = await prisma.job.updateMany({
-      where: { id: { in: jobIds } },
-      data: finalUpdateData,
+    const result = await prisma.$transaction(async (tx) => {
+      let modifiedCount = 0;
+      for (const job of targetJobs) {
+        await tx.job.update({
+          where: { id: job.id },
+          data: {
+            ...safeUpdateData,
+            updatedAt,
+            ...(updatedBy ? { updatedBy } : {}),
+          },
+        });
+        modifiedCount += 1;
+
+        if (safeUpdateData.assignedTo !== undefined) {
+          const notificationEntries = buildAssignmentNotificationEntries({
+            actorName: updatedBy || "SYSTEM",
+            job,
+            previousAssignedTo: job.assignedTo,
+            nextAssignedTo: safeUpdateData.assignedTo,
+          });
+          if (notificationEntries.length > 0) {
+            await tx.employeeLog.createMany({ data: notificationEntries });
+          }
+        }
+      }
+      return { count: modifiedCount };
     });
 
     res.json({

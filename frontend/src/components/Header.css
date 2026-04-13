@@ -41,6 +41,12 @@
   transition: all 0.3s ease;
 }
 
+.breadcrumb-button {
+  border: none;
+  background: transparent;
+  font: inherit;
+}
+
 .breadcrumb-item:not(.active) {
   cursor: pointer;
   color: var(--color-text-soft);
@@ -200,6 +206,11 @@
   background: linear-gradient(180deg, color-mix(in srgb, #fef2f2 74%, var(--color-surface)) 0%, var(--color-surface) 100%);
 }
 
+.header-notification-card.info {
+  border-color: rgba(59, 130, 246, 0.26);
+  background: linear-gradient(180deg, color-mix(in srgb, #eff6ff 76%, var(--color-surface)) 0%, var(--color-surface) 100%);
+}
+
 .header-notification-card-header {
   display: flex;
   align-items: flex-start;
@@ -241,6 +252,11 @@
 .header-notification-pill.danger {
   color: #991b1b;
   background: #fee2e2;
+}
+
+.header-notification-pill.info {
+  color: #1d4ed8;
+  background: #dbeafe;
 }
 
 .header-notification-card-grid {

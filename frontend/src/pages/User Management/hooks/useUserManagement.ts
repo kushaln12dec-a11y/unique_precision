@@ -87,6 +87,7 @@ export const useUserManagement = () => {
       empId: "",
       role: "OPERATOR",
     });
+    setShowPassword(false);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -139,6 +140,7 @@ export const useUserManagement = () => {
       empId: formatEmployeeId(user.empId),
       role: user.role,
     });
+    setShowPassword(false);
     setShowForm(true);
     setError("");
   };
@@ -146,6 +148,7 @@ export const useUserManagement = () => {
   const handleNewUser = () => {
     setEditingUser(null);
     resetForm();
+    setShowPassword(false);
     setShowForm(true);
     setError("");
     void (async () => {

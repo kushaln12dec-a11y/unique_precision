@@ -7,7 +7,6 @@ import type { CutInputData, QuantityInputData } from "../types/cutInput";
 import { createEmptyQuantityInputData } from "../types/cutInput";
 import { calculateMachineHrs } from "../utils/machineHrsCalculation";
 import { loadOperatorInputsFromLocalStorage, saveOperatorInputsToLocalStorage } from "../utils/operatorViewStorage";
-import { getPrimaryPersonName } from "../../../utils/jobFormatting";
 
 export const useOperatorViewData = (groupId: string | null, cutIdParam: string | null) => {
   const [jobs, setJobs] = useState<JobEntry[]>([]);
@@ -17,7 +16,7 @@ export const useOperatorViewData = (groupId: string | null, cutIdParam: string |
   const [cutInputs, setCutInputs] = useState<Map<number | string, CutInputData>>(new Map());
   const [expandedCuts, setExpandedCuts] = useState<Set<number | string>>(new Set());
 
-  const normalizeOperatorName = (value: unknown) => getPrimaryPersonName(value, "");
+  const normalizeOperatorName = (value: unknown) => String(value || "").trim().toUpperCase();
 
   const parseAssignedOperators = (rawAssignedTo: unknown): string[] => {
     if (Array.isArray(rawAssignedTo)) {
@@ -27,6 +26,38 @@ export const useOperatorViewData = (groupId: string | null, cutIdParam: string |
     const normalizedLower = normalized.toLowerCase();
     if (!normalized || normalizedLower === "unassigned" || normalizedLower === "unassign") return [];
     return [...new Set(normalized.split(",").map((value) => normalizeOperatorName(value)).filter(Boolean))];
+  };
+
+  const mergeJobAssignmentsIntoInputs = (
+    previousInputs: Map<number | string, CutInputData>,
+    nextJobs: JobEntry[]
+  ) => {
+    const nextInputs = new Map(previousInputs);
+
+    nextJobs.forEach((job) => {
+      const currentCut = nextInputs.get(job.id);
+      if (!currentCut?.quantities?.length) return;
+
+      const assignedOperators = parseAssignedOperators((job as any).assignedTo || "");
+      const sharedMachine = String((job as any).machineNumber || "").trim();
+      const mergedQuantities = currentCut.quantities.map((qty) => {
+        const hasLockedCapture = Boolean(String(qty.endTime || "").trim());
+        if (hasLockedCapture) return qty;
+
+        return {
+          ...qty,
+          machineNumber: sharedMachine || String(qty.machineNumber || "").trim(),
+          opsName: assignedOperators,
+        };
+      });
+
+      nextInputs.set(job.id, {
+        ...currentCut,
+        quantities: mergedQuantities,
+      });
+    });
+
+    return nextInputs;
   };
 
   const collectOperatorHistoryForQuantity = (
@@ -207,7 +238,7 @@ export const useOperatorViewData = (groupId: string | null, cutIdParam: string |
               ? rawOpsName.split(",").map((value) => normalizeOperatorName(value)).filter(Boolean)
               : [];
           };
-          const assignedToArray = parseAssignedOperators(existing.assignedTo || "").slice(0, 1);
+          const assignedToArray = parseAssignedOperators(existing.assignedTo || "");
           
           // If we have saved data for this cut, use it
           if (savedInputs && savedInputs.has(jobId)) {
@@ -356,8 +387,11 @@ export const useOperatorViewData = (groupId: string | null, cutIdParam: string |
           });
         });
         
-      setCutInputs(initialInputs);
       setJobs(filteredJobs);
+      setCutInputs((prev) => {
+        const preferredInputs = initialInputs.size > 0 ? initialInputs : prev;
+        return mergeJobAssignmentsIntoInputs(preferredInputs, filteredJobs);
+      });
       if (filteredJobs.length > 0) {
         setExpandedCuts((prev) => (prev.size > 0 ? prev : new Set([filteredJobs[0].id])));
       }
@@ -382,6 +416,7 @@ export const useOperatorViewData = (groupId: string | null, cutIdParam: string |
           ? fetchedJobs.filter((job) => String(job.id) === String(cutIdParam))
           : fetchedJobs;
         setJobs(filteredJobs);
+        setCutInputs((prev) => mergeJobAssignmentsIntoInputs(prev, filteredJobs));
       } catch {
         // Background sync should not block operator flow.
       }

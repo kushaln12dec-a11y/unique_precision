@@ -20,6 +20,7 @@ import { useProgrammerGrid } from "./hooks/useProgrammerGrid";
 import { useProgrammerLogs } from "./hooks/useProgrammerLogs";
 import { useProgrammerPageController } from "./hooks/useProgrammerPageController";
 import { useProgrammerReduxDispatchers } from "./hooks/useProgrammerReduxDispatchers";
+import { useProgrammerNavigation } from "./hooks/useProgrammerNavigation";
 
 const Programmer = () => {
   const navigate = useNavigate();
@@ -210,17 +211,12 @@ const Programmer = () => {
 
   const handleDownloadCSV = () => exportJobsToCSV(filteredProgrammerTableData, isAdmin);
   const dispatchers = useProgrammerReduxDispatchers(dispatch, filters);
-  const handleProgrammerNavigate = (path: string) => {
-    if (isProgrammerFormRoute) {
-      handleCancelState();
-      setSavingJob(false);
-      window.setTimeout(() => {
-        navigate(path, { replace: true, state: { refreshedAt: Date.now() } });
-      }, 0);
-      return;
-    }
-    navigate(path);
-  };
+  const { handleProgrammerNavigate, navigateToProgrammerList } = useProgrammerNavigation({
+    isProgrammerFormRoute,
+    navigate,
+    handleCancelState,
+    setSavingJob,
+  });
 
   return (
     <div className="programmer-container">
@@ -246,7 +242,7 @@ const Programmer = () => {
             shouldRenderEditLoadingState={shouldRenderEditLoadingState}
             shouldRenderEditErrorState={shouldRenderEditErrorState}
             editGroupError={editGroupError}
-            onBack={() => navigate("/programmer", { replace: true })}
+            onBack={navigateToProgrammerList}
           />
 
           {isProgrammerListRoute && activeTab === "jobs" && (
