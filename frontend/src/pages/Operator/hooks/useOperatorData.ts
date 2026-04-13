@@ -6,6 +6,7 @@ import type { User } from "../../../types/user";
 import type { JobEntry } from "../../../types/job";
 import { getUserRoleFromToken } from "../../../utils/auth";
 import type { FilterValues } from "../../../components/FilterModal";
+import { getOperatorUsers } from "../utils/operatorUserOptions";
 
 const STORAGE_KEY = "programmerJobs";
 
@@ -77,7 +78,7 @@ export const useOperatorData = (
     const fetchOperators = async () => {
       try {
         const userList = await getUsers();
-        setOperatorUsers(userList.filter((user) => user.role === "OPERATOR" || user.role === "ADMIN"));
+        setOperatorUsers(getOperatorUsers(userList));
         setUsers(userList);
       } catch (error) {
         console.error("Failed to fetch operators", error);

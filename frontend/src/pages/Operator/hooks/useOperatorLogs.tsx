@@ -4,9 +4,9 @@ import type { EmployeeLog } from "../../../types/employeeLog";
 import type { JobEntry } from "../../../types/job";
 import { formatDisplayDateTime } from "../../../utils/date";
 import {
+  getDisplayName,
   formatMachineLabel,
   getEmailLocalPart,
-  getFirstNameDisplay,
   getLogUserDisplayName,
   toMachineIndex,
 } from "../../../utils/jobFormatting";
@@ -95,7 +95,7 @@ export const useOperatorLogs = ({
   const userFilterOptions = useMemo(() => {
     const seen = new Set<string>();
     return users
-      .map((user) => getFirstNameDisplay(user.firstName, user.email, "USER"))
+      .map((user) => getDisplayName(user.firstName, user.lastName, user.email, "USER"))
       .filter((name) => {
         const key = String(name || "").trim().toLowerCase();
         if (!key || seen.has(key)) return false;
@@ -142,10 +142,13 @@ export const useOperatorLogs = ({
         OPERATOR_LOG_SEARCH_FETCH_PAGE_SIZE
       );
       const filteredLogs = filterOperatorLogs(allLogs);
-      const headers = ["User", "MACH #", "Job Ref", "Description", "Summary", "Started at", "Ended at", "Shift", "Duration", "Estimated", "Overtime", "Idle Time", "Remark", "Revenue", "Status"];
+      const headers = ["User", "MACH #", "Job Ref", "Description", "Summary", "Started at", "Ended at", "Shift", "Duration", "Estimated", "Overtime", "Qty Split", "Idle Time", "Remark", "Revenue", "Revenue Split", "Status"];
       const rows = filteredLogs.map((row) => {
         const name = getLogUserDisplayName(row.userName, row.userEmail, "");
         const designation = designationByUserName.get(name.toLowerCase()) || "Operator";
+        const revenueByQuantity = Object.entries(((row.metadata as any)?.revenueByQuantity || {}) as Record<string, number>)
+          .map(([qty, amount]) => `Q${qty}: Rs. ${Number(amount || 0).toFixed(2)}`)
+          .join(" | ");
         return [
           name ? `${name} (${designation})` : designation,
           formatMachineLabel(getMachineNumberForLog(row)),
@@ -158,9 +161,13 @@ export const useOperatorLogs = ({
           formatOperatorDuration(row.durationSeconds),
           formatOperatorDuration(Number((row.metadata as any)?.estimatedSeconds || 0)),
           formatOperatorDuration(Number((row.metadata as any)?.overtimeSeconds || 0)),
+          Array.isArray((row.metadata as any)?.quantityNumbers)
+            ? (row.metadata as any).quantityNumbers.map((qty: number) => `Q${qty}`).join(", ")
+            : "-",
           String((row.metadata as any)?.idleTime || "-"),
           String((row.metadata as any)?.remark || "-"),
           getRevenueForLog(row),
+          revenueByQuantity || "-",
           formatOperatorLogStatus(row.status),
         ];
       });

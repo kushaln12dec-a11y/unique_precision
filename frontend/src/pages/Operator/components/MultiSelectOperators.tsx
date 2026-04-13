@@ -57,8 +57,10 @@ export const MultiSelectOperators = ({
       const value = String(operator || "").trim();
       const key = normalizeOperatorName(value);
       if (!value || !key || unique.has(key)) return;
+      const mappedValue = canonicalOperatorNames.get(key);
+      if (!mappedValue) return;
       unique.add(key);
-      normalized.push(canonicalOperatorNames.get(key) || value);
+      normalized.push(mappedValue);
     });
     return normalized;
   }, [canonicalOperatorNames, selectedOperators]);
@@ -224,7 +226,7 @@ export const MultiSelectOperators = ({
         normalizedAvailableOperators={normalizedAvailableOperators}
         onMarkUnassigned={() => {
           if (!disabled) onChange([]);
-          setIsOpen(false);
+          updateMenuPosition();
         }}
         onAssignToSelf={() => {
           if (!disabled && assignToSelfName) {
@@ -236,7 +238,7 @@ export const MultiSelectOperators = ({
                 : [...normalizedSelectedOperators, assignToSelfName]
             );
           }
-          setIsOpen(false);
+          updateMenuPosition();
         }}
         onToggleOperator={toggleOperator}
       />

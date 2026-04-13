@@ -16,9 +16,10 @@ const OPERATOR_LOG_COLUMN_WIDTHS: Record<string, number> = {
   durationSeconds: 74,
   estimatedSeconds: 74,
   overtimeSeconds: 74,
+  quantityNumbers: 92,
   idleTime: 72,
   remark: 72,
-  revenue: 80,
+  revenue: 120,
   status: 96,
 };
 

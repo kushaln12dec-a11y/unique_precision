@@ -4,6 +4,8 @@ import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import DateTimeInput from "./DateTimeInput";
 import SelectDropdown from "../../Programmer/components/SelectDropdown";
 import { MultiSelectOperators } from "./MultiSelectOperators";
+import OperatorQuantityActions from "./OperatorQuantityActions";
+import OperatorQuantityHistoryPanel from "./OperatorQuantityHistoryPanel";
 import { decimalHoursToHHMM } from "../utils/machineHrsCalculation";
 import { useQuantityTimer } from "../hooks/useQuantityTimer";
 import { getQaStageLabel, type QuantityProgressStatus } from "../utils/qaProgress";
@@ -11,6 +13,7 @@ import { estimatedDurationSecondsFromHours, formatMachineLabel } from "../../../
 import { formatIdleDuration } from "../utils/operatorTimeUtils";
 import type { QuantityInputData } from "../types/cutInput";
 import type { OperatorInputField } from "../types/inputFields";
+import { getOperatorQuantityHistory } from "../utils/operatorQuantityHistory";
 
 const IDLE_REASON_OPTIONS = ["Power Break", "Machine Breakdown", "Vertical Dial", "Cleaning", "Consumables Change", "Others"];
 
@@ -40,8 +43,6 @@ type Props = {
   onSaveRange?: (cutId: number | string, sourceQuantityIndex: number, fromQty: number, toQty: number) => void;
   savedRanges: Set<string>;
   canReset: boolean;
-  isAdmin: boolean;
-  currentUserDisplayName: string;
 };
 
 export const OperatorQuantityCard: React.FC<Props> = ({
@@ -70,8 +71,6 @@ export const OperatorQuantityCard: React.FC<Props> = ({
   onSaveRange,
   savedRanges,
   canReset,
-  isAdmin,
-  currentUserDisplayName,
 }) => {
   const rangeQuantityCount = isRangeMode && isRangeValid ? Math.max(1, rangeEndQty - rangeStartQty + 1) : 1;
   const quantityRequiredSeconds = estimatedDurationSecondsFromHours(
@@ -90,50 +89,9 @@ export const OperatorQuantityCard: React.FC<Props> = ({
   );
   const rangeBadgeKey = `${rangeStartQty}-${rangeEndQty}`;
   const isShiftOverPause = qtyData.isPaused && qtyData.currentPauseReason === "Shift Over";
-  const operatorProofHistory = Array.isArray(qtyData.operatorHistory)
-    ? qtyData.operatorHistory.map((name) => String(name || "").trim()).filter(Boolean)
-    : [];
-  const operatorHistoryDetails = Array.isArray(qtyData.operatorHistoryDetails)
-    ? qtyData.operatorHistoryDetails
-        .map((entry) => ({
-          name: String(entry?.name || "").trim(),
-          durationSeconds: Math.max(0, Number(entry?.durationSeconds || 0)),
-        }))
-        .filter((entry) => entry.name)
-    : [];
-  const normalizedWorkedByNames = Array.from(
-    new Set(operatorProofHistory.map((name) => String(name || "").trim().toLowerCase()).filter(Boolean))
-  );
-  const normalizedHistoryDetailNames = Array.from(
-    new Set(operatorHistoryDetails.map((entry) => String(entry.name || "").trim().toLowerCase()).filter(Boolean))
-  );
-  const currentAssignedNames = Array.isArray(qtyData.opsName)
-    ? qtyData.opsName.map((name) => String(name || "").trim()).filter(Boolean)
-    : [];
-  const latestWorkedByName =
-    currentAssignedNames[0] ||
-    operatorProofHistory[operatorProofHistory.length - 1] ||
-    operatorHistoryDetails[operatorHistoryDetails.length - 1]?.name ||
-    "";
-  const shouldShowWorkedBySummary =
-    operatorProofHistory.length > 0 &&
-    (
-      operatorHistoryDetails.length === 0 ||
-      normalizedWorkedByNames.join("|") !== normalizedHistoryDetailNames.join("|")
-    );
-  const shouldShowOperatorHistory =
-    (!isRangeMode && Boolean(latestWorkedByName)) ||
-    shouldShowWorkedBySummary ||
-    operatorHistoryDetails.length > 0;
+  const { latestWorkedByName, operatorHistoryDetails, operatorProofHistory, shouldShowOperatorHistory, shouldShowWorkedBySummary, formatWorkedDuration } =
+    getOperatorQuantityHistory(qtyData, isRangeMode);
   const estimatedTimerLabel = hasOvertime ? "Overtime:" : "Remaining Time:";
-  const formatWorkedDuration = (seconds: number) => {
-    const safeSeconds = Math.max(0, Math.round(seconds));
-    const hours = Math.floor(safeSeconds / 3600);
-    const minutes = Math.floor((safeSeconds % 3600) / 60);
-    if (hours > 0) return `${hours}h ${minutes}m`;
-    if (minutes > 0) return `${minutes}m`;
-    return `${safeSeconds}s`;
-  };
 
   return (
     <div className="quantity-input-group">
@@ -247,39 +205,20 @@ export const OperatorQuantityCard: React.FC<Props> = ({
           </div>
           <div className="operator-input-card">
             <label>Ops Name</label>
-            {isAdmin || !canOperateInputs ? (
-              <MultiSelectOperators
-                selectedOperators={Array.isArray(qtyData.opsName) ? qtyData.opsName : []}
-                availableOperators={operatorUsers}
-                onChange={(nextValue) => {
-                  if (!canEditAssignments) return;
-                  onInputChange(cutId, qtyIndex, "opsName", nextValue);
-                }}
-                placeholder="SELECT OPERATOR"
-                className={validationErrors.opsName ? "input-error" : ""}
-                compact={(qtyData.opsName || []).length > 1}
-                assignToSelfName={currentUserDisplayName}
-                showUnassign={false}
-                selfToggleOnly={false}
-                disabled={!canEditAssignments}
-              />
-            ) : (
-              <MultiSelectOperators
-                selectedOperators={Array.isArray(qtyData.opsName) ? qtyData.opsName : []}
-                availableOperators={operatorUsers}
-                onChange={(nextValue) => {
-                  if (!canEditAssignments) return;
-                  onInputChange(cutId, qtyIndex, "opsName", nextValue);
-                }}
-                placeholder="SELECT OPERATOR"
-                className={validationErrors.opsName ? "input-error" : ""}
-                compact={(qtyData.opsName || []).length > 1}
-                assignToSelfName={currentUserDisplayName}
-                showUnassign={false}
-                selfToggleOnly={true}
-                disabled={!canEditAssignments}
-              />
-            )}
+            <MultiSelectOperators
+              selectedOperators={Array.isArray(qtyData.opsName) ? qtyData.opsName : []}
+              availableOperators={operatorUsers}
+              onChange={(nextValue) => {
+                if (!canEditAssignments) return;
+                onInputChange(cutId, qtyIndex, "opsName", nextValue);
+              }}
+              placeholder="SELECT OPERATOR"
+              className={validationErrors.opsName ? "input-error" : ""}
+              compact={(qtyData.opsName || []).length > 1}
+              showUnassign={false}
+              selfToggleOnly={false}
+              disabled={!canEditAssignments}
+            />
             {validationErrors.opsName && <p className="field-error">{validationErrors.opsName}</p>}
           </div>
           {qtyData.isPaused && !qtyData.endTime && (
@@ -298,39 +237,15 @@ export const OperatorQuantityCard: React.FC<Props> = ({
           )}
         </div>
 
-        {shouldShowOperatorHistory ? (
-          <div className="quantity-side-panel">
-            <div className="operator-history-panel">
-              {shouldShowWorkedBySummary ? (
-                <div
-                  className="operator-history-proof"
-                  title={operatorProofHistory.join(", ")}
-                >
-                  <span className="operator-history-proof-line">Worked By:</span>
-                  <span className="operator-history-proof-line">
-                    {latestWorkedByName || operatorProofHistory[0]}
-                  </span>
-                </div>
-              ) : null}
-              {!isRangeMode && !shouldShowWorkedBySummary && latestWorkedByName ? (
-                <div className="operator-history-proof" title={latestWorkedByName}>
-                  <span className="operator-history-proof-line">Worked By:</span>
-                  <span className="operator-history-proof-line">{latestWorkedByName}</span>
-                </div>
-              ) : null}
-              {isRangeMode && operatorHistoryDetails.length > 0 ? (
-                <div className="operator-history-proof" title={operatorHistoryDetails.map((entry) => `${entry.name}: ${formatWorkedDuration(entry.durationSeconds)}`).join(" | ")}>
-                  <span className="operator-history-proof-line">Worked Time:</span>
-                  {operatorHistoryDetails.map((entry) => (
-                    <span key={`${entry.name}-${entry.durationSeconds}`} className="operator-history-proof-line">
-                      {entry.name} ({formatWorkedDuration(entry.durationSeconds)})
-                    </span>
-                  ))}
-                </div>
-              ) : null}
-            </div>
-          </div>
-        ) : null}
+        <OperatorQuantityHistoryPanel
+          isRangeMode={isRangeMode}
+          latestWorkedByName={latestWorkedByName}
+          operatorHistoryDetails={operatorHistoryDetails}
+          operatorProofHistory={operatorProofHistory}
+          shouldShowOperatorHistory={shouldShowOperatorHistory}
+          shouldShowWorkedBySummary={shouldShowWorkedBySummary}
+          formatWorkedDuration={formatWorkedDuration}
+        />
       </div>
 
       {qtyData.pauseSessions && qtyData.pauseSessions.length > 0 ? (
@@ -352,43 +267,30 @@ export const OperatorQuantityCard: React.FC<Props> = ({
         </div>
       ) : null}
 
-      <div className="quantity-save-section">
-        {isRangeMode ? (
-          <button
-            type="button"
-            className={`btn-save-quantity ${savedRanges.has(rangeBadgeKey) ? "saved" : ""}`}
-            disabled={!canOperateInputs || !isRangeValid || !isRangeApproved}
-            onClick={() => {
-              if (!isRangeValid) return onShowToast?.(`Enter range between 1 and ${Math.max(rangeEndQty, rangeStartQty)}.`, "error");
-              if (!isRangeApproved) return onShowToast?.("Please click Check to accept the range.", "error");
-              onSaveRange?.(cutId, qtyIndex, rangeStartQty, rangeEndQty);
-            }}
-          >
-            {savedRanges.has(rangeBadgeKey) ? "Saved" : `Save Range ${rangeStartQty}-${rangeEndQty}`}
-          </button>
-        ) : (
-          <>
-            {!isRangeMode && qtyData.startTime && !qtyData.endTime && (!qtyData.isPaused || isShiftOverPause) && (
-              <button
-                type="button"
-                className="mark-shift-over-button"
-                disabled={!canOperateInputs}
-                onClick={() => (isShiftOverPause ? onRequestResume?.(cutId, qtyIndex) : onRequestShiftOver?.(cutId, qtyIndex))}
-              >
-                {isShiftOverPause ? "Resume Quantity" : "Shift Over"}
-              </button>
-            )}
-            {canReset && qtyData.startTime && (
-              <button type="button" className="reset-timer-button" onClick={() => onRequestResetTimer ? onRequestResetTimer(cutId, qtyIndex) : onInputChange(cutId, qtyIndex, "resetTimer", "")} aria-label="Reset timer" title="Reset timer">
-                Reset Quantity {qtyIndex + 1}
-              </button>
-            )}
-            <button type="button" className="btn-save-quantity" disabled={!canOperateInputs} onClick={() => onSaveQuantity?.(cutId, qtyIndex)}>
-              Save Quantity {qtyIndex + 1}
-            </button>
-          </>
-        )}
-      </div>
+      <OperatorQuantityActions
+        canOperateInputs={canOperateInputs}
+        canReset={canReset}
+        cutId={cutId}
+        qtyIndex={qtyIndex}
+        isRangeMode={isRangeMode}
+        isRangeValid={isRangeValid}
+        isRangeApproved={isRangeApproved}
+        rangeStartQty={rangeStartQty}
+        rangeEndQty={rangeEndQty}
+        rangeBadgeKey={rangeBadgeKey}
+        savedRanges={savedRanges}
+        qtyStartTime={qtyData.startTime}
+        qtyEndTime={qtyData.endTime}
+        isShiftOverPause={isShiftOverPause}
+        isPaused={qtyData.isPaused || false}
+        onShowToast={onShowToast}
+        onRequestResume={onRequestResume}
+        onRequestResetTimer={onRequestResetTimer}
+        onRequestShiftOver={onRequestShiftOver}
+        onInputChange={onInputChange}
+        onSaveQuantity={onSaveQuantity}
+        onSaveRange={onSaveRange}
+      />
     </div>
   );
 };

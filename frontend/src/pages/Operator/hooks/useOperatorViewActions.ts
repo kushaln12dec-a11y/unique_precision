@@ -397,17 +397,11 @@ export const useOperatorViewActions = ({ jobs, cutInputs, setValidationErrors, c
         const selectedOps = Array.isArray(qtyData.opsName)
           ? qtyData.opsName.map((name) => String(name || "").trim()).filter(Boolean)
           : [];
-        const normalizedCurrentUser = String(currentUserDisplayName || "").trim().toLowerCase();
-        const hasCurrentUserName =
-          !normalizedCurrentUser ||
-          selectedOps.some((name) => name.toLowerCase() === normalizedCurrentUser);
 
-        if (!selectedOps.length || !hasCurrentUserName) {
+        if (!selectedOps.length) {
           showAndHideToast(
             setActionToast,
-            normalizedCurrentUser
-              ? `Add ${currentUserDisplayName} in Ops Name before resuming.`
-              : "Select Ops Name before resuming.",
+            "Select Ops Name before resuming.",
             "error",
             3000
           );

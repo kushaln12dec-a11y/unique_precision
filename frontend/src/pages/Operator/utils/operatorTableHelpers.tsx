@@ -3,7 +3,6 @@ import type { JobEntry } from "../../../types/job";
 import {
   estimatedHoursFromAmount,
   formatEstimatedTime,
-  getPrimaryPersonName,
   MACHINE_OPTIONS,
   toMachineIndex,
 } from "../../../utils/jobFormatting";
@@ -44,7 +43,7 @@ const formatCaptureQuantityLabel = (capture: any) => {
   return fromQty === toQty ? `Qty ${fromQty}` : `Qty ${fromQty}-${toQty}`;
 };
 
-const normalizeOperatorLabel = (value: unknown) => getPrimaryPersonName(value, "");
+const normalizeOperatorLabel = (value: unknown) => String(value || "").trim().toUpperCase();
 
 export const getLatestActiveCaptureSummary = (entries: JobEntry[]): ActiveCaptureSummary | null => {
   let latestCapture: ActiveCaptureSummary | null = null;
@@ -170,9 +169,11 @@ export const normalizeAssignedOperators = (
   const unique = new Set<string>();
   const normalized: string[] = [];
   source.forEach((name) => {
-    const normalizedName = String(name || "").trim().toLowerCase();
+    const primaryName = normalizeOperatorLabel(name);
+    const normalizedName = String(primaryName || "").trim().toLowerCase();
     if (!normalizedName || normalizedName === "unassigned" || normalizedName === "unassign") return;
-    const mappedName = operatorNameLookup.get(name.toLowerCase()) || name;
+    const mappedName = operatorNameLookup.get(normalizedName);
+    if (!mappedName) return;
     const key = mappedName.toLowerCase();
     if (unique.has(key)) return;
     unique.add(key);

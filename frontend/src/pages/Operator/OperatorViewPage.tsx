@@ -15,7 +15,7 @@ import OperatorViewModals from "./components/OperatorViewModals";
 import type { CutInputData } from "./types/cutInput";
 import { createEmptyCutInputData } from "./types/cutInput";
 import { getUserDisplayNameFromToken, getUserRoleFromToken } from "../../utils/auth";
-import { estimatedDurationSecondsFromHours, estimatedHoursFromAmount, getPrimaryPersonName, MACHINE_OPTIONS, toMachineIndex } from "../../utils/jobFormatting";
+import { estimatedDurationSecondsFromHours, estimatedHoursFromAmount, MACHINE_OPTIONS, toMachineIndex } from "../../utils/jobFormatting";
 import { getQuantityElapsedSeconds, parseOperatorDateTime } from "./utils/operatorTimeUtils";
 import { updateOperatorJob } from "../../services/operatorApi";
 import "../RoleBoard.css";
@@ -23,6 +23,14 @@ import "../Programmer/Programmer.css";
 import "../Programmer/components/JobDetailsModal.css";
 import "./OperatorViewPage.css";
 import "./components/DateTimeInput.css";
+
+const normalizeOperatorName = (value: unknown) => String(value || "").trim().toUpperCase();
+
+const parseAssignedOperators = (value: unknown) =>
+  String(value || "")
+    .split(",")
+    .map((entry) => normalizeOperatorName(entry))
+    .filter((entry) => entry && entry.toLowerCase() !== "unassign" && entry.toLowerCase() !== "unassigned");
 
 const OperatorViewPage = () => {
   const navigate = useNavigate();
@@ -33,7 +41,7 @@ const OperatorViewPage = () => {
   const isAdmin = userRole === "ADMIN";
   const canOperateInputs = userRole === "ADMIN" || userRole === "OPERATOR";
   const canEditAssignments = userRole === "ADMIN" || userRole === "PROGRAMMER" || userRole === "OPERATOR";
-  const currentUserDisplayName = getPrimaryPersonName(getUserDisplayNameFromToken() || "", "USER");
+  const currentUserDisplayName = normalizeOperatorName(getUserDisplayNameFromToken() || "");
 
   const [validationErrors, setValidationErrors] = useState<Map<number | string, Record<string, Record<string, string>>>>(new Map());
   const [liveNowMs, setLiveNowMs] = useState<number>(Date.now());
@@ -79,19 +87,51 @@ const OperatorViewPage = () => {
     handleStartTimeCaptured,
     handlePauseResumeAction,
   } = useOperatorViewActions({ jobs, cutInputs, setValidationErrors, currentUserDisplayName });
-  const allowedOperatorUsers = useMemo(() => {
-    if (userRole === "ADMIN" || userRole === "PROGRAMMER" || userRole === "ACCOUNTANT") {
-      return operatorUsers;
-    }
-    const normalizedCurrentUser = String(currentUserDisplayName || "").trim().toLowerCase();
-    const matchingUsers = operatorUsers.filter(
-      (operator) => String(operator.name || "").trim().toLowerCase() === normalizedCurrentUser
+  const allowedOperatorUsers = useMemo(() => operatorUsers, [operatorUsers]);
+
+  useEffect(() => {
+    if (allowedOperatorUsers.length === 0 || cutInputs.size === 0) return;
+
+    const allowedNames = new Map(
+      allowedOperatorUsers.map((operator) => {
+        const name = normalizeOperatorName(operator.name);
+        return [name.toLowerCase(), name] as const;
+      })
     );
-    if (matchingUsers.length > 0) return matchingUsers;
-    return currentUserDisplayName
-      ? [{ id: "self", name: currentUserDisplayName }]
-      : operatorUsers;
-  }, [currentUserDisplayName, operatorUsers, userRole]);
+
+    setCutInputs((prev) => {
+      let hasChanged = false;
+      const next = new Map(prev);
+
+      prev.forEach((cutData, cutId) => {
+        const nextQuantities = (cutData.quantities || []).map((quantity) => {
+          const sanitizedOps = (Array.isArray(quantity.opsName) ? quantity.opsName : [])
+            .map((name) => allowedNames.get(normalizeOperatorName(name).toLowerCase()) || "")
+            .filter(Boolean);
+
+          const uniqueSanitizedOps = Array.from(new Set(sanitizedOps));
+          const currentOpsSnapshot = JSON.stringify(Array.isArray(quantity.opsName) ? quantity.opsName : []);
+          const nextOpsSnapshot = JSON.stringify(uniqueSanitizedOps);
+          if (currentOpsSnapshot === nextOpsSnapshot) return quantity;
+
+          hasChanged = true;
+          return {
+            ...quantity,
+            opsName: uniqueSanitizedOps,
+          };
+        });
+
+        if (hasChanged) {
+          next.set(cutId, {
+            ...cutData,
+            quantities: nextQuantities,
+          });
+        }
+      });
+
+      return hasChanged ? next : prev;
+    });
+  }, [allowedOperatorUsers, cutInputs.size, setCutInputs]);
 
   useEffect(() => {
     if (!canEditAssignments || jobs.length === 0 || cutInputs.size === 0) return;
@@ -100,31 +140,65 @@ const OperatorViewPage = () => {
       jobs.forEach((job) => {
         const cutData = cutInputs.get(job.id);
         if (!cutData) return;
-        const assignedNames = (cutData.quantities || [])
-          .flatMap((quantity) => (Array.isArray(quantity.opsName) ? quantity.opsName : []))
-          .reduce<Map<string, string>>((map, name) => {
-            const trimmed = String(name || "").trim().toUpperCase();
-            if (!trimmed) return map;
-            map.set(trimmed.toLowerCase(), trimmed);
-            return map;
-          }, new Map<string, string>());
-        const nextAssignedTo = Array.from(assignedNames.values()).join(", ") || "Unassign";
+
+        const namesFromInputs = Array.from(
+          new Map(
+            (cutData.quantities || [])
+              .flatMap((quantity) => (Array.isArray(quantity.opsName) ? quantity.opsName : []))
+              .map((name) => {
+                const normalized = normalizeOperatorName(name);
+                return [normalized.toLowerCase(), normalized] as const;
+              })
+              .filter((entry) => entry[1])
+          ).values()
+        );
+
         const nextMachineNumber =
           (cutData.quantities || [])
             .map((quantity) => String(quantity.machineNumber || "").trim())
             .find(Boolean) || "";
-        if (String(job.assignedTo || "Unassign").trim() === nextAssignedTo && String(job.machineNumber || "").trim() === nextMachineNumber) {
+
+        const validOperatorNames = new Map(
+          allowedOperatorUsers.map((operator) => {
+            const name = normalizeOperatorName(operator.name);
+            return [name.toLowerCase(), name] as const;
+          })
+        );
+        const currentAssignedOperators = parseAssignedOperators(job.assignedTo || "").filter((name) =>
+          validOperatorNames.has(normalizeOperatorName(name).toLowerCase())
+        );
+        const normalizedCurrentUser = String(currentUserDisplayName || "").trim().toLowerCase();
+
+        const nextAssignedOperators =
+          userRole === "OPERATOR" && normalizedCurrentUser
+            ? (() => {
+                const retainedOthers = currentAssignedOperators.filter((name) => name.toLowerCase() !== normalizedCurrentUser);
+                const hasSelfSelected = namesFromInputs.some((name) => name.toLowerCase() === normalizedCurrentUser);
+                return hasSelfSelected
+                  ? [...retainedOthers, currentUserDisplayName]
+                  : retainedOthers;
+              })()
+            : namesFromInputs;
+
+        const nextAssignedTo = nextAssignedOperators.join(", ") || "Unassign";
+        const currentAssignedTo = currentAssignedOperators.join(", ") || "Unassign";
+
+        if (
+          currentAssignedTo === nextAssignedTo &&
+          String(job.machineNumber || "").trim() === nextMachineNumber
+        ) {
           return;
         }
+
         void updateOperatorJob(String(job.id), {
           assignedTo: nextAssignedTo,
           machineNumber: nextMachineNumber,
         }).catch(() => undefined);
       });
-    }, 250);
+    }, 400);
 
     return () => window.clearTimeout(timeoutId);
-  }, [canEditAssignments, cutInputs, jobs]);
+  }, [allowedOperatorUsers, canEditAssignments, cutInputs, currentUserDisplayName, jobs, userRole]);
 
   const parentJob = jobs.length > 0 ? jobs[0] : null;
   const totalGroupQuantity = jobs.reduce((sum, job) => sum + Math.max(1, Number(job.qty || 1)), 0);
@@ -303,7 +377,6 @@ const OperatorViewPage = () => {
                         }}
                         onStartTimeCaptured={handleStartTimeCaptured}
                         isAdmin={isAdmin}
-                        currentUserDisplayName={currentUserDisplayName}
                       />
                     );
                   })}

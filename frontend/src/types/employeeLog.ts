@@ -3,6 +3,7 @@ export type EmployeeLogStatus = "IN_PROGRESS" | "COMPLETED" | "REJECTED";
 export type EmployeeLogActivityType =
   | "PROGRAMMER_JOB_CREATION"
   | "OPERATOR_PRODUCTION"
+  | "OPERATOR_ASSIGNMENT"
   | "QA_REVIEW";
 
 export type EmployeeLogQueryStatus = "IN_PROGRESS" | "COMPLETED" | "REJECTED";
