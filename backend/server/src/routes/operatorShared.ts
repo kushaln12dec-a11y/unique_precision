@@ -78,6 +78,20 @@ const parseMachineHoursToSeconds = (value: unknown): number | null => {
   return Math.round(numeric * 3600);
 };
 
+const estimatedHoursFromAmount = (amount: number): number => {
+  return (Number(amount || 0) || 0) / 625;
+};
+
+const estimatedDurationSecondsFromHours = (hours: number): number => {
+  const safeHours = Number(hours || 0) || 0;
+  if (safeHours <= 0) return 0;
+  if (safeHours < 1) {
+    const minutes = Math.max(1, Math.round(safeHours * 60));
+    return minutes * 60;
+  }
+  return Math.max(0, Math.round(Number(safeHours.toFixed(2)) * 3600));
+};
+
 export const getQuantityNumbersFromLog = (log: {
   quantityFrom?: number | null;
   quantityTo?: number | null;
@@ -108,6 +122,22 @@ export const getWorkedSecondsForOperatorLog = (log: {
   metadata?: any;
 }) => {
   const metadata = (log.metadata || {}) as Record<string, any>;
+  const fromWorkedSeconds = Number(metadata.workedSeconds || 0);
+  if (Number.isFinite(fromWorkedSeconds) && fromWorkedSeconds > 0) {
+    return Math.max(0, Math.round(fromWorkedSeconds));
+  }
+
+  const fromMachineHours = parseMachineHoursToSeconds(metadata.machineHrs);
+  if (fromMachineHours !== null && fromMachineHours > 0) return fromMachineHours;
+
+  return Math.max(0, Number(log.durationSeconds || 0));
+};
+
+const getRawWorkedSecondsForOperatorLog = (log: {
+  durationSeconds?: number | null;
+  metadata?: any;
+}) => {
+  const metadata = (log.metadata || {}) as Record<string, any>;
   const fromMachineHours = parseMachineHoursToSeconds(metadata.machineHrs);
   if (fromMachineHours !== null && fromMachineHours > 0) return fromMachineHours;
 
@@ -132,9 +162,9 @@ export const rebalanceOperatorRevenueForJob = async (
   if (!jobId) return;
 
   const totalQuantity = Math.max(1, Number(job.qty || 1));
-  const estimatedSecondsPerQuantity = Math.max(0, Math.round((Math.max(0, Number(job.totalHrs || 0)) * 3600) / totalQuantity));
   const perQuantityRevenue =
     Math.max(0, Number(job.totalHrs || 0)) * Math.max(0, Number(job.rate || 0)) / totalQuantity;
+  const estimatedSecondsPerQuantity = estimatedDurationSecondsFromHours(estimatedHoursFromAmount(perQuantityRevenue));
 
   const logs = await tx.employeeLog.findMany({
     where: {
@@ -155,13 +185,24 @@ export const rebalanceOperatorRevenueForJob = async (
     },
   });
 
-  const workedByQuantity = new Map<number, Array<{ logId: string; workedSeconds: number; startedAtMs: number; endedAtMs: number }>>();
+  const workedByQuantity = new Map<
+    number,
+    Array<{
+      logId: string;
+      workedSeconds: number;
+      rawWorkedSeconds: number;
+      durationSeconds: number;
+      startedAtMs: number;
+      endedAtMs: number;
+    }>
+  >();
   logs.forEach((log: any) => {
     const quantityNumbers = getQuantityNumbersFromLog(log);
     if (quantityNumbers.length === 0) return;
-    const workedSeconds = getWorkedSecondsForOperatorLog(log);
-    const workedSecondsPerQuantity = quantityNumbers.length > 0 ? workedSeconds / quantityNumbers.length : workedSeconds;
-    const normalizedWorkedSecondsPerQuantity = Math.max(0, workedSecondsPerQuantity);
+    const rawWorkedSeconds = getRawWorkedSecondsForOperatorLog(log);
+    const durationSeconds = Math.max(0, Number(log.durationSeconds || 0));
+    const rawWorkedSecondsPerQuantity = quantityNumbers.length > 0 ? rawWorkedSeconds / quantityNumbers.length : rawWorkedSeconds;
+    const durationSecondsPerQuantity = quantityNumbers.length > 0 ? durationSeconds / quantityNumbers.length : durationSeconds;
     const startedAtMs = log.startedAt instanceof Date ? log.startedAt.getTime() : 0;
     const endedAtMs = log.endedAt instanceof Date ? log.endedAt.getTime() : startedAtMs;
 
@@ -169,7 +210,9 @@ export const rebalanceOperatorRevenueForJob = async (
       const entries = workedByQuantity.get(quantityNumber) || [];
       entries.push({
         logId: String(log.id),
-        workedSeconds: normalizedWorkedSecondsPerQuantity,
+        workedSeconds: Math.max(0, rawWorkedSecondsPerQuantity),
+        rawWorkedSeconds: Math.max(0, rawWorkedSecondsPerQuantity),
+        durationSeconds: Math.max(0, durationSecondsPerQuantity),
         startedAtMs,
         endedAtMs,
       });
@@ -189,11 +232,34 @@ export const rebalanceOperatorRevenueForJob = async (
       return left.logId.localeCompare(right.logId);
     });
 
-    const totalWorkedSeconds = sortedEntries.reduce((sum, entry) => sum + Math.max(0, entry.workedSeconds), 0);
+    let previousCumulativeWorkedSeconds = 0;
+    const normalizedEntries = sortedEntries.map((entry) => {
+      const safeRawWorkedSeconds = Math.max(0, entry.rawWorkedSeconds);
+      const safeDurationSeconds = Math.max(0, entry.durationSeconds);
+      const looksCumulative =
+        previousCumulativeWorkedSeconds > 0 &&
+        safeRawWorkedSeconds > safeDurationSeconds &&
+        safeRawWorkedSeconds >= previousCumulativeWorkedSeconds + Math.max(1, safeDurationSeconds - 1);
+
+      const normalizedWorkedSeconds = looksCumulative
+        ? Math.max(0, safeRawWorkedSeconds - previousCumulativeWorkedSeconds)
+        : safeRawWorkedSeconds > 0
+          ? safeRawWorkedSeconds
+          : safeDurationSeconds;
+
+      previousCumulativeWorkedSeconds = Math.max(previousCumulativeWorkedSeconds, safeRawWorkedSeconds);
+
+      return {
+        ...entry,
+        workedSeconds: normalizedWorkedSeconds,
+      };
+    });
+
+    const totalWorkedSeconds = normalizedEntries.reduce((sum, entry) => sum + Math.max(0, entry.workedSeconds), 0);
     const hasEstimatedCap = estimatedSecondsPerQuantity > 0;
     let remainingEstimatedSeconds = estimatedSecondsPerQuantity;
 
-    sortedEntries.forEach((entry) => {
+    normalizedEntries.forEach((entry) => {
       const currentRevenueByQuantity = revenueByLogId.get(entry.logId) || {};
       const safeWorkedSeconds = Math.max(0, entry.workedSeconds);
       const creditedWorkedSeconds = hasEstimatedCap
@@ -231,21 +297,26 @@ export const rebalanceOperatorRevenueForJob = async (
     const quantityNumbers = getQuantityNumbersFromLog(log as any);
     const revenueByQuantity = revenueByLogId.get(String(log.id)) || {};
     const revenue = Object.values(revenueByQuantity).reduce((sum, amount) => sum + Number(amount || 0), 0);
-    const workedSeconds = getWorkedSecondsForOperatorLog(log as any);
+    const normalizedWorkedSeconds =
+      (creditedWorkedSecondsByLogId.get(String(log.id)) || 0) + (overtimeSecondsByLogId.get(String(log.id)) || 0);
     const estimatedSeconds = estimatedSecondsByLogId.get(String(log.id)) || 0;
     const creditedWorkedSeconds = creditedWorkedSecondsByLogId.get(String(log.id)) || 0;
-    const overtimeSeconds = Math.max(0, overtimeSecondsByLogId.get(String(log.id)) || Math.max(0, workedSeconds - creditedWorkedSeconds));
+    const overtimeSeconds = Math.max(
+      0,
+      overtimeSecondsByLogId.get(String(log.id)) || Math.max(0, normalizedWorkedSeconds - creditedWorkedSeconds)
+    );
 
     await tx.employeeLog.update({
       where: { id: String(log.id) },
       data: {
+        durationSeconds: Math.max(0, Math.round(normalizedWorkedSeconds)),
         metadata: {
           ...metadata,
           quantityNumbers,
           perQuantityRevenue: Number(perQuantityRevenue.toFixed(2)),
           revenueByQuantity,
           revenue: Number(revenue.toFixed(2)),
-          workedSeconds,
+          workedSeconds: Math.max(0, Math.round(normalizedWorkedSeconds)),
           creditedWorkedSeconds,
           estimatedSeconds,
           estimatedSecondsPerQuantity,
@@ -391,8 +462,7 @@ export const buildOperatorLogPayload = ({
   const jobWedmAmount = Math.max(0, Number((refreshedJob as any).totalHrs || 0) * Number((refreshedJob as any).rate || 0));
   const totalQuantity = Math.max(1, Number((refreshedJob as any).qty || quantityCount || 1));
   const perQuantityRevenue = jobWedmAmount / totalQuantity;
-  const estimatedHoursPerQuantity = perQuantityRevenue / 625;
-  const estimatedSecondsPerQuantity = Math.max(0, Math.round(estimatedHoursPerQuantity * 3600));
+  const estimatedSecondsPerQuantity = estimatedDurationSecondsFromHours(estimatedHoursFromAmount(perQuantityRevenue));
   const estimatedSeconds = estimatedSecondsPerQuantity * Math.max(1, quantityCount);
   const overtimeSeconds = Math.max(0, workedSeconds - estimatedSeconds);
   const quantityNumbers = Array.from({ length: Math.max(1, quantityCount) }, (_, index) => resolvedFromQty + index);
