@@ -5,7 +5,7 @@ import { buildOperatorCompletionAlerts } from "../pages/Operator/utils/completio
 
 export type HeaderNotificationItem = {
   id: string;
-  kind: "completion" | "assignment";
+  kind: "completion" | "assignment" | "activity";
   severity: "info" | "warning" | "danger";
   title: string;
   subtitle: string;
@@ -73,6 +73,60 @@ export const buildAssignmentNotificationItems = ({
           { label: "Customer", value: String(log.jobCustomer || "-") },
           { label: "Quantity", value: quantityLabel || "-" },
           { label: "Description", value: String(log.jobDescription || "-"), wide: true },
+        ],
+      } satisfies HeaderNotificationItem;
+    })
+    .sort((left, right) => new Date(right.createdAtLabel || 0).getTime() - new Date(left.createdAtLabel || 0).getTime());
+
+export const buildPersonalActivityNotificationItems = ({
+  logs,
+  currentUserName,
+}: {
+  logs: EmployeeLog[];
+  currentUserName: string;
+}): HeaderNotificationItem[] =>
+  logs
+    .filter((log) => normalizeName(log.userName) === normalizeName(currentUserName))
+    .filter((log) => String(log.jobId || "").trim() && String(log.status || "").trim().toUpperCase() !== "IN_PROGRESS")
+    .map((log) => {
+      const metadata = (log.metadata || {}) as Record<string, any>;
+      const groupId = String(log.jobGroupId || metadata.groupId || "").trim();
+      const idleReason = String(metadata.idleTime || "").trim();
+      const workedSeconds = Math.max(
+        0,
+        Number(metadata.workedSeconds || log.durationSeconds || 0)
+      );
+      const workedLabel =
+        workedSeconds >= 3600
+          ? `${Math.floor(workedSeconds / 3600)}h ${Math.floor((workedSeconds % 3600) / 60)}m`
+          : workedSeconds >= 60
+            ? `${Math.floor(workedSeconds / 60)}m ${workedSeconds % 60}s`
+            : `${workedSeconds}s`;
+      const revenue = Number(metadata.revenue || log.revenue || 0);
+      const quantityNumbers = Array.isArray(metadata.quantityNumbers)
+        ? metadata.quantityNumbers.map((qty) => `Q${qty}`).join(", ")
+        : log.quantityFrom
+          ? `Q${log.quantityFrom}${log.quantityTo && log.quantityTo !== log.quantityFrom ? `-${log.quantityTo}` : ""}`
+          : "-";
+      const status = String(log.status || "").toUpperCase();
+      const isHold = status === "REJECTED";
+
+      return {
+        id: `activity:${String(log._id || log.createdAt || log.startedAt || Math.random())}`,
+        kind: "activity",
+        severity: isHold ? "warning" : "info",
+        title: isHold ? "Job put on hold" : "Quantity logged",
+        subtitle: log.refNumber ? `#${log.refNumber}` : String(log.jobDescription || "Operator update"),
+        statusLabel: isHold ? "Hold" : "Logged",
+        navigatePath: groupId ? `/operator/viewpage?groupId=${encodeURIComponent(groupId)}` : undefined,
+        actionLabel: groupId ? "Open Job" : "View Details",
+        createdAtLabel: String(log.createdAt || log.updatedAt || log.endedAt || log.startedAt || ""),
+        fields: [
+          { label: "Machine", value: formatMachineLabel(String(metadata.machineNumber || "")) || String(metadata.machineNumber || "-") },
+          { label: "Quantity", value: quantityNumbers || "-" },
+          { label: "Worked", value: workedLabel },
+          { label: "Revenue", value: Number.isFinite(revenue) && revenue > 0 ? `Rs. ${revenue.toFixed(2)}` : "-" },
+          { label: isHold ? "Reason" : "Description", value: isHold ? idleReason || "Hold" : String(log.jobDescription || "-"), wide: true },
         ],
       } satisfies HeaderNotificationItem;
     })

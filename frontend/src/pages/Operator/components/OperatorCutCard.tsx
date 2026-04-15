@@ -54,6 +54,7 @@ type OperatorCutCardProps = {
   onRequestResetTimer?: (cutId: number | string, quantityIndex: number) => void;
   onRequestShiftOver?: (cutId: number | string, quantityIndex: number) => void;
   onRequestResume?: (cutId: number | string, quantityIndex: number) => void;
+  onRequestEndTimeCapture?: (cutId: number | string, quantityIndex: number) => void;
   onStartTimeCaptured?: (cutId: number | string, quantityIndex: number) => void;
   isAdmin: boolean;
 };
@@ -83,6 +84,7 @@ export const OperatorCutCard: React.FC<OperatorCutCardProps> = ({
   onRequestResetTimer,
   onRequestShiftOver,
   onRequestResume,
+  onRequestEndTimeCapture,
   onStartTimeCaptured,
   isAdmin,
 }) => {
@@ -167,6 +169,7 @@ export const OperatorCutCard: React.FC<OperatorCutCardProps> = ({
             onRequestResetTimer={onRequestResetTimer}
             onRequestShiftOver={onRequestShiftOver}
             onRequestResume={onRequestResume}
+            onRequestEndTimeCapture={onRequestEndTimeCapture}
             onStartTimeCaptured={onStartTimeCaptured}
           />
         </>

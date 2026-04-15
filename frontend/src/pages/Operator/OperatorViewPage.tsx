@@ -46,6 +46,7 @@ const OperatorViewPage = () => {
   const [validationErrors, setValidationErrors] = useState<Map<number | string, Record<string, Record<string, string>>>>(new Map());
   const [liveNowMs, setLiveNowMs] = useState<number>(Date.now());
   const [pendingOperatorAction, setPendingOperatorAction] = useState<{ cutId: number | string; quantityIndex: number; action: "shiftOver" | "resume" } | null>(null);
+  const [pendingEndTimeCapture, setPendingEndTimeCapture] = useState<{ cutId: number | string; quantityIndex: number } | null>(null);
 
   const {
     jobs,
@@ -88,6 +89,19 @@ const OperatorViewPage = () => {
     handlePauseResumeAction,
   } = useOperatorViewActions({ jobs, cutInputs, setValidationErrors, currentUserDisplayName });
   const allowedOperatorUsers = useMemo(() => operatorUsers, [operatorUsers]);
+
+  const handleConfirmEndTimeCapture = (cutId: number | string, quantityIndex: number) => {
+    const timestampMs = Date.now();
+    handleInputChange(cutId, quantityIndex, "endTimeEpochMs", String(timestampMs));
+    setActionToast({
+      message: "End time captured successfully!",
+      variant: "success",
+      visible: true,
+    });
+    setTimeout(() => {
+      setActionToast((prev) => ({ ...prev, visible: false }));
+    }, 2200);
+  };
 
   useEffect(() => {
     if (allowedOperatorUsers.length === 0 || cutInputs.size === 0) return;
@@ -375,6 +389,9 @@ const OperatorViewPage = () => {
                         onRequestResume={(cutId, quantityIndex) => {
                           setPendingOperatorAction({ cutId, quantityIndex, action: "resume" });
                         }}
+                        onRequestEndTimeCapture={(cutId, quantityIndex) => {
+                          setPendingEndTimeCapture({ cutId, quantityIndex });
+                        }}
                         onStartTimeCaptured={handleStartTimeCaptured}
                         isAdmin={isAdmin}
                       />
@@ -420,10 +437,13 @@ const OperatorViewPage = () => {
         setPendingReset={setPendingReset}
         pendingOperatorAction={pendingOperatorAction}
         setPendingOperatorAction={setPendingOperatorAction}
+        pendingEndTimeCapture={pendingEndTimeCapture}
+        setPendingEndTimeCapture={setPendingEndTimeCapture}
         handleUpdateQaStatus={handleUpdateQaStatus}
         handleResetQuantity={handleResetQuantity}
         handleInputChange={handleInputChange}
         handlePauseResumeAction={handlePauseResumeAction}
+        handleConfirmEndTimeCapture={handleConfirmEndTimeCapture}
         setActionToast={setActionToast}
       />
     </div>

@@ -30,6 +30,7 @@ type OperatorInputSectionProps = {
   onRequestResetTimer?: (cutId: number | string, quantityIndex: number) => void;
   onRequestShiftOver?: (cutId: number | string, quantityIndex: number) => void;
   onRequestResume?: (cutId: number | string, quantityIndex: number) => void;
+  onRequestEndTimeCapture?: (cutId: number | string, quantityIndex: number) => void;
   onStartTimeCaptured?: (cutId: number | string, quantityIndex: number) => void;
   requiredHoursPerQuantity?: number;
 };
@@ -76,6 +77,7 @@ export const OperatorInputSection: React.FC<OperatorInputSectionProps> = ({
   onRequestResetTimer,
   onRequestShiftOver,
   onRequestResume,
+  onRequestEndTimeCapture,
   onStartTimeCaptured,
   requiredHoursPerQuantity = 0,
 }) => {
@@ -207,6 +209,7 @@ export const OperatorInputSection: React.FC<OperatorInputSectionProps> = ({
             onRequestResetTimer={onRequestResetTimer}
             onRequestShiftOver={onRequestShiftOver}
             onRequestResume={onRequestResume}
+            onRequestEndTimeCapture={onRequestEndTimeCapture}
             onSaveQuantity={onSaveQuantity}
             onSaveRange={onSaveRange}
             savedRanges={savedRanges}

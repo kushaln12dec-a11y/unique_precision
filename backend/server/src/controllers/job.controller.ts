@@ -81,7 +81,7 @@ export const createJob = async (req: Request, res: Response, next: NextFunction)
 
 export const updateJob = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const job = await jobService.updateJob(getParam(req.params.id, "job id"), req.body);
+    const job = await jobService.updateJob(getParam(req.params.id, "job id"), req.body, req.user);
     res.json(job);
   } catch (error) {
     next(error);

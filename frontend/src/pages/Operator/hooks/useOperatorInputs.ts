@@ -15,6 +15,7 @@ import {
   ensureCutInputState,
   updateQuantityMachineHours,
 } from "../utils/operatorInputState";
+import { getCurrentISTDateTime } from "../../../utils/dateTime";
 
 export const useOperatorInputs = (
   _cutInputs: Map<number | string, CutInputData>,
@@ -201,6 +202,26 @@ export const useOperatorInputs = (
         quantities[quantityIndex] = {
           ...paused,
           currentPauseReason: "Shift Over",
+        };
+        newMap.set(cutId, { ...current, quantities });
+        return newMap;
+      }
+      if (field === "resumeShiftOver") {
+        const now = Date.now();
+        quantities[quantityIndex] = {
+          ...qtyData,
+          startTime: getCurrentISTDateTime(now),
+          startTimeEpochMs: now,
+          endTime: "",
+          endTimeEpochMs: null,
+          machineHrs: "",
+          idleTime: "",
+          idleTimeDuration: "",
+          isPaused: false,
+          pauseStartTime: null,
+          totalPauseTime: 0,
+          pausedElapsedTime: 0,
+          currentPauseReason: "",
         };
         newMap.set(cutId, { ...current, quantities });
         return newMap;

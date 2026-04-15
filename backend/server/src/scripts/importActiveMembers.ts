@@ -144,6 +144,7 @@ const importUsers = async () => {
           phone,
           role,
           passwordHash,
+          passwordText: getRolePassword(role),
         },
       });
       updated += 1;
@@ -155,6 +156,7 @@ const importUsers = async () => {
         empId,
         email,
         passwordHash,
+        passwordText: getRolePassword(role),
         firstName,
         lastName,
         phone,

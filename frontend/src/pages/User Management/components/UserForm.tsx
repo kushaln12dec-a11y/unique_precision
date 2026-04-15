@@ -33,7 +33,7 @@ export const UserForm: React.FC<UserFormProps> = ({
 }) => {
   const [copiedField, setCopiedField] = React.useState<"empId" | "password" | null>(null);
   const canCopyEmpId = /^EMP\d+$/i.test(String(formData.empId || "").trim());
-  const canCopyPassword = !editingUser && String(formData.password || "").trim().length > 0;
+  const canCopyPassword = String(formData.password || "").trim().length > 0;
 
   const handleCopyField = async (field: "empId" | "password", value: string) => {
     const didCopy = await copyTextWithFallback(value);
@@ -150,7 +150,7 @@ export const UserForm: React.FC<UserFormProps> = ({
 
         <div className="form-row">
           <div className="form-group">
-            <label>Password {editingUser ? "(leave blank to keep current)" : "*"}</label>
+            <label>Password {editingUser ? "*" : "*"}</label>
             <div className="password-input-wrapper">
               <input
                 type={showPassword ? "text" : "password"}
@@ -158,34 +158,32 @@ export const UserForm: React.FC<UserFormProps> = ({
                 value={formData.password}
                 onChange={onInputChange}
                 disabled={saving}
-                placeholder={editingUser ? "Leave blank to keep current password" : "Enter password"}
-                required={!editingUser}
+                placeholder={editingUser ? "Enter password" : "Enter password"}
+                required
               />
-              {!editingUser ? (
-                <div className="password-actions">
-                  <button
-                    type="button"
-                    className="password-toggle"
-                    onClick={onTogglePassword}
-                    disabled={saving}
-                    tabIndex={-1}
-                    title={showPassword ? "Hide password" : "Show password"}
-                    aria-label={showPassword ? "Hide password" : "Show password"}
-                  >
-                    {showPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
-                  </button>
-                  <button
-                    type="button"
-                    className="input-copy-btn"
-                    disabled={saving || !canCopyPassword}
-                    onClick={() => handleCopyField("password", String(formData.password || ""))}
-                    title={copiedField === "password" ? "Copied" : "Copy Password"}
-                    aria-label={copiedField === "password" ? "Password copied" : "Copy Password"}
-                  >
-                    {copiedField === "password" ? <CheckIcon /> : <ContentCopyOutlinedIcon />}
-                  </button>
-                </div>
-              ) : null}
+              <div className="password-actions">
+                <button
+                  type="button"
+                  className="password-toggle"
+                  onClick={onTogglePassword}
+                  disabled={saving}
+                  tabIndex={-1}
+                  title={showPassword ? "Hide password" : "Show password"}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
+                </button>
+                <button
+                  type="button"
+                  className="input-copy-btn"
+                  disabled={saving || !canCopyPassword}
+                  onClick={() => handleCopyField("password", String(formData.password || ""))}
+                  title={copiedField === "password" ? "Copied" : "Copy Password"}
+                  aria-label={copiedField === "password" ? "Password copied" : "Copy Password"}
+                >
+                  {copiedField === "password" ? <CheckIcon /> : <ContentCopyOutlinedIcon />}
+                </button>
+              </div>
             </div>
           </div>
         </div>

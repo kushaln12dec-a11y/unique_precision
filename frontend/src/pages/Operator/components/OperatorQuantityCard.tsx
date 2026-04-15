@@ -39,6 +39,7 @@ type Props = {
   onRequestResetTimer?: (cutId: number | string, quantityIndex: number) => void;
   onRequestShiftOver?: (cutId: number | string, quantityIndex: number) => void;
   onRequestResume?: (cutId: number | string, quantityIndex: number) => void;
+  onRequestEndTimeCapture?: (cutId: number | string, quantityIndex: number) => void;
   onSaveQuantity?: (cutId: number | string, quantityIndex: number) => void;
   onSaveRange?: (cutId: number | string, sourceQuantityIndex: number, fromQty: number, toQty: number) => void;
   savedRanges: Set<string>;
@@ -67,6 +68,7 @@ export const OperatorQuantityCard: React.FC<Props> = ({
   onRequestResetTimer,
   onRequestShiftOver,
   onRequestResume,
+  onRequestEndTimeCapture,
   onSaveQuantity,
   onSaveRange,
   savedRanges,
@@ -89,7 +91,7 @@ export const OperatorQuantityCard: React.FC<Props> = ({
   );
   const rangeBadgeKey = `${rangeStartQty}-${rangeEndQty}`;
   const isShiftOverPause = qtyData.isPaused && qtyData.currentPauseReason === "Shift Over";
-  const { latestWorkedByName, operatorHistoryDetails, operatorProofHistory, shouldShowOperatorHistory, shouldShowWorkedBySummary, formatWorkedDuration } =
+  const { latestWorkedByName, operatorHistoryDetails, shouldShowOperatorHistory, shouldShowWorkedBySummary, formatWorkedDuration } =
     getOperatorQuantityHistory(qtyData, isRangeMode);
   const estimatedTimerLabel = hasOvertime ? "Overtime:" : "Remaining Time:";
 
@@ -168,11 +170,10 @@ export const OperatorQuantityCard: React.FC<Props> = ({
                   if (qtyData.startTime && value) setTimeout(() => onInputChange(cutId, qtyIndex, "recalculateMachineHrs", ""), 100);
                 }
               }}
-              onTimeCapture={(timestampMs) => {
+              onTimeCapture={() => {
                 if (!canOperateInputs) return;
                 if (!qtyData.endTime) {
-                  onInputChange(cutId, qtyIndex, "endTimeEpochMs", String(timestampMs));
-                  onShowToast?.("End time captured successfully!", "success");
+                  onRequestEndTimeCapture?.(cutId, qtyIndex);
                 } else {
                   onShowToast?.("End time can only be set once!", "error");
                 }
@@ -241,7 +242,6 @@ export const OperatorQuantityCard: React.FC<Props> = ({
           isRangeMode={isRangeMode}
           latestWorkedByName={latestWorkedByName}
           operatorHistoryDetails={operatorHistoryDetails}
-          operatorProofHistory={operatorProofHistory}
           shouldShowOperatorHistory={shouldShowOperatorHistory}
           shouldShowWorkedBySummary={shouldShowWorkedBySummary}
           formatWorkedDuration={formatWorkedDuration}

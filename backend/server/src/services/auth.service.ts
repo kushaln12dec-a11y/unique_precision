@@ -35,7 +35,7 @@ export const loginUser = async (emailOrEmpId: string, password: string) => {
     const passwordHash = await bcrypt.hash(rolePassword, 10);
     await prisma.user.update({
       where: { id: user.id },
-      data: { passwordHash },
+      data: { passwordHash, passwordText: rolePassword },
     });
     isMatch = true;
   }

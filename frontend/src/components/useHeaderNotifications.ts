@@ -7,6 +7,7 @@ import { fetchAllPaginatedItems } from "../utils/paginationUtils";
 import {
   buildAssignmentNotificationItems,
   buildCompletionNotificationItems,
+  buildPersonalActivityNotificationItems,
   type HeaderNotificationItem,
 } from "./headerNotificationUtils";
 
@@ -22,12 +23,14 @@ export const useHeaderNotifications = ({
   const [activeOperatorRuns, setActiveOperatorRuns] = useState<EmployeeLog[]>([]);
   const [operatorGridJobs, setOperatorGridJobs] = useState<JobEntry[]>([]);
   const [assignmentLogs, setAssignmentLogs] = useState<EmployeeLog[]>([]);
+  const [personalActivityLogs, setPersonalActivityLogs] = useState<EmployeeLog[]>([]);
 
   useEffect(() => {
     if (!shouldPoll) {
       setActiveOperatorRuns([]);
       setOperatorGridJobs([]);
       setAssignmentLogs([]);
+      setPersonalActivityLogs([]);
       return;
     }
 
@@ -37,15 +40,17 @@ export const useHeaderNotifications = ({
       if (document.visibilityState !== "visible") return;
 
       try {
-        const [activeLogs, assignmentUpdates] = await Promise.all([
+        const [activeLogs, assignmentUpdates, activityUpdates] = await Promise.all([
           getEmployeeLogs({ role: "OPERATOR", status: "IN_PROGRESS", limit: 250 }),
           getEmployeeLogs({ role: "OPERATOR", activityType: "OPERATOR_ASSIGNMENT", limit: 100 }),
+          getEmployeeLogs({ role: "OPERATOR", activityType: "OPERATOR_PRODUCTION", limit: 100 }),
         ]);
         if (!isMounted) return;
 
         const runningLogs = activeLogs.filter((log) => String(log.jobId || "").trim());
         setActiveOperatorRuns(runningLogs);
         setAssignmentLogs(assignmentUpdates);
+        setPersonalActivityLogs(activityUpdates);
 
         if (runningLogs.length === 0) {
           setOperatorGridJobs([]);
@@ -63,6 +68,7 @@ export const useHeaderNotifications = ({
         setActiveOperatorRuns([]);
         setOperatorGridJobs([]);
         setAssignmentLogs([]);
+        setPersonalActivityLogs([]);
       }
     };
 
@@ -82,9 +88,14 @@ export const useHeaderNotifications = ({
       logs: assignmentLogs,
       currentUserName,
     });
+    const personalActivityItems = buildPersonalActivityNotificationItems({
+      logs: personalActivityLogs,
+      currentUserName,
+    });
     const completionItems = buildCompletionNotificationItems(activeOperatorRuns, operatorGridJobs);
-    return [...assignmentItems, ...completionItems];
-  }, [activeOperatorRuns, assignmentLogs, currentUserName, operatorGridJobs]);
+    return [...assignmentItems, ...personalActivityItems, ...completionItems]
+      .sort((left, right) => new Date(right.createdAtLabel || 0).getTime() - new Date(left.createdAtLabel || 0).getTime());
+  }, [activeOperatorRuns, assignmentLogs, currentUserName, operatorGridJobs, personalActivityLogs]);
 
   return {
     notifications,

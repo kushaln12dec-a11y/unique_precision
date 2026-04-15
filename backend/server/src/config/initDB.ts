@@ -11,6 +11,7 @@ const schemaStatements: string[] = [
     "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     "email" TEXT NOT NULL UNIQUE,
     "passwordHash" TEXT NOT NULL,
+    "passwordText" TEXT,
     "firstName" TEXT,
     "lastName" TEXT,
     "phone" TEXT,
@@ -254,6 +255,7 @@ const schemaStatements: string[] = [
   END $$;`,
 
   `CREATE INDEX IF NOT EXISTS "Job_groupId_idx" ON "Job" ("groupId");`,
+  `ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "passwordText" TEXT;`,
   `CREATE INDEX IF NOT EXISTS "Job_createdAt_idx" ON "Job" ("createdAt");`,
   `CREATE INDEX IF NOT EXISTS "Job_groupId_createdAt_desc_idx" ON "Job" ("groupId", "createdAt" DESC);`,
   `CREATE INDEX IF NOT EXISTS "Job_customer_idx" ON "Job" ("customer");`,
@@ -304,10 +306,11 @@ export const initDB = async (): Promise<void> => {
   try {
     const passwordHash = await bcrypt.hash("raki123", 10);
     await prisma.$executeRaw`
-      INSERT INTO "User" ("email", "passwordHash", "empId", "role", "createdAt", "updatedAt")
-      VALUES (${`rakis@gmail.com`}, ${passwordHash}, ${"EMP0001"}, ${"ADMIN"}, NOW(), NOW())
+      INSERT INTO "User" ("email", "passwordHash", "passwordText", "empId", "role", "createdAt", "updatedAt")
+      VALUES (${`rakis@gmail.com`}, ${passwordHash}, ${"raki123"}, ${"EMP0001"}, ${"ADMIN"}, NOW(), NOW())
       ON CONFLICT ("email") DO UPDATE
-      SET "empId" = COALESCE("User"."empId", EXCLUDED."empId");
+      SET "empId" = COALESCE("User"."empId", EXCLUDED."empId"),
+          "passwordText" = COALESCE("User"."passwordText", EXCLUDED."passwordText");
     `;
     console.log("Default admin ensured.");
 

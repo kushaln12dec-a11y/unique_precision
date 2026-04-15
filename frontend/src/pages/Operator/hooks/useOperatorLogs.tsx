@@ -77,6 +77,11 @@ export const useOperatorLogs = ({
 
   const getRevenueForLog = useCallback(
     (log: EmployeeLog) => {
+      const rawStatus = String(log.status || "").trim().toUpperCase();
+      if (rawStatus === "IN_PROGRESS") {
+        return "-";
+      }
+
       const metadata = (log.metadata || {}) as Record<string, any>;
       const explicitRevenue = log.revenue ?? metadata.revenue;
       if (explicitRevenue !== undefined && explicitRevenue !== null && String(explicitRevenue).trim() !== "") {
@@ -89,6 +94,14 @@ export const useOperatorLogs = ({
     },
     []
   );
+
+  const getWorkedDurationForLog = useCallback((log: EmployeeLog) => {
+    const workedSeconds = Number((log.metadata as any)?.workedSeconds || 0);
+    if (Number.isFinite(workedSeconds) && workedSeconds > 0) {
+      return Math.max(0, Math.round(workedSeconds));
+    }
+    return Math.max(0, Number(log.durationSeconds || 0));
+  }, []);
 
   const machineFilterOptions = machineOptionsForDropdown;
 
@@ -117,10 +130,11 @@ export const useOperatorLogs = ({
         designationByUserName,
         getMachineNumberForLog,
         getRevenueForLog,
+        getWorkedDurationForLog,
         operatorLogUser,
         operatorLogSearch,
       }),
-    [designationByUserName, getMachineNumberForLog, getRevenueForLog, operatorLogSearch, operatorLogUser]
+    [designationByUserName, getMachineNumberForLog, getRevenueForLog, getWorkedDurationForLog, operatorLogSearch, operatorLogUser]
   );
 
   const hasOperatorLogSearch = operatorLogSearch.trim().length > 0;
@@ -158,7 +172,7 @@ export const useOperatorLogs = ({
           formatDisplayDateTime(row.startedAt),
           formatDisplayDateTime(row.endedAt || null),
           getOperatorShiftLabel(row.startedAt),
-          formatOperatorDuration(row.durationSeconds),
+          formatOperatorDuration(getWorkedDurationForLog(row)),
           formatOperatorDuration(Number((row.metadata as any)?.estimatedSeconds || 0)),
           formatOperatorDuration(Number((row.metadata as any)?.overtimeSeconds || 0)),
           Array.isArray((row.metadata as any)?.quantityNumbers)

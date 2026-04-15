@@ -75,7 +75,7 @@ const mapOperatorCaptures = (job: any) => {
     : [];
 };
 
-export const mapUser = (user: any) => {
+export const mapUser = (user: any, options?: { includePassword?: boolean }) => {
   if (!user) return user;
   const { passwordHash, ...rest } = user;
   const rawEmail = String(user.email ?? "").trim().toLowerCase();
@@ -90,6 +90,7 @@ export const mapUser = (user: any) => {
     empId: normalizeEmpId(user.empId) || "",
     image: user.image ?? "",
     role: user.role ?? "OPERATOR",
+    ...(options?.includePassword ? { password: user.passwordText ?? "" } : {}),
   };
 };
 

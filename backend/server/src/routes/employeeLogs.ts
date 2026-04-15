@@ -73,6 +73,10 @@ const getWorkedSecondsForOperatorLog = (log: any): number => {
   const metadata = (log?.metadata || {}) as Record<string, any>;
   const fromMachineHours = parseMachineHoursToSeconds(metadata.machineHrs);
   if (fromMachineHours !== null && fromMachineHours > 0) return fromMachineHours;
+  const fromWorkedSeconds = Number(metadata.workedSeconds || 0);
+  if (Number.isFinite(fromWorkedSeconds) && fromWorkedSeconds > 0) {
+    return Math.max(0, Math.round(fromWorkedSeconds));
+  }
   return Math.max(0, Number(log?.durationSeconds || 0));
 };
 
@@ -123,6 +127,16 @@ const getMachineNumberFromOperatorLog = (log: any): string => {
   return normalizeMachineNumber(metadata.machineNumber);
 };
 
+const STALE_ORPHAN_OPERATOR_RUN_HOURS = 12;
+
+const isStaleOrphanOperatorRun = (log: any) => {
+  if (log?.endedAt) return false;
+  if (String(log?.jobId || "").trim()) return false;
+  const startedAt = log?.startedAt instanceof Date ? log.startedAt : parseFlexibleDate(log?.startedAt);
+  if (!startedAt) return false;
+  return Date.now() - startedAt.getTime() > STALE_ORPHAN_OPERATOR_RUN_HOURS * 60 * 60 * 1000;
+};
+
 const findActiveMachineConflict = async (
   machineNumber: unknown,
   options: { excludeLogId?: string } = {}
@@ -144,11 +158,39 @@ const findActiveMachineConflict = async (
       userName: true,
       endedAt: true,
       metadata: true,
+      startedAt: true,
     },
   });
 
+  const staleOrphanLogs = activeLogs.filter(isStaleOrphanOperatorRun);
+  if (staleOrphanLogs.length > 0) {
+    const closedAt = new Date();
+    await Promise.all(
+      staleOrphanLogs.map((log) =>
+        prisma.employeeLog.update({
+          where: { id: log.id },
+          data: {
+            status: "REJECTED",
+            endedAt: closedAt,
+            durationSeconds: Math.max(
+              0,
+              Math.floor((closedAt.getTime() - (log.startedAt instanceof Date ? log.startedAt : closedAt).getTime()) / 1000)
+            ),
+            metadata: {
+              ...((log.metadata as Record<string, any>) || {}),
+              staleAutoClosed: true,
+              staleAutoClosedAt: closedAt.toISOString(),
+            },
+          },
+        })
+      )
+    );
+  }
+
+  const cleanedActiveLogs = activeLogs.filter((log) => !staleOrphanLogs.some((staleLog) => staleLog.id === log.id));
+
   return (
-    activeLogs.find((log) => {
+    cleanedActiveLogs.find((log) => {
       if (options.excludeLogId && String(log.id) === String(options.excludeLogId)) return false;
       if (log.endedAt) return false;
       return getMachineNumberFromOperatorLog(log) === normalizedMachineNumber;
@@ -976,31 +1018,14 @@ router.get("/", async (req, res) => {
 
     const responseItems = visibleLogs.map((log: any) => {
       if (String(log.role || "").toUpperCase() !== "OPERATOR") return log;
-      const jobId = String(log.jobId || "").trim();
-      const groupId = String(log.jobGroupId || "").trim();
-      const wedmAmount = (jobId ? wedmAmountByJobId.get(jobId) : 0) || (groupId ? wedmAmountByGroupId.get(groupId) : 0) || 0;
-      const totalWorkedSeconds = (jobId ? totalWorkedSecondsByJobId.get(jobId) : 0) || (groupId ? totalWorkedSecondsByGroupId.get(groupId) : 0) || 0;
       const explicitRevenue = getOperatorRevenueValue(log);
-      if (!wedmAmount || totalWorkedSeconds <= 0) {
-        if (explicitRevenue === null) return log;
-        return {
-          ...log,
-          revenue: Number(explicitRevenue.toFixed(2)),
-          metadata: {
-            ...(log.metadata || {}),
-            revenue: Number(explicitRevenue.toFixed(2)),
-          },
-        };
-      }
-      const workedSeconds = getWorkedSecondsForOperatorLog(log);
-      const revenue = Math.max(0, Number(((wedmAmount * workedSeconds) / totalWorkedSeconds).toFixed(2)));
+      if (explicitRevenue === null) return log;
       return {
         ...log,
-        revenue,
+        revenue: Number(explicitRevenue.toFixed(2)),
         metadata: {
           ...(log.metadata || {}),
-          revenue,
-          wedmAmount,
+          revenue: Number(explicitRevenue.toFixed(2)),
         },
       };
     });
