@@ -72,6 +72,7 @@ router.get("/next-emp-id", adminMiddleware, async (_req, res) => {
 router.get("/", async (req, res) => {
   try {
     const { roles } = req.query;
+    const isAdmin = String(req.user?.role || "").trim().toUpperCase() === "ADMIN";
     
     // Build query filter
     const query: any = {};
@@ -92,7 +93,7 @@ router.get("/", async (req, res) => {
     const users = await prisma.user.findMany({
       where: Object.keys(query).length ? query : undefined,
     });
-    res.json(users.map(mapUser));
+    res.json(users.map((user) => mapUser(user, { includePassword: isAdmin })));
   } catch (error: any) {
     res.status(500).json({ message: "Error fetching users" });
   }
@@ -109,7 +110,7 @@ router.get("/:id", adminMiddleware, async (req, res) => {
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
-    res.json(mapUser(user));
+    res.json(mapUser(user, { includePassword: true }));
   } catch (error: any) {
     res.status(500).json({ message: "Error fetching user" });
   }
@@ -163,6 +164,7 @@ router.post("/", adminMiddleware, async (req, res) => {
           data: {
             email: emailToUse,
             passwordHash: hashedPassword,
+            passwordText: String(password),
             firstName,
             lastName,
             phone,
@@ -185,7 +187,7 @@ router.post("/", adminMiddleware, async (req, res) => {
       return res.status(500).json({ message: "Failed to allocate employee ID" });
     }
 
-    res.status(201).json(mapUser(user));
+    res.status(201).json(mapUser(user, { includePassword: true }));
   } catch (error: any) {
     if (error.code === "P2002") {
       return res.status(400).json({ message: "User with this email already exists" });
@@ -214,6 +216,7 @@ router.put("/:id", adminMiddleware, async (req, res) => {
 
     if (password) {
       updateData.passwordHash = await bcrypt.hash(password, 10);
+      updateData.passwordText = String(password);
     }
 
     const id = getParamId(req.params.id);
@@ -237,7 +240,7 @@ router.put("/:id", adminMiddleware, async (req, res) => {
       data: updateData,
     });
     
-    res.json(mapUser(user));
+    res.json(mapUser(user, { includePassword: true }));
   } catch (error: any) {
     if (error.code === "P2025") {
       return res.status(404).json({ message: "User not found" });

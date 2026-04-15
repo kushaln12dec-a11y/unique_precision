@@ -145,6 +145,8 @@ export const rebalanceOperatorRevenueForJob = async (
     },
     select: {
       id: true,
+      startedAt: true,
+      endedAt: true,
       durationSeconds: true,
       quantityFrom: true,
       quantityTo: true,
@@ -153,37 +155,74 @@ export const rebalanceOperatorRevenueForJob = async (
     },
   });
 
-  const workedByQuantity = new Map<number, Array<{ logId: string; workedSeconds: number }>>();
+  const workedByQuantity = new Map<number, Array<{ logId: string; workedSeconds: number; startedAtMs: number; endedAtMs: number }>>();
   logs.forEach((log: any) => {
     const quantityNumbers = getQuantityNumbersFromLog(log);
     if (quantityNumbers.length === 0) return;
     const workedSeconds = getWorkedSecondsForOperatorLog(log);
     const workedSecondsPerQuantity = quantityNumbers.length > 0 ? workedSeconds / quantityNumbers.length : workedSeconds;
-    const effectiveSecondsPerQuantity =
-      estimatedSecondsPerQuantity > 0
-        ? Math.min(workedSecondsPerQuantity, estimatedSecondsPerQuantity)
-        : workedSecondsPerQuantity;
+    const normalizedWorkedSecondsPerQuantity = Math.max(0, workedSecondsPerQuantity);
+    const startedAtMs = log.startedAt instanceof Date ? log.startedAt.getTime() : 0;
+    const endedAtMs = log.endedAt instanceof Date ? log.endedAt.getTime() : startedAtMs;
 
     quantityNumbers.forEach((quantityNumber) => {
       const entries = workedByQuantity.get(quantityNumber) || [];
-      entries.push({ logId: String(log.id), workedSeconds: Math.max(0, effectiveSecondsPerQuantity) });
+      entries.push({
+        logId: String(log.id),
+        workedSeconds: normalizedWorkedSecondsPerQuantity,
+        startedAtMs,
+        endedAtMs,
+      });
       workedByQuantity.set(quantityNumber, entries);
     });
   });
 
   const revenueByLogId = new Map<string, Record<string, number>>();
-  workedByQuantity.forEach((entries, quantityNumber) => {
-    const totalWorkedSeconds = entries.reduce((sum, entry) => sum + Math.max(0, entry.workedSeconds), 0);
-    const fallbackShare = entries.length > 0 ? perQuantityRevenue / entries.length : 0;
+  const estimatedSecondsByLogId = new Map<string, number>();
+  const creditedWorkedSecondsByLogId = new Map<string, number>();
+  const overtimeSecondsByLogId = new Map<string, number>();
 
-    entries.forEach((entry) => {
-      const current = revenueByLogId.get(entry.logId) || {};
-      const allocated =
-        totalWorkedSeconds > 0
-          ? perQuantityRevenue * (Math.max(0, entry.workedSeconds) / totalWorkedSeconds)
-          : fallbackShare;
-      current[String(quantityNumber)] = Number(allocated.toFixed(2));
-      revenueByLogId.set(entry.logId, current);
+  workedByQuantity.forEach((entries, quantityNumber) => {
+    const sortedEntries = [...entries].sort((left, right) => {
+      if (left.startedAtMs !== right.startedAtMs) return left.startedAtMs - right.startedAtMs;
+      if (left.endedAtMs !== right.endedAtMs) return left.endedAtMs - right.endedAtMs;
+      return left.logId.localeCompare(right.logId);
+    });
+
+    const totalWorkedSeconds = sortedEntries.reduce((sum, entry) => sum + Math.max(0, entry.workedSeconds), 0);
+    const hasEstimatedCap = estimatedSecondsPerQuantity > 0;
+    let remainingEstimatedSeconds = estimatedSecondsPerQuantity;
+
+    sortedEntries.forEach((entry) => {
+      const currentRevenueByQuantity = revenueByLogId.get(entry.logId) || {};
+      const safeWorkedSeconds = Math.max(0, entry.workedSeconds);
+      const creditedWorkedSeconds = hasEstimatedCap
+        ? Math.max(0, Math.min(safeWorkedSeconds, remainingEstimatedSeconds))
+        : safeWorkedSeconds;
+      const overtimeSeconds = Math.max(0, safeWorkedSeconds - creditedWorkedSeconds);
+
+      const allocatedRevenue = hasEstimatedCap
+        ? estimatedSecondsPerQuantity > 0
+          ? perQuantityRevenue * (creditedWorkedSeconds / estimatedSecondsPerQuantity)
+          : 0
+        : totalWorkedSeconds > 0
+          ? perQuantityRevenue * (safeWorkedSeconds / totalWorkedSeconds)
+          : sortedEntries.length > 0
+            ? perQuantityRevenue / sortedEntries.length
+            : 0;
+
+      currentRevenueByQuantity[String(quantityNumber)] = Number(allocatedRevenue.toFixed(2));
+      revenueByLogId.set(entry.logId, currentRevenueByQuantity);
+      estimatedSecondsByLogId.set(entry.logId, (estimatedSecondsByLogId.get(entry.logId) || 0) + estimatedSecondsPerQuantity);
+      creditedWorkedSecondsByLogId.set(
+        entry.logId,
+        (creditedWorkedSecondsByLogId.get(entry.logId) || 0) + creditedWorkedSeconds
+      );
+      overtimeSecondsByLogId.set(entry.logId, (overtimeSecondsByLogId.get(entry.logId) || 0) + overtimeSeconds);
+
+      if (hasEstimatedCap) {
+        remainingEstimatedSeconds = Math.max(0, remainingEstimatedSeconds - creditedWorkedSeconds);
+      }
     });
   });
 
@@ -192,6 +231,10 @@ export const rebalanceOperatorRevenueForJob = async (
     const quantityNumbers = getQuantityNumbersFromLog(log as any);
     const revenueByQuantity = revenueByLogId.get(String(log.id)) || {};
     const revenue = Object.values(revenueByQuantity).reduce((sum, amount) => sum + Number(amount || 0), 0);
+    const workedSeconds = getWorkedSecondsForOperatorLog(log as any);
+    const estimatedSeconds = estimatedSecondsByLogId.get(String(log.id)) || 0;
+    const creditedWorkedSeconds = creditedWorkedSecondsByLogId.get(String(log.id)) || 0;
+    const overtimeSeconds = Math.max(0, overtimeSecondsByLogId.get(String(log.id)) || Math.max(0, workedSeconds - creditedWorkedSeconds));
 
     await tx.employeeLog.update({
       where: { id: String(log.id) },
@@ -202,8 +245,13 @@ export const rebalanceOperatorRevenueForJob = async (
           perQuantityRevenue: Number(perQuantityRevenue.toFixed(2)),
           revenueByQuantity,
           revenue: Number(revenue.toFixed(2)),
-          workedSeconds: getWorkedSecondsForOperatorLog(log as any),
+          workedSeconds,
+          creditedWorkedSeconds,
+          estimatedSeconds,
           estimatedSecondsPerQuantity,
+          overtimeSeconds,
+          workedToEstimatedRatio:
+            estimatedSeconds > 0 ? Number(Math.min(1, Math.max(0, creditedWorkedSeconds / estimatedSeconds)).toFixed(4)) : 0,
           quantityRevenueModel: "WEDM_TIME_SPLIT",
           revenueCapMode: estimatedSecondsPerQuantity > 0 ? "CAP_TO_ESTIMATED_TIME" : "UNCAPPED",
         },

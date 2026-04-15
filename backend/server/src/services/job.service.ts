@@ -18,6 +18,67 @@ import { buildCreateJobsTransaction, groupJobsByGroupId } from "./job.service.he
 
 type JobsQuery = Record<string, unknown>;
 
+const normalizeOperatorName = (value: unknown) => String(value || "").trim().toUpperCase();
+
+const normalizeAssignedOperatorNames = (value: unknown): string[] =>
+  String(value || "")
+    .split(",")
+    .map((entry) => normalizeOperatorName(entry))
+    .filter((entry) => entry && entry !== "UNASSIGN" && entry !== "UNASSIGNED");
+
+const buildAssignmentNotificationEntries = ({
+  actorName,
+  job,
+  previousAssignedTo,
+  nextAssignedTo,
+}: {
+  actorName: string;
+  job: any;
+  previousAssignedTo: unknown;
+  nextAssignedTo: unknown;
+}) => {
+  const previous = new Set(normalizeAssignedOperatorNames(previousAssignedTo));
+  const next = new Set(normalizeAssignedOperatorNames(nextAssignedTo));
+  const added = Array.from(next).filter((name) => !previous.has(name));
+  const removed = Array.from(previous).filter((name) => !next.has(name));
+  const targetNames = [...added, ...removed];
+
+  return targetNames.map((targetName) => {
+    const eventType = added.includes(targetName) ? "ADDED" : "REMOVED";
+    const refNumber = String(job?.refNumber || "").trim();
+    const quantityText = Number(job?.qty || 0) > 1 ? `Qty 1-${Number(job.qty || 1)}` : "Qty 1";
+
+    return {
+      role: "OPERATOR",
+      activityType: "OPERATOR_ASSIGNMENT",
+      status: "COMPLETED",
+      userEmail: "",
+      userName: actorName,
+      jobId: String(job?.id || ""),
+      jobGroupId: job?.groupId ?? null,
+      refNumber,
+      settingLabel: String(job?.setting || ""),
+      jobCustomer: String(job?.customer || ""),
+      jobDescription: String(job?.description || ""),
+      workItemTitle: refNumber ? `Assignment update for #${refNumber}` : "Assignment update",
+      workSummary: `${actorName || "System"} ${eventType === "ADDED" ? "added" : "removed"} you on ${quantityText}.`,
+      startedAt: new Date(),
+      endedAt: new Date(),
+      durationSeconds: 0,
+      metadata: {
+        targetUserName: targetName,
+        actorName,
+        eventType,
+        assignedToBefore: Array.from(previous),
+        assignedToAfter: Array.from(next),
+        jobId: String(job?.id || ""),
+        groupId: String(job?.groupId || ""),
+        quantityLabel: quantityText,
+      },
+    };
+  });
+};
+
 export const getJobs = async (query: JobsQuery) => {
   const where = buildJobWhere({ query });
   const { limit, offset } = getPagination({ query });
@@ -128,15 +189,43 @@ export const createJobs = async (payload: any[] | any) => {
   return Array.isArray(payload) ? result : result[0];
 };
 
-export const updateJob = async (id: string, body: any) => {
+export const updateJob = async (id: string, body: any, reqUser?: any) => {
   const { id: _id, _id: _mongoId, operatorCaptures, quantityQaStates, qaStates, ...updateData } = body;
   const normalized = await normalizeJobUpdate(updateData);
 
   try {
-    const job = await prisma.job.update({
+    const existingJob = await prisma.job.findUnique({
       where: { id },
-      data: normalized,
       include: jobInclude,
+    });
+
+    if (!existingJob) {
+      throw new HttpError(404, "Job not found");
+    }
+
+    const actorName = resolveReqUserName(reqUser) || normalizeOperatorName(normalized.updatedBy) || "SYSTEM";
+
+    const job = await prisma.$transaction(async (tx) => {
+      const updatedJob = await tx.job.update({
+        where: { id },
+        data: normalized,
+        include: jobInclude,
+      });
+
+      if (normalized.assignedTo !== undefined) {
+        const notificationEntries = buildAssignmentNotificationEntries({
+          actorName,
+          job: updatedJob,
+          previousAssignedTo: existingJob.assignedTo,
+          nextAssignedTo: normalized.assignedTo,
+        });
+
+        if (notificationEntries.length > 0) {
+          await tx.employeeLog.createMany({ data: notificationEntries });
+        }
+      }
+
+      return updatedJob;
     });
 
     return mapJob(job);
