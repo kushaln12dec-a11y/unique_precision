@@ -13,6 +13,7 @@ import masterConfigRoutes from "./routes/masterConfig";
 import inspectionReportsRoutes from "./routes/inspectionReports";
 import uploadRoutes from "./routes/upload";
 import dashboardRoutes from "./routes/dashboard";
+import debugRoutes from "./routes/debug";
 import { authMiddleware } from "./middleware/auth";
 import { errorHandler, jsonErrorHandler } from "./middleware/error.middleware";
 import { apiRateLimiter, authRateLimiter } from "./middleware/rateLimit.middleware";
@@ -67,6 +68,9 @@ app.use("/api/inspection-reports", inspectionReportsRoutes);
 
 // Dashboard routes
 app.use("/api/dashboard", dashboardRoutes);
+
+// Debug routes
+app.use("/api/debug", debugRoutes);
 
 // Upload routes
 app.use("/api/upload", uploadRoutes);
