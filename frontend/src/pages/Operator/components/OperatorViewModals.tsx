@@ -1,4 +1,5 @@
 import ConfirmDeleteModal from "../../../components/ConfirmDeleteModal";
+import Modal from "../../../components/Modal";
 import type { JobEntry } from "../../../types/job";
 import type { Dispatch, SetStateAction } from "react";
 import OperatorActionModal from "./OperatorActionModal";
@@ -6,6 +7,7 @@ import OperatorActionModal from "./OperatorActionModal";
 type PendingDispatch = { cutId: number | string; quantityNumbers: number[] } | null;
 type PendingQuantity = { cutId: number | string; quantityIndex: number } | null;
 type PendingOperatorAction = { cutId: number | string; quantityIndex: number; action: "shiftOver" | "resume" } | null;
+type PendingEndTimeCapture = { cutId: number | string; quantityIndex: number } | null;
 
 type OperatorViewModalsProps = {
   jobs: JobEntry[];
@@ -15,15 +17,18 @@ type OperatorViewModalsProps = {
   setPendingReset: Dispatch<SetStateAction<PendingQuantity>>;
   pendingOperatorAction: PendingOperatorAction;
   setPendingOperatorAction: Dispatch<SetStateAction<PendingOperatorAction>>;
+  pendingEndTimeCapture: PendingEndTimeCapture;
+  setPendingEndTimeCapture: Dispatch<SetStateAction<PendingEndTimeCapture>>;
   handleUpdateQaStatus: (cutId: number | string, quantityNumbers: number[], status: "SENT_TO_QA" | "SAVED" | "READY_FOR_QA") => Promise<void>;
   handleResetQuantity: (cutId: number | string, quantityIndex: number) => Promise<void>;
   handleInputChange: (
     cutId: number | string,
     quantityIndex: number,
-    field: "markShiftOver",
+    field: "markShiftOver" | "resumeShiftOver",
     value: string
   ) => void;
   handlePauseResumeAction: (cutId: number | string, quantityIndex: number, action: "shiftOver" | "resume") => Promise<boolean>;
+  handleConfirmEndTimeCapture: (cutId: number | string, quantityIndex: number) => void;
   setActionToast: Dispatch<SetStateAction<{ message: string; variant: "success" | "error" | "info"; visible: boolean }>>;
 };
 
@@ -35,14 +40,20 @@ const OperatorViewModals = ({
   setPendingReset,
   pendingOperatorAction,
   setPendingOperatorAction,
+  pendingEndTimeCapture,
+  setPendingEndTimeCapture,
   handleUpdateQaStatus,
   handleResetQuantity,
   handleInputChange,
   handlePauseResumeAction,
+  handleConfirmEndTimeCapture,
   setActionToast,
 }: OperatorViewModalsProps) => {
   const pendingDispatchJob = pendingDispatch
     ? jobs.find((job) => String(job.id) === String(pendingDispatch.cutId))
+    : null;
+  const pendingEndTimeJob = pendingEndTimeCapture
+    ? jobs.find((job) => String(job.id) === String(pendingEndTimeCapture.cutId))
     : null;
 
   return (
@@ -98,7 +109,12 @@ const OperatorViewModals = ({
               pendingOperatorAction.action
             );
             if (!success) return;
-            handleInputChange(pendingOperatorAction.cutId, pendingOperatorAction.quantityIndex, "markShiftOver", "");
+            handleInputChange(
+              pendingOperatorAction.cutId,
+              pendingOperatorAction.quantityIndex,
+              pendingOperatorAction.action === "resume" ? "resumeShiftOver" : "markShiftOver",
+              ""
+            );
             setActionToast({
               message: pendingOperatorAction.action === "resume" ? "Quantity resumed." : "Shift over saved.",
               variant: "info",
@@ -112,6 +128,39 @@ const OperatorViewModals = ({
           onCancel={() => setPendingOperatorAction(null)}
         />
       )}
+
+      <Modal
+        isOpen={Boolean(pendingEndTimeCapture)}
+        onClose={() => setPendingEndTimeCapture(null)}
+        title="Confirm End Time"
+        size="small"
+      >
+        {pendingEndTimeCapture ? (
+          <div className="operator-endtime-confirm">
+            <p>Are you sure you want to capture the end time for this quantity?</p>
+            <div className="user-details">
+              <p><strong>Setting:</strong> {pendingEndTimeJob ? String(jobs.findIndex((j) => String(j.id) === String(pendingEndTimeCapture.cutId)) + 1) : "N/A"}</p>
+              <p><strong>Quantity:</strong> {String(pendingEndTimeCapture.quantityIndex + 1)}</p>
+              <p><strong>Job Ref:</strong> {String(pendingEndTimeJob?.refNumber || "-")}</p>
+            </div>
+            <div className="confirm-delete-footer">
+              <button type="button" className="btn-secondary" onClick={() => setPendingEndTimeCapture(null)}>
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="btn-primary"
+                onClick={() => {
+                  handleConfirmEndTimeCapture(pendingEndTimeCapture.cutId, pendingEndTimeCapture.quantityIndex);
+                  setPendingEndTimeCapture(null);
+                }}
+              >
+                Confirm End Time
+              </button>
+            </div>
+          </div>
+        ) : null}
+      </Modal>
     </>
   );
 };

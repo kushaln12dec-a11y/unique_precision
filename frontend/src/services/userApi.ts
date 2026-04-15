@@ -26,6 +26,7 @@ const normalizeUser = (user: any): User => ({
   empId: formatEmployeeId(user?.empId),
   image: user?.image ? String(user.image) : "",
   role: user?.role ?? "OPERATOR",
+  password: String(user?.password ?? ""),
   createdAt: user?.createdAt ? String(user.createdAt) : undefined,
   updatedAt: user?.updatedAt ? String(user.updatedAt) : undefined,
 });

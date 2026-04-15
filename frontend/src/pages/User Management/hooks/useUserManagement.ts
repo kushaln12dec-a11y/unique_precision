@@ -133,7 +133,7 @@ export const useUserManagement = () => {
     setEditingUser(user);
     setFormData({
       email: user.email,
-      password: "",
+      password: String(user.password || ""),
       firstName: user.firstName,
       lastName: user.lastName,
       phone: normalizeIndianPhone(user.phone),

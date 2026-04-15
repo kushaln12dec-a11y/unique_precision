@@ -49,50 +49,64 @@ const OperatorQuantityActions: React.FC<Props> = ({
   onInputChange,
   onSaveQuantity,
   onSaveRange,
-}) => (
-  <div className="quantity-save-section">
-    {isRangeMode ? (
-      <button
-        type="button"
-        className={`btn-save-quantity ${savedRanges.has(rangeBadgeKey) ? "saved" : ""}`}
-        disabled={!canOperateInputs || !isRangeValid || !isRangeApproved}
-        onClick={() => {
-          if (!isRangeValid) return onShowToast?.(`Enter range between 1 and ${Math.max(rangeEndQty, rangeStartQty)}.`, "error");
-          if (!isRangeApproved) return onShowToast?.("Please click Check to accept the range.", "error");
-          onSaveRange?.(cutId, qtyIndex, rangeStartQty, rangeEndQty);
-        }}
-      >
-        {savedRanges.has(rangeBadgeKey) ? "Saved" : `Save Range ${rangeStartQty}-${rangeEndQty}`}
-      </button>
-    ) : (
-      <>
-        {qtyStartTime && !qtyEndTime && (!isPaused || isShiftOverPause) && (
-          <button
-            type="button"
-            className="mark-shift-over-button"
-            disabled={!canOperateInputs}
-            onClick={() => (isShiftOverPause ? onRequestResume?.(cutId, qtyIndex) : onRequestShiftOver?.(cutId, qtyIndex))}
-          >
-            {isShiftOverPause ? "Resume Quantity" : "Shift Over"}
-          </button>
-        )}
-        {canReset && qtyStartTime && (
-          <button
-            type="button"
-            className="reset-timer-button"
-            onClick={() => (onRequestResetTimer ? onRequestResetTimer(cutId, qtyIndex) : onInputChange(cutId, qtyIndex, "resetTimer", ""))}
-            aria-label="Reset timer"
-            title="Reset timer"
-          >
-            Reset Quantity {qtyIndex + 1}
-          </button>
-        )}
-        <button type="button" className="btn-save-quantity" disabled={!canOperateInputs} onClick={() => onSaveQuantity?.(cutId, qtyIndex)}>
-          Save Quantity {qtyIndex + 1}
+}) => {
+  const canSaveSingleQuantity = canOperateInputs && Boolean(String(qtyEndTime || "").trim());
+  const canSaveRange = canOperateInputs && !isRangeMode ? false : Boolean(String(qtyEndTime || "").trim()) && isRangeValid && isRangeApproved;
+
+  return (
+    <div className="quantity-save-section">
+      {isRangeMode ? (
+        <button
+          type="button"
+          className={`btn-save-quantity ${savedRanges.has(rangeBadgeKey) ? "saved" : ""}`}
+          disabled={!canSaveRange}
+          onClick={() => {
+            if (!String(qtyEndTime || "").trim()) return onShowToast?.("Click End Time before saving.", "error");
+            if (!isRangeValid) return onShowToast?.(`Enter range between 1 and ${Math.max(rangeEndQty, rangeStartQty)}.`, "error");
+            if (!isRangeApproved) return onShowToast?.("Please click Check to accept the range.", "error");
+            onSaveRange?.(cutId, qtyIndex, rangeStartQty, rangeEndQty);
+          }}
+        >
+          {savedRanges.has(rangeBadgeKey) ? "Saved" : `Save Range ${rangeStartQty}-${rangeEndQty}`}
         </button>
-      </>
-    )}
-  </div>
-);
+      ) : (
+        <>
+          {qtyStartTime && !qtyEndTime && (!isPaused || isShiftOverPause) && (
+            <button
+              type="button"
+              className="mark-shift-over-button"
+              disabled={!canOperateInputs}
+              onClick={() => (isShiftOverPause ? onRequestResume?.(cutId, qtyIndex) : onRequestShiftOver?.(cutId, qtyIndex))}
+            >
+              {isShiftOverPause ? "Resume Quantity" : "Shift Over"}
+            </button>
+          )}
+          {canReset && qtyStartTime && (
+            <button
+              type="button"
+              className="reset-timer-button"
+              onClick={() => (onRequestResetTimer ? onRequestResetTimer(cutId, qtyIndex) : onInputChange(cutId, qtyIndex, "resetTimer", ""))}
+              aria-label="Reset timer"
+              title="Reset timer"
+            >
+              Reset Quantity {qtyIndex + 1}
+            </button>
+          )}
+          <button
+            type="button"
+            className="btn-save-quantity"
+            disabled={!canSaveSingleQuantity}
+            onClick={() => {
+              if (!String(qtyEndTime || "").trim()) return onShowToast?.("Click End Time before saving.", "error");
+              onSaveQuantity?.(cutId, qtyIndex);
+            }}
+          >
+            Save Quantity {qtyIndex + 1}
+          </button>
+        </>
+      )}
+    </div>
+  );
+};
 
 export default OperatorQuantityActions;

@@ -14,6 +14,14 @@ import {
 } from "./operatorLogHelpers";
 import { matchesSearchQuery } from "../../../utils/searchUtils";
 
+const getDisplayedWorkedSeconds = (row: EmployeeLog) => {
+  const workedSeconds = Number((row.metadata as any)?.workedSeconds || 0);
+  if (Number.isFinite(workedSeconds) && workedSeconds > 0) {
+    return Math.max(0, Math.round(workedSeconds));
+  }
+  return Math.max(0, Number(row.durationSeconds || 0));
+};
+
 export const buildOperatorLogsColumns = ({
   designationByUserName,
   getMachineNumberForLog,
@@ -75,7 +83,7 @@ export const buildOperatorLogsColumns = ({
     },
   },
   { key: "shift", label: "Shift", sortable: false, render: (row) => renderOperatorShiftBadge(row.startedAt) },
-  { key: "durationSeconds", label: "Duration", sortable: false, render: (row) => formatOperatorDuration(row.durationSeconds) },
+  { key: "durationSeconds", label: "Duration", sortable: false, render: (row) => formatOperatorDuration(getDisplayedWorkedSeconds(row)) },
   { key: "estimatedSeconds", label: "Estimated", sortable: false, render: (row) => formatOperatorDuration(Number((row.metadata as any)?.estimatedSeconds || 0)) },
   { key: "overtimeSeconds", label: "Overtime", sortable: false, render: (row) => formatOperatorDuration(Number((row.metadata as any)?.overtimeSeconds || 0)) },
   {
@@ -96,6 +104,11 @@ export const buildOperatorLogsColumns = ({
     label: "Revenue",
     sortable: false,
     render: (row: EmployeeLog) => {
+      const displayRevenue = getRevenueForLog(row);
+      if (displayRevenue === "-") {
+        return <span className="log-revenue-value">-</span>;
+      }
+
       const revenueByQuantity = ((row.metadata as any)?.revenueByQuantity || {}) as Record<string, number>;
       const splitEntries = Object.entries(revenueByQuantity)
         .map(([qty, amount]) => [Number(qty), Number(amount)] as const)
@@ -103,12 +116,12 @@ export const buildOperatorLogsColumns = ({
         .sort((left, right) => left[0] - right[0]);
 
       if (splitEntries.length === 0) {
-        return <span className="log-revenue-value">{getRevenueForLog(row)}</span>;
+        return <span className="log-revenue-value">{displayRevenue}</span>;
       }
 
       return (
         <div className="log-revenue-breakdown" title={splitEntries.map(([qty, amount]) => `Q${qty}: Rs. ${amount.toFixed(2)}`).join(" | ")}>
-          <span className="log-revenue-value">{getRevenueForLog(row)}</span>
+          <span className="log-revenue-value">{displayRevenue}</span>
           <span className="log-revenue-split">
             {splitEntries.map(([qty, amount]) => `Q${qty}: Rs. ${amount.toFixed(2)}`).join(" | ")}
           </span>
@@ -157,12 +170,14 @@ export const buildOperatorLogFilter =
     designationByUserName,
     getMachineNumberForLog,
     getRevenueForLog,
+    getWorkedDurationForLog,
     operatorLogUser,
     operatorLogSearch,
   }: {
     designationByUserName: Map<string, string>;
     getMachineNumberForLog: (log: EmployeeLog) => string;
     getRevenueForLog: (log: EmployeeLog, workedSecondsMap?: Map<string, number>) => string;
+    getWorkedDurationForLog: (log: EmployeeLog) => number;
     operatorLogUser: string;
     operatorLogSearch: string;
     }) =>
@@ -186,7 +201,7 @@ export const buildOperatorLogFilter =
           formatDisplayDateTime(log.startedAt),
           formatDisplayDateTime(log.endedAt || null),
           getOperatorShiftLabel(log.startedAt),
-          formatOperatorDuration(log.durationSeconds),
+          formatOperatorDuration(getWorkedDurationForLog(log)),
           formatOperatorDuration(Number((log.metadata as any)?.estimatedSeconds || 0)),
           formatOperatorDuration(Number((log.metadata as any)?.overtimeSeconds || 0)),
           Array.isArray((log.metadata as any)?.quantityNumbers)

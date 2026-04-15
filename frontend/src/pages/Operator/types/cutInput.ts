@@ -13,6 +13,7 @@ export type PauseSession = {
 export type OperatorHistoryDetail = {
   name: string;
   durationSeconds: number;
+  revenue?: number;
 };
 
 export type QuantityInputData = {

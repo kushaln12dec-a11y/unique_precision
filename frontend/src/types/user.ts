@@ -9,6 +9,7 @@ export interface User {
   empId: string;
   image?: string;
   role: UserRole;
+  password?: string;
   createdAt?: string;
   updatedAt?: string;
 }

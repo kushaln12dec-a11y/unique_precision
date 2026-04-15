@@ -44,7 +44,7 @@
 .operator-table-no-scroll .child-row-content .child-jobs-table {
   width: calc(100% - 124px);
   margin-left: 88px;
-  border-left: 3px solid #dbeafe;
+  border-left: 3px solid #64748b;
   border-radius: 16px;
   box-shadow: 0 12px 28px rgba(148, 163, 184, 0.14);
 }
@@ -55,7 +55,7 @@
   font-size: 0.8rem;
   text-align: left;
   vertical-align: middle;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid #94a3b8;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: normal;
