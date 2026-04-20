@@ -19,6 +19,8 @@
 
 .operator-logs-table .log-status-badge {
   white-space: nowrap;
+  padding: 0.14rem 0.5rem;
+  font-size: 0.66rem;
 }
 
 .operator-logs-table .log-revenue-value {
@@ -35,7 +37,7 @@
 }
 
 .operator-logs-table .log-revenue-split {
-  font-size: 0.72rem;
+  font-size: 0.64rem;
   color: #5b6478;
   white-space: normal;
 }

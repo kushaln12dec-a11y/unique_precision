@@ -1,5 +1,6 @@
 import SEDMModal from "./SEDMModal";
 import type { CutForm } from "../programmerUtils";
+import type { CustomerRate } from "../../../types/masterConfig";
 
 type SEDMModalWrapperProps = {
   sedmModalIndex: number | null;
@@ -13,6 +14,7 @@ type SEDMModalWrapperProps = {
   electrodeOptions: string[];
   thOptions: Array<{ value: string; label: string }>;
   isAdmin: boolean;
+  customerConfigs: CustomerRate[];
 };
 
 const SEDMModalWrapper = ({
@@ -27,16 +29,23 @@ const SEDMModalWrapper = ({
   electrodeOptions,
   thOptions,
   isAdmin,
+  customerConfigs,
 }: SEDMModalWrapperProps) => {
   if (sedmModalIndex === null || !cuts[sedmModalIndex]) {
     return null;
   }
 
+  const currentCut = cuts[sedmModalIndex];
+  const customerConfig =
+    customerConfigs.find(
+      (item) => String(item.customer || "").trim().toUpperCase() === String(currentCut.customer || "").trim().toUpperCase()
+    ) || null;
+
   return (
     <SEDMModal
       isOpen={true}
       onClose={onClose}
-      cut={cuts[sedmModalIndex]}
+      cut={currentCut}
       onLengthChange={onLengthChange}
       onLengthTypeChange={onLengthTypeChange}
       onHolesChange={onHolesChange}
@@ -45,6 +54,7 @@ const SEDMModalWrapper = ({
       electrodeOptions={electrodeOptions}
       thOptions={thOptions}
       isAdmin={isAdmin}
+      customerConfig={customerConfig}
       onApply={() => {}}
     />
   );

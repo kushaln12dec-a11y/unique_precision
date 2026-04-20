@@ -100,6 +100,10 @@ const UserManagement = () => {
   };
 
   const handleNavigation = (path: string) => {
+    if (path === "/users") {
+      handleCancel();
+      return;
+    }
     navigate(path);
   };
 
@@ -118,15 +122,15 @@ const UserManagement = () => {
     if (!showForm) {
       return [
         ...base,
-        { label: "User List", path: "/users/list", icon: PeopleIcon },
+        { label: "User List", path: "/users", icon: PeopleIcon },
       ];
     }
 
     return [
       ...base,
       editingUser
-        ? { label: "Edit User", path: "/users/edit", icon: EditIcon }
-        : { label: "Add User", path: "/users/new", icon: AddCircleOutlineIcon },
+        ? { label: "Edit User", path: "/users", icon: EditIcon }
+        : { label: "Add User", path: "/users", icon: AddCircleOutlineIcon },
     ];
   }, [editingUser, showForm]);
 
@@ -141,7 +145,7 @@ const UserManagement = () => {
       <Sidebar currentPath="/users" onNavigate={handleNavigation} />
 
       <div className="user-management-content">
-        <Header title={headerTitle} breadcrumbsOverride={userManagementBreadcrumbs} />
+        <Header title={headerTitle} breadcrumbsOverride={userManagementBreadcrumbs} onNavigate={handleNavigation} />
 
         {showForm && (
           <UserForm

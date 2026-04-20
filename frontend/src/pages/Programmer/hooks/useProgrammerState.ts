@@ -226,6 +226,9 @@ export const useProgrammerState = (
       if (editingGroupId !== null) {
         setEditingGroupId(null);
       }
+      if (refNumber) {
+        setRefNumber("");
+      }
       if (cuts.length !== 1 || hasCutDraftData(cuts[0])) {
         setCuts([DEFAULT_CUT]);
       }

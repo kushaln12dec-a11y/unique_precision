@@ -29,6 +29,15 @@ const PROGRAMMER_LOG_COLUMN_WIDTHS: Record<string, number> = {
 const getProgrammerLogColumnWidth = (columnKey: string) =>
   PROGRAMMER_LOG_COLUMN_WIDTHS[columnKey] ?? 88;
 
+const formatProgrammerRoleShort = (value?: string) => {
+  const role = String(value || "").toUpperCase();
+  if (role === "PROGRAMMER") return "PROG";
+  if (role === "OPERATOR") return "OPS";
+  if (role === "QC") return "QC";
+  if (role === "ADMIN") return "ADMIN";
+  return role || "-";
+};
+
 const formatProgrammerJobRef = (value?: string) => {
   const raw = String(value || "").trim().replace(/^#/, "");
   if (!raw) return "-";
@@ -85,8 +94,10 @@ export const useProgrammerLogs = ({
     const map = new Map<string, string>();
     users.forEach((u) => {
       const role = String(u.role || "").toUpperCase();
-      if (role === "ADMIN") map.set(String(u._id), "Admin");
-      else if (role === "PROGRAMMER") map.set(String(u._id), "Programmer");
+      if (role === "ADMIN") map.set(String(u._id), "ADMIN");
+      else if (role === "PROGRAMMER") map.set(String(u._id), "PROG");
+      else if (role === "OPERATOR") map.set(String(u._id), "OPS");
+      else if (role === "QC") map.set(String(u._id), "QC");
     });
     return map;
   }, [users]);
@@ -100,14 +111,14 @@ export const useProgrammerLogs = ({
         className: "programmer-log-user-col",
         headerClassName: "programmer-log-user-col",
         render: (row) => {
-          const designation = designationByUserId.get(String(row.userId)) || "Programmer";
+          const designation = designationByUserId.get(String(row.userId)) || formatProgrammerRoleShort(row.role || "PROGRAMMER");
           const name = getLogUserDisplayName(row.userName, row.userEmail, "Programmer");
           return (
-            <div className="log-user-stack log-user-badge-stack">
+            <div className="log-user-stack log-user-badge-stack log-user-inline-stack">
               <span className="log-user-initial-badge" title={name.toUpperCase()}>
                 {getInitials(name)}
               </span>
-              <span>{designation}</span>
+              <span className="log-user-role-pill">{designation}</span>
             </div>
           );
         },
@@ -196,7 +207,7 @@ export const useProgrammerLogs = ({
       logs.filter((log) => {
         if (logUserId && String(log.userId) !== String(logUserId)) return false;
 
-        const designation = designationByUserId.get(String(log.userId)) || "Programmer";
+        const designation = designationByUserId.get(String(log.userId)) || formatProgrammerRoleShort(log.role || "PROGRAMMER");
         const name = getLogUserDisplayName(log.userName, log.userEmail, "Programmer");
 
         return matchesSearchQuery(
@@ -237,7 +248,7 @@ export const useProgrammerLogs = ({
       const filteredProgrammerLogs = filterProgrammerLogs(allLogs);
       const headers = ["User", "JOB #", "Description", "Summary", "Started at", "Ended at", "Shift", "Duration", "Status"];
       const rows = filteredProgrammerLogs.map((row) => {
-        const designation = designationByUserId.get(String(row.userId)) || "Programmer";
+        const designation = designationByUserId.get(String(row.userId)) || formatProgrammerRoleShort(row.role || "PROGRAMMER");
         const name = getLogUserDisplayName(row.userName, row.userEmail, "");
         const userValue = name ? `${name} (${designation})` : designation;
         return [

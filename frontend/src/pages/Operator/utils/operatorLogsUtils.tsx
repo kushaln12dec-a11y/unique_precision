@@ -39,7 +39,7 @@ export const buildOperatorLogsColumns = ({
       const name = getLogUserDisplayName(row.userName, row.userEmail, "Operator");
       const designation = designationByUserName.get(name.toLowerCase()) || "Operator";
       return (
-        <div className="log-user-stack log-user-badge-stack">
+        <div className="log-user-stack log-user-badge-stack log-user-inline-stack">
           <span className="log-user-initial-badge" title={name.toUpperCase()}>{getInitials(name)}</span>
           <span>{designation}</span>
         </div>

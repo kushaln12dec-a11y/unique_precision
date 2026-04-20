@@ -120,32 +120,8 @@
     "dept": "Wire Cutting"
   },
   {
-    "employeeId": "1078",
-    "name": "Pradeep S",
-    "gender": "MALE",
-    "mobile": "9663950983",
-    "email": "pradeep.skp.1990@gmail.com",
-    "dept": "Operator"
-  },
-  {
-    "employeeId": "1088",
-    "name": "Rajanikantha N",
-    "gender": "MALE",
-    "mobile": "7349318797",
-    "email": "rajanikantharajanikantha471@gmail.com",
-    "dept": "Operator"
-  },
-  {
-    "employeeId": "1089",
-    "name": "Vinay  S V",
-    "gender": "MALE",
-    "mobile": "7676625710",
-    "email": "",
-    "dept": "Operator"
-  },
-  {
     "employeeId": "1091",
-    "name": "Rakshitha   B H",
+    "name": "Rakshitha B H",
     "gender": "MALE",
     "mobile": "8431624930",
     "email": "r4207207@gmail.com",
@@ -153,7 +129,7 @@
   },
   {
     "employeeId": "1092",
-    "name": "Darshan  M",
+    "name": "Darshan M",
     "gender": "MALE",
     "mobile": "6360118822",
     "email": "dd051383@gmail.com",
@@ -161,7 +137,7 @@
   },
   {
     "employeeId": "1093",
-    "name": "PRADEEP  Meti",
+    "name": "PRADEEP Meti",
     "gender": "MALE",
     "mobile": "6360159055",
     "email": "pradeepmpradeeepm57@gmail.com",
@@ -185,7 +161,7 @@
   },
   {
     "employeeId": "1100",
-    "name": "Basavaraj   A",
+    "name": "Basavaraj A",
     "gender": "MALE",
     "mobile": "9611495498",
     "email": "basavarjbasava5847@gmail.com",
@@ -201,7 +177,7 @@
   },
   {
     "employeeId": "1104",
-    "name": "Darshan  S H",
+    "name": "Darshan S H",
     "gender": "MALE",
     "mobile": "9110419164",
     "email": "shdarshand@gmail.com",
@@ -209,7 +185,7 @@
   },
   {
     "employeeId": "1105",
-    "name": "Ranjith   P",
+    "name": "Ranjith P",
     "gender": "MALE",
     "mobile": "9844980855",
     "email": "",

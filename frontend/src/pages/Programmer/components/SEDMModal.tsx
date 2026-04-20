@@ -10,6 +10,7 @@ import {
   splitThicknessParts,
   type SEDMEntry,
 } from "../utils/sedmModalUtils";
+import type { CustomerRate } from "../../../types/masterConfig";
 
 type SEDMModalProps = {
   isOpen: boolean;
@@ -24,6 +25,7 @@ type SEDMModalProps = {
   electrodeOptions?: string[];
   thOptions?: Array<{ value: string; label: string }>;
   isAdmin?: boolean;
+  customerConfig?: CustomerRate | null;
 };
 
 const SEDMModal = ({
@@ -39,8 +41,10 @@ const SEDMModal = ({
   electrodeOptions = [],
   thOptions = [],
   isAdmin = false,
+  customerConfig = null,
 }: SEDMModalProps) => {
   const [sedmEntries, setSedmEntries] = useState<SEDMEntry[]>([]);
+  void customerConfig;
 
   const resolvedElectrodeOptions = useMemo(
     () => (electrodeOptions.length > 0 ? electrodeOptions : ["0.3", "0.4", "0.5", "0.6", "0.7", "0.8", "1.0", "1.5", "2.0", "2.5", "3.0"]).map((value) => ({ value, label: value })),

@@ -16,6 +16,15 @@ export const formatRoleLabel = (role?: string) => {
   return value || "-";
 };
 
+export const formatRoleShortLabel = (role?: string) => {
+  const value = String(role || "").toUpperCase();
+  if (value === "PROGRAMMER") return "PROG";
+  if (value === "OPERATOR") return "OPS";
+  if (value === "QC") return "QC";
+  if (value === "ADMIN") return "ADMIN";
+  return value || "-";
+};
+
 export const formatDuration = (seconds?: number) => {
   const safe = Math.max(0, Number(seconds || 0));
   const hrs = Math.floor(safe / 3600);
@@ -80,11 +89,11 @@ export const createEmployeeLogColumns = ({
     label: "Employee",
     sortable: false,
     render: (row) => (
-      <div className="employee-log-user employee-log-user-badge">
+      <div className="employee-log-user employee-log-user-badge employee-log-user-inline">
         <span className="employee-log-user-initial-badge" title={String(row.userName || "Unknown User").toUpperCase()}>
           {getInitials(String(row.userName || "Unknown User"))}
         </span>
-        <span>{formatRoleLabel((row.metadata as any)?.userRole || row.role)}</span>
+        <span className="employee-log-role-pill">{formatRoleShortLabel((row.metadata as any)?.userRole || row.role)}</span>
       </div>
     ),
   };

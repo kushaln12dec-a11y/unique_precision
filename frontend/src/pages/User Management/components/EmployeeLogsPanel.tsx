@@ -211,7 +211,7 @@ export const EmployeeLogsPanel = () => {
           emptyMessage="No logs found for the current filters."
           getRowId={(row) => row._id}
           className="employee-logs-table logs-center"
-          rowHeight={78}
+          rowHeight={64}
           refreshKey={`${activeRole}|${statusFilter}`}
         />
       )}

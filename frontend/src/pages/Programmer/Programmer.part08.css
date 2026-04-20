@@ -34,16 +34,35 @@
   color: #dc2626 !important;
 }
 
-.group-row-expanded {
-  background: transparent;
+.programmer-container .jobs-table-wrapper .group-row.group-row-expanded,
+.programmer-container .lazy-ag-grid-shell.jobs-table-wrapper .ag-row.group-row.group-row-expanded {
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
 }
 
-/* Ensure expanded rows maintain their color coding */
-.programmer-container .jobs-table-wrapper .group-row-expanded.critical-row,
-.programmer-container .jobs-table-wrapper .group-row-expanded.priority-row.priority-high,
-.programmer-container .jobs-table-wrapper .group-row-expanded.priority-row.priority-medium,
-.programmer-container .jobs-table-wrapper .group-row-expanded.priority-row.priority-low {
-  background-color: inherit;
+.programmer-container .jobs-table-wrapper .group-row.group-row-expanded:not(.critical-row):not(.priority-row),
+.programmer-container .lazy-ag-grid-shell.jobs-table-wrapper .ag-row.group-row.group-row-expanded:not(.critical-row):not(.priority-row) {
+  background-color: #ffffff;
+}
+
+.programmer-container .jobs-table-wrapper .group-row.group-row-expanded.critical-row,
+.programmer-container .lazy-ag-grid-shell.jobs-table-wrapper .ag-row.group-row.group-row-expanded.critical-row {
+  background-color: #fef2f2;
+}
+
+.programmer-container .jobs-table-wrapper .group-row.group-row-expanded.priority-row.priority-high,
+.programmer-container .lazy-ag-grid-shell.jobs-table-wrapper .ag-row.group-row.group-row-expanded.priority-row.priority-high {
+  background-color: #fff1f2;
+}
+
+.programmer-container .jobs-table-wrapper .group-row.group-row-expanded.priority-row.priority-medium,
+.programmer-container .lazy-ag-grid-shell.jobs-table-wrapper .ag-row.group-row.group-row-expanded.priority-row.priority-medium {
+  background-color: #fffbeb;
+}
+
+.programmer-container .jobs-table-wrapper .group-row.group-row-expanded.priority-row.priority-low,
+.programmer-container .lazy-ag-grid-shell.jobs-table-wrapper .ag-row.group-row.group-row-expanded.priority-row.priority-low {
+  background-color: #ecfdf5;
 }
 
 .child-row {

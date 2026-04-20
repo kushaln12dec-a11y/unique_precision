@@ -57,7 +57,7 @@ export const ProgrammerFilters: React.FC<ProgrammerFiltersProps> = ({
             <input
               id="programmer-search"
               type="text"
-              placeholder="Search any column..."
+              placeholder="Search customer or description..."
               value={jobSearchFilter}
               onChange={(e) => onJobSearchFilterChange(e.target.value)}
               className="filter-input"

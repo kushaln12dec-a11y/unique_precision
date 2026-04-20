@@ -148,6 +148,41 @@
   text-align: center;
 }
 
+.programmer-logs-table .log-user-stack {
+  gap: 0.04rem;
+  line-height: 1.08;
+}
+
+.programmer-logs-table .log-user-stack strong {
+  font-size: 0.84rem;
+}
+
+.programmer-logs-table .log-user-stack span {
+  font-size: 0.64rem;
+}
+
+.programmer-logs-table .created-at-split {
+  gap: 0.05rem;
+  line-height: 1.08;
+}
+
+.programmer-logs-table .created-at-split span {
+  font-size: 0.68rem;
+}
+
+.programmer-logs-table .log-status-badge {
+  padding: 0.14rem 0.5rem;
+  font-size: 0.66rem;
+}
+
+.programmer-logs-table .log-user-initial-badge,
+.programmer-logs-table .created-by-badge {
+  width: 24px;
+  height: 24px;
+  min-width: 24px;
+  font-size: 0.64rem;
+}
+
 .programmer-logs-table .data-table th.programmer-log-user-col,
 .programmer-logs-table .data-table td.programmer-log-user-col {
   min-width: 120px;
@@ -185,6 +220,12 @@
   align-items: center;
 }
 
+.log-user-inline-stack {
+  flex-direction: row;
+  justify-content: center;
+  gap: 0.45rem;
+}
+
 .log-user-initial-badge {
   width: 30px;
   height: 30px;
@@ -198,6 +239,19 @@
   font-weight: 800;
   letter-spacing: 0.4px;
   text-transform: uppercase;
+}
+
+.log-user-role-pill {
+  display: inline;
+  color: inherit;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
 }
 
 .created-at-split {

@@ -278,14 +278,15 @@
   border-color: #93c5fd;
   background: linear-gradient(180deg, #f8fbff 0%, #eef4ff 100%);
   box-shadow: inset 0 0 0 1px rgba(147, 197, 253, 0.3);
-  padding: 0.2rem 0.55rem;
+  padding: 0.08rem 0.42rem;
   min-width: 122px;
   max-width: 100%;
-  min-height: 44px;
+  min-height: 26px;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-top: 4px;
+  margin-top: 0;
+  border-radius: 14px;
 }
 
 .multi-select-operators.operator-assigned-dropdown .selected-text,
@@ -293,7 +294,7 @@
 .multi-select-operators.operator-assigned-dropdown .placeholder {
   color: #1e3a8a;
   font-weight: 700;
-  font-size: 0.78rem;
+  font-size: 0.68rem;
 }
 
 .multi-select-operators.operator-assigned-dropdown .dropdown-icon {
@@ -301,8 +302,9 @@
 }
 
 .multi-select-operators.operator-assigned-dropdown .multi-select-trigger {
-  min-height: 100%;
+  min-height: 24px;
   align-items: center;
+  padding: 0;
 }
 
 .operator-input-card .multi-select-operators {
@@ -325,9 +327,13 @@
 .multi-select-operators.operator-assigned-dropdown .compact-display {
   display: inline-block;
   min-width: 0;
-  padding-right: 0.7rem;
+  padding-right: 0.45rem;
   overflow: hidden;
   position: relative;
+}
+
+.multi-select-operators.operator-assigned-dropdown .dropdown-icon {
+  font-size: 0.58rem;
 }
 
 @keyframes operator-name-marquee {

@@ -37,9 +37,13 @@ const Header = ({ title, onNavigate, breadcrumbsOverride }: HeaderProps) => {
   }, [breadcrumbsOverride, location.pathname, title]);
 
   const handleBreadcrumbClick = useCallback((path: string) => {
-    if (!path || path === location.pathname) return;
-    if (onNavigate) onNavigate(path);
-    else navigate(path);
+    if (!path) return;
+    if (onNavigate) {
+      onNavigate(path);
+      return;
+    }
+    if (path === location.pathname) return;
+    navigate(path);
   }, [location.pathname, navigate, onNavigate]);
 
   const { notifications, unreadCount } = useHeaderNotifications({

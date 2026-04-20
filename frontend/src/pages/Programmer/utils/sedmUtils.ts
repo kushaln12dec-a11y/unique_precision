@@ -1,5 +1,5 @@
 import type { CutForm, SedmEntryBreakdown } from "../types/programmer";
-import { SEDM_PRICING } from "./programmerConstants";
+import { SEDM_PRICING, SEDM_PRICING_FIELD_MAP } from "./programmerConstants";
 import { getEffectiveThickness, parseSedmThicknessValues } from "./thicknessUtils";
 
 type SedmJsonEntry = {
@@ -7,6 +7,10 @@ type SedmJsonEntry = {
   lengthValue: string;
   lengthType?: string;
   holes: string;
+};
+
+type SedmCustomerConfig = {
+  [key: string]: string | undefined;
 };
 
 export const getElectrodeSize = (form: CutForm): number | null => {
@@ -33,13 +37,21 @@ const calculateSingleSedmEntry = (
   lengthValue: string,
   holes: number,
   qty: number,
-  entryIndex: number
+  entryIndex: number,
+  customerConfig?: SedmCustomerConfig
 ): SedmEntryBreakdown[] => {
   const electrodeSize = lengthValue ? Number(lengthValue) : null;
   if (!electrodeSize) return [];
 
-  const pricing = SEDM_PRICING.find((item) => electrodeSize >= item.min && electrodeSize <= item.max);
-  if (!pricing) return [];
+  const pricingBase = SEDM_PRICING.find((item) => electrodeSize >= item.min && electrodeSize <= item.max);
+  if (!pricingBase) return [];
+
+  const fieldMap = SEDM_PRICING_FIELD_MAP[pricingBase.key as keyof typeof SEDM_PRICING_FIELD_MAP];
+  const pricing = {
+    ...pricingBase,
+    min20: Number(customerConfig?.[fieldMap.minField]) || pricingBase.min20,
+    perMm: Number(customerConfig?.[fieldMap.perField]) || pricingBase.perMm,
+  };
 
   const thicknessValues = parseSedmThicknessValues(thicknessInput);
   if (thicknessValues.length === 0) return [];
@@ -64,7 +76,7 @@ const calculateSingleSedmEntry = (
   });
 };
 
-export const calculateSedmBreakdown = (form: CutForm): SedmEntryBreakdown[] => {
+export const calculateSedmBreakdown = (form: CutForm, customerConfig?: SedmCustomerConfig): SedmEntryBreakdown[] => {
   if (form.sedm !== "Yes") return [];
 
   if (form.sedmEntriesJson && form.sedmEntriesJson.trim()) {
@@ -76,7 +88,7 @@ export const calculateSedmBreakdown = (form: CutForm): SedmEntryBreakdown[] => {
 
       entries.forEach((entry) => {
         const holes = Number(entry.holes) || 1;
-        const list = calculateSingleSedmEntry(entry.thickness, entry.lengthValue, holes, qty, serial);
+        const list = calculateSingleSedmEntry(entry.thickness, entry.lengthValue, holes, qty, serial, customerConfig);
         expanded.push(...list);
         serial += list.length || 1;
       });
@@ -92,9 +104,9 @@ export const calculateSedmBreakdown = (form: CutForm): SedmEntryBreakdown[] => {
 
   const holes = Number(form.sedmHoles) || 1;
   const qty = Number(form.qty) || 1;
-  return calculateSingleSedmEntry(form.thickness, String(electrodeSize), holes, qty, 1);
+  return calculateSingleSedmEntry(form.thickness, String(electrodeSize), holes, qty, 1, customerConfig);
 };
 
-export const calculateSedmAmount = (form: CutForm): number => {
-  return calculateSedmBreakdown(form).reduce((sum, entry) => sum + entry.entryCost, 0);
+export const calculateSedmAmount = (form: CutForm, customerConfig?: SedmCustomerConfig): number => {
+  return calculateSedmBreakdown(form, customerConfig).reduce((sum, entry) => sum + entry.entryCost, 0);
 };

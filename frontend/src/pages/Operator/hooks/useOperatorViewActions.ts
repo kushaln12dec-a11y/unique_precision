@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { completeOperatorProductionLog, getEmployeeLogs, startOperatorProductionLog } from "../../../services/employeeLogsApi";
+import { completeOperatorProductionLog, getActiveOperatorRunLogs, startOperatorProductionLog } from "../../../services/employeeLogsApi";
 import { captureOperatorInput, updateOperatorJob, updateOperatorQaStatus } from "../../../services/operatorApi";
 import { validateQuantityInputs, validateRangeSelection } from "../utils/validation";
 import { calculateTotals, type CutForm } from "../../Programmer/programmerUtils";
@@ -70,11 +70,7 @@ export const useOperatorViewActions = ({ jobs, cutInputs, setValidationErrors, c
 
     const syncActiveOperatorLogs = async () => {
       try {
-        const activeLogs = await getEmployeeLogs({
-          role: "OPERATOR",
-          status: "IN_PROGRESS",
-          limit: 500,
-        });
+        const activeLogs = await getActiveOperatorRunLogs();
         if (!isMounted) return;
 
         const currentJobIds = new Set(jobs.map((job) => String(job.id)));
@@ -113,11 +109,7 @@ export const useOperatorViewActions = ({ jobs, cutInputs, setValidationErrors, c
     const existingLogId = activeOperatorLogIds.get(key);
     if (existingLogId) return existingLogId;
 
-    const activeLogs = await getEmployeeLogs({
-      role: "OPERATOR",
-      status: "IN_PROGRESS",
-      limit: 500,
-    });
+    const activeLogs = await getActiveOperatorRunLogs();
 
     const matchingLog = activeLogs.find((log) => {
       if (log.endedAt) return false;

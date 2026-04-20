@@ -151,7 +151,7 @@ export const calculateTotals = (form: CutForm, config: CalculationConfig = {}): 
       ? Math.max(0, manualTotalHrs)
       : subtotalBeforeExtras;
   const wedmAmount = totalHrs * customerRate;
-  const sedmEntries = calculateSedmBreakdown(form);
+  const sedmEntries = calculateSedmBreakdown(form, customerConfig);
   const sedmAmount = sedmEntries.reduce((sum, entry) => sum + entry.entryCost, 0);
   const totalAmount = wedmAmount + sedmAmount;
 

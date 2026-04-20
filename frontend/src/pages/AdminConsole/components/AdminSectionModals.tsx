@@ -1,8 +1,23 @@
-import type { Dispatch, SetStateAction } from "react";
+import { useEffect, useMemo, useState, type Dispatch, type SetStateAction } from "react";
 import Modal from "../../../components/Modal";
 import type { CustomerRate, MasterConfig } from "../../../types/masterConfig";
 import { formatMachineLabel, toMachineIndex } from "../../../utils/jobFormatting";
 import type { AdminSection, AdminToastState } from "../adminConsoleUtils";
+
+const SEDM_SLAB_GROUPS: Array<{
+  key: string;
+  title: string;
+  minField: keyof CustomerRate;
+  perField: keyof CustomerRate;
+}> = [
+  { key: "034", title: "0.3 - 0.4", minField: "sedm034Min", perField: "sedm034PerMm" },
+  { key: "056", title: "0.5 - 0.6", minField: "sedm056Min", perField: "sedm056PerMm" },
+  { key: "07", title: "0.7", minField: "sedm07Min", perField: "sedm07PerMm" },
+  { key: "0812", title: "0.8 - 1.2", minField: "sedm0812Min", perField: "sedm0812PerMm" },
+  { key: "1520", title: "1.5 - 2.0", minField: "sedm1520Min", perField: "sedm1520PerMm" },
+  { key: "2225", title: "2.2 - 2.5", minField: "sedm2225Min", perField: "sedm2225PerMm" },
+  { key: "30", title: "3.0", minField: "sedm30Min", perField: "sedm30PerMm" },
+];
 type Props = {
   activeSection: AdminSection;
   setActiveSection: Dispatch<SetStateAction<AdminSection>>;
@@ -119,45 +134,139 @@ const AdminSectionModals = (props: Props) => {
     saving,
     handleSaveAndClose,
   } = props;
+  const [selectedSedmCustomerIndex, setSelectedSedmCustomerIndex] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (activeSection !== "customers") {
+      setSelectedSedmCustomerIndex(null);
+      return;
+    }
+
+    if (customers.length === 0) {
+      setSelectedSedmCustomerIndex(null);
+      return;
+    }
+
+    setSelectedSedmCustomerIndex((prev) => {
+      if (prev === null) return 0;
+      return prev >= customers.length ? customers.length - 1 : prev;
+    });
+  }, [activeSection, customers.length]);
+
+  const selectedSedmCustomer =
+    selectedSedmCustomerIndex !== null && customers[selectedSedmCustomerIndex]
+      ? customers[selectedSedmCustomerIndex]
+      : null;
+
+  const selectedSedmSummary = useMemo(
+    () =>
+      selectedSedmCustomer
+        ? SEDM_SLAB_GROUPS.map((group) => ({
+            ...group,
+            minValue: selectedSedmCustomer[group.minField],
+            perValue: selectedSedmCustomer[group.perField],
+          }))
+        : [],
+    [selectedSedmCustomer]
+  );
 
   return (
     <>
       <Modal isOpen={activeSection === "customers"} onClose={() => setActiveSection(null)} title="Customers & Rates" className="admin-section-modal admin-customer-modal" size="large">
         <p className="admin-help">
           Programmer reads these values per customer. Default Setting Hrs stays global, and you can override the
-          customer rate and setting hours here whenever a customer needs a custom rule.
+          customer rate, setting hours, and SEDM slab pricing here whenever a customer needs a custom rule.
         </p>
-        <div className="admin-customer-list">
-          {customers.map((item, index) => (
-            <div className="admin-customer-card" key={`customer-${index}`}>
-              <div className="admin-customer-card-top">
-                <div className="admin-customer-card-title">
-                  <span className="admin-customer-card-index">Customer {index + 1}</span>
-                  <strong>{item.customer || "New Customer"}</strong>
+        <div className="admin-customer-workspace">
+          <div className="admin-customer-list">
+            {customers.map((item, index) => (
+              <div className={`admin-customer-card ${selectedSedmCustomerIndex === index ? "active" : ""}`} key={`customer-${index}`}>
+                <div className="admin-customer-card-top">
+                  <div className="admin-customer-card-title">
+                    <span className="admin-customer-card-index">Customer {index + 1}</span>
+                    <strong>{item.customer || "New Customer"}</strong>
+                  </div>
+                  <button type="button" className="admin-remove-btn" disabled={readOnly} onClick={() => removeCustomerRow(index)}>
+                    Remove
+                  </button>
                 </div>
-                <button type="button" className="admin-remove-btn" disabled={readOnly} onClick={() => removeCustomerRow(index)}>
-                  Remove
-                </button>
+                <div className="admin-customer-card-grid">
+                  <label className="admin-customer-field">
+                    <span>Customer Code</span>
+                    <input type="text" value={item.customer} placeholder="UPC001" disabled={readOnly} onChange={(e) => updateCustomerRow(index, "customer", e.target.value)} />
+                  </label>
+                  <label className="admin-customer-field">
+                    <span>Rate</span>
+                    <input type="number" value={item.rate} placeholder="Rate" disabled={readOnly} onChange={(e) => updateCustomerRow(index, "rate", e.target.value)} />
+                  </label>
+                  <label className="admin-customer-field">
+                    <span>Setting Hrs</span>
+                    <input type="number" step="0.01" value={item.settingHours} placeholder="0.5" disabled={readOnly} onChange={(e) => updateCustomerRow(index, "settingHours", e.target.value)} />
+                  </label>
+                </div>
+                <div className="admin-customer-sedm-preview">
+                  {SEDM_SLAB_GROUPS.slice(0, 3).map((group) => (
+                    <div className="admin-customer-sedm-chip" key={`${group.key}-${index}`}>
+                      <strong>{group.title}</strong>
+                      <span>Min {String(item[group.minField] || "").trim() || "-"}</span>
+                      <span>&gt;20 {String(item[group.perField] || "").trim() || "-"}</span>
+                    </div>
+                  ))}
+                </div>
+                <div className="admin-customer-card-actions">
+                  <button type="button" className="admin-add-btn admin-sedm-open-btn" disabled={readOnly} onClick={() => setSelectedSedmCustomerIndex(index)}>
+                    Configure SEDM Values
+                  </button>
+                </div>
               </div>
-              <div className="admin-customer-card-grid">
-                <label className="admin-customer-field">
-                  <span>Customer Code</span>
-                  <input type="text" value={item.customer} placeholder="UPC001" disabled={readOnly} onChange={(e) => updateCustomerRow(index, "customer", e.target.value)} />
-                </label>
-                <label className="admin-customer-field">
-                  <span>Rate</span>
-                  <input type="number" value={item.rate} placeholder="Rate" disabled={readOnly} onChange={(e) => updateCustomerRow(index, "rate", e.target.value)} />
-                </label>
-                <label className="admin-customer-field">
-                  <span>Setting Hrs</span>
-                  <input type="number" step="0.01" value={item.settingHours} placeholder="0.5" disabled={readOnly} onChange={(e) => updateCustomerRow(index, "settingHours", e.target.value)} />
-                </label>
+            ))}
+          </div>
+
+          <aside className="admin-customer-sedm-panel">
+            <div className="admin-customer-sedm-panel-header">
+              <div>
+                <span className="admin-customer-card-index">SEDM Configurator</span>
+                <strong>{selectedSedmCustomer?.customer || "Select a customer"}</strong>
               </div>
+              <span className="admin-customer-sedm-panel-note">
+                Click a customer card and edit all SEDM slab values from this side panel inside the modal.
+              </span>
             </div>
-          ))}
+            {selectedSedmCustomer && selectedSedmCustomerIndex !== null ? (
+              <div className="admin-customer-sedm-grid">
+                {selectedSedmSummary.map((group) => (
+                  <div className="admin-customer-sedm-field" key={`${group.key}-${selectedSedmCustomerIndex}`}>
+                    <span>{group.title}</span>
+                    <label>
+                      Min
+                      <input
+                        type="number"
+                        value={selectedSedmCustomer[group.minField]}
+                        placeholder={String(group.minValue || "").trim() || "-"}
+                        disabled={readOnly}
+                        onChange={(e) => updateCustomerRow(selectedSedmCustomerIndex, group.minField, e.target.value)}
+                      />
+                    </label>
+                    <label>
+                      &gt;20/mm
+                      <input
+                        type="number"
+                        value={selectedSedmCustomer[group.perField]}
+                        placeholder={String(group.perValue || "").trim() || "-"}
+                        disabled={readOnly}
+                        onChange={(e) => updateCustomerRow(selectedSedmCustomerIndex, group.perField, e.target.value)}
+                      />
+                    </label>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="admin-empty-text">Add a customer or choose one to configure SEDM values.</p>
+            )}
+          </aside>
         </div>
         <p className="admin-help">
-          Use uppercase customer codes like `UPC001`. `Rate` and `Setting Hrs` accept numeric values only.
+          Use uppercase customer codes like `UPC001`. Every SEDM slab here is editable per customer, so Admin can tune Min and Greater than 20mm rates at any time.
         </p>
         <div className="admin-modal-actions">
           <button type="button" className="admin-add-btn admin-modal-secondary" disabled={readOnly} onClick={addCustomerRow}>

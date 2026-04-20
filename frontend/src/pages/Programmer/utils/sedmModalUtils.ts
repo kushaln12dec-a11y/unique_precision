@@ -1,10 +1,15 @@
-import { SEDM_PRICING, getEffectiveThickness } from "../programmerUtils";
+import { SEDM_PRICING, SEDM_PRICING_FIELD_MAP } from "./programmerConstants";
+import { getEffectiveThickness } from "./thicknessUtils";
 
 export type SEDMEntry = {
   thickness: string;
   lengthValue: string;
   lengthType: "min" | "per";
   holes: string;
+};
+
+type SedmCustomerConfig = {
+  [key: string]: string | undefined;
 };
 
 export const splitThicknessParts = (value: string): string[] => {
@@ -18,11 +23,17 @@ export const splitThicknessParts = (value: string): string[] => {
   return right ? [left, right] : [left];
 };
 
-export const calculateSingleSedmAmount = (entry: SEDMEntry, qty: number): number => {
+export const calculateSingleSedmAmount = (entry: SEDMEntry, qty: number, customerConfig?: SedmCustomerConfig): number => {
   const electrodeSize = entry.lengthValue ? Number(entry.lengthValue) : null;
   if (!electrodeSize || !entry.lengthValue) return 0;
-  const pricing = SEDM_PRICING.find((item) => electrodeSize >= item.min && electrodeSize <= item.max);
-  if (!pricing) return 0;
+  const pricingBase = SEDM_PRICING.find((item) => electrodeSize >= item.min && electrodeSize <= item.max);
+  if (!pricingBase) return 0;
+  const fieldMap = SEDM_PRICING_FIELD_MAP[pricingBase.key as keyof typeof SEDM_PRICING_FIELD_MAP];
+  const pricing = {
+    ...pricingBase,
+    min20: Number(customerConfig?.[fieldMap.minField]) || pricingBase.min20,
+    perMm: Number(customerConfig?.[fieldMap.perField]) || pricingBase.perMm,
+  };
 
   const raw = String(entry.thickness || "").trim();
   const [leftRaw = "", rightRaw = ""] = raw.includes("/") ? raw.split("/", 2) : [raw, ""];
