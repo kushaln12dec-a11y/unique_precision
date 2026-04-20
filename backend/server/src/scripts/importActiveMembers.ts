@@ -1,6 +1,7 @@
 import fs from "fs";
 import path from "path";
 import bcrypt from "bcrypt";
+import { Prisma } from "@prisma/client";
 import { loadEnv } from "../config/env";
 import { prisma } from "../lib/prisma";
 import { normalizeEmpId } from "../utils/employeeId";
@@ -20,16 +21,26 @@ const IMPORT_FILE = path.resolve(process.cwd(), "server/src/scripts/activeMember
 const AUTO_EMAIL_DOMAIN = "uniqueprecision.local";
 
 const VALID_ROLES = new Set(["ADMIN", "PROGRAMMER", "OPERATOR", "QC", "ACCOUNTANT"]);
+const ROLE_PASSWORDS: Record<string, string> = {
+  ADMIN: "admin",
+  PROGRAMMER: "programmer",
+  OPERATOR: "operator",
+  QC: "qc",
+  ACCOUNTANT: "accountant",
+};
 
 const normalizeRole = (value: unknown): string => {
   const cleaned = String(value || "").trim().toUpperCase();
-  if (["WIRE CUTTING", "WIRECUTTING", "WEDM", "WIRE CUT"].includes(cleaned)) return "PROGRAMMER";
+  if (["WIRE CUTTING", "WIRECUTTING", "WEDM", "WIRE CUT"].includes(cleaned)) return "OPERATOR";
   if (["OPERATOR", "OPERATORS"].includes(cleaned)) return "OPERATOR";
   if (VALID_ROLES.has(cleaned)) return cleaned;
   return "OPERATOR";
 };
 
-const getRolePassword = (role: string): string => role.trim().toLowerCase();
+const getRolePassword = (role: string): string => {
+  const normalizedRole = String(role || "").trim().toUpperCase();
+  return ROLE_PASSWORDS[normalizedRole] ?? normalizedRole.toLowerCase();
+};
 
 const splitName = (value: unknown): { firstName: string; lastName: string } => {
   const cleaned = String(value || "")
@@ -102,6 +113,19 @@ const readRows = (): ImportRow[] => {
   return Array.isArray(parsed) ? parsed : [];
 };
 
+const isUniqueEmailError = (error: unknown): boolean => {
+  if (!(error instanceof Prisma.PrismaClientKnownRequestError)) {
+    return false;
+  }
+
+  if (error.code !== "P2002") {
+    return false;
+  }
+
+  const target = Array.isArray(error.meta?.target) ? error.meta?.target : [];
+  return target.includes("email");
+};
+
 const importUsers = async () => {
   const rows = readRows();
 
@@ -151,19 +175,40 @@ const importUsers = async () => {
       continue;
     }
 
-    await prisma.user.create({
-      data: {
-        empId,
-        email,
-        passwordHash,
-        passwordText: getRolePassword(role),
-        firstName,
-        lastName,
-        phone,
-        role,
-        image: "",
-      },
-    });
+    try {
+      await prisma.user.create({
+        data: {
+          empId,
+          email,
+          passwordHash,
+          passwordText: getRolePassword(role),
+          firstName,
+          lastName,
+          phone,
+          role,
+          image: "",
+        },
+      });
+    } catch (error) {
+      if (!isUniqueEmailError(error)) {
+        throw error;
+      }
+
+      const fallbackEmail = await buildAutoEmail(empId);
+      await prisma.user.create({
+        data: {
+          empId,
+          email: fallbackEmail,
+          passwordHash,
+          passwordText: getRolePassword(role),
+          firstName,
+          lastName,
+          phone,
+          role,
+          image: "",
+        },
+      });
+    }
     created += 1;
   }
 
@@ -175,7 +220,7 @@ const importUsers = async () => {
         created,
         updated,
         skipped,
-        passwordRule: "designation in lowercase",
+        passwordRule: ROLE_PASSWORDS,
         appEnv: process.env.APP_ENV || "development",
       },
       null,

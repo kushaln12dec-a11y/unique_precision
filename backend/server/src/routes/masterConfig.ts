@@ -8,11 +8,11 @@ const router = Router();
 const DEFAULT_MASTER_CONFIG = {
   key: "global",
   customers: [
-    { customer: "UPC001", rate: "100", settingHours: "0.5", thicknessRateUpto100: "1500", thicknessRateAbove100: "1200" },
-    { customer: "UPC002", rate: "10", settingHours: "0.5", thicknessRateUpto100: "1500", thicknessRateAbove100: "1200" },
-    { customer: "UPC003", rate: "", settingHours: "0.5", thicknessRateUpto100: "1500", thicknessRateAbove100: "1200" },
-    { customer: "UPC004", rate: "", settingHours: "0.5", thicknessRateUpto100: "1500", thicknessRateAbove100: "1200" },
-    { customer: "UPC005", rate: "", settingHours: "0.5", thicknessRateUpto100: "1500", thicknessRateAbove100: "1200" },
+    { customer: "UPC001", rate: "100", settingHours: "0.5", thicknessRateUpto100: "1500", thicknessRateAbove100: "1200", sedm034Min: "60", sedm034PerMm: "6", sedm056Min: "50", sedm056PerMm: "4", sedm07Min: "40", sedm07PerMm: "3", sedm0812Min: "40", sedm0812PerMm: "2", sedm1520Min: "50", sedm1520PerMm: "3", sedm2225Min: "60", sedm2225PerMm: "4", sedm30Min: "80", sedm30PerMm: "6" },
+    { customer: "UPC002", rate: "10", settingHours: "0.5", thicknessRateUpto100: "1500", thicknessRateAbove100: "1200", sedm034Min: "60", sedm034PerMm: "6", sedm056Min: "50", sedm056PerMm: "4", sedm07Min: "40", sedm07PerMm: "3", sedm0812Min: "40", sedm0812PerMm: "2", sedm1520Min: "50", sedm1520PerMm: "3", sedm2225Min: "60", sedm2225PerMm: "4", sedm30Min: "80", sedm30PerMm: "6" },
+    { customer: "UPC003", rate: "", settingHours: "0.5", thicknessRateUpto100: "1500", thicknessRateAbove100: "1200", sedm034Min: "60", sedm034PerMm: "6", sedm056Min: "50", sedm056PerMm: "4", sedm07Min: "40", sedm07PerMm: "3", sedm0812Min: "40", sedm0812PerMm: "2", sedm1520Min: "50", sedm1520PerMm: "3", sedm2225Min: "60", sedm2225PerMm: "4", sedm30Min: "80", sedm30PerMm: "6" },
+    { customer: "UPC004", rate: "", settingHours: "0.5", thicknessRateUpto100: "1500", thicknessRateAbove100: "1200", sedm034Min: "60", sedm034PerMm: "6", sedm056Min: "50", sedm056PerMm: "4", sedm07Min: "40", sedm07PerMm: "3", sedm0812Min: "40", sedm0812PerMm: "2", sedm1520Min: "50", sedm1520PerMm: "3", sedm2225Min: "60", sedm2225PerMm: "4", sedm30Min: "80", sedm30PerMm: "6" },
+    { customer: "UPC005", rate: "", settingHours: "0.5", thicknessRateUpto100: "1500", thicknessRateAbove100: "1200", sedm034Min: "60", sedm034PerMm: "6", sedm056Min: "50", sedm056PerMm: "4", sedm07Min: "40", sedm07PerMm: "3", sedm0812Min: "40", sedm0812PerMm: "2", sedm1520Min: "50", sedm1520PerMm: "3", sedm2225Min: "60", sedm2225PerMm: "4", sedm30Min: "80", sedm30PerMm: "6" },
   ],
   materials: ["SS (Stainless Steel)", "Copper", "Brass", "Carbide"],
   passOptions: ["1", "2", "3", "4", "5", "6"],
@@ -45,6 +45,20 @@ const normalizeCustomers = (
   settingHours: string;
   thicknessRateUpto100: string;
   thicknessRateAbove100: string;
+  sedm034Min: string;
+  sedm034PerMm: string;
+  sedm056Min: string;
+  sedm056PerMm: string;
+  sedm07Min: string;
+  sedm07PerMm: string;
+  sedm0812Min: string;
+  sedm0812PerMm: string;
+  sedm1520Min: string;
+  sedm1520PerMm: string;
+  sedm2225Min: string;
+  sedm2225PerMm: string;
+  sedm30Min: string;
+  sedm30PerMm: string;
 }> => {
   if (!Array.isArray(values)) return [];
   const unique = new Map<
@@ -55,6 +69,20 @@ const normalizeCustomers = (
       settingHours: string;
       thicknessRateUpto100: string;
       thicknessRateAbove100: string;
+      sedm034Min: string;
+      sedm034PerMm: string;
+      sedm056Min: string;
+      sedm056PerMm: string;
+      sedm07Min: string;
+      sedm07PerMm: string;
+      sedm0812Min: string;
+      sedm0812PerMm: string;
+      sedm1520Min: string;
+      sedm1520PerMm: string;
+      sedm2225Min: string;
+      sedm2225PerMm: string;
+      sedm30Min: string;
+      sedm30PerMm: string;
     }
   >();
   values.forEach((item) => {
@@ -70,6 +98,20 @@ const normalizeCustomers = (
       settingHours,
       thicknessRateUpto100,
       thicknessRateAbove100,
+      sedm034Min: String((item as any)?.sedm034Min || "60").trim(),
+      sedm034PerMm: String((item as any)?.sedm034PerMm || "6").trim(),
+      sedm056Min: String((item as any)?.sedm056Min || "50").trim(),
+      sedm056PerMm: String((item as any)?.sedm056PerMm || "4").trim(),
+      sedm07Min: String((item as any)?.sedm07Min || "40").trim(),
+      sedm07PerMm: String((item as any)?.sedm07PerMm || "3").trim(),
+      sedm0812Min: String((item as any)?.sedm0812Min || "40").trim(),
+      sedm0812PerMm: String((item as any)?.sedm0812PerMm || "2").trim(),
+      sedm1520Min: String((item as any)?.sedm1520Min || "50").trim(),
+      sedm1520PerMm: String((item as any)?.sedm1520PerMm || "3").trim(),
+      sedm2225Min: String((item as any)?.sedm2225Min || "60").trim(),
+      sedm2225PerMm: String((item as any)?.sedm2225PerMm || "4").trim(),
+      sedm30Min: String((item as any)?.sedm30Min || "80").trim(),
+      sedm30PerMm: String((item as any)?.sedm30PerMm || "6").trim(),
     });
   });
   return Array.from(unique.values());
@@ -116,7 +158,21 @@ const findOrCreateMasterConfigRecord = async () => {
             settingHours: c.settingHours ? c.settingHours : null,
             thicknessRateUpto100: c.thicknessRateUpto100 ? c.thicknessRateUpto100 : null,
             thicknessRateAbove100: c.thicknessRateAbove100 ? c.thicknessRateAbove100 : null,
-          })),
+            sedm034Min: c.sedm034Min ? c.sedm034Min : null,
+            sedm034PerMm: c.sedm034PerMm ? c.sedm034PerMm : null,
+            sedm056Min: c.sedm056Min ? c.sedm056Min : null,
+            sedm056PerMm: c.sedm056PerMm ? c.sedm056PerMm : null,
+            sedm07Min: c.sedm07Min ? c.sedm07Min : null,
+            sedm07PerMm: c.sedm07PerMm ? c.sedm07PerMm : null,
+            sedm0812Min: c.sedm0812Min ? c.sedm0812Min : null,
+            sedm0812PerMm: c.sedm0812PerMm ? c.sedm0812PerMm : null,
+            sedm1520Min: c.sedm1520Min ? c.sedm1520Min : null,
+            sedm1520PerMm: c.sedm1520PerMm ? c.sedm1520PerMm : null,
+            sedm2225Min: c.sedm2225Min ? c.sedm2225Min : null,
+            sedm2225PerMm: c.sedm2225PerMm ? c.sedm2225PerMm : null,
+            sedm30Min: c.sedm30Min ? c.sedm30Min : null,
+            sedm30PerMm: c.sedm30PerMm ? c.sedm30PerMm : null,
+          })) as any,
         },
         materials: { create: DEFAULT_MASTER_CONFIG.materials.map((value) => ({ value })) },
         passOptions: { create: DEFAULT_MASTER_CONFIG.passOptions.map((value) => ({ value })) },
@@ -148,12 +204,26 @@ const findOrCreateMasterConfigRecord = async () => {
 const toMasterConfigResponse = (config: Awaited<ReturnType<typeof findOrCreateMasterConfigRecord>>) => ({
   _id: config.id,
   key: config.key,
-  customers: (config.customers.length > 0 ? config.customers : DEFAULT_MASTER_CONFIG.customers as any[]).map((c) => ({
+  customers: (config.customers.length > 0 ? config.customers : DEFAULT_MASTER_CONFIG.customers as any[]).map((c: any) => ({
     customer: c.customer,
     rate: c.rate ? String(c.rate) : "",
     settingHours: c.settingHours ? String(c.settingHours) : "",
     thicknessRateUpto100: c.thicknessRateUpto100 ? String(c.thicknessRateUpto100) : "",
     thicknessRateAbove100: c.thicknessRateAbove100 ? String(c.thicknessRateAbove100) : "",
+    sedm034Min: c.sedm034Min ? String(c.sedm034Min) : "60",
+    sedm034PerMm: c.sedm034PerMm ? String(c.sedm034PerMm) : "6",
+    sedm056Min: c.sedm056Min ? String(c.sedm056Min) : "50",
+    sedm056PerMm: c.sedm056PerMm ? String(c.sedm056PerMm) : "4",
+    sedm07Min: c.sedm07Min ? String(c.sedm07Min) : "40",
+    sedm07PerMm: c.sedm07PerMm ? String(c.sedm07PerMm) : "3",
+    sedm0812Min: c.sedm0812Min ? String(c.sedm0812Min) : "40",
+    sedm0812PerMm: c.sedm0812PerMm ? String(c.sedm0812PerMm) : "2",
+    sedm1520Min: c.sedm1520Min ? String(c.sedm1520Min) : "50",
+    sedm1520PerMm: c.sedm1520PerMm ? String(c.sedm1520PerMm) : "3",
+    sedm2225Min: c.sedm2225Min ? String(c.sedm2225Min) : "60",
+    sedm2225PerMm: c.sedm2225PerMm ? String(c.sedm2225PerMm) : "4",
+    sedm30Min: c.sedm30Min ? String(c.sedm30Min) : "80",
+    sedm30PerMm: c.sedm30PerMm ? String(c.sedm30PerMm) : "6",
   })),
   materials: config.materials.length > 0 ? config.materials.map((m) => m.value) : DEFAULT_MASTER_CONFIG.materials,
   passOptions: config.passOptions.length > 0 ? config.passOptions.map((p) => p.value) : DEFAULT_MASTER_CONFIG.passOptions,
@@ -253,7 +323,21 @@ router.put("/", adminMiddleware, async (req, res) => {
             settingHours: c.settingHours ? c.settingHours : null,
             thicknessRateUpto100: c.thicknessRateUpto100 ? c.thicknessRateUpto100 : null,
             thicknessRateAbove100: c.thicknessRateAbove100 ? c.thicknessRateAbove100 : null,
-          })),
+            sedm034Min: c.sedm034Min ? c.sedm034Min : null,
+            sedm034PerMm: c.sedm034PerMm ? c.sedm034PerMm : null,
+            sedm056Min: c.sedm056Min ? c.sedm056Min : null,
+            sedm056PerMm: c.sedm056PerMm ? c.sedm056PerMm : null,
+            sedm07Min: c.sedm07Min ? c.sedm07Min : null,
+            sedm07PerMm: c.sedm07PerMm ? c.sedm07PerMm : null,
+            sedm0812Min: c.sedm0812Min ? c.sedm0812Min : null,
+            sedm0812PerMm: c.sedm0812PerMm ? c.sedm0812PerMm : null,
+            sedm1520Min: c.sedm1520Min ? c.sedm1520Min : null,
+            sedm1520PerMm: c.sedm1520PerMm ? c.sedm1520PerMm : null,
+            sedm2225Min: c.sedm2225Min ? c.sedm2225Min : null,
+            sedm2225PerMm: c.sedm2225PerMm ? c.sedm2225PerMm : null,
+            sedm30Min: c.sedm30Min ? c.sedm30Min : null,
+            sedm30PerMm: c.sedm30PerMm ? c.sedm30PerMm : null,
+          })) as any,
         }),
         tx.masterConfigMaterial.createMany({
           data: nextData.materials.map((value) => ({ masterConfigId, value })),
