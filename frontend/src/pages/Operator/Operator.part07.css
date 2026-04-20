@@ -214,6 +214,27 @@
   text-align: center;
 }
 
+.operator-logs-table .log-user-stack {
+  gap: 0.04rem;
+  line-height: 1.08;
+}
+
+.operator-logs-table .log-user-stack strong {
+  font-size: 0.84rem;
+}
+
+.operator-logs-table .log-user-stack span {
+  font-size: 0.64rem;
+}
+
+.operator-logs-table .created-by-badge,
+.operator-logs-table .log-user-initial-badge {
+  width: 24px;
+  height: 24px;
+  min-width: 24px;
+  font-size: 0.64rem;
+}
+
 .data-table-wrapper.operator-logs-table {
   max-height: calc(100vh - 250px);
   overflow-y: auto;

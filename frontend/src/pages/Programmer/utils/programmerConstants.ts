@@ -10,6 +10,16 @@ export const SEDM_PRICING = [
   { key: "3.0", label: "3.0", min: 3.0, max: 3.0, min20: 80, perMm: 6 },
 ];
 
+export const SEDM_PRICING_FIELD_MAP = {
+  "0.3-0.4": { minField: "sedm034Min", perField: "sedm034PerMm" },
+  "0.5-0.6": { minField: "sedm056Min", perField: "sedm056PerMm" },
+  "0.7": { minField: "sedm07Min", perField: "sedm07PerMm" },
+  "0.8-1.2": { minField: "sedm0812Min", perField: "sedm0812PerMm" },
+  "1.5-2.0": { minField: "sedm1520Min", perField: "sedm1520PerMm" },
+  "2.2-2.5": { minField: "sedm2225Min", perField: "sedm2225PerMm" },
+  "3.0": { minField: "sedm30Min", perField: "sedm30PerMm" },
+} as const;
+
 export const PASS_MAP: Record<string, number> = {
   "1": 1,
   "2": 1.5,

@@ -57,6 +57,9 @@ const Programmer = () => {
     editingGroupId,
     refNumber,
     editGroupError,
+    isNewJobRoute,
+    isEditRoute,
+    isCloneRoute,
     handleNewJob: handleNewJobState,
     handleCancel: handleCancelState,
   } = useProgrammerState(filters, customerFilter, descriptionFilter, createdByFilter, criticalFilter);
@@ -107,6 +110,10 @@ const Programmer = () => {
     jobsFetchPage,
     logsFetchPage,
   } = useProgrammerPageController({
+    currentPathname: location.pathname,
+    isNewJobRoute,
+    isEditRoute,
+    isCloneRoute,
     filters,
     customerFilter,
     descriptionFilter,
@@ -147,7 +154,6 @@ const Programmer = () => {
     setToast,
     setSavingJob,
     totals,
-    resetProgrammerFormState: handleCancelState,
   });
 
   const handleDeleteConfirm = async () => {

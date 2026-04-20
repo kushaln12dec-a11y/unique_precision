@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useLocation, type NavigateFunction } from "react-router-dom";
+import type { NavigateFunction } from "react-router-dom";
 import { countActiveFilters } from "../../../utils/filterUtils";
 import { fetchAllPaginatedItems } from "../../../utils/paginationUtils";
 import { getUsers } from "../../../services/userApi";
@@ -15,6 +15,10 @@ import { SEARCH_FETCH_PAGE_SIZE } from "./useProgrammerLogs";
 import type { TableRow } from "../utils/jobDataTransform";
 
 type UseProgrammerPageControllerParams = {
+  currentPathname: string;
+  isNewJobRoute: boolean;
+  isEditRoute: boolean;
+  isCloneRoute: boolean;
   filters: FilterValues;
   customerFilter: string;
   descriptionFilter: string;
@@ -38,6 +42,10 @@ type UseProgrammerPageControllerParams = {
 };
 
 export const useProgrammerPageController = ({
+  currentPathname,
+  isNewJobRoute,
+  isEditRoute,
+  isCloneRoute,
   filters,
   customerFilter,
   descriptionFilter,
@@ -53,7 +61,6 @@ export const useProgrammerPageController = ({
   setToast,
   setSavingJob,
 }: UseProgrammerPageControllerParams) => {
-  const location = useLocation();
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(() => new Set());
   const [users, setUsers] = useState<User[]>([]);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -73,11 +80,7 @@ export const useProgrammerPageController = ({
   const filtersKey = useMemo(() => JSON.stringify(filters || {}), [filters]);
 
   const activeFilterCount = useMemo(() => countActiveFilters(filters), [filters]);
-  const isNewJobRoute = location.pathname.startsWith("/programmer/newjob");
-  const isEditRoute = location.pathname.startsWith("/programmer/edit/");
-  const isCloneRoute = location.pathname.startsWith("/programmer/clone/");
-
-  const isProgrammerListRoute = /^\/programmer\/?$/.test(location.pathname);
+  const isProgrammerListRoute = /^\/programmer\/?$/.test(currentPathname);
   const isProgrammerFormRoute = isNewJobRoute || isEditRoute || isCloneRoute;
   const isEditFormReady = isEditRoute && Boolean(routeEditGroupId) && editingGroupId === routeEditGroupId && cutsLength > 0;
   const shouldRenderJobForm = isNewJobRoute || isCloneRoute || (isEditRoute && isEditFormReady);

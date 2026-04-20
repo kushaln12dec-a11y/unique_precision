@@ -81,6 +81,13 @@
   gap: 0.8rem;
 }
 
+.admin-customer-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.92fr);
+  gap: 1rem;
+  align-items: start;
+}
+
 .admin-customer-card {
   border: 1px solid var(--color-border);
   border-radius: 18px;
@@ -89,6 +96,11 @@
     linear-gradient(180deg, color-mix(in srgb, var(--color-surface) 98%, transparent), color-mix(in srgb, var(--color-surface-muted) 94%, transparent)),
     linear-gradient(135deg, rgba(37, 99, 235, 0.05), rgba(15, 23, 42, 0.02));
   box-shadow: var(--card-shadow);
+}
+
+.admin-customer-card.active {
+  border-color: color-mix(in srgb, var(--color-primary) 40%, var(--color-border));
+  box-shadow: 0 18px 34px rgba(37, 99, 235, 0.14);
 }
 
 .admin-customer-card-top {
@@ -144,6 +156,74 @@
   gap: 0.7rem;
 }
 
+.admin-customer-sedm-panel {
+  position: sticky;
+  top: 0;
+  display: grid;
+  gap: 0.85rem;
+  padding: 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 20px;
+  background:
+    radial-gradient(circle at top right, rgba(59, 130, 246, 0.14), transparent 36%),
+    linear-gradient(180deg, color-mix(in srgb, var(--color-surface) 98%, transparent), color-mix(in srgb, var(--color-surface-muted) 94%, transparent));
+  box-shadow: var(--card-shadow);
+}
+
+.admin-customer-sedm-panel-header {
+  display: grid;
+  gap: 0.26rem;
+}
+
+.admin-customer-sedm-panel-header strong {
+  color: var(--color-text);
+  font-size: 1rem;
+}
+
+.admin-customer-sedm-panel-note {
+  color: var(--color-text-soft);
+  font-size: 0.8rem;
+  line-height: 1.45;
+}
+
+.admin-customer-sedm-preview {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.55rem;
+  margin-bottom: 0.8rem;
+}
+
+.admin-customer-sedm-chip {
+  display: grid;
+  gap: 0.16rem;
+  padding: 0.72rem 0.78rem;
+  border-radius: 14px;
+  border: 1px solid color-mix(in srgb, var(--color-primary) 16%, var(--color-border));
+  background: color-mix(in srgb, var(--color-surface-muted) 90%, transparent);
+}
+
+.admin-customer-sedm-chip strong {
+  color: var(--color-text);
+  font-size: 0.78rem;
+}
+
+.admin-customer-sedm-chip span {
+  color: var(--color-text-soft);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.admin-customer-card-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.admin-sedm-open-btn {
+  border-color: color-mix(in srgb, var(--color-primary) 30%, var(--color-border));
+  background: color-mix(in srgb, var(--color-primary) 10%, var(--color-surface));
+  color: var(--color-primary-strong);
+}
+
 .admin-customer-sedm-field {
   display: grid;
   gap: 0.35rem;
@@ -151,6 +231,14 @@
   border: 1px solid var(--color-border);
   border-radius: 14px;
   background: color-mix(in srgb, var(--color-surface-muted) 92%, transparent);
+}
+
+.admin-customer-sedm-field label {
+  display: grid;
+  gap: 0.32rem;
+  color: var(--color-text-soft);
+  font-size: 0.74rem;
+  font-weight: 700;
 }
 
 .admin-customer-sedm-field span {
@@ -275,6 +363,14 @@
   .admin-customer-card-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
+  .admin-customer-workspace {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-customer-sedm-panel {
+    position: static;
+  }
 }
 
 @media (max-width: 720px) {
@@ -288,6 +384,10 @@
 
   .admin-customer-card-grid,
   .admin-customer-sedm-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-customer-sedm-preview {
     grid-template-columns: 1fr;
   }
 

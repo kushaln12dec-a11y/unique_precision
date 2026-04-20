@@ -24,7 +24,10 @@ export const useProgrammerReduxDispatchers = (dispatch: Dispatch, filters: Filte
   },
   removeFilter: (key: string, type: "inline" | "modal") => {
     if (type === "inline") {
-      if (key === "customer") dispatch(setProgrammerCustomerFilter(""));
+      if (key === "customer") {
+        dispatch(setProgrammerCustomerFilter(""));
+        dispatch(setProgrammerDescriptionFilter(""));
+      }
       else if (key === "description") dispatch(setProgrammerDescriptionFilter(""));
       else if (key === "createdBy") dispatch(setProgrammerCreatedByFilter(""));
       return;

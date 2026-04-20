@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
 import ContentCopyOutlinedIcon from "@mui/icons-material/ContentCopyOutlined";
@@ -31,7 +31,14 @@ export const UserForm: React.FC<UserFormProps> = ({
   onCancel,
   onTogglePassword,
 }) => {
+  const errorRef = useRef<HTMLDivElement | null>(null);
   const [copiedField, setCopiedField] = React.useState<"empId" | "password" | null>(null);
+
+  useEffect(() => {
+    if (error && errorRef.current) {
+      errorRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }, [error]);
   const canCopyEmpId = /^EMP\d+$/i.test(String(formData.empId || "").trim());
   const canCopyPassword = String(formData.password || "").trim().length > 0;
 
@@ -47,7 +54,11 @@ export const UserForm: React.FC<UserFormProps> = ({
   return (
     <div className="user-form-container">
       <h2>{editingUser ? "Edit User" : "Create New User"}</h2>
-      {error && <div className="error-message">{error}</div>}
+      {error && (
+        <div ref={errorRef} className="error-message">
+          {error}
+        </div>
+      )}
       <form onSubmit={onSubmit} className="user-form" noValidate>
         <div className="form-row">
           <div className="form-group">

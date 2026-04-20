@@ -178,23 +178,55 @@
   font-weight: 700;
 }
 
+.employee-logs-table .employee-log-user {
+  gap: 0.04rem;
+}
+
+.employee-logs-table .employee-log-user strong {
+  font-size: 0.84rem;
+}
+
+.employee-logs-table .employee-log-user span {
+  font-size: 0.64rem;
+}
+
 .employee-log-user.employee-log-user-badge {
   align-items: center;
 }
 
+.employee-log-user.employee-log-user-inline {
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+}
+
 .employee-log-user-initial-badge {
-  width: 30px;
-  height: 30px;
+  width: 24px;
+  height: 24px;
   border-radius: 999px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   background: #e2e8f0;
   color: #0f172a;
-  font-size: 0.72rem;
+  font-size: 0.64rem;
   font-weight: 800;
   letter-spacing: 0.4px;
   text-transform: uppercase;
+}
+
+.employee-log-role-pill {
+  display: inline;
+  color: #64748b;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
 }
 
 .employee-work-item {
@@ -214,8 +246,8 @@
   display: inline-flex;
   align-items: center;
   border-radius: 999px;
-  padding: 0.2rem 0.6rem;
-  font-size: 0.76rem;
+  padding: 0.14rem 0.48rem;
+  font-size: 0.66rem;
   font-weight: 800;
   color: #1e3a8a;
   border: 1px solid #93c5fd;
@@ -227,12 +259,12 @@
   align-items: center;
   justify-content: center;
   border-radius: 999px;
-  padding: 0.24rem 0.72rem;
-  font-size: 0.75rem;
+  padding: 0.14rem 0.52rem;
+  font-size: 0.66rem;
   font-weight: 800;
   border: 1px solid transparent;
   white-space: nowrap;
-  min-width: 92px;
+  min-width: 78px;
   line-height: 1.15;
   text-align: center;
 }
@@ -271,12 +303,13 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.125rem;
-  line-height: 1.2;
+  gap: 0.05rem;
+  line-height: 1.08;
 }
 
 .created-at-split span {
   white-space: nowrap;
+  font-size: 0.68rem;
 }
 
 .data-table-wrapper.employee-logs-table {

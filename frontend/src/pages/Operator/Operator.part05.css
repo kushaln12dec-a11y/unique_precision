@@ -196,6 +196,12 @@
   line-height: 1.2;
 }
 
+.log-user-inline-stack {
+  flex-direction: row;
+  justify-content: center;
+  gap: 0.45rem;
+}
+
 .log-user-stack strong {
   font-size: 0.98rem;
   color: #0f172a;

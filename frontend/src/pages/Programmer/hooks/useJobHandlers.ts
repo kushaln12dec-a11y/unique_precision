@@ -18,7 +18,6 @@ type UseJobHandlersProps = {
   >;
   setSavingJob: React.Dispatch<React.SetStateAction<boolean>>;
   totals: CalculationResult[];
-  resetProgrammerFormState: () => void;
 };
 
 export const useJobHandlers = ({
@@ -30,12 +29,10 @@ export const useJobHandlers = ({
   setToast,
   setSavingJob,
   totals,
-  resetProgrammerFormState,
 }: UseJobHandlersProps) => {
   const navigate = useNavigate();
 
   const finishSaveAndReturnToProgrammerTable = useCallback((message: string) => {
-    resetProgrammerFormState();
     setSavingJob(false);
 
     navigate("/programmer", {
@@ -45,7 +42,7 @@ export const useJobHandlers = ({
 
     setToast({ message, variant: "success", visible: true });
     window.setTimeout(() => setToast({ message: "", variant: "success", visible: false }), 3000);
-  }, [navigate, resetProgrammerFormState, setSavingJob, setToast]);
+  }, [navigate, setSavingJob, setToast]);
 
   const handleSaveJob = useCallback(async () => {
     const invalidCustomerIndex = cuts.findIndex((cut) => !isValidCustomerUpcCode(cut.customer));
@@ -86,6 +83,9 @@ export const useJobHandlers = ({
           assignedTo: editingGroupId
             ? jobs.find((job) => String(job.groupId) === editingGroupId)?.assignedTo || "Unassign"
             : "Unassign",
+          machineNumber: existingJob?.machineNumber || "",
+          quantityQaStates: existingJob?.quantityQaStates ?? {},
+          operatorCaptures: existingJob?.operatorCaptures ?? [],
         } as JobEntry;
         return baseEntry;
       });

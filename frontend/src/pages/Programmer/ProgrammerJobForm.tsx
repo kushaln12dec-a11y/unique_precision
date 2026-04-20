@@ -188,6 +188,7 @@ const ProgrammerJobForm = ({
         electrodeOptions={masterConfig?.sedmElectrodeOptions || []}
         thOptions={masterConfig?.sedmThOptions || []}
         isAdmin={isAdmin}
+        customerConfigs={masterConfig?.customers || []}
       />
       {isSaving && <AppLoader variant="overlay" message="Saving job..." />}
     </div>

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { getEmployeeLogs } from "../../../services/employeeLogsApi";
+import { getActiveOperatorRunLogs, getEmployeeLogs } from "../../../services/employeeLogsApi";
 import type { EmployeeLog } from "../../../types/employeeLog";
 import type { JobEntry } from "../../../types/job";
 import { getLogUserDisplayName } from "../../../utils/jobFormatting";
@@ -41,7 +41,7 @@ export const useOperatorDashboardActivity = ({
       if (document.visibilityState !== "visible") return;
 
       try {
-        const logs = await getEmployeeLogs({ role: "OPERATOR", status: "IN_PROGRESS", limit: 250 });
+        const logs = await getActiveOperatorRunLogs();
         if (!isMounted) return;
         setActiveOperatorRuns(logs.filter((log) => String(log.jobId || "").trim() && !log.endedAt));
       } catch {

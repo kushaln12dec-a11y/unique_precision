@@ -269,7 +269,7 @@ export const OperatorJobsSection: React.FC<Props> = ({
           return `${flagClass} ${stageClass}`;
         }}
         className="jobs-table-wrapper operator-table-no-scroll"
-        rowHeight={60}
+        rowHeight={42}
         fitColumns={true}
         refreshKey={createdByRefreshKey}
       />

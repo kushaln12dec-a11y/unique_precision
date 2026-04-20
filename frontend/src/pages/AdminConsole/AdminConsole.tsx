@@ -16,6 +16,7 @@ import {
   type AdminSnapshot,
   type AdminToastState,
   DEFAULT_CUSTOMERS,
+  DEFAULT_SEDM_CUSTOMER_PRICING,
   normalizeCustomerRows,
   normalizeOptionValue,
   sanitizeOptions,
@@ -199,7 +200,7 @@ const AdminConsole = () => {
   };
 
   const summaryCards = [
-    { title: "Customers & Rates", value: `${normalizedCustomers.length} customer profiles`, detail: "Customer rate, setting hrs, and customer-specific SEDM up to/above 20mm stay together.", dirty: sectionDirty.customers, onClick: () => setActiveSection("customers") },
+    { title: "Customers & Rates", value: `${normalizedCustomers.length} customer profiles`, detail: "Customer rate, setting hrs, and all SEDM slab values are managed together per customer.", dirty: sectionDirty.customers, onClick: () => setActiveSection("customers") },
     { title: "Thickness Pricing", value: `${normalizedThicknessConfig.thicknessRateUpto100} / ${normalizedThicknessConfig.thicknessRateAbove100}`, detail: "Global pricing divisor for thickness <= 100 and > 100.", dirty: sectionDirty.thickness, onClick: () => setActiveSection("thickness") },
     { title: "Material Options", value: `${normalizedMaterials.length} material presets`, detail: "Used in Programmer forms and standardizes entries.", dirty: sectionDirty.materials, onClick: () => setActiveSection("materials") },
     { title: "Pass Options", value: `${normalizedPassOptions.length} pass presets`, detail: "Controls pass dropdown values in the job form.", dirty: sectionDirty.pass, onClick: () => setActiveSection("pass") },
@@ -241,7 +242,7 @@ const AdminConsole = () => {
           setCustomers((prev) => prev.map((row, idx) => (idx === index ? { ...row, [field]: field === "customer" ? value.toUpperCase() : value } : row)))
         }
         addCustomerRow={() =>
-          setCustomers((prev) => [...prev, { customer: "", rate: "", settingHours: "", thicknessRateUpto100: "", thicknessRateAbove100: "" }])
+          setCustomers((prev) => [...prev, { customer: "", rate: "", settingHours: "", thicknessRateUpto100: "", thicknessRateAbove100: "", ...DEFAULT_SEDM_CUSTOMER_PRICING }])
         }
         removeCustomerRow={(index) => setCustomers((prev) => prev.filter((_, idx) => idx !== index))}
         config={config}

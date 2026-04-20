@@ -35,6 +35,48 @@ const getEmployeeLogItems = (payload: any): EmployeeLog[] => {
   return [];
 };
 
+const EMPLOYEE_LOGS_DEDUPE_TTL_MS = 1200;
+const employeeLogsInFlight = new Map<string, Promise<any>>();
+const employeeLogsResponseCache = new Map<string, { expiresAt: number; payload: any }>();
+const ACTIVE_OPERATOR_RUNS_CACHE_TTL_MS = 10000;
+const ACTIVE_OPERATOR_RUNS_URL = "/api/employee-logs?role=OPERATOR&status=IN_PROGRESS&limit=250";
+
+const fetchEmployeeLogsPayload = async (url: string): Promise<any> => {
+  const now = Date.now();
+  const cached = employeeLogsResponseCache.get(url);
+  if (cached && cached.expiresAt > now) {
+    return cached.payload;
+  }
+
+  const inFlight = employeeLogsInFlight.get(url);
+  if (inFlight) {
+    return inFlight;
+  }
+
+  const request = fetch(apiUrl(url), {
+    method: "GET",
+    headers: getAuthHeaders(),
+  })
+    .then(async (res) => {
+      if (!res.ok) {
+        throw new Error("Failed to fetch employee logs");
+      }
+
+      const payload = await res.json();
+      employeeLogsResponseCache.set(url, {
+        expiresAt: Date.now() + EMPLOYEE_LOGS_DEDUPE_TTL_MS,
+        payload,
+      });
+      return payload;
+    })
+    .finally(() => {
+      employeeLogsInFlight.delete(url);
+    });
+
+  employeeLogsInFlight.set(url, request);
+  return request;
+};
+
 export const getEmployeeLogs = async (params: GetEmployeeLogsParams = {}): Promise<EmployeeLog[]> => {
   const query = new URLSearchParams();
   if (params.role) query.append("role", params.role);
@@ -46,16 +88,16 @@ export const getEmployeeLogs = async (params: GetEmployeeLogsParams = {}): Promi
   if (params.endDate) query.append("endDate", params.endDate);
 
   const url = query.toString() ? `/api/employee-logs?${query.toString()}` : "/api/employee-logs";
-  const res = await fetch(apiUrl(url), {
-    method: "GET",
-    headers: getAuthHeaders(),
+  const payload = await fetchEmployeeLogsPayload(url);
+  return getEmployeeLogItems(payload);
+};
+
+export const getActiveOperatorRunLogs = async (): Promise<EmployeeLog[]> => {
+  const payload = await fetchEmployeeLogsPayload(ACTIVE_OPERATOR_RUNS_URL);
+  employeeLogsResponseCache.set(ACTIVE_OPERATOR_RUNS_URL, {
+    expiresAt: Date.now() + ACTIVE_OPERATOR_RUNS_CACHE_TTL_MS,
+    payload,
   });
-
-  if (!res.ok) {
-    throw new Error("Failed to fetch employee logs");
-  }
-
-  const payload = await res.json();
   return getEmployeeLogItems(payload);
 };
 
@@ -74,16 +116,7 @@ export const getEmployeeLogsPage = async (
   if (params.limit !== undefined) query.append("limit", String(Math.max(1, params.limit)));
 
   const url = query.toString() ? `/api/employee-logs?${query.toString()}` : "/api/employee-logs";
-  const res = await fetch(apiUrl(url), {
-    method: "GET",
-    headers: getAuthHeaders(),
-  });
-
-  if (!res.ok) {
-    throw new Error("Failed to fetch employee logs");
-  }
-
-  const payload = await res.json();
+  const payload = await fetchEmployeeLogsPayload(url);
   const items = getEmployeeLogItems(payload);
   return {
     items,

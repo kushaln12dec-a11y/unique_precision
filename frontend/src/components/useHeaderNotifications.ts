@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { getEmployeeLogs } from "../services/employeeLogsApi";
+import { getActiveOperatorRunLogs, getEmployeeLogs } from "../services/employeeLogsApi";
 import { getOperatorJobsPage } from "../services/jobApi";
 import type { EmployeeLog } from "../types/employeeLog";
 import type { JobEntry } from "../types/job";
@@ -41,7 +41,7 @@ export const useHeaderNotifications = ({
 
       try {
         const [activeLogs, assignmentUpdates, activityUpdates] = await Promise.all([
-          getEmployeeLogs({ role: "OPERATOR", status: "IN_PROGRESS", limit: 250 }),
+          getActiveOperatorRunLogs(),
           getEmployeeLogs({ role: "OPERATOR", activityType: "OPERATOR_ASSIGNMENT", limit: 100 }),
           getEmployeeLogs({ role: "OPERATOR", activityType: "OPERATOR_PRODUCTION", limit: 100 }),
         ]);
