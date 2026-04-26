@@ -37,6 +37,8 @@ type Props = {
   setProgrammerGridJobs: React.Dispatch<React.SetStateAction<JobEntry[]>>;
   expandedGroups: Set<string>;
   programmerGridRefreshKey: number;
+  syncBannerMessage?: string | null;
+  onRefreshFromSync?: () => void;
 };
 
 export const ProgrammerJobsSection: React.FC<Props> = ({
@@ -59,12 +61,22 @@ export const ProgrammerJobsSection: React.FC<Props> = ({
   setProgrammerGridJobs,
   expandedGroups,
   programmerGridRefreshKey,
+  syncBannerMessage,
+  onRefreshFromSync,
 }) => {
   if (savingJob) return <AppLoader message="Saving job and loading programmer jobs..." />;
   if (loadingJobs && programmerGridJobs.length === 0) return <AppLoader message="Loading programmer jobs..." />;
 
   return (
     <>
+      {syncBannerMessage && onRefreshFromSync ? (
+        <div className="job-sync-banner">
+          <span>{syncBannerMessage}</span>
+          <button type="button" className="job-sync-banner-button" onClick={onRefreshFromSync}>
+            Refresh
+          </button>
+        </div>
+      ) : null}
       <ProgrammerFilters
         filters={filters}
         jobSearchFilter={customerFilter}

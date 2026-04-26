@@ -10,3 +10,30 @@
 @import "./Programmer.part10.css";
 @import "./Programmer.part11.css";
 @import "./Programmer.part12.css";
+.job-sync-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 0 12px;
+  padding: 12px 14px;
+  border: 1px solid #f3c969;
+  border-radius: 12px;
+  background: #fff5d6;
+  color: #6f4b00;
+}
+
+.job-sync-banner-button {
+  border: 0;
+  border-radius: 999px;
+  padding: 8px 14px;
+  background: #8a5a00;
+  color: #fff;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.job-sync-banner-button:hover {
+  background: #734a00;
+}

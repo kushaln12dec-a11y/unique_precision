@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import Sidebar from "../../components/Sidebar";
 import Header from "../../components/Header";
@@ -21,6 +21,8 @@ import { useProgrammerLogs } from "./hooks/useProgrammerLogs";
 import { useProgrammerPageController } from "./hooks/useProgrammerPageController";
 import { useProgrammerReduxDispatchers } from "./hooks/useProgrammerReduxDispatchers";
 import { useProgrammerNavigation } from "./hooks/useProgrammerNavigation";
+import { useJobSync, type JobSyncEvent } from "../../hooks/useJobSync";
+import { getUserDisplayNameFromToken } from "../../utils/auth";
 
 const Programmer = () => {
   const navigate = useNavigate();
@@ -35,6 +37,7 @@ const Programmer = () => {
     visible: false,
   });
   const [savingJob, setSavingJob] = useState(false);
+  const [pendingJobSync, setPendingJobSync] = useState<JobSyncEvent | null>(null);
 
   const {
     filters,
@@ -60,6 +63,7 @@ const Programmer = () => {
     isNewJobRoute,
     isEditRoute,
     isCloneRoute,
+    refreshJobs,
     handleNewJob: handleNewJobState,
     handleCancel: handleCancelState,
   } = useProgrammerState(filters, customerFilter, descriptionFilter, createdByFilter, criticalFilter);
@@ -107,6 +111,7 @@ const Programmer = () => {
     handleCloneJob,
     handleNewJob,
     handleCancel,
+    refreshProgrammerGrid,
     jobsFetchPage,
     logsFetchPage,
   } = useProgrammerPageController({
@@ -129,6 +134,21 @@ const Programmer = () => {
     setToast,
     setSavingJob,
   });
+
+  const currentUserDisplayName = (getUserDisplayNameFromToken() || "").trim().toUpperCase();
+
+  const refreshFromSyncBanner = useCallback(() => {
+    void refreshJobs();
+    refreshProgrammerGrid();
+    setPendingJobSync(null);
+  }, [refreshJobs, refreshProgrammerGrid]);
+
+  useJobSync((event) => {
+    if (event.updatedBy && event.updatedBy === currentUserDisplayName) {
+      return;
+    }
+    setPendingJobSync(event);
+  }, isProgrammerListRoute && activeTab === "jobs");
 
   const totals = useMemo(
     () =>
@@ -272,6 +292,12 @@ const Programmer = () => {
               setProgrammerGridJobs={setProgrammerGridJobs}
               expandedGroups={expandedGroups}
               programmerGridRefreshKey={programmerGridRefreshKey}
+              syncBannerMessage={
+                pendingJobSync
+                  ? `${pendingJobSync.updatedBy || "Another user"} updated the jobs list.`
+                  : null
+              }
+              onRefreshFromSync={refreshFromSyncBanner}
             />
           )}
 
