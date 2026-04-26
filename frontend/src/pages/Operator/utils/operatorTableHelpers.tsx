@@ -194,7 +194,7 @@ export const renderOperatorCustomerCell = (
   const sourceEntries = row.kind === "parent" ? row.tableRow.entries : [row.entry];
   const activeCapture = sourceEntries
     .map((entry) => getActiveOperatorLogSummary(entry, activeRunsByJobId || new Map()))
-    .find(Boolean);
+    .find(Boolean) || getLatestActiveCaptureSummary(sourceEntries);
   return (
     <div className="operator-customer-cell">
       {!isChild && row.hasChildren && (

@@ -83,7 +83,7 @@ export const getUserDesignationFromToken = (): string | null => {
   if (role === "ADMIN") return "Admin";
   if (role === "ACCOUNTANT") return "Accountant";
   if (role === "PROGRAMMER") return "Programmer";
-  if (role === "OPERATOR") return "Operator";
+  if (role === "OPERATOR") return "OPS";
   if (role === "QC") return "QC";
   return null;
 };

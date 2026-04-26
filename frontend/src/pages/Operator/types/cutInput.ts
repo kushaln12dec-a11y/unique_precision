@@ -21,6 +21,7 @@ export type QuantityInputData = {
   startTimeEpochMs: number | null;
   endTime: string;
   endTimeEpochMs: number | null;
+  workedDurationSeconds: number;
   machineHrs: string;
   machineNumber: string;
   opsName: string[];
@@ -47,6 +48,7 @@ export const createEmptyQuantityInputData = (): QuantityInputData => ({
   startTimeEpochMs: null,
   endTime: "",
   endTimeEpochMs: null,
+  workedDurationSeconds: 0,
   machineHrs: "",
   machineNumber: "",
   opsName: [],

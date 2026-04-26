@@ -164,7 +164,7 @@
   }
 }
 
-@media (max-width: 1200px) {
+@media (min-width: 1024px) and (max-width: 1200px) {
   .cut-section-body {
     grid-template-columns: minmax(0, 1fr);
     gap: 0.9rem;
@@ -192,25 +192,28 @@
   }
 
   .cut-section-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     grid-template-areas:
-      "customer"
-      "rate"
-      "material"
-      "programref"
-      "description"
-      "cut"
-      "thickness"
-      "pass"
-      "setting"
-      "qty"
-      "sedm"
-      "totalhrs"
-      "estimated"
-      "totalamount"
-      "remark"
-      "actions";
-    gap: 0.7rem;
+      "customer rate material"
+      "programref description description"
+      "cut thickness pass"
+      "setting qty sedm"
+      "totalhrs estimated totalamount"
+      "remark remark remark"
+      "actions actions actions";
+    gap: 0.75rem;
+  }
+
+  .cut-section-grid.cut-section-grid-non-admin {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-areas:
+      "customer material programref"
+      "description description description"
+      "cut thickness pass"
+      "setting qty sedm"
+      "totalhrs estimated ."
+      "remark remark remark"
+      "actions actions actions";
   }
 
   .operation-row-item,
@@ -343,24 +346,27 @@
   }
 
   .cut-section-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     grid-template-areas:
-      "customer"
-      "rate"
-      "material"
-      "programref"
-      "description"
-      "cut"
-      "thickness"
-      "pass"
-      "setting"
-      "qty"
-      "sedm"
-      "totalhrs"
-      "estimated"
-      "totalamount"
-      "remark"
-      "actions";
+      "customer rate material"
+      "programref description description"
+      "cut thickness pass"
+      "setting qty sedm"
+      "totalhrs estimated totalamount"
+      "remark remark remark"
+      "actions actions actions";
+  }
+
+  .cut-section-grid.cut-section-grid-non-admin {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-areas:
+      "customer material programref"
+      "description description description"
+      "cut thickness pass"
+      "setting qty sedm"
+      "totalhrs estimated ."
+      "remark remark remark"
+      "actions actions actions";
   }
 
   .cut-section-actions,

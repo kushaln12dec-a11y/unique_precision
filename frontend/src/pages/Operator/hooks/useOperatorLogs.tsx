@@ -51,7 +51,7 @@ export const useOperatorLogs = ({
       const firstName = String(u.firstName || "").trim();
       const emailLocalPart = getEmailLocalPart(u.email);
       const role = String(u.role || "").toUpperCase();
-      const designation = role === "ADMIN" ? "Admin" : role === "OPERATOR" ? "Operator" : role;
+      const designation = role === "ADMIN" ? "Admin" : role === "OPERATOR" ? "OPS" : role;
       if (fullName) map.set(fullName.toLowerCase(), designation);
       if (firstName) map.set(firstName.toLowerCase(), designation);
       if (emailLocalPart) map.set(emailLocalPart.toLowerCase(), designation);
@@ -159,7 +159,7 @@ export const useOperatorLogs = ({
       const headers = ["User", "MACH #", "Job Ref", "Description", "Summary", "Started at", "Ended at", "Shift", "Duration", "Estimated", "Overtime", "Qty Split", "Idle Time", "Remark", "Revenue", "Revenue Split", "Status"];
       const rows = filteredLogs.map((row) => {
         const name = getLogUserDisplayName(row.userName, row.userEmail, "");
-        const designation = designationByUserName.get(name.toLowerCase()) || "Operator";
+        const designation = designationByUserName.get(name.toLowerCase()) || "OPS";
         const revenueByQuantity = Object.entries(((row.metadata as any)?.revenueByQuantity || {}) as Record<string, number>)
           .map(([qty, amount]) => `Q${qty}: Rs. ${Number(amount || 0).toFixed(2)}`)
           .join(" | ");

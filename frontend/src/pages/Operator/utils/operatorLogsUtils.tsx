@@ -37,7 +37,7 @@ export const buildOperatorLogsColumns = ({
     sortable: false,
     render: (row) => {
       const name = getLogUserDisplayName(row.userName, row.userEmail, "Operator");
-      const designation = designationByUserName.get(name.toLowerCase()) || "Operator";
+      const designation = designationByUserName.get(name.toLowerCase()) || "OPS";
       return (
         <div className="log-user-stack log-user-badge-stack log-user-inline-stack">
           <span className="log-user-initial-badge" title={name.toUpperCase()}>{getInitials(name)}</span>
@@ -193,7 +193,7 @@ export const buildOperatorLogFilter =
       return matchesSearchQuery(
         [
           normalizedUserName,
-          designationByUserName.get(getLogUserDisplayName(log.userName, log.userEmail, "Operator").toLowerCase()) || "Operator",
+          designationByUserName.get(getLogUserDisplayName(log.userName, log.userEmail, "Operator").toLowerCase()) || "OPS",
           formatMachineLabel(getMachineNumberForLog(log)),
           formatOperatorWorkItem(log.refNumber || log.workItemTitle),
           log.jobDescription || "",
