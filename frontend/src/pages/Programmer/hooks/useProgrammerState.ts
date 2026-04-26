@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { getJobsByGroupId, getProgrammerJobs } from "../../../services/jobApi";
 import type { JobEntry } from "../../../types/job";
@@ -57,29 +57,28 @@ export const useProgrammerState = (
   const editGroupIdFromPath = editMatch?.[1] ? String(editMatch[1]) : "";
   const cloneGroupIdFromPath = cloneMatch?.[1] ? String(cloneMatch[1]) : "";
 
-  useEffect(() => {
-    const fetchJobs = async () => {
-      try {
-        setLoadingJobs(true);
-        const fetchedJobs = await getProgrammerJobs(
-          filters, 
-          customerFilter, 
-          createdByFilter, 
-          criticalFilter ? true : undefined,
-          descriptionFilter
-        );
-        setJobs(fetchedJobs);
-      } catch (error) {
-        console.error("Failed to fetch jobs", error);
-        const stored = localStorage.getItem(STORAGE_KEY);
-        if (stored) {
-          try {
-            const parsed = JSON.parse(stored) as JobEntry[];
-            if (Array.isArray(parsed)) {
-              let filtered = parsed;
-              if (criticalFilter) {
-                filtered = parsed.filter((job) => job.critical === true);
-              }
+  const refreshJobs = useCallback(async () => {
+    try {
+      setLoadingJobs(true);
+      const fetchedJobs = await getProgrammerJobs(
+        filters,
+        customerFilter,
+        createdByFilter,
+        criticalFilter ? true : undefined,
+        descriptionFilter
+      );
+      setJobs(fetchedJobs);
+    } catch (error) {
+      console.error("Failed to fetch jobs", error);
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored) as JobEntry[];
+          if (Array.isArray(parsed)) {
+            let filtered = parsed;
+            if (criticalFilter) {
+              filtered = parsed.filter((job) => job.critical === true);
+            }
             setJobs(
               filtered.map((job) => ({
                 ...job,
@@ -87,18 +86,19 @@ export const useProgrammerState = (
                 groupId: String(job.groupId ?? job.id),
               }))
             );
-            }
-          } catch (parseError) {
-            console.error("Failed to parse jobs from storage", parseError);
           }
+        } catch (parseError) {
+          console.error("Failed to parse jobs from storage", parseError);
         }
       }
-      finally {
-        setLoadingJobs(false);
-      }
-    };
-    fetchJobs();
-  }, [filters, customerFilter, descriptionFilter, createdByFilter, criticalFilter]);
+    } finally {
+      setLoadingJobs(false);
+    }
+  }, [createdByFilter, criticalFilter, customerFilter, descriptionFilter, filters]);
+
+  useEffect(() => {
+    void refreshJobs();
+  }, [refreshJobs]);
 
   useEffect(() => {
     if (isEditRoute && editGroupIdFromPath) {
@@ -264,6 +264,7 @@ export const useProgrammerState = (
     isNewJobRoute,
     isEditRoute,
     isCloneRoute,
+    refreshJobs,
     handleNewJob,
     handleCancel,
   };

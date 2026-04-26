@@ -72,7 +72,7 @@ export const getJobById = async (req: Request, res: Response, next: NextFunction
 export const createJob = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const payload = createJobsSchema.parse(req.body);
-    const jobs = await jobService.createJobs(payload);
+    const jobs = await jobService.createJobs(payload, req.user);
     res.status(201).json(jobs);
   } catch (error) {
     next(error);
@@ -99,7 +99,7 @@ export const updateGroupQcDecision = async (req: Request, res: Response, next: N
 
 export const updateGroupQcReportClosed = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const jobs = await jobService.updateGroupQcReportClosed(getParam(req.params.groupId, "groupId"), req.body);
+    const jobs = await jobService.updateGroupQcReportClosed(getParam(req.params.groupId, "groupId"), req.body, req.user);
     res.json(jobs);
   } catch (error) {
     next(error);
@@ -108,7 +108,7 @@ export const updateGroupQcReportClosed = async (req: Request, res: Response, nex
 
 export const deleteJob = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const result = await jobService.deleteJob(getParam(req.params.id, "job id"));
+    const result = await jobService.deleteJob(getParam(req.params.id, "job id"), req.user);
     res.json(result);
   } catch (error) {
     next(error);
@@ -117,7 +117,7 @@ export const deleteJob = async (req: Request, res: Response, next: NextFunction)
 
 export const deleteJobsByGroupId = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const result = await jobService.deleteJobsByGroupId(getParam(req.params.groupId, "groupId"));
+    const result = await jobService.deleteJobsByGroupId(getParam(req.params.groupId, "groupId"), req.user);
     res.json(result);
   } catch (error) {
     next(error);

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getUsers } from "../../../services/userApi";
 import { getOperatorJobs } from "../../../services/jobApi";
@@ -36,43 +36,43 @@ export const useOperatorData = (
     }
   }, [navigate]);
 
-  useEffect(() => {
-    const fetchJobs = async () => {
-      try {
-        setLoadingJobs(true);
-        const fetchedJobs = await getOperatorJobs(
-          filters,
-          customerFilter,
-          createdByFilter,
-          assignedToFilter,
-          descriptionFilter
-        );
-        setJobs(fetchedJobs);
-      } catch (error) {
-        console.error("Failed to fetch jobs", error);
-        // Fallback to localStorage if API fails
-        const stored = localStorage.getItem(STORAGE_KEY);
-        if (stored) {
-          try {
-            const parsed = JSON.parse(stored) as JobEntry[];
-            if (Array.isArray(parsed)) {
-              setJobs(
-                parsed.map((job) => ({
-                  ...job,
-                  assignedTo: job.assignedTo || "Unassign",
-                }))
-              );
-            }
-          } catch (parseError) {
-            console.error("Failed to parse jobs from storage", parseError);
+  const refreshJobs = useCallback(async () => {
+    try {
+      setLoadingJobs(true);
+      const fetchedJobs = await getOperatorJobs(
+        filters,
+        customerFilter,
+        createdByFilter,
+        assignedToFilter,
+        descriptionFilter
+      );
+      setJobs(fetchedJobs);
+    } catch (error) {
+      console.error("Failed to fetch jobs", error);
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored) as JobEntry[];
+          if (Array.isArray(parsed)) {
+            setJobs(
+              parsed.map((job) => ({
+                ...job,
+                assignedTo: job.assignedTo || "Unassign",
+              }))
+            );
           }
+        } catch (parseError) {
+          console.error("Failed to parse jobs from storage", parseError);
         }
-      } finally {
-        setLoadingJobs(false);
       }
-    };
-    fetchJobs();
-  }, [filters, customerFilter, descriptionFilter, createdByFilter, assignedToFilter]);
+    } finally {
+      setLoadingJobs(false);
+    }
+  }, [assignedToFilter, createdByFilter, customerFilter, descriptionFilter, filters]);
+
+  useEffect(() => {
+    void refreshJobs();
+  }, [refreshJobs]);
 
   useEffect(() => {
     const fetchOperators = async () => {
@@ -108,5 +108,6 @@ export const useOperatorData = (
     users,
     canAssign,
     userRole,
+    refreshJobs,
   };
 };

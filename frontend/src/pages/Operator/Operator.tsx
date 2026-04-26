@@ -19,6 +19,7 @@ import { useOperatorTableData } from "./hooks/useOperatorTableData.tsx";
 import { useOperatorDashboardActivity } from "./hooks/useOperatorDashboardActivity";
 import type { JobEntry } from "../../types/job";
 import type { OperatorTableRow } from "./types";
+import { useJobSync } from "../../hooks/useJobSync";
 import "../RoleBoard.css";
 import "../Programmer/Programmer.css";
 import "./Operator.css";
@@ -42,6 +43,7 @@ const Operator = () => {
     variant: "info",
     visible: false,
   });
+  const [operatorGridRefreshNonce, setOperatorGridRefreshNonce] = useState(0);
   const qaTableDataRef = useRef<OperatorTableRow[]>([]);
   const { handleViewEntry, handleViewJob, setShowJobViewModal, setViewingJob, showJobViewModal, viewingJob } =
     useOperatorJobView();
@@ -66,13 +68,31 @@ const Operator = () => {
     handleRemoveFilter,
   } = useOperatorFilters();
 
-  const { jobs, loadingJobs, setJobs, operatorUsers, users, canAssign } = useOperatorData(
+  const { jobs, loadingJobs, setJobs, operatorUsers, users, canAssign, refreshJobs } = useOperatorData(
     filters,
     customerFilter,
     descriptionFilter,
     createdByFilter,
     assignedToFilter
   );
+
+  const refreshOperatorBoard = useCallback(() => {
+    void refreshJobs();
+    setOperatorGridRefreshNonce((prev) => prev + 1);
+  }, [refreshJobs]);
+
+  useJobSync((event) => {
+    if (event.updatedBy && event.updatedBy === currentUserDisplayName) {
+      return;
+    }
+    refreshOperatorBoard();
+    setToast({
+      message: `${event.updatedBy || "Another user"} updated jobs. Refreshing queue...`,
+      variant: "info",
+      visible: true,
+    });
+    window.setTimeout(() => setToast((prev) => ({ ...prev, visible: false })), 2500);
+  }, activeTab === "jobs");
 
   const toggleGroup = useCallback((groupId: string) => {
     setExpandedGroups((prev) => {
@@ -210,7 +230,7 @@ const Operator = () => {
           setOperatorGridJobs={setOperatorGridJobs}
           operatorGridRows={operatorGridRows}
           expandedGroups={expandedGroups}
-          createdByRefreshKey={`${customerFilter}|${descriptionFilter}|${createdByFilter}|${assignedToFilter}|${JSON.stringify(filters)}`}
+          createdByRefreshKey={`${customerFilter}|${descriptionFilter}|${createdByFilter}|${assignedToFilter}|${JSON.stringify(filters)}|${operatorGridRefreshNonce}`}
           operatorLogSearch={operatorLogSearch}
           setOperatorLogSearch={setOperatorLogSearch}
           operatorLogUser={operatorLogUser}

@@ -14,6 +14,7 @@ import inspectionReportsRoutes from "./routes/inspectionReports";
 import uploadRoutes from "./routes/upload";
 import dashboardRoutes from "./routes/dashboard";
 import debugRoutes from "./routes/debug";
+import sseRoutes from "./routes/sse";
 import { authMiddleware } from "./middleware/auth";
 import { errorHandler, jsonErrorHandler } from "./middleware/error.middleware";
 import { apiRateLimiter, authRateLimiter } from "./middleware/rateLimit.middleware";
@@ -68,6 +69,9 @@ app.use("/api/inspection-reports", inspectionReportsRoutes);
 
 // Dashboard routes
 app.use("/api/dashboard", dashboardRoutes);
+
+// SSE routes
+app.use("/api/sse", sseRoutes);
 
 // Debug routes
 app.use("/api/debug", debugRoutes);

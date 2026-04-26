@@ -15,6 +15,7 @@ import {
   resolveReqUserName,
 } from "../routes/jobsShared";
 import { buildCreateJobsTransaction, groupJobsByGroupId } from "./job.service.helpers";
+import { emitJobsUpdated } from "../lib/sseEmitter";
 
 type JobsQuery = Record<string, unknown>;
 
@@ -181,9 +182,16 @@ export const getJobById = async (id: string) => {
   return mapJob(job);
 };
 
-export const createJobs = async (payload: any[] | any) => {
+export const createJobs = async (payload: any[] | any, reqUser?: any) => {
   const jobCreateSpecs = await buildCreateJobsTransaction(payload);
   const createdJobs = await prisma.$transaction(jobCreateSpecs.map((spec) => prisma.job.create(spec)));
+
+  const uniqueGroupIds = Array.from(new Set(createdJobs.map((job) => String(job.groupId))));
+  emitJobsUpdated({
+    ...(uniqueGroupIds.length === 1 ? { groupId: uniqueGroupIds[0] } : {}),
+    updatedBy: resolveReqUserName(reqUser) || String((Array.isArray(payload) ? payload[0] : payload)?.createdBy || "").trim(),
+    source: "programmer:create",
+  });
 
   const result = createdJobs.map(mapJob);
   return Array.isArray(payload) ? result : result[0];
@@ -226,6 +234,13 @@ export const updateJob = async (id: string, body: any, reqUser?: any) => {
       }
 
       return updatedJob;
+    });
+
+    emitJobsUpdated({
+      groupId: job.groupId,
+      jobId: job.id,
+      updatedBy: actorName,
+      source: "programmer:update",
     });
 
     return mapJob(job);
@@ -306,10 +321,16 @@ export const updateGroupQcDecision = async (
     });
   }
 
+  emitJobsUpdated({
+    groupId,
+    updatedBy,
+    source: "qc:decision",
+  });
+
   return updatedJobs.map(mapJob);
 };
 
-export const updateGroupQcReportClosed = async (groupIdParam: string, body: { closed?: boolean }) => {
+export const updateGroupQcReportClosed = async (groupIdParam: string, body: { closed?: boolean }, reqUser?: any) => {
   const shouldClose = body.closed !== undefined ? Boolean(body.closed) : true;
   const groupId = parseGroupIdParam(groupIdParam);
   if (groupId === null) {
@@ -331,12 +352,33 @@ export const updateGroupQcReportClosed = async (groupIdParam: string, body: { cl
     include: jobInclude,
   });
 
+  emitJobsUpdated({
+    groupId,
+    updatedBy: resolveReqUserName(reqUser),
+    source: "qc:report-close",
+  });
+
   return updatedJobs.map(mapJob);
 };
 
-export const deleteJob = async (id: string) => {
+export const deleteJob = async (id: string, reqUser?: any) => {
   try {
+    const existingJob = await prisma.job.findUnique({
+      where: { id },
+      select: { id: true, groupId: true },
+    });
+
+    if (!existingJob) {
+      throw new HttpError(404, "Job not found");
+    }
+
     await prisma.job.delete({ where: { id } });
+    emitJobsUpdated({
+      groupId: existingJob.groupId,
+      jobId: existingJob.id,
+      updatedBy: resolveReqUserName(reqUser),
+      source: "programmer:delete",
+    });
     return { message: "Job deleted successfully" };
   } catch (error: any) {
     if (error?.code === "P2025") {
@@ -347,13 +389,20 @@ export const deleteJob = async (id: string) => {
   }
 };
 
-export const deleteJobsByGroupId = async (groupIdParam: string) => {
+export const deleteJobsByGroupId = async (groupIdParam: string, reqUser?: any) => {
   const groupId = parseGroupIdParam(groupIdParam);
   if (groupId === null) {
     throw new HttpError(400, "Invalid groupId");
   }
 
   const result = await prisma.job.deleteMany({ where: { groupId } });
+  if (result.count > 0) {
+    emitJobsUpdated({
+      groupId,
+      updatedBy: resolveReqUserName(reqUser),
+      source: "programmer:delete-group",
+    });
+  }
   return {
     message: "Jobs deleted successfully",
     deletedCount: result.count,

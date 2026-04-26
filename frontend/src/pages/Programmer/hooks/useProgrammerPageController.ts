@@ -161,6 +161,14 @@ export const useProgrammerPageController = ({
     navigate("/programmer", { replace: true, state: { refreshedAt: Date.now() } });
   }, [handleCancelState]);
 
+  const refreshProgrammerGrid = useCallback(() => {
+    setProgrammerGridJobs([]);
+    setExpandedGroups(new Set());
+    setSelectedJobIds(new Set());
+    setSelectedChildRows(new Set());
+    setProgrammerGridRefreshKey((prev) => prev + 1);
+  }, []);
+
   const jobsFetchPage = useCallback(async (offset: number, limit: number) => {
     const page = await getProgrammerJobsPage(
       filters,
@@ -218,14 +226,10 @@ export const useProgrammerPageController = ({
   useEffect(() => {
     if (previousProgrammerFormRouteRef.current && !isProgrammerFormRoute) {
       setSavingJob(false);
-      setProgrammerGridJobs([]);
-      setExpandedGroups(new Set());
-      setSelectedJobIds(new Set());
-      setSelectedChildRows(new Set());
-      setProgrammerGridRefreshKey((prev) => prev + 1);
+      refreshProgrammerGrid();
     }
     previousProgrammerFormRouteRef.current = isProgrammerFormRoute;
-  }, [isProgrammerFormRoute, setSavingJob]);
+  }, [isProgrammerFormRoute, refreshProgrammerGrid, setSavingJob]);
 
   return {
     users,
@@ -267,6 +271,7 @@ export const useProgrammerPageController = ({
     handleCloneJob,
     handleNewJob,
     handleCancel,
+    refreshProgrammerGrid,
     jobsFetchPage,
     logsFetchPage,
   };

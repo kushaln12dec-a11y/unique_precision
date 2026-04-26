@@ -17,6 +17,8 @@ import QcFilters from "./components/QcFilters";
 import QcReportTemplateModal from "./components/QcReportTemplateModal";
 import { createQcColumns } from "./qcColumns";
 import { buildQcRows, formatDateForTemplate, getDrawingNo, getPrimaryOperatorName, getQcRowSearchValues, type QcRow } from "./qcUtils";
+import { useJobSync } from "../../hooks/useJobSync";
+import { getUserDisplayNameFromToken } from "../../utils/auth";
 import "../RoleBoard.css";
 import "../Programmer/Programmer.css";
 import "./QC.css";
@@ -44,25 +46,34 @@ const QC = () => {
     setToast({ message, variant, visible: true });
     window.setTimeout(() => setToast((prev) => ({ ...prev, visible: false })), 2500);
   }, []);
+  const currentUserDisplayName = (getUserDisplayNameFromToken() || "").trim().toUpperCase();
+
+  const loadQcJobs = useCallback(async () => {
+    try {
+      setLoading(true);
+      const page = await getQcJobsPage({ offset: 0, limit: 100 });
+      setQcGridJobs(page.items);
+    } catch {
+      showToast("Failed to load QC queue.", "error");
+    } finally {
+      setLoading(false);
+    }
+  }, [showToast]);
 
   useEffect(() => {
     if (!localStorage.getItem("token")) navigate("/login");
   }, [navigate]);
 
   useEffect(() => {
-    const fetchJobs = async () => {
-      try {
-        setLoading(true);
-        const page = await getQcJobsPage({ offset: 0, limit: 100 });
-        setQcGridJobs(page.items);
-      } catch {
-        showToast("Failed to load QC queue.", "error");
-      } finally {
-        setLoading(false);
-      }
-    };
-    void fetchJobs();
-  }, [showToast]);
+    void loadQcJobs();
+  }, [loadQcJobs]);
+
+  useJobSync((event) => {
+    if (event.updatedBy && event.updatedBy === currentUserDisplayName) {
+      return;
+    }
+    void loadQcJobs();
+  });
 
   const tableData = useMemo(() => buildQcRows(qcGridJobs), [qcGridJobs]);
   const filteredTableData = useMemo(() => {
