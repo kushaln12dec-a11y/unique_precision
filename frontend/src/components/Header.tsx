@@ -26,7 +26,6 @@ const Header = ({ title, onNavigate, breadcrumbsOverride }: HeaderProps) => {
   const empId = getUserEmpIdFromToken();
   const designation = getUserDesignationFromToken();
   const [showNotificationsModal, setShowNotificationsModal] = useState(false);
-  const shouldPollHeaderAlerts = !location.pathname.startsWith("/operator");
 
   const breadcrumbs = useMemo(() => {
     return resolveHeaderBreadcrumbs({
@@ -48,7 +47,7 @@ const Header = ({ title, onNavigate, breadcrumbsOverride }: HeaderProps) => {
 
   const { notifications, unreadCount } = useHeaderNotifications({
     currentUserName: displayName || "",
-    shouldPoll: shouldPollHeaderAlerts,
+    isActive: showNotificationsModal,
   });
 
   return (
