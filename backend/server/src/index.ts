@@ -1,7 +1,9 @@
+import { createServer } from "http";
 import { connectDB } from "./config/database";
 import { loadEnv } from "./config/env";
 import { initDB } from "./config/initDB";
 import app from "./app";
+import { initSocketServer } from "./lib/socket";
 
 loadEnv();
 
@@ -15,13 +17,16 @@ const startServer = async () => {
     await initDB();
   }
 
-  const server = app.listen(PORT, "0.0.0.0", () => {
+  const httpServer = createServer(app);
+  initSocketServer(httpServer);
+
+  httpServer.listen(PORT, "0.0.0.0", () => {
     console.log(`Server running on port ${PORT}`);
     console.log(`JWT_SECRET: ${process.env.JWT_SECRET ? "Set" : "NOT SET - Login will fail!"}`);
     console.log(`DATABASE_URL: ${process.env.DATABASE_URL ? "Set" : "NOT SET"}`);
   });
 
-  server.on("error", (error) => {
+  httpServer.on("error", (error) => {
     console.error("Server listen error:", error);
     process.exit(1);
   });

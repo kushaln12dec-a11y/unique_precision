@@ -4,7 +4,7 @@ import { prisma } from "../lib/prisma";
 import { parseOperatorDateTime } from "../utils/dateTime";
 import { mapJob } from "../utils/prismaMappers";
 import { resolveStoredFile } from "../utils/objectStorage";
-import { emitJobsUpdated } from "../lib/sseEmitter";
+import { emitJobsUpdated } from "../lib/socket";
 import {
   buildCaptureEntry,
   buildOperatorLogPayload,

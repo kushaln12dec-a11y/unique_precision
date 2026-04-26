@@ -15,7 +15,7 @@ import {
   resolveReqUserName,
 } from "../routes/jobsShared";
 import { buildCreateJobsTransaction, groupJobsByGroupId } from "./job.service.helpers";
-import { emitJobsUpdated } from "../lib/sseEmitter";
+import { emitJobsUpdated } from "../lib/socket";
 
 type JobsQuery = Record<string, unknown>;
 
