@@ -10,7 +10,6 @@ import { getParentRowClassName, getRowClassName } from "../utils/priorityUtils";
 
 type Props = {
   savingJob: boolean;
-  loadingJobs: boolean;
   programmerGridJobs: JobEntry[];
   filters: FilterValues;
   customerFilter: string;
@@ -43,7 +42,6 @@ type Props = {
 
 export const ProgrammerJobsSection: React.FC<Props> = ({
   savingJob,
-  loadingJobs,
   programmerGridJobs,
   filters,
   customerFilter,
@@ -65,7 +63,6 @@ export const ProgrammerJobsSection: React.FC<Props> = ({
   onRefreshFromSync,
 }) => {
   if (savingJob) return <AppLoader message="Saving job and loading programmer jobs..." />;
-  if (loadingJobs && programmerGridJobs.length === 0) return <AppLoader message="Loading programmer jobs..." />;
 
   return (
     <>

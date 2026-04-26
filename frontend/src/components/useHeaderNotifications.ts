@@ -15,10 +15,10 @@ const HEADER_ALERT_FETCH_PAGE_SIZE = 100;
 
 export const useHeaderNotifications = ({
   currentUserName,
-  shouldPoll,
+  isActive,
 }: {
   currentUserName: string;
-  shouldPoll: boolean;
+  isActive: boolean;
 }) => {
   const [activeOperatorRuns, setActiveOperatorRuns] = useState<EmployeeLog[]>([]);
   const [operatorGridJobs, setOperatorGridJobs] = useState<JobEntry[]>([]);
@@ -26,7 +26,7 @@ export const useHeaderNotifications = ({
   const [personalActivityLogs, setPersonalActivityLogs] = useState<EmployeeLog[]>([]);
 
   useEffect(() => {
-    if (!shouldPoll) {
+    if (!isActive) {
       setActiveOperatorRuns([]);
       setOperatorGridJobs([]);
       setAssignmentLogs([]);
@@ -81,7 +81,7 @@ export const useHeaderNotifications = ({
       isMounted = false;
       window.clearInterval(intervalId);
     };
-  }, [shouldPoll]);
+  }, [isActive]);
 
   const notifications = useMemo<HeaderNotificationItem[]>(() => {
     const assignmentItems = buildAssignmentNotificationItems({

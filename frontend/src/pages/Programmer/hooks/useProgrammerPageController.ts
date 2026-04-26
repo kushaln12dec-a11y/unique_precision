@@ -16,9 +16,6 @@ import type { TableRow } from "../utils/jobDataTransform";
 
 type UseProgrammerPageControllerParams = {
   currentPathname: string;
-  isNewJobRoute: boolean;
-  isEditRoute: boolean;
-  isCloneRoute: boolean;
   filters: FilterValues;
   customerFilter: string;
   descriptionFilter: string;
@@ -28,7 +25,6 @@ type UseProgrammerPageControllerParams = {
   cutsLength: number;
   editGroupError: string | null;
   editingGroupId: string | null;
-  routeEditGroupId: string | null;
   handleNewJobState: () => void;
   handleCancelState: () => void;
   setToast: React.Dispatch<
@@ -38,14 +34,10 @@ type UseProgrammerPageControllerParams = {
       visible: boolean;
     }>
   >;
-  setSavingJob: React.Dispatch<React.SetStateAction<boolean>>;
 };
 
 export const useProgrammerPageController = ({
   currentPathname,
-  isNewJobRoute,
-  isEditRoute,
-  isCloneRoute,
   filters,
   customerFilter,
   descriptionFilter,
@@ -55,11 +47,9 @@ export const useProgrammerPageController = ({
   cutsLength,
   editGroupError,
   editingGroupId,
-  routeEditGroupId,
   handleNewJobState,
   handleCancelState,
   setToast,
-  setSavingJob,
 }: UseProgrammerPageControllerParams) => {
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(() => new Set());
   const [users, setUsers] = useState<User[]>([]);
@@ -76,12 +66,18 @@ export const useProgrammerPageController = ({
   const [logSearch, setLogSearch] = useState("");
   const [logStatus, setLogStatus] = useState<"" | "IN_PROGRESS" | "COMPLETED" | "REJECTED">("");
   const [logUserId, setLogUserId] = useState("");
-  const previousProgrammerFormRouteRef = useRef(false);
   const filtersKey = useMemo(() => JSON.stringify(filters || {}), [filters]);
+
+  const isNewJobRoute = currentPathname.startsWith("/programmer/newjob");
+  const isEditRoute = currentPathname.startsWith("/programmer/edit/");
+  const isCloneRoute = currentPathname.startsWith("/programmer/clone/");
+  const routeEditMatch = currentPathname.match(/^\/programmer\/edit\/([^/]+)$/);
+  const routeEditGroupId = routeEditMatch?.[1] ? String(routeEditMatch[1]) : null;
 
   const activeFilterCount = useMemo(() => countActiveFilters(filters), [filters]);
   const isProgrammerListRoute = /^\/programmer\/?$/.test(currentPathname);
   const isProgrammerFormRoute = isNewJobRoute || isEditRoute || isCloneRoute;
+  const previousProgrammerFormRouteRef = useRef(isProgrammerFormRoute);
   const isEditFormReady = isEditRoute && Boolean(routeEditGroupId) && editingGroupId === routeEditGroupId && cutsLength > 0;
   const shouldRenderJobForm = isNewJobRoute || isCloneRoute || (isEditRoute && isEditFormReady);
   const shouldRenderEditLoadingState = isEditRoute && !isEditFormReady && !editGroupError;
@@ -225,11 +221,10 @@ export const useProgrammerPageController = ({
 
   useEffect(() => {
     if (previousProgrammerFormRouteRef.current && !isProgrammerFormRoute) {
-      setSavingJob(false);
       refreshProgrammerGrid();
     }
     previousProgrammerFormRouteRef.current = isProgrammerFormRoute;
-  }, [isProgrammerFormRoute, refreshProgrammerGrid, setSavingJob]);
+  }, [isProgrammerFormRoute, refreshProgrammerGrid]);
 
   return {
     users,
