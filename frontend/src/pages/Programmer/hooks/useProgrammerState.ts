@@ -250,6 +250,7 @@ export const useProgrammerState = (
   };
 
   return {
+    currentPathname: location.pathname,
     jobs,
     loadingJobs,
     loadingEditGroup,

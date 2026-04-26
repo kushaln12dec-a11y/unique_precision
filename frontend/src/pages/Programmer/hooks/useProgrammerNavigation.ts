@@ -1,11 +1,12 @@
-import { useCallback } from "react";
+import { useCallback, type Dispatch, type SetStateAction } from "react";
 import type { NavigateFunction } from "react-router-dom";
 
 type UseProgrammerNavigationParams = {
   isProgrammerFormRoute: boolean;
   navigate: NavigateFunction;
   handleCancelState: () => void;
-  setSavingJob: React.Dispatch<React.SetStateAction<boolean>>;
+  setSavingJob: Dispatch<SetStateAction<boolean>>;
+  cancelSave: () => void;
 };
 
 const buildRefreshState = () => ({ refreshedAt: Date.now() });
@@ -15,18 +16,18 @@ export const useProgrammerNavigation = ({
   navigate,
   handleCancelState,
   setSavingJob,
+  cancelSave,
 }: UseProgrammerNavigationParams) => {
   const navigateToProgrammerList = useCallback(() => {
-    setSavingJob(false);
-    handleCancelState();
     navigate("/programmer", {
       replace: true,
       state: buildRefreshState(),
     });
-  }, [handleCancelState, navigate, setSavingJob]);
+  }, [navigate]);
 
   const handleProgrammerNavigate = useCallback((path: string) => {
     if (isProgrammerFormRoute) {
+      cancelSave();
       setSavingJob(false);
       handleCancelState();
       navigate(path, {
@@ -37,7 +38,7 @@ export const useProgrammerNavigation = ({
     }
 
     navigate(path);
-  }, [handleCancelState, isProgrammerFormRoute, navigate, setSavingJob]);
+  }, [cancelSave, handleCancelState, isProgrammerFormRoute, navigate, setSavingJob]);
 
   return {
     handleProgrammerNavigate,

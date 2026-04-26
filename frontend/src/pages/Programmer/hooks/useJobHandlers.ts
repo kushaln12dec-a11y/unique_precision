@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { getUserDisplayNameFromToken } from "../../../utils/auth";
 import { createJobs, updateJobsByGroupId, deleteJobsByGroupId } from "../../../services/jobApi";
@@ -17,6 +17,7 @@ type UseJobHandlersProps = {
     React.SetStateAction<{ message: string; variant: "success" | "error" | "info"; visible: boolean }>
   >;
   setSavingJob: React.Dispatch<React.SetStateAction<boolean>>;
+  handleCancelState: () => void;
   totals: CalculationResult[];
 };
 
@@ -28,12 +29,19 @@ export const useJobHandlers = ({
   setJobs,
   setToast,
   setSavingJob,
+  handleCancelState,
   totals,
 }: UseJobHandlersProps) => {
   const navigate = useNavigate();
+  const saveCancelledRef = useRef(false);
 
   const finishSaveAndReturnToProgrammerTable = useCallback((message: string) => {
     setSavingJob(false);
+    handleCancelState();
+
+    if (saveCancelledRef.current) {
+      return;
+    }
 
     navigate("/programmer", {
       replace: true,
@@ -42,7 +50,11 @@ export const useJobHandlers = ({
 
     setToast({ message, variant: "success", visible: true });
     window.setTimeout(() => setToast({ message: "", variant: "success", visible: false }), 3000);
-  }, [navigate, setSavingJob, setToast]);
+  }, [handleCancelState, navigate, setSavingJob, setToast]);
+
+  const cancelSave = useCallback(() => {
+    saveCancelledRef.current = true;
+  }, []);
 
   const handleSaveJob = useCallback(async () => {
     const invalidCustomerIndex = cuts.findIndex((cut) => !isValidCustomerUpcCode(cut.customer));
@@ -56,6 +68,7 @@ export const useJobHandlers = ({
       return;
     }
 
+    saveCancelledRef.current = false;
     setSavingJob(true);
     try {
       const displayName = getUserDisplayNameFromToken();
@@ -92,6 +105,9 @@ export const useJobHandlers = ({
 
       if (editingGroupId) {
         const updatedJobs = await updateJobsByGroupId(editingGroupId, entries);
+        if (saveCancelledRef.current) {
+          return;
+        }
         setJobs((prev) => [
           ...updatedJobs,
           ...prev.filter((job) => String(job.groupId) !== editingGroupId),
@@ -99,24 +115,30 @@ export const useJobHandlers = ({
         finishSaveAndReturnToProgrammerTable("Job updated successfully!");
       } else {
         const createdJobs = await createJobs(entries);
-        setJobs((prev) => [...createdJobs, ...prev]);
-
-        try {
-          await completeProgrammerJobLog({
-            jobGroupId: groupId,
-            refNumber: createdJobs[0]?.refNumber || "",
-            customer: createdJobs[0]?.customer || "",
-            description: createdJobs[0]?.description || "",
-            settingsCount: createdJobs.length,
-            quantityCount: createdJobs.reduce((sum, entry) => sum + Math.max(0, Number(entry.qty || 0)), 0),
-          });
-        } catch (logError) {
+        void completeProgrammerJobLog({
+          jobGroupId: groupId,
+          refNumber: createdJobs[0]?.refNumber || "",
+          customer: createdJobs[0]?.customer || "",
+          description: createdJobs[0]?.description || "",
+          settingsCount: createdJobs.length,
+          quantityCount: createdJobs.reduce((sum, entry) => sum + Math.max(0, Number(entry.qty || 0)), 0),
+        }).catch((logError) => {
           console.error("Failed to complete programmer job log", logError);
+        });
+
+        if (saveCancelledRef.current) {
+          return;
         }
+        setJobs((prev) => [...createdJobs, ...prev]);
 
         finishSaveAndReturnToProgrammerTable("Job created successfully!");
       }
     } catch (error) {
+      setSavingJob(false);
+
+      if (saveCancelledRef.current) {
+        return;
+      }
       console.error("Failed to save job", error);
       const message =
         error instanceof Error && error.message
@@ -124,7 +146,6 @@ export const useJobHandlers = ({
           : "Failed to save job. Please try again.";
       setToast({ message, variant: "error", visible: true });
       setTimeout(() => setToast({ message: "", variant: "error", visible: false }), 3000);
-      setSavingJob(false);
     }
   }, [
     cuts,
@@ -201,5 +222,6 @@ export const useJobHandlers = ({
     handleDeleteJob,
     handleMassDelete,
     handleEditJob,
+    cancelSave,
   };
 };

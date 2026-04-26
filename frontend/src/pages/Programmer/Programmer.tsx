@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import Sidebar from "../../components/Sidebar";
 import Header from "../../components/Header";
 import { getUserRoleFromToken } from "../../utils/auth";
@@ -26,7 +26,6 @@ import { getUserDisplayNameFromToken } from "../../utils/auth";
 
 const Programmer = () => {
   const navigate = useNavigate();
-  const location = useLocation();
   const dispatch = useAppDispatch();
 
   const [sortField] = useState<keyof JobEntry | null>(null);
@@ -51,6 +50,7 @@ const Programmer = () => {
   const isAdmin = getUserRoleFromToken() === "ADMIN";
 
   const {
+    currentPathname,
     jobs,
     loadingJobs,
     loadingEditGroup,
@@ -60,16 +60,10 @@ const Programmer = () => {
     editingGroupId,
     refNumber,
     editGroupError,
-    isNewJobRoute,
-    isEditRoute,
-    isCloneRoute,
     refreshJobs,
     handleNewJob: handleNewJobState,
     handleCancel: handleCancelState,
   } = useProgrammerState(filters, customerFilter, descriptionFilter, createdByFilter, criticalFilter);
-
-  const editMatch = location.pathname.match(/^\/programmer\/edit\/([^/]+)$/);
-  const routeEditGroupId = editMatch?.[1] ? String(editMatch[1]) : null;
 
   const {
     users,
@@ -115,10 +109,7 @@ const Programmer = () => {
     jobsFetchPage,
     logsFetchPage,
   } = useProgrammerPageController({
-    currentPathname: location.pathname,
-    isNewJobRoute,
-    isEditRoute,
-    isCloneRoute,
+    currentPathname,
     filters,
     customerFilter,
     descriptionFilter,
@@ -128,11 +119,9 @@ const Programmer = () => {
     cutsLength: cuts.length,
     editGroupError,
     editingGroupId,
-    routeEditGroupId,
     handleNewJobState,
     handleCancelState,
     setToast,
-    setSavingJob,
   });
 
   const currentUserDisplayName = (getUserDisplayNameFromToken() || "").trim().toUpperCase();
@@ -165,7 +154,7 @@ const Programmer = () => {
     [cuts, masterConfig]
   );
 
-  const { handleSaveJob, handleDeleteJob, handleMassDelete, handleEditJob } = useJobHandlers({
+  const { handleSaveJob, handleDeleteJob, handleMassDelete, handleEditJob, cancelSave } = useJobHandlers({
     cuts,
     editingGroupId,
     refNumber,
@@ -173,6 +162,7 @@ const Programmer = () => {
     setJobs,
     setToast,
     setSavingJob,
+    handleCancelState,
     totals,
   });
 
@@ -242,6 +232,7 @@ const Programmer = () => {
     navigate,
     handleCancelState,
     setSavingJob,
+    cancelSave,
   });
 
   return (
@@ -249,7 +240,10 @@ const Programmer = () => {
       <Sidebar currentPath="/programmer" onNavigate={handleProgrammerNavigate} />
       <div className={`programmer-content ${isProgrammerFormRoute ? "programmer-content-scrollable" : ""}`}>
         <Header title="Programmer" onNavigate={handleProgrammerNavigate} />
-        <div className={`programmer-panel ${isProgrammerFormRoute ? "programmer-panel-scrollable" : ""}`}>
+        <div
+          key={currentPathname}
+          className={`programmer-panel ${isProgrammerFormRoute ? "programmer-panel-scrollable" : ""}`}
+        >
           {isProgrammerListRoute && <ProgrammerTabs activeTab={activeTab} setActiveTab={setActiveTab} />}
 
           <ProgrammerFormSection
@@ -274,7 +268,6 @@ const Programmer = () => {
           {isProgrammerListRoute && activeTab === "jobs" && (
             <ProgrammerJobsSection
               savingJob={savingJob}
-              loadingJobs={loadingJobs}
               programmerGridJobs={programmerGridJobs}
               filters={filters}
               customerFilter={customerFilter}
