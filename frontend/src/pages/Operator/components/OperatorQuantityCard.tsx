@@ -85,6 +85,7 @@ export const OperatorQuantityCard: React.FC<Props> = ({
     qtyData.pauseStartTime || null,
     qtyData.totalPauseTime || 0,
     qtyData.pausedElapsedTime || 0,
+    qtyData.workedDurationSeconds || 0,
     qtyData.startTimeEpochMs || null,
     qtyData.endTimeEpochMs || null,
     quantityRequiredSeconds

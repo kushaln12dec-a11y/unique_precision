@@ -14,6 +14,7 @@ export const parseOperatorDateTime = (value?: string): number | null => {
 };
 
 export const getQuantityElapsedSeconds = (quantity: QuantityInputData, nowMs: number): number => {
+  const carriedWorkedSeconds = Math.max(0, Math.floor(quantity.workedDurationSeconds || 0));
   const startMs =
     quantity.startTimeEpochMs && Number.isFinite(Number(quantity.startTimeEpochMs))
       ? Number(quantity.startTimeEpochMs)
@@ -27,17 +28,17 @@ export const getQuantityElapsedSeconds = (quantity: QuantityInputData, nowMs: nu
 
   if (endMs) {
     const base = Math.max(0, Math.floor((endMs - startMs) / 1000));
-    return Math.max(0, base - Math.floor(quantity.totalPauseTime || 0));
+    return Math.max(0, carriedWorkedSeconds + base - Math.floor(quantity.totalPauseTime || 0));
   }
 
-  if (quantity.isPaused) return Math.max(0, Math.floor(quantity.pausedElapsedTime || 0));
+  if (quantity.isPaused) return Math.max(0, Math.floor(quantity.pausedElapsedTime || carriedWorkedSeconds));
 
   const runningPauseSeconds =
     quantity.pauseStartTime && quantity.isPaused
       ? Math.max(0, Math.floor((nowMs - quantity.pauseStartTime) / 1000))
       : 0;
   const raw = Math.max(0, Math.floor((nowMs - startMs) / 1000));
-  return Math.max(0, raw - Math.floor((quantity.totalPauseTime || 0) + runningPauseSeconds));
+  return Math.max(0, carriedWorkedSeconds + raw - Math.floor((quantity.totalPauseTime || 0) + runningPauseSeconds));
 };
 
 export const formatIdleDuration = (seconds: number): string => {

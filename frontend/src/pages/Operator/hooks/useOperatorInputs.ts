@@ -208,19 +208,24 @@ export const useOperatorInputs = (
       }
       if (field === "resumeShiftOver") {
         const now = Date.now();
+        const carriedWorkedSeconds = Math.max(
+          0,
+          Number(qtyData.pausedElapsedTime || qtyData.workedDurationSeconds || 0)
+        );
         quantities[quantityIndex] = {
           ...qtyData,
           startTime: getCurrentISTDateTime(now),
           startTimeEpochMs: now,
           endTime: "",
           endTimeEpochMs: null,
+          workedDurationSeconds: carriedWorkedSeconds,
           machineHrs: "",
           idleTime: "",
           idleTimeDuration: "",
           isPaused: false,
           pauseStartTime: null,
           totalPauseTime: 0,
-          pausedElapsedTime: 0,
+          pausedElapsedTime: carriedWorkedSeconds,
           currentPauseReason: "",
         };
         newMap.set(cutId, { ...current, quantities });

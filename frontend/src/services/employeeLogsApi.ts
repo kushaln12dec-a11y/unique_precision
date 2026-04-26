@@ -38,7 +38,7 @@ const getEmployeeLogItems = (payload: any): EmployeeLog[] => {
 const EMPLOYEE_LOGS_DEDUPE_TTL_MS = 1200;
 const employeeLogsInFlight = new Map<string, Promise<any>>();
 const employeeLogsResponseCache = new Map<string, { expiresAt: number; payload: any }>();
-const ACTIVE_OPERATOR_RUNS_CACHE_TTL_MS = 10000;
+const ACTIVE_OPERATOR_RUNS_CACHE_TTL_MS = 2000;
 const ACTIVE_OPERATOR_RUNS_URL = "/api/employee-logs?role=OPERATOR&status=IN_PROGRESS&limit=250";
 
 const fetchEmployeeLogsPayload = async (url: string): Promise<any> => {

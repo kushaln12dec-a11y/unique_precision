@@ -175,6 +175,31 @@ export const useOperatorViewData = (groupId: string | null, cutIdParam: string |
       .sort((left, right) => right.durationSeconds - left.durationSeconds);
   };
 
+  const getWorkedDurationSecondsForQuantity = (
+    quantityNumber: number,
+    logsForJob: Array<{
+      quantityFrom?: number | null;
+      quantityTo?: number | null;
+      userName?: string | null;
+      metadata?: Record<string, any> | null;
+      startedAt?: string | null;
+      endedAt?: string | null;
+      durationSeconds?: number | null;
+      status?: string | null;
+    }>
+  ) =>
+    logsForJob.reduce((sum, log) => {
+      const status = String(log.status || "").toUpperCase();
+      if (status !== "COMPLETED" && status !== "REJECTED") return sum;
+      const fromQty = Math.max(1, Number(log?.quantityFrom || 1));
+      const toQty = Math.max(fromQty, Number(log?.quantityTo || fromQty));
+      if (quantityNumber < fromQty || quantityNumber > toQty) return sum;
+      const rangeCount = Math.max(1, toQty - fromQty + 1);
+      const logDuration = Number((log.metadata as any)?.workedSeconds || 0) || getDurationSeconds(log);
+      if (logDuration <= 0) return sum;
+      return sum + logDuration / rangeCount;
+    }, 0);
+
   // Fetch idle time configs
   useEffect(() => {
     const fetchIdleTimeConfigs = async () => {
@@ -217,6 +242,7 @@ export const useOperatorViewData = (groupId: string | null, cutIdParam: string |
           startedAt?: string | null;
           endedAt?: string | null;
           durationSeconds?: number | null;
+          status?: string | null;
         }>>();
         operatorLogs.forEach((log) => {
           const jobId = String(log.jobId || "").trim();
@@ -270,6 +296,9 @@ export const useOperatorViewData = (groupId: string | null, cutIdParam: string |
                     ...qty,
                     machineNumber: String(qty.machineNumber || "").trim() || sharedMachine,
                     opsName: qtyOps.length > 0 ? qtyOps : assignedToArray,
+                    workedDurationSeconds:
+                      Number(qty.workedDurationSeconds || 0) ||
+                      Math.max(0, Math.round(getWorkedDurationSecondsForQuantity(index + 1, logsByJobId.get(String(jobId)) || []))),
                     operatorHistory: Array.isArray(qty.operatorHistory)
                       ? qty.operatorHistory.map((value) => normalizeOperatorName(value)).filter(Boolean)
                       : collectOperatorHistoryForQuantity(index + 1, logsByJobId.get(String(jobId)) || []),
@@ -321,6 +350,7 @@ export const useOperatorViewData = (groupId: string | null, cutIdParam: string |
                   startTimeEpochMs: null,
                   endTime,
                   endTimeEpochMs: null,
+                  workedDurationSeconds: Math.max(0, Math.round(getWorkedDurationSecondsForQuantity(idx + 1, logsByJobId.get(String(jobId)) || []))),
                   machineHrs,
                   machineNumber: capture.machineNumber || "",
                   opsName: opsNameArray,
@@ -371,6 +401,7 @@ export const useOperatorViewData = (groupId: string | null, cutIdParam: string |
               startTimeEpochMs: null,
               endTime,
               endTimeEpochMs: null,
+              workedDurationSeconds: Math.max(0, Math.round(getWorkedDurationSecondsForQuantity(1, logsByJobId.get(String(jobId)) || []))),
               machineHrs,
               machineNumber: existing.machineNumber || "",
               opsName: opsNameArray,

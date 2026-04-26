@@ -15,6 +15,18 @@ export const useOperatorDashboardActivity = ({
   const [activeOperatorRuns, setActiveOperatorRuns] = useState<EmployeeLog[]>([]);
   const [operatorHistoryLogs, setOperatorHistoryLogs] = useState<EmployeeLog[]>([]);
 
+  const refreshActiveRuns = async (isMounted: boolean) => {
+    if (document.visibilityState !== "visible") return;
+
+    try {
+      const logs = await getActiveOperatorRunLogs();
+      if (!isMounted) return;
+      setActiveOperatorRuns(logs.filter((log) => String(log.jobId || "").trim() && !log.endedAt));
+    } catch {
+      if (isMounted) setActiveOperatorRuns([]);
+    }
+  };
+
   useEffect(() => {
     let isMounted = true;
 
@@ -38,15 +50,7 @@ export const useOperatorDashboardActivity = ({
     let isMounted = true;
 
     const loadActiveRuns = async () => {
-      if (document.visibilityState !== "visible") return;
-
-      try {
-        const logs = await getActiveOperatorRunLogs();
-        if (!isMounted) return;
-        setActiveOperatorRuns(logs.filter((log) => String(log.jobId || "").trim() && !log.endedAt));
-      } catch {
-        if (isMounted) setActiveOperatorRuns([]);
-      }
+      await refreshActiveRuns(isMounted);
     };
 
     void loadActiveRuns();
@@ -58,11 +62,20 @@ export const useOperatorDashboardActivity = ({
 
     const intervalId = window.setInterval(() => {
       void loadActiveRuns();
-    }, 15000);
+    }, 5000);
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        void loadActiveRuns();
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
 
     return () => {
       isMounted = false;
       window.clearInterval(intervalId);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
   }, [activeTab]);
 

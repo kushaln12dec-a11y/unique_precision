@@ -3,7 +3,10 @@ import { getDisplayName } from "../../../utils/jobFormatting";
 
 const normalizeRole = (value: unknown) => String(value || "").trim().toUpperCase();
 
-export const isOperatorUser = (user: Pick<User, "role">) => normalizeRole(user.role) === "OPERATOR";
+export const isOperatorUser = (user: Pick<User, "role">) => {
+  const role = normalizeRole(user.role);
+  return role === "OPERATOR" || role === "ADMIN";
+};
 
 export const toOperatorOption = (user: Pick<User, "_id" | "firstName" | "lastName" | "email">) => ({
   id: user._id,

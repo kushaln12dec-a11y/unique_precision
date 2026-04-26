@@ -28,6 +28,7 @@ export const useQuantityTimer = (
   pauseStartTime?: number | null,
   totalPauseTime?: number,
   pausedElapsedTime?: number,
+  workedDurationSeconds?: number,
   startTimeEpochMs?: number | null,
   endTimeEpochMs?: number | null,
   requiredDurationSeconds?: number
@@ -54,21 +55,22 @@ export const useQuantityTimer = (
   }, [running]);
 
   const computedElapsedSeconds = useMemo(() => {
+    const carriedWorkedSeconds = Math.max(0, Math.floor(Number(workedDurationSeconds || 0)));
     if (!startMs) return 0;
     if (endMs) {
       const base = Math.max(0, Math.floor((endMs - startMs) / 1000));
-      return Math.max(0, base - Math.floor(totalPauseTime || 0));
+      return Math.max(0, carriedWorkedSeconds + base - Math.floor(totalPauseTime || 0));
     }
 
     if (isPaused) {
-      return Math.max(0, Math.floor(pausedElapsedTime || 0));
+      return Math.max(0, Math.floor(pausedElapsedTime || carriedWorkedSeconds));
     }
 
     const runningPauseSeconds =
       pauseStartTime && isPaused ? Math.max(0, Math.floor((now - pauseStartTime) / 1000)) : 0;
     const raw = Math.max(0, Math.floor((now - startMs) / 1000));
-    return Math.max(0, raw - Math.floor((totalPauseTime || 0) + runningPauseSeconds));
-  }, [startMs, endMs, isPaused, pausedElapsedTime, totalPauseTime, pauseStartTime, now]);
+    return Math.max(0, carriedWorkedSeconds + raw - Math.floor((totalPauseTime || 0) + runningPauseSeconds));
+  }, [startMs, endMs, isPaused, pausedElapsedTime, totalPauseTime, pauseStartTime, now, workedDurationSeconds]);
 
   const computedPauseSeconds = useMemo(() => {
     const base = Math.max(0, Math.floor(totalPauseTime || 0));
