@@ -4,6 +4,7 @@ import { prisma } from "../lib/prisma";
 import { parseOperatorDateTime } from "../utils/dateTime";
 import { mapJob } from "../utils/prismaMappers";
 import { resolveStoredFile } from "../utils/objectStorage";
+import { emitJobsUpdated } from "../lib/sseEmitter";
 import {
   buildCaptureEntry,
   buildOperatorLogPayload,
@@ -416,6 +417,13 @@ router.put("/jobs/:id", async (req, res) => {
       return updatedJob;
     });
 
+    emitJobsUpdated({
+      groupId: job.groupId,
+      jobId: job.id,
+      updatedBy,
+      source: "operator:update",
+    });
+
     res.json(mapJob(job));
   } catch (error: any) {
     if (error.code === "P2025") {
@@ -609,6 +617,13 @@ router.post("/jobs/:id/capture-input", async (req, res) => {
       });
     }
 
+    emitJobsUpdated({
+      groupId: refreshedJob.groupId,
+      jobId: refreshedJob.id,
+      updatedBy,
+      source: "operator:capture",
+    });
+
     res.json(mapJob(refreshedJob));
   } catch (error: any) {
     console.error("Error capturing operator input:", error);
@@ -720,6 +735,13 @@ router.post("/jobs/:id/reset-quantity", async (req, res) => {
       return res.status(404).json({ message: "Job not found" });
     }
 
+    emitJobsUpdated({
+      groupId: refreshedJob.groupId,
+      jobId: refreshedJob.id,
+      updatedBy,
+      source: "operator:reset-quantity",
+    });
+
     res.json(mapJob(refreshedJob));
   } catch (error: any) {
     console.error("Error resetting operator quantity:", error);
@@ -791,6 +813,13 @@ router.post("/jobs/:id/qa-status", async (req, res) => {
       return res.status(404).json({ message: "Job not found" });
     }
 
+    emitJobsUpdated({
+      groupId: refreshedJob.groupId,
+      jobId: refreshedJob.id,
+      updatedBy: getUpdatedByName(req),
+      source: "operator:qa-status",
+    });
+
     res.json(mapJob(refreshedJob));
   } catch (error: any) {
     console.error("Error updating QA status:", error);
@@ -851,6 +880,13 @@ router.put("/jobs/bulk", async (req, res) => {
       }
       return { count: modifiedCount };
     });
+
+    if (result.count > 0) {
+      emitJobsUpdated({
+        updatedBy,
+        source: "operator:bulk-update",
+      });
+    }
 
     res.json({
       message: "Jobs updated successfully",

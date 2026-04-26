@@ -21,20 +21,41 @@ declare global {
 }
 
 export const authenticate = (req: Request, _res: Response, next: NextFunction) => {
-  const authHeader = req.headers.authorization;
-  const token = authHeader?.split(" ")[1];
+  const token = getBearerToken(req.headers.authorization);
 
   if (!token) {
     return next(new HttpError(401, "Unauthorized"));
   }
 
+  try {
+    const decoded = verifyAuthToken(token);
+    req.user = decoded;
+    next();
+  } catch {
+    next(new HttpError(401, "Invalid token"));
+  }
+};
+
+const getBearerToken = (authorization?: string) => authorization?.split(" ")[1];
+
+export const verifyAuthToken = (token: string): AuthenticatedUser => {
   if (!process.env.JWT_SECRET) {
-    return next(new HttpError(500, "JWT_SECRET is not configured"));
+    throw new HttpError(500, "JWT_SECRET is not configured");
+  }
+
+  return jwt.verify(token, process.env.JWT_SECRET) as AuthenticatedUser;
+};
+
+export const authenticateEventStream = (req: Request, _res: Response, next: NextFunction) => {
+  const queryToken = typeof req.query.token === "string" ? req.query.token.trim() : "";
+  const token = getBearerToken(req.headers.authorization) || queryToken;
+
+  if (!token) {
+    return next(new HttpError(401, "Unauthorized"));
   }
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET) as AuthenticatedUser;
-    req.user = decoded;
+    req.user = verifyAuthToken(token);
     next();
   } catch {
     next(new HttpError(401, "Invalid token"));
