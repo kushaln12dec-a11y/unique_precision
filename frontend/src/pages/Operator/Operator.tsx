@@ -43,7 +43,6 @@ const Operator = () => {
     variant: "info",
     visible: false,
   });
-  const [operatorGridRefreshNonce, setOperatorGridRefreshNonce] = useState(0);
   const qaTableDataRef = useRef<OperatorTableRow[]>([]);
   const { handleViewEntry, handleViewJob, setShowJobViewModal, setViewingJob, showJobViewModal, viewingJob } =
     useOperatorJobView();
@@ -76,9 +75,9 @@ const Operator = () => {
     assignedToFilter
   );
 
-  const refreshOperatorBoard = useCallback(() => {
-    void refreshJobs();
-    setOperatorGridRefreshNonce((prev) => prev + 1);
+  const refreshOperatorBoard = useCallback(async () => {
+    const latestJobs = await refreshJobs();
+    setOperatorGridJobs(latestJobs);
   }, [refreshJobs]);
 
   useJobSync((event) => {
@@ -230,7 +229,7 @@ const Operator = () => {
           setOperatorGridJobs={setOperatorGridJobs}
           operatorGridRows={operatorGridRows}
           expandedGroups={expandedGroups}
-          createdByRefreshKey={`${customerFilter}|${descriptionFilter}|${createdByFilter}|${assignedToFilter}|${JSON.stringify(filters)}|${operatorGridRefreshNonce}`}
+          createdByRefreshKey={`${customerFilter}|${descriptionFilter}|${createdByFilter}|${assignedToFilter}|${JSON.stringify(filters)}`}
           operatorLogSearch={operatorLogSearch}
           setOperatorLogSearch={setOperatorLogSearch}
           operatorLogUser={operatorLogUser}

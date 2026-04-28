@@ -36,7 +36,7 @@ export const useOperatorData = (
     }
   }, [navigate]);
 
-  const refreshJobs = useCallback(async () => {
+  const refreshJobs = useCallback(async (): Promise<JobEntry[]> => {
     try {
       setLoadingJobs(true);
       const fetchedJobs = await getOperatorJobs(
@@ -47,6 +47,7 @@ export const useOperatorData = (
         descriptionFilter
       );
       setJobs(fetchedJobs);
+      return fetchedJobs;
     } catch (error) {
       console.error("Failed to fetch jobs", error);
       const stored = localStorage.getItem(STORAGE_KEY);
@@ -54,17 +55,18 @@ export const useOperatorData = (
         try {
           const parsed = JSON.parse(stored) as JobEntry[];
           if (Array.isArray(parsed)) {
-            setJobs(
-              parsed.map((job) => ({
-                ...job,
-                assignedTo: job.assignedTo || "Unassign",
-              }))
-            );
+            const fallbackJobs = parsed.map((job) => ({
+              ...job,
+              assignedTo: job.assignedTo || "Unassign",
+            }));
+            setJobs(fallbackJobs);
+            return fallbackJobs;
           }
         } catch (parseError) {
           console.error("Failed to parse jobs from storage", parseError);
         }
       }
+      return [];
     } finally {
       setLoadingJobs(false);
     }
