@@ -18,7 +18,6 @@ import QcReportTemplateModal from "./components/QcReportTemplateModal";
 import { createQcColumns } from "./qcColumns";
 import { buildQcRows, formatDateForTemplate, getDrawingNo, getPrimaryOperatorName, getQcRowSearchValues, type QcRow } from "./qcUtils";
 import { useJobSync } from "../../hooks/useJobSync";
-import { getUserDisplayNameFromToken } from "../../utils/auth";
 import "../RoleBoard.css";
 import "../Programmer/Programmer.css";
 import "./QC.css";
@@ -46,8 +45,6 @@ const QC = () => {
     setToast({ message, variant, visible: true });
     window.setTimeout(() => setToast((prev) => ({ ...prev, visible: false })), 2500);
   }, []);
-  const currentUserDisplayName = (getUserDisplayNameFromToken() || "").trim().toUpperCase();
-
   const loadQcJobs = useCallback(async () => {
     try {
       setLoading(true);
@@ -68,10 +65,7 @@ const QC = () => {
     void loadQcJobs();
   }, [loadQcJobs]);
 
-  useJobSync((event) => {
-    if (event.updatedBy && event.updatedBy === currentUserDisplayName) {
-      return;
-    }
+  useJobSync(() => {
     void loadQcJobs();
   });
 

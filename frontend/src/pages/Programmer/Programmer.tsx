@@ -22,7 +22,6 @@ import { useProgrammerPageController } from "./hooks/useProgrammerPageController
 import { useProgrammerReduxDispatchers } from "./hooks/useProgrammerReduxDispatchers";
 import { useProgrammerNavigation } from "./hooks/useProgrammerNavigation";
 import { useJobSync } from "../../hooks/useJobSync";
-import { getUserDisplayNameFromToken } from "../../utils/auth";
 
 const Programmer = () => {
   const navigate = useNavigate();
@@ -123,17 +122,12 @@ const Programmer = () => {
     setToast,
   });
 
-  const currentUserDisplayName = (getUserDisplayNameFromToken() || "").trim().toUpperCase();
-
   const refreshProgrammerDashboard = useCallback(() => {
     void refreshJobs();
     refreshProgrammerGrid();
   }, [refreshJobs, refreshProgrammerGrid]);
 
   useJobSync((event) => {
-    if (event.updatedBy && event.updatedBy === currentUserDisplayName) {
-      return;
-    }
     refreshProgrammerDashboard();
     setToast({
       message: `${event.updatedBy || "Another user"} updated jobs. Refreshing list...`,

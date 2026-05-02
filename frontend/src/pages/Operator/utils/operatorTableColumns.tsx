@@ -11,7 +11,6 @@ import { getThicknessDisplayValue } from "../../Programmer/programmerUtils";
 import {
   getOperatorMachineNumber,
   getOperatorHistoryNames,
-  hasOperatorJobStarted,
   normalizeAssignedOperators,
   renderEstimatedTimeWithLogs,
   renderOperatorCustomerCell,
@@ -108,7 +107,6 @@ export const buildBaseOperatorColumns = ({
         (activeOperatorName ? activeOperatorName.toUpperCase() : "") ||
         latestWorkedByName ||
         "Unassign";
-      const hasStarted = hasOperatorJobStarted(row.entry, activeRunsByJobId);
       const shouldAllowTableAssignment = canAssign;
 
       return shouldAllowTableAssignment ? (
@@ -120,7 +118,7 @@ export const buildBaseOperatorColumns = ({
             onChange={(nextValue) => handleAssignChange(row.entry.id, nextValue)}
             placeholder="Unassign"
             compact={assignedOperators.length > 1}
-            showUnassign={!hasStarted}
+            showUnassign={true}
             selfToggleOnly={false}
           />
         </div>

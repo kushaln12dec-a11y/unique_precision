@@ -117,10 +117,7 @@ const OperatorViewPage = () => {
     void reloadOperatorViewData();
   }, [reloadOperatorViewData]);
 
-  useJobSync((event) => {
-    if (event.updatedBy && event.updatedBy === currentUserDisplayName) {
-      return;
-    }
+  useJobSync(() => {
     refreshRemoteOperatorView();
   }, Boolean(groupId));
 

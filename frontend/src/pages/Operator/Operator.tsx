@@ -81,9 +81,6 @@ const Operator = () => {
   }, [refreshJobs]);
 
   useJobSync((event) => {
-    if (event.updatedBy && event.updatedBy === currentUserDisplayName) {
-      return;
-    }
     refreshOperatorBoard();
     setToast({
       message: `${event.updatedBy || "Another user"} updated jobs. Refreshing queue...`,
