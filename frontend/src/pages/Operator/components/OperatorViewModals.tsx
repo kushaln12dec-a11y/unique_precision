@@ -28,7 +28,7 @@ type OperatorViewModalsProps = {
     value: string
   ) => void;
   handlePauseResumeAction: (cutId: number | string, quantityIndex: number, action: "shiftOver" | "resume") => Promise<boolean>;
-  handleConfirmEndTimeCapture: (cutId: number | string, quantityIndex: number) => void;
+  handleConfirmEndTimeCapture: (cutId: number | string, quantityIndex: number) => Promise<void>;
   setActionToast: Dispatch<SetStateAction<{ message: string; variant: "success" | "error" | "info"; visible: boolean }>>;
 };
 
@@ -150,8 +150,8 @@ const OperatorViewModals = ({
               <button
                 type="button"
                 className="btn-primary"
-                onClick={() => {
-                  handleConfirmEndTimeCapture(pendingEndTimeCapture.cutId, pendingEndTimeCapture.quantityIndex);
+                onClick={async () => {
+                  await handleConfirmEndTimeCapture(pendingEndTimeCapture.cutId, pendingEndTimeCapture.quantityIndex);
                   setPendingEndTimeCapture(null);
                 }}
               >

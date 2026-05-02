@@ -21,6 +21,7 @@ import { getQuantityElapsedSeconds, parseOperatorDateTime } from "./utils/operat
 import { updateOperatorJob } from "../../services/operatorApi";
 import { useJobSync } from "../../hooks/useJobSync";
 import { getCurrentISTDateTime } from "../../utils/dateTime";
+import { calculateMachineHrs } from "./utils/machineHrsCalculation";
 import "../RoleBoard.css";
 import "../Programmer/Programmer.css";
 import "../Programmer/components/JobDetailsModal.css";
@@ -104,17 +105,44 @@ const OperatorViewPage = () => {
     handleUpdateQaStatus,
     handleStartTimeCaptured,
     handlePauseResumeAction,
+    handleEndTimeCaptured,
   } = useOperatorViewActions({ jobs, cutInputs, setValidationErrors, currentUserDisplayName, isAdmin });
   const allowedOperatorUsers = useMemo(() => operatorUsers, [operatorUsers]);
 
-  const handleConfirmEndTimeCapture = (cutId: number | string, quantityIndex: number) => {
+  const handleConfirmEndTimeCapture = async (cutId: number | string, quantityIndex: number) => {
+    const qtyData = cutInputs.get(cutId)?.quantities?.[quantityIndex];
+    if (!qtyData?.startTime) {
+      setActionToast({
+        message: "Start time is required before capturing end time.",
+        variant: "error",
+        visible: true,
+      });
+      setTimeout(() => {
+        setActionToast((prev) => ({ ...prev, visible: false }));
+      }, 2200);
+      return;
+    }
+
     const timestampMs = Date.now();
     const displayValue = getCurrentISTDateTime(timestampMs);
+    const machineHrs = calculateMachineHrs(
+      String(qtyData.startTime || ""),
+      displayValue,
+      String(qtyData.idleTimeDuration || "")
+    );
+
     handleInputChange(cutId, quantityIndex, "endTime", displayValue);
     handleInputChange(cutId, quantityIndex, "endTimeEpochMs", String(timestampMs));
-    void updateOperatorJob(String(cutId), {
+    const success = await handleEndTimeCaptured(cutId, quantityIndex, {
+      timestampMs,
       endTime: displayValue,
-    }).catch(() => undefined);
+      machineHrs,
+      idleTime: String(qtyData.idleTime || ""),
+      idleTimeDuration: String(qtyData.idleTimeDuration || ""),
+    });
+    if (!success) return;
+
+    void reloadOperatorViewData();
     setActionToast({
       message: "End time captured successfully!",
       variant: "success",

@@ -516,6 +516,73 @@ export const useOperatorViewActions = ({ jobs, cutInputs, setValidationErrors, c
     }
   }, [activeOperatorLogIds, currentUserDisplayName, cutInputs, ensureCurrentUserAssigned, jobs, resolveActiveOperatorLogId]);
 
+  const handleEndTimeCaptured = useCallback(async (
+    cutId: number | string,
+    quantityIndex: number,
+    options: {
+      timestampMs: number;
+      endTime: string;
+      machineHrs: string;
+      idleTime: string;
+      idleTimeDuration: string;
+    }
+  ) => {
+    const cutData = cutInputs.get(cutId);
+    const qtyData = cutData?.quantities?.[quantityIndex];
+    if (!qtyData) {
+      showAndHideToast(setActionToast, "No quantity data found.", "error", 3000);
+      return false;
+    }
+
+    const job = jobs.find((item) => String(item.id) === String(cutId));
+    if (!job) {
+      showAndHideToast(setActionToast, "Job not found.", "error", 3000);
+      return false;
+    }
+    if (!ensureCurrentUserAssigned(job)) return false;
+
+    const key = `${String(cutId)}:${quantityIndex}`;
+    const logId = activeOperatorLogIds.get(key) || await resolveActiveOperatorLogId(cutId, quantityIndex);
+    const machineNumber = String(qtyData.machineNumber || "").trim();
+    const opsName = getOperatorOpsName(qtyData.opsName);
+
+    try {
+      if (logId) {
+        const completedLog = await completeOperatorProductionLog({
+          logId,
+          status: "COMPLETED",
+          endedAt: new Date(options.timestampMs).toISOString(),
+          machineNumber,
+          opsName,
+          machineHrs: options.machineHrs,
+          idleTime: options.idleTime,
+          idleTimeDuration: options.idleTimeDuration,
+        });
+
+        const completedLogId = String((completedLog as any)?._id || (completedLog as any)?.id || logId);
+        setActiveOperatorLogIds((prev) => {
+          const next = new Map(prev);
+          next.set(key, completedLogId);
+          return next;
+        });
+      }
+
+      await updateOperatorJob(String(cutId), {
+        endTime: options.endTime,
+        machineHrs: options.machineHrs,
+        idleTime: "",
+        idleTimeDuration: "",
+      });
+
+      return true;
+    } catch (error) {
+      console.error("Failed to complete operator run", error);
+      const message = error instanceof Error ? error.message : "Failed to capture end time.";
+      showAndHideToast(setActionToast, message, "error", 3500);
+      return false;
+    }
+  }, [activeOperatorLogIds, cutInputs, ensureCurrentUserAssigned, jobs, resolveActiveOperatorLogId]);
+
   return {
     operatorUsers,
     savedQuantities,
@@ -535,5 +602,6 @@ export const useOperatorViewActions = ({ jobs, cutInputs, setValidationErrors, c
     handleUpdateQaStatus,
     handleStartTimeCaptured,
     handlePauseResumeAction,
+    handleEndTimeCaptured,
   };
 };
