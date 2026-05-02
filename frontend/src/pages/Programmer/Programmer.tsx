@@ -21,7 +21,7 @@ import { useProgrammerLogs } from "./hooks/useProgrammerLogs";
 import { useProgrammerPageController } from "./hooks/useProgrammerPageController";
 import { useProgrammerReduxDispatchers } from "./hooks/useProgrammerReduxDispatchers";
 import { useProgrammerNavigation } from "./hooks/useProgrammerNavigation";
-import { useJobSync, type JobSyncEvent } from "../../hooks/useJobSync";
+import { useJobSync } from "../../hooks/useJobSync";
 import { getUserDisplayNameFromToken } from "../../utils/auth";
 
 const Programmer = () => {
@@ -36,7 +36,6 @@ const Programmer = () => {
     visible: false,
   });
   const [savingJob, setSavingJob] = useState(false);
-  const [pendingJobSync, setPendingJobSync] = useState<JobSyncEvent | null>(null);
 
   const {
     filters,
@@ -126,17 +125,22 @@ const Programmer = () => {
 
   const currentUserDisplayName = (getUserDisplayNameFromToken() || "").trim().toUpperCase();
 
-  const refreshFromSyncBanner = useCallback(() => {
+  const refreshProgrammerDashboard = useCallback(() => {
     void refreshJobs();
     refreshProgrammerGrid();
-    setPendingJobSync(null);
   }, [refreshJobs, refreshProgrammerGrid]);
 
   useJobSync((event) => {
     if (event.updatedBy && event.updatedBy === currentUserDisplayName) {
       return;
     }
-    setPendingJobSync(event);
+    refreshProgrammerDashboard();
+    setToast({
+      message: `${event.updatedBy || "Another user"} updated jobs. Refreshing list...`,
+      variant: "info",
+      visible: true,
+    });
+    window.setTimeout(() => setToast((prev) => ({ ...prev, visible: false })), 2500);
   }, isProgrammerListRoute && activeTab === "jobs");
 
   const totals = useMemo(
@@ -285,12 +289,6 @@ const Programmer = () => {
               setProgrammerGridJobs={setProgrammerGridJobs}
               expandedGroups={expandedGroups}
               programmerGridRefreshKey={programmerGridRefreshKey}
-              syncBannerMessage={
-                pendingJobSync
-                  ? `${pendingJobSync.updatedBy || "Another user"} updated the jobs list.`
-                  : null
-              }
-              onRefreshFromSync={refreshFromSyncBanner}
             />
           )}
 
