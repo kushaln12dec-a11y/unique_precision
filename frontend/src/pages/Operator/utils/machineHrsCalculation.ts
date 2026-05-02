@@ -39,6 +39,12 @@ const parseDateTimeToHours = (dateTimeStr: string): number => {
 const parseIdleTimeToHours = (idleStr: string): number => {
   if (!idleStr) return 0;
   const parts = idleStr.split(":");
+  if (parts.length === 3) {
+    const hours = parseInt(parts[0], 10) || 0;
+    const minutes = parseInt(parts[1], 10) || 0;
+    const seconds = parseInt(parts[2], 10) || 0;
+    return hours + minutes / 60 + seconds / 3600;
+  }
   if (parts.length === 2) {
     const hours = parseInt(parts[0], 10) || 0;
     const minutes = parseInt(parts[1], 10) || 0;
