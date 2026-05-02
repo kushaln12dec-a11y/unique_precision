@@ -191,6 +191,10 @@
   transition: all 0.2s ease;
 }
 
+.operator-input-card.operator-input-card-time {
+  min-width: 0;
+}
+
 .operator-input-card label {
   display: block;
   font-size: 0.75rem;
