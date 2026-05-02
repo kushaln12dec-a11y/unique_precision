@@ -90,6 +90,7 @@ export const OperatorQuantityCard: React.FC<Props> = ({
     qtyData.endTime,
     qtyData.isPaused || false,
     qtyData.pauseStartTime || null,
+    qtyData.currentPauseReason || "",
     qtyData.totalPauseTime || 0,
     qtyData.pausedElapsedTime || 0,
     qtyData.workedDurationSeconds || 0,
@@ -126,7 +127,7 @@ export const OperatorQuantityCard: React.FC<Props> = ({
 
       <div className="quantity-content-wrapper">
         <div className="operator-inputs-grid">
-          <div className="operator-input-card">
+          <div className="operator-input-card operator-input-card-time">
             <label className="start-time-label-row">
               <span>Start Time</span>
               {qtyData.startTime && (
@@ -186,7 +187,7 @@ export const OperatorQuantityCard: React.FC<Props> = ({
               disabled={!canOperateInputs || !!qtyData.startTime || !!qtyData.endTime || !canRunAssignedJob}
             />
           </div>
-          <div className="operator-input-card">
+          <div className="operator-input-card operator-input-card-time">
             <label>End Time</label>
             <DateTimeInput
               value={qtyData.endTime}

@@ -27,6 +27,7 @@ export const useQuantityTimer = (
   endTime?: string,
   isPaused?: boolean,
   pauseStartTime?: number | null,
+  currentPauseReason?: string,
   totalPauseTime?: number,
   pausedElapsedTime?: number,
   workedDurationSeconds?: number,
@@ -72,19 +73,20 @@ export const useQuantityTimer = (
       return Math.max(0, Math.floor(pausedElapsedTime || carriedWorkedSeconds));
     }
 
+    const shouldTrackLivePause = currentPauseReason !== "Shift Over";
     const runningPauseSeconds =
-      pauseStartTime && isPaused ? Math.max(0, Math.floor((now - pauseStartTime) / 1000)) : 0;
+      pauseStartTime && isPaused && shouldTrackLivePause ? Math.max(0, Math.floor((now - pauseStartTime) / 1000)) : 0;
     const raw = Math.max(0, Math.floor((now - startMs) / 1000));
     return Math.max(0, carriedWorkedSeconds + raw - Math.floor((totalPauseTime || 0) + runningPauseSeconds));
-  }, [startMs, endMs, isPaused, pausedElapsedTime, totalPauseTime, pauseStartTime, now, workedDurationSeconds, endTimeEpochMs]);
+  }, [startMs, endMs, isPaused, pausedElapsedTime, totalPauseTime, pauseStartTime, currentPauseReason, now, workedDurationSeconds, endTimeEpochMs]);
 
   const computedPauseSeconds = useMemo(() => {
     const base = Math.max(0, Math.floor(totalPauseTime || 0));
-    if (isPaused && pauseStartTime) {
+    if (isPaused && pauseStartTime && currentPauseReason !== "Shift Over") {
       return base + Math.max(0, Math.floor((now - pauseStartTime) / 1000));
     }
     return base;
-  }, [totalPauseTime, isPaused, pauseStartTime, now]);
+  }, [totalPauseTime, isPaused, pauseStartTime, currentPauseReason, now]);
 
   const computedRemainingSeconds = useMemo(() => {
     const required = Math.max(0, Math.floor(Number(requiredDurationSeconds || 0)));
