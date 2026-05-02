@@ -1,5 +1,6 @@
 import type { EmployeeLog, EmployeeLogQueryStatus } from "../types/employeeLog";
 import { apiUrl } from "./apiClient";
+import { syncServerTimeOffset } from "./serverTime";
 
 export type PaginatedEmployeeLogs = {
   items: EmployeeLog[];
@@ -73,6 +74,7 @@ const fetchEmployeeLogsPayload = async (url: string): Promise<any> => {
     headers: getAuthHeaders(),
   })
     .then(async (res) => {
+      syncServerTimeOffset(res);
       if (!res.ok) {
         throw new Error("Failed to fetch employee logs");
       }
@@ -148,6 +150,7 @@ export const startProgrammerJobLog = async (payload: { refNumber?: string } = {}
     headers: getAuthHeaders(),
     body: JSON.stringify(payload),
   });
+  syncServerTimeOffset(res);
 
   if (!res.ok) {
     throw new Error("Failed to start programmer log");
@@ -170,6 +173,7 @@ export const completeProgrammerJobLog = async (payload: {
     headers: getAuthHeaders(),
     body: JSON.stringify(payload),
   });
+  syncServerTimeOffset(res);
 
   if (!res.ok) {
     throw new Error("Failed to complete programmer log");
@@ -186,6 +190,7 @@ export const rejectProgrammerJobLog = async (payload: {
     headers: getAuthHeaders(),
     body: JSON.stringify(payload),
   });
+  syncServerTimeOffset(res);
 
   if (!res.ok) {
     throw new Error("Failed to reject programmer log");
@@ -213,6 +218,7 @@ export const startOperatorProductionLog = async (payload: {
     headers: getAuthHeaders(),
     body: JSON.stringify(payload),
   });
+  syncServerTimeOffset(res);
 
   if (!res.ok) {
     const error = await res.json().catch(() => ({ message: "Failed to start operator production log" }));
@@ -237,6 +243,7 @@ export const completeOperatorProductionLog = async (payload: {
     headers: getAuthHeaders(),
     body: JSON.stringify(payload),
   });
+  syncServerTimeOffset(res);
 
   if (!res.ok) {
     const error = await res.json().catch(() => ({ message: "Failed to complete operator production log" }));
@@ -258,6 +265,7 @@ export const createOperatorTaskSwitchLog = async (payload: {
     headers: getAuthHeaders(),
     body: JSON.stringify(payload),
   });
+  syncServerTimeOffset(res);
 
   if (!res.ok) {
     const error = await res.json().catch(() => ({ message: "Failed to save task switch log" }));

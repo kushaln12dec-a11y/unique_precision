@@ -1,4 +1,5 @@
 import { apiUrl } from "./apiClient";
+import { syncServerTimeOffset } from "./serverTime";
 
 export type IdleTimeConfig = {
   _id?: string;
@@ -20,6 +21,7 @@ export const getIdleTimeConfigs = async (): Promise<IdleTimeConfig[]> => {
     method: "GET",
     headers: getAuthHeaders(),
   });
+  syncServerTimeOffset(res);
 
   if (!res.ok) {
     throw new Error("Failed to fetch idle time configurations");
@@ -34,6 +36,7 @@ export const getIdleTimeConfig = async (type: string): Promise<IdleTimeConfig> =
     method: "GET",
     headers: getAuthHeaders(),
   });
+  syncServerTimeOffset(res);
 
   if (!res.ok) {
     throw new Error("Failed to fetch idle time configuration");
@@ -52,6 +55,7 @@ export const upsertIdleTimeConfig = async (
     headers: getAuthHeaders(),
     body: JSON.stringify({ idleTimeType, durationMinutes }),
   });
+  syncServerTimeOffset(res);
 
   if (!res.ok) {
     const error = await res.json();
@@ -71,6 +75,7 @@ export const updateIdleTimeConfig = async (
     headers: getAuthHeaders(),
     body: JSON.stringify({ durationMinutes }),
   });
+  syncServerTimeOffset(res);
 
   if (!res.ok) {
     const error = await res.json();
@@ -86,6 +91,7 @@ export const deleteIdleTimeConfig = async (type: string): Promise<void> => {
     method: "DELETE",
     headers: getAuthHeaders(),
   });
+  syncServerTimeOffset(res);
 
   if (!res.ok) {
     throw new Error("Failed to delete idle time configuration");
