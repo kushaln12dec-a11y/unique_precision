@@ -7,6 +7,7 @@ type Props = {
   shouldShowOperatorHistory: boolean;
   shouldShowWorkedBySummary: boolean;
   formatWorkedDuration: (seconds: number) => string;
+  isAdmin: boolean;
 };
 
 const OperatorQuantityHistoryPanel: React.FC<Props> = ({
@@ -16,6 +17,7 @@ const OperatorQuantityHistoryPanel: React.FC<Props> = ({
   shouldShowOperatorHistory,
   shouldShowWorkedBySummary,
   formatWorkedDuration,
+  isAdmin,
 }) => {
   if (!shouldShowOperatorHistory) return null;
 
@@ -26,13 +28,13 @@ const OperatorQuantityHistoryPanel: React.FC<Props> = ({
           <div
             className="operator-history-proof"
             title={operatorHistoryDetails
-              .map((entry) => `${entry.name}: ${formatWorkedDuration(entry.durationSeconds)}${entry.revenue ? ` | Rs. ${entry.revenue.toFixed(2)}` : ""}`)
+              .map((entry) => `${entry.name}: ${formatWorkedDuration(entry.durationSeconds)}${isAdmin && entry.revenue ? ` | Rs. ${entry.revenue.toFixed(2)}` : ""}`)
               .join(" | ")}
           >
             <span className="operator-history-proof-line">Worked By:</span>
             {operatorHistoryDetails.map((entry) => (
               <span key={`${entry.name}-${entry.durationSeconds}`} className="operator-history-proof-line">
-                {entry.name} ({formatWorkedDuration(entry.durationSeconds)}){entry.revenue ? ` | Rs. ${entry.revenue.toFixed(2)}` : ""}
+                {entry.name} ({formatWorkedDuration(entry.durationSeconds)}){isAdmin && entry.revenue ? ` | Rs. ${entry.revenue.toFixed(2)}` : ""}
               </span>
             ))}
           </div>

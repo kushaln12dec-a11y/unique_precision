@@ -65,6 +65,12 @@ const OperatorViewPage = () => {
   const [pendingOperatorAction, setPendingOperatorAction] = useState<{ cutId: number | string; quantityIndex: number; action: "shiftOver" | "resume" } | null>(null);
   const [pendingEndTimeCapture, setPendingEndTimeCapture] = useState<{ cutId: number | string; quantityIndex: number } | null>(null);
   const pendingAssignmentSyncRef = useRef<Map<string, string>>(new Map());
+  const pendingScrollRestoreRef = useRef<number | null>(null);
+
+  const getScrollContainer = useCallback(
+    () => document.querySelector(".roleboard-content") as HTMLElement | null,
+    []
+  );
 
   const {
     jobs,
@@ -109,6 +115,25 @@ const OperatorViewPage = () => {
   } = useOperatorViewActions({ jobs, cutInputs, setValidationErrors, currentUserDisplayName, isAdmin });
   const allowedOperatorUsers = useMemo(() => operatorUsers, [operatorUsers]);
 
+  const restoreScrollPosition = useCallback(() => {
+    if (pendingScrollRestoreRef.current === null) return;
+    const nextScrollTop = pendingScrollRestoreRef.current;
+    pendingScrollRestoreRef.current = null;
+    window.requestAnimationFrame(() => {
+      const scrollContainer = getScrollContainer();
+      if (scrollContainer) {
+        scrollContainer.scrollTop = nextScrollTop;
+        return;
+      }
+      window.scrollTo({ top: nextScrollTop, behavior: "auto" });
+    });
+  }, [getScrollContainer]);
+
+  const reloadOperatorViewDataPreservingScroll = useCallback(async () => {
+    pendingScrollRestoreRef.current = getScrollContainer()?.scrollTop ?? window.scrollY;
+    await reloadOperatorViewData();
+  }, [getScrollContainer, reloadOperatorViewData]);
+
   const handleConfirmEndTimeCapture = async (cutId: number | string, quantityIndex: number) => {
     const qtyData = cutInputs.get(cutId)?.quantities?.[quantityIndex];
     if (!qtyData?.startTime) {
@@ -125,6 +150,7 @@ const OperatorViewPage = () => {
 
     const timestampMs = Date.now();
     const displayValue = getCurrentISTDateTime(timestampMs);
+    const normalizedTimestamp = parseOperatorDateTime(displayValue) ?? timestampMs;
     const machineHrs = calculateMachineHrs(
       String(qtyData.startTime || ""),
       displayValue,
@@ -132,9 +158,9 @@ const OperatorViewPage = () => {
     );
 
     handleInputChange(cutId, quantityIndex, "endTime", displayValue);
-    handleInputChange(cutId, quantityIndex, "endTimeEpochMs", String(timestampMs));
+    handleInputChange(cutId, quantityIndex, "endTimeEpochMs", String(normalizedTimestamp));
     const success = await handleEndTimeCaptured(cutId, quantityIndex, {
-      timestampMs,
+      timestampMs: normalizedTimestamp,
       endTime: displayValue,
       machineHrs,
       idleTime: String(qtyData.idleTime || ""),
@@ -142,7 +168,7 @@ const OperatorViewPage = () => {
     });
     if (!success) return;
 
-    void reloadOperatorViewData();
+    await reloadOperatorViewDataPreservingScroll();
     setActionToast({
       message: "End time captured successfully!",
       variant: "success",
@@ -154,12 +180,16 @@ const OperatorViewPage = () => {
   };
 
   const refreshRemoteOperatorView = useCallback(() => {
-    void reloadOperatorViewData();
-  }, [reloadOperatorViewData]);
+    void reloadOperatorViewDataPreservingScroll();
+  }, [reloadOperatorViewDataPreservingScroll]);
 
   useJobSync(() => {
     refreshRemoteOperatorView();
   }, Boolean(groupId));
+
+  useEffect(() => {
+    if (!loadingJobs) restoreScrollPosition();
+  }, [loadingJobs, restoreScrollPosition]);
 
   useEffect(() => {
     if (allowedOperatorUsers.length === 0 || cutInputs.size === 0) return;
@@ -351,7 +381,7 @@ const OperatorViewPage = () => {
     try {
       await resetOperatorQuantity(String(cutId), { quantityNumber: quantityIndex + 1 });
       handleInputChange(cutId, quantityIndex, "resetTimer", "");
-      await reloadOperatorViewData();
+      await reloadOperatorViewDataPreservingScroll();
       setActionToast({
         message: `Quantity ${quantityIndex + 1} reset successfully.`,
         variant: "success",
