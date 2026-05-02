@@ -9,6 +9,7 @@ import type { QuantityProgressStatus } from "../utils/qaProgress";
 import { loadOperatorUsers, readImageFileAsBase64, seedQaStatusesByCut, seedSavedQuantities, showAndHideToast } from "../utils/operatorViewActionUtils";
 import { createDefaultToast, type ToastState } from "../utils/operatorViewToast";
 import { applyQaStatusToQuantities, buildRangeCapturePayload, buildSingleCapturePayload, getAssignedToValue, getOperatorOpsName } from "../utils/operatorCapturePayloads";
+import { getServerNowMs } from "../../../services/serverTime";
 import { getCurrentISTDateTime } from "../../../utils/dateTime";
 
 type Params = {
@@ -348,8 +349,9 @@ export const useOperatorViewActions = ({ jobs, cutInputs, setValidationErrors, c
       return;
     }
     try {
-      const startedAtIso = new Date().toISOString();
-      const startedAtDisplay = getCurrentISTDateTime();
+      const startedAtMs = getServerNowMs();
+      const startedAtIso = new Date(startedAtMs).toISOString();
+      const startedAtDisplay = getCurrentISTDateTime(startedAtMs);
       const fromQty = quantityIndex + 1;
       const startedLog = await startOperatorProductionLog({
         jobId: String(job.id),
@@ -434,8 +436,9 @@ export const useOperatorViewActions = ({ jobs, cutInputs, setValidationErrors, c
           return false;
         }
 
-        const resumedAtIso = new Date().toISOString();
-        const resumedAtDisplay = getCurrentISTDateTime();
+        const resumedAtMs = getServerNowMs();
+        const resumedAtIso = new Date(resumedAtMs).toISOString();
+        const resumedAtDisplay = getCurrentISTDateTime(resumedAtMs);
         const startedLog = await startOperatorProductionLog({
           jobId: String(job.id),
           jobGroupId: String(job.groupId ?? ""),
@@ -472,7 +475,7 @@ export const useOperatorViewActions = ({ jobs, cutInputs, setValidationErrors, c
       }
 
       const activeLogId = activeOperatorLogIds.get(key) || await resolveActiveOperatorLogId(cutId, quantityIndex);
-      const pausedAtDisplay = getCurrentISTDateTime();
+      const pausedAtDisplay = getCurrentISTDateTime(getServerNowMs());
       if (activeLogId) {
         await completeOperatorProductionLog({
           logId: activeLogId,

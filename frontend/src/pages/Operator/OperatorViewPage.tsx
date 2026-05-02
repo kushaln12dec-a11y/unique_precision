@@ -19,6 +19,7 @@ import { getUserDisplayNameFromToken, getUserRoleFromToken } from "../../utils/a
 import { estimatedDurationSecondsFromHours, estimatedHoursFromAmount, MACHINE_OPTIONS, toMachineIndex } from "../../utils/jobFormatting";
 import { getQuantityElapsedSeconds, parseOperatorDateTime } from "./utils/operatorTimeUtils";
 import { updateOperatorJob } from "../../services/operatorApi";
+import { getServerNowMs } from "../../services/serverTime";
 import { useJobSync } from "../../hooks/useJobSync";
 import { getCurrentISTDateTime } from "../../utils/dateTime";
 import { calculateMachineHrs } from "./utils/machineHrsCalculation";
@@ -61,7 +62,7 @@ const OperatorViewPage = () => {
   const currentUserDisplayName = normalizeOperatorName(getUserDisplayNameFromToken() || "");
 
   const [validationErrors, setValidationErrors] = useState<Map<number | string, Record<string, Record<string, string>>>>(new Map());
-  const [liveNowMs, setLiveNowMs] = useState<number>(Date.now());
+  const [liveNowMs, setLiveNowMs] = useState<number>(getServerNowMs());
   const [pendingOperatorAction, setPendingOperatorAction] = useState<{ cutId: number | string; quantityIndex: number; action: "shiftOver" | "resume" } | null>(null);
   const [pendingEndTimeCapture, setPendingEndTimeCapture] = useState<{ cutId: number | string; quantityIndex: number } | null>(null);
   const pendingAssignmentSyncRef = useRef<Map<string, string>>(new Map());
@@ -148,7 +149,7 @@ const OperatorViewPage = () => {
       return;
     }
 
-    const timestampMs = Date.now();
+    const timestampMs = getServerNowMs();
     const displayValue = getCurrentISTDateTime(timestampMs);
     const machineHrs = calculateMachineHrs(
       String(qtyData.startTime || ""),
@@ -356,7 +357,7 @@ const OperatorViewPage = () => {
   useEffect(() => {
     if (!hasActiveQuantityTimer) return;
     const timerId = window.setInterval(() => {
-      setLiveNowMs(Date.now());
+      setLiveNowMs(getServerNowMs());
     }, 1000);
     return () => window.clearInterval(timerId);
   }, [hasActiveQuantityTimer]);

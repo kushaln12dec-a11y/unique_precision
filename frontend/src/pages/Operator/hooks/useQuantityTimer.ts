@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { getServerNowMs } from "../../../services/serverTime";
 
 const formatHMS = (seconds: number): string => {
   const safe = Math.max(0, Math.floor(seconds));
@@ -33,7 +34,7 @@ export const useQuantityTimer = (
   endTimeEpochMs?: number | null,
   requiredDurationSeconds?: number
 ) => {
-  const [now, setNow] = useState<number>(Date.now());
+  const [now, setNow] = useState<number>(getServerNowMs());
 
   const startMs = useMemo(
     () => (startTimeEpochMs && Number.isFinite(startTimeEpochMs) ? Number(startTimeEpochMs) : parseDateTime(startTime)),
@@ -50,7 +51,7 @@ export const useQuantityTimer = (
 
   useEffect(() => {
     if (!running) return;
-    const id = window.setInterval(() => setNow(Date.now()), 1000);
+    const id = window.setInterval(() => setNow(getServerNowMs()), 1000);
     return () => window.clearInterval(id);
   }, [running]);
 

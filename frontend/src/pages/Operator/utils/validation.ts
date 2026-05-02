@@ -1,22 +1,5 @@
 import type { CutInputData, QuantityInputData } from "../types/cutInput";
 
-const parseDateTimeToTimestamp = (value: string): number | null => {
-  const trimmed = value.trim();
-  const dateTimeRegex = /^\d{2}\/\d{2}\/\d{4} \d{2}:\d{2}$/;
-  if (!dateTimeRegex.test(trimmed)) return null;
-  const [datePart, timePart] = trimmed.split(" ");
-  const [dayStr, monthStr, yearStr] = datePart.split("/");
-  const [hourStr, minuteStr] = timePart.split(":");
-  const day = Number(dayStr);
-  const month = Number(monthStr);
-  const year = Number(yearStr);
-  const hour = Number(hourStr);
-  const minute = Number(minuteStr);
-  const parsed = new Date(year, month - 1, day, hour, minute).getTime();
-  if (Number.isNaN(parsed)) return null;
-  return parsed;
-};
-
 /**
  * Validate quantity input data and return errors
  */
@@ -43,12 +26,6 @@ export const validateQuantityInputs = (qtyData: QuantityInputData): Record<strin
     }
   }
 
-  const startTs = qtyData.startTime ? parseDateTimeToTimestamp(qtyData.startTime) : null;
-  const endTs = qtyData.endTime ? parseDateTimeToTimestamp(qtyData.endTime) : null;
-  if (startTs !== null && endTs !== null && endTs <= startTs) {
-    errors.endTime = "End Time must be after Start Time.";
-  }
-  
   if (!qtyData.machineNumber || !qtyData.machineNumber.trim()) {
     errors.machineNumber = "Machine Number is required.";
   }
