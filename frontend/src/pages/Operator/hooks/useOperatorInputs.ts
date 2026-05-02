@@ -16,7 +16,6 @@ import {
   updateQuantityMachineHours,
 } from "../utils/operatorInputState";
 import { getCurrentISTDateTime } from "../../../utils/dateTime";
-import { parseOperatorDateTime } from "../utils/operatorTimeUtils";
 
 export const useOperatorInputs = (
   _cutInputs: Map<number | string, CutInputData>,
@@ -209,16 +208,14 @@ export const useOperatorInputs = (
       }
       if (field === "resumeShiftOver") {
         const now = Date.now();
-        const resumedDisplay = getCurrentISTDateTime(now);
-        const resumedAtMs = parseOperatorDateTime(resumedDisplay) ?? now;
         const carriedWorkedSeconds = Math.max(
           0,
           Number(qtyData.pausedElapsedTime || qtyData.workedDurationSeconds || 0)
         );
         quantities[quantityIndex] = {
           ...qtyData,
-          startTime: resumedDisplay,
-          startTimeEpochMs: resumedAtMs,
+          startTime: getCurrentISTDateTime(now),
+          startTimeEpochMs: now,
           endTime: "",
           endTimeEpochMs: null,
           workedDurationSeconds: carriedWorkedSeconds,

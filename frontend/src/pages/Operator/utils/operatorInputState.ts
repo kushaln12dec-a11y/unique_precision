@@ -74,7 +74,9 @@ export const updateQuantityMachineHours = (
     updatedQtyData.startTime,
     updatedQtyData.endTime,
     idleTimeDuration,
-    updatedQtyData.totalPauseTime || 0
+    updatedQtyData.totalPauseTime || 0,
+    updatedQtyData.startTimeEpochMs || null,
+    updatedQtyData.endTimeEpochMs || null
   );
   return updatedQtyData;
 };

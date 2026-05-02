@@ -150,18 +150,19 @@ const OperatorViewPage = () => {
 
     const timestampMs = Date.now();
     const displayValue = getCurrentISTDateTime(timestampMs);
-    const normalizedTimestamp = parseOperatorDateTime(displayValue) ?? timestampMs;
     const machineHrs = calculateMachineHrs(
       String(qtyData.startTime || ""),
       displayValue,
       String(qtyData.idleTimeDuration || ""),
-      Number(qtyData.totalPauseTime || 0)
+      Number(qtyData.totalPauseTime || 0),
+      qtyData.startTimeEpochMs || null,
+      timestampMs
     );
 
     handleInputChange(cutId, quantityIndex, "endTime", displayValue);
-    handleInputChange(cutId, quantityIndex, "endTimeEpochMs", String(normalizedTimestamp));
+    handleInputChange(cutId, quantityIndex, "endTimeEpochMs", String(timestampMs));
     const success = await handleEndTimeCaptured(cutId, quantityIndex, {
-      timestampMs: normalizedTimestamp,
+      timestampMs,
       endTime: displayValue,
       machineHrs,
       idleTime: String(qtyData.idleTime || ""),
