@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { getOperatorJobsByGroupId } from "../../../services/operatorApi";
 import { getIdleTimeConfigs } from "../../../services/idleTimeConfigApi";
 import { getEmployeeLogs, invalidateEmployeeLogsCache } from "../../../services/employeeLogsApi";
@@ -16,6 +16,7 @@ export const useOperatorViewData = (groupId: string | null, cutIdParam: string |
   const [idleTimeConfigsLoaded, setIdleTimeConfigsLoaded] = useState(false);
   const [cutInputs, setCutInputs] = useState<Map<number | string, CutInputData>>(new Map());
   const [expandedCuts, setExpandedCuts] = useState<Set<number | string>>(new Set());
+  const hasLoadedInitialDataRef = useRef(false);
 
   const normalizeOperatorName = (value: unknown) => String(value || "").trim().toUpperCase();
 
@@ -333,7 +334,9 @@ export const useOperatorViewData = (groupId: string | null, cutIdParam: string |
       return;
     }
     try {
-      setLoadingJobs(true);
+      if (!hasLoadedInitialDataRef.current) {
+        setLoadingJobs(true);
+      }
       invalidateEmployeeLogsCache(/employee-logs/);
       const fetchedJobs = await getOperatorJobsByGroupId(groupId);
         const operatorLogs = await getEmployeeLogs({ role: "OPERATOR", limit: 500 }).catch(() => []);
@@ -499,6 +502,7 @@ export const useOperatorViewData = (groupId: string | null, cutIdParam: string |
       if (filteredJobs.length > 0) {
         setExpandedCuts((prev) => (prev.size > 0 ? prev : new Set([filteredJobs[0].id])));
       }
+      hasLoadedInitialDataRef.current = true;
     } catch (error) {
       console.error("Failed to fetch jobs", error);
     } finally {

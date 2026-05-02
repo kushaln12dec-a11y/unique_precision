@@ -67,6 +67,7 @@ const OperatorViewPage = () => {
   const [pendingEndTimeCapture, setPendingEndTimeCapture] = useState<{ cutId: number | string; quantityIndex: number } | null>(null);
   const pendingAssignmentSyncRef = useRef<Map<string, string>>(new Map());
   const pendingScrollRestoreRef = useRef<number | null>(null);
+  const reloadInFlightRef = useRef<Promise<void> | null>(null);
 
   const getScrollContainer = useCallback(
     () => document.querySelector(".roleboard-content") as HTMLElement | null,
@@ -131,8 +132,26 @@ const OperatorViewPage = () => {
   }, [getScrollContainer]);
 
   const reloadOperatorViewDataPreservingScroll = useCallback(async () => {
-    pendingScrollRestoreRef.current = getScrollContainer()?.scrollTop ?? window.scrollY;
-    await reloadOperatorViewData();
+    if (pendingScrollRestoreRef.current === null) {
+      pendingScrollRestoreRef.current = getScrollContainer()?.scrollTop ?? window.scrollY;
+    }
+
+    if (reloadInFlightRef.current) {
+      await reloadInFlightRef.current;
+      return;
+    }
+
+    const reloadPromise = (async () => {
+      await reloadOperatorViewData();
+    })();
+
+    reloadInFlightRef.current = reloadPromise;
+
+    try {
+      await reloadPromise;
+    } finally {
+      reloadInFlightRef.current = null;
+    }
   }, [getScrollContainer, reloadOperatorViewData]);
 
   const handleConfirmEndTimeCapture = async (cutId: number | string, quantityIndex: number) => {
