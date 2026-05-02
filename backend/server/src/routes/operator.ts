@@ -572,7 +572,6 @@ router.post("/jobs/:id/capture-input", async (req, res) => {
               id: String(operatorLogId),
               role: "OPERATOR",
               activityType: "OPERATOR_PRODUCTION",
-              status: "IN_PROGRESS",
             },
           })
         : null;
@@ -593,7 +592,7 @@ router.post("/jobs/:id/capture-input", async (req, res) => {
         resolvedToQty,
         quantityCount,
         captureEntry,
-        forceDurationSeconds: Boolean(existingLog),
+        forceDurationSeconds: String(existingLog?.status || "").toUpperCase() === "IN_PROGRESS",
       });
 
       const finalPayload = {
