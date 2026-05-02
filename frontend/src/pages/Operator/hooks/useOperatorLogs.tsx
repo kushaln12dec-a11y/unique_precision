@@ -44,6 +44,55 @@ export const useOperatorLogs = ({
   operatorLogMachine,
   setToast,
 }: Params) => {
+  const getLogQuantityNumbers = useCallback((log: EmployeeLog): number[] => {
+    const fromMeta = Array.isArray((log.metadata as any)?.quantityNumbers)
+      ? ((log.metadata as any).quantityNumbers as unknown[])
+          .map((qty) => Number(qty))
+          .filter((qty) => Number.isInteger(qty) && qty >= 1)
+      : [];
+    if (fromMeta.length > 0) return fromMeta;
+
+    const fromQty = Math.max(1, Number(log.quantityFrom || 1));
+    const toQty = Math.max(fromQty, Number(log.quantityTo || fromQty));
+    if (fromQty >= 1 && toQty >= fromQty) {
+      return Array.from({ length: toQty - fromQty + 1 }, (_, index) => fromQty + index);
+    }
+
+    return [];
+  }, []);
+
+  const buildOperatorCompletionKeys = useCallback((log: EmployeeLog) => {
+    const jobId = String(log.jobId || "").trim();
+    if (!jobId) return [];
+    return getLogQuantityNumbers(log).map((qty) => `${jobId}:${qty}`);
+  }, [getLogQuantityNumbers]);
+
+  const promoteSupersededHoldLogs = useCallback((logs: EmployeeLog[]) => {
+    const completedKeys = new Set<string>();
+    logs.forEach((log) => {
+      if (String(log.role || "").toUpperCase() !== "OPERATOR") return;
+      if (String(log.status || "").toUpperCase() !== "COMPLETED") return;
+      buildOperatorCompletionKeys(log).forEach((key) => completedKeys.add(key));
+    });
+
+    return logs.map((log) => {
+      if (String(log.role || "").toUpperCase() !== "OPERATOR") return log;
+      if (String(log.status || "").toUpperCase() !== "REJECTED") return log;
+
+      const completionKeys = buildOperatorCompletionKeys(log);
+      if (!completionKeys.some((key) => completedKeys.has(key))) return log;
+
+      return {
+        ...log,
+        status: "COMPLETED" as const,
+        metadata: {
+          ...(log.metadata || {}),
+          historicalStatus: "REJECTED",
+        },
+      };
+    });
+  }, [buildOperatorCompletionKeys]);
+
   const designationByUserName = useMemo(() => {
     const map = new Map<string, string>();
     users.forEach((u) => {
@@ -131,14 +180,14 @@ export const useOperatorLogs = ({
         getMachineNumberForLog,
         getRevenueForLog,
         getWorkedDurationForLog,
+        operatorLogStatus,
         operatorLogUser,
         operatorLogSearch,
       }),
-    [designationByUserName, getMachineNumberForLog, getRevenueForLog, getWorkedDurationForLog, operatorLogSearch, operatorLogUser]
+    [designationByUserName, getMachineNumberForLog, getRevenueForLog, getWorkedDurationForLog, operatorLogSearch, operatorLogStatus, operatorLogUser]
   );
 
   const hasOperatorLogSearch = operatorLogSearch.trim().length > 0;
-  const hasOperatorLogUserFilter = operatorLogUser.trim().length > 0;
 
   const handleExportOperatorLogsCsv = useCallback(() => {
     void (async () => {
@@ -146,7 +195,6 @@ export const useOperatorLogs = ({
         async (offset, limit) => {
           const page = await getEmployeeLogsPage({
             role: "OPERATOR",
-            status: operatorLogStatus || undefined,
             machine: operatorLogMachine || undefined,
             offset,
             limit,
@@ -155,7 +203,7 @@ export const useOperatorLogs = ({
         },
         OPERATOR_LOG_SEARCH_FETCH_PAGE_SIZE
       );
-      const filteredLogs = filterOperatorLogs(allLogs);
+      const filteredLogs = filterOperatorLogs(promoteSupersededHoldLogs(allLogs));
       const headers = ["User", "MACH #", "Job Ref", "Description", "Summary", "Started at", "Ended at", "Shift", "Duration", "Estimated", "Overtime", "Qty Split", "Idle Time", "Remark", "Revenue", "Revenue Split", "Status"];
       const rows = filteredLogs.map((row) => {
         const name = getLogUserDisplayName(row.userName, row.userEmail, "");
@@ -204,41 +252,29 @@ export const useOperatorLogs = ({
     getMachineNumberForLog,
     getRevenueForLog,
     operatorLogMachine,
-    operatorLogStatus,
+    promoteSupersededHoldLogs,
     setToast,
   ]);
 
   const operatorLogColumnDefs = useMemo(() => buildOperatorLogColumnDefs(logsColumns), [logsColumns]);
 
   const logsFetchPage = useCallback(
-    async (offset: number, limit: number) => {
-      if (hasOperatorLogSearch || hasOperatorLogUserFilter) {
-        const allLogs = await fetchAllPaginatedItems<EmployeeLog>(
-          async (pageOffset, pageLimit) => {
-            const page = await getEmployeeLogsPage({
-              role: "OPERATOR",
-              status: operatorLogStatus || undefined,
-              machine: operatorLogMachine || undefined,
-              offset: pageOffset,
-              limit: pageLimit,
-            });
-            return { items: page.items, hasMore: page.hasMore };
-          },
-          OPERATOR_LOG_SEARCH_FETCH_PAGE_SIZE
-        );
-        return { items: allLogs, hasMore: false };
-      }
-
-      const page = await getEmployeeLogsPage({
-        role: "OPERATOR",
-        status: operatorLogStatus || undefined,
-        machine: operatorLogMachine || undefined,
-        offset,
-        limit,
-      });
-      return { items: page.items, hasMore: page.hasMore };
+    async (_offset: number, _limit: number) => {
+      const allLogs = await fetchAllPaginatedItems<EmployeeLog>(
+        async (pageOffset, pageLimit) => {
+          const page = await getEmployeeLogsPage({
+            role: "OPERATOR",
+            machine: operatorLogMachine || undefined,
+            offset: pageOffset,
+            limit: pageLimit,
+          });
+          return { items: page.items, hasMore: page.hasMore };
+        },
+        OPERATOR_LOG_SEARCH_FETCH_PAGE_SIZE
+      );
+      return { items: promoteSupersededHoldLogs(allLogs), hasMore: false };
     },
-    [hasOperatorLogSearch, hasOperatorLogUserFilter, operatorLogMachine, operatorLogStatus]
+    [operatorLogMachine, promoteSupersededHoldLogs]
   );
 
   return {

@@ -229,6 +229,7 @@ export const OperatorQuantityCard: React.FC<Props> = ({
               placeholder="Select"
               align="left"
               className={`machine-number-select ${validationErrors.machineNumber ? "input-error" : ""}`.trim()}
+              menuMinWidth={96}
               disabled={!canEditAssignments}
             />
             {validationErrors.machineNumber && <p className="field-error">{validationErrors.machineNumber}</p>}
