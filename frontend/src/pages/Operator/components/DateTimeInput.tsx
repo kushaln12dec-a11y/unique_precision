@@ -1,6 +1,7 @@
 import AccessTimeIcon from "@mui/icons-material/AccessTime";
 import PauseIcon from "@mui/icons-material/Pause";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
+import { getServerNowMs } from "../../../services/serverTime";
 import { getCurrentISTDateTime } from "../../../utils/dateTime";
 import "./DateTimeInput.css";
 
@@ -73,7 +74,7 @@ const DateTimeInput: React.FC<DateTimeInputProps> = ({
    */
   const handleIconClick = () => {
     if (disabled) return; // Don't allow changes if disabled
-    const captureTimestamp = Date.now();
+    const captureTimestamp = getServerNowMs();
     const currentISTTime = getCurrentISTDateTime(captureTimestamp);
     onChange(currentISTTime);
     // Notify parent that time was captured (for timer start)

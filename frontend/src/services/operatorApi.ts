@@ -1,5 +1,6 @@
 import type { JobEntry } from "../types/job";
 import { apiUrl } from "./apiClient";
+import { syncServerTimeOffset } from "./serverTime";
 
 export type PaginatedOperatorJobs = {
   items: JobEntry[];
@@ -60,6 +61,7 @@ export const getOperatorJobs = async (
     method: "GET",
     headers: getAuthHeaders(),
   });
+  syncServerTimeOffset(res);
 
   if (!res.ok) {
     throw new Error("Failed to fetch operator jobs");
@@ -93,6 +95,7 @@ export const getOperatorJobsPage = async (
     method: "GET",
     headers: getAuthHeaders(),
   });
+  syncServerTimeOffset(res);
 
   if (!res.ok) {
     throw new Error("Failed to fetch operator jobs");

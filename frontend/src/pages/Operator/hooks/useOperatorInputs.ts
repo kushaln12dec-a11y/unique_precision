@@ -15,6 +15,7 @@ import {
   ensureCutInputState,
   updateQuantityMachineHours,
 } from "../utils/operatorInputState";
+import { getServerNowMs } from "../../../services/serverTime";
 import { getCurrentISTDateTime } from "../../../utils/dateTime";
 
 export const useOperatorInputs = (
@@ -177,7 +178,7 @@ export const useOperatorInputs = (
       };
 
       if (field === "togglePause") {
-        const now = Date.now();
+        const now = getServerNowMs();
         if (qtyData.isPaused) {
           if (qtyData.currentPauseReason === "Shift Over") {
             return newMap;
@@ -192,7 +193,7 @@ export const useOperatorInputs = (
       }
       if (field === "markShiftOver") {
         if (!qtyData.startTime || qtyData.endTime) return newMap;
-        const now = Date.now();
+        const now = getServerNowMs();
         if (qtyData.isPaused) {
           if (qtyData.currentPauseReason !== "Shift Over") return newMap;
           if (tryResumePausedQuantity(now)) return newMap;
@@ -207,7 +208,7 @@ export const useOperatorInputs = (
         return newMap;
       }
       if (field === "resumeShiftOver") {
-        const now = Date.now();
+        const now = getServerNowMs();
         const carriedWorkedSeconds = Math.max(
           0,
           Number(qtyData.pausedElapsedTime || qtyData.workedDurationSeconds || 0)
@@ -291,7 +292,7 @@ export const useOperatorInputs = (
       }
       if (field === "startTime" || field === "endTime") {
         if (field === "endTime" && typeof value === "string" && value && qtyData.isPaused && qtyData.pauseStartTime) {
-          Object.assign(updatedQtyData, closePauseOnEndTime(updatedQtyData, Date.now(), currentUserDisplayName));
+          Object.assign(updatedQtyData, closePauseOnEndTime(updatedQtyData, getServerNowMs(), currentUserDisplayName));
         }
         if (updatedQtyData.startTime && updatedQtyData.endTime) Object.assign(updatedQtyData, updateQuantityMachineHours(updatedQtyData, "auto"));
       }
