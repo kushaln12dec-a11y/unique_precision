@@ -126,6 +126,7 @@ export const getOperatorJobById = async (id: string): Promise<JobEntry> => {
     method: "GET",
     headers: getAuthHeaders(),
   });
+  syncServerTimeOffset(res);
 
   if (!res.ok) {
     throw new Error("Failed to fetch operator job");
@@ -146,6 +147,7 @@ export const getOperatorJobsByGroupId = async (groupId: string): Promise<JobEntr
     method: "GET",
     headers: getAuthHeaders(),
   });
+  syncServerTimeOffset(res);
 
   if (!res.ok) {
     throw new Error("Failed to fetch operator jobs");
@@ -167,6 +169,7 @@ export const updateOperatorJob = async (id: string, jobData: Partial<JobEntry>):
     headers: getAuthHeaders(),
     body: JSON.stringify(jobData),
   });
+  syncServerTimeOffset(res);
 
   if (!res.ok) {
     const error = await res.json();
@@ -189,6 +192,7 @@ export const captureOperatorInput = async (id: string, inputData: CaptureOperato
     headers: getAuthHeaders(),
     body: JSON.stringify(inputData),
   });
+  syncServerTimeOffset(res);
 
   if (!res.ok) {
     const error = await res.json();
@@ -213,6 +217,7 @@ export const updateOperatorQaStatus = async (
     headers: getAuthHeaders(),
     body: JSON.stringify(payload),
   });
+  syncServerTimeOffset(res);
 
   if (!res.ok) {
     const error = await res.json();
@@ -237,6 +242,7 @@ export const resetOperatorQuantity = async (
     headers: getAuthHeaders(),
     body: JSON.stringify(payload),
   });
+  syncServerTimeOffset(res);
 
   if (!res.ok) {
     const error = await res.json().catch(() => ({ message: "Failed to reset quantity" }));
@@ -262,6 +268,7 @@ export const bulkUpdateOperatorJobs = async (
     headers: getAuthHeaders(),
     body: JSON.stringify({ jobIds, updateData }),
   });
+  syncServerTimeOffset(res);
 
   if (!res.ok) {
     const error = await res.json();
