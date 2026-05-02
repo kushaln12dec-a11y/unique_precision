@@ -36,8 +36,6 @@ export const buildResetQuantityState = (qtyData: QuantityInputData): QuantityInp
   endTimeEpochMs: null,
   workedDurationSeconds: 0,
   machineHrs: "",
-  opsName: [],
-  operatorHistory: [],
   operatorHistoryDetails: [],
   isPaused: false,
   pauseStartTime: null,
@@ -69,23 +67,14 @@ export const updateQuantityMachineHours = (
   const updatedQtyData = { ...qtyData };
   if (!updatedQtyData.startTime || !updatedQtyData.endTime) return updatedQtyData;
 
-  if (mode === "add_idle" && updatedQtyData.idleTimeDuration) {
-    const baseMachineHrs = calculateMachineHrs(updatedQtyData.startTime, updatedQtyData.endTime, "");
-    const idleParts = updatedQtyData.idleTimeDuration.split(":");
-    if (idleParts.length === 2) {
-      const idleHours = parseInt(idleParts[0], 10) || 0;
-      const idleMinutes = parseInt(idleParts[1], 10) || 0;
-      updatedQtyData.machineHrs = (parseFloat(baseMachineHrs) + idleHours + idleMinutes / 60).toFixed(3);
-    }
-    return updatedQtyData;
-  }
-
-  const baseMachineHrs = calculateMachineHrs(
+  const idleTimeDuration = mode === "auto" || mode === "recalculate" || mode === "add_idle"
+    ? updatedQtyData.idleTimeDuration || ""
+    : "";
+  updatedQtyData.machineHrs = calculateMachineHrs(
     updatedQtyData.startTime,
     updatedQtyData.endTime,
-    mode === "recalculate" ? updatedQtyData.idleTimeDuration || "" : ""
+    idleTimeDuration,
+    updatedQtyData.totalPauseTime || 0
   );
-  const pauseTimeInHours = (updatedQtyData.totalPauseTime || 0) / 3600;
-  updatedQtyData.machineHrs = Math.max(0, parseFloat(baseMachineHrs) - pauseTimeInHours).toFixed(3);
   return updatedQtyData;
 };

@@ -706,12 +706,14 @@ router.post("/jobs/:id/reset-quantity", async (req, res) => {
           startTime: latestCapture?.startTime || "",
           endTime: latestCapture?.endTime || "",
           machineHrs: latestCapture?.machineHrs || "",
-          machineNumber: latestCapture?.machineNumber || "",
-          opsName: latestCapture?.opsName || "",
+          machineNumber: latestCapture?.machineNumber || String(job.machineNumber || ""),
+          opsName: latestCapture?.opsName || String(job.opsName || ""),
           idleTime: latestCapture?.idleTime || "",
           idleTimeDuration: latestCapture?.idleTimeDuration || "",
           lastImage: latestCapture?.lastImage || null,
-          assignedTo: latestCapture?.opsName ? String(latestCapture.opsName) : "Unassign",
+          assignedTo: latestCapture?.opsName
+            ? String(latestCapture.opsName)
+            : String(job.assignedTo || "").trim() || "Unassign",
           updatedAt: new Date(),
           ...(updatedBy ? { updatedBy } : {}),
         },
