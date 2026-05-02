@@ -33,6 +33,8 @@ type OperatorInputSectionProps = {
   onRequestEndTimeCapture?: (cutId: number | string, quantityIndex: number) => void;
   onStartTimeCaptured?: (cutId: number | string, quantityIndex: number) => void;
   requiredHoursPerQuantity?: number;
+  canRunAssignedJob?: boolean;
+  runBlockedReason?: string;
 };
 
 const createFallbackQuantity = () => ({
@@ -80,6 +82,8 @@ export const OperatorInputSection: React.FC<OperatorInputSectionProps> = ({
   onRequestEndTimeCapture,
   onStartTimeCaptured,
   requiredHoursPerQuantity = 0,
+  canRunAssignedJob = true,
+  runBlockedReason,
 }) => {
   const [captureMode, setCaptureMode] = useState<"PER_QUANTITY" | "RANGE">("PER_QUANTITY");
   const [rangeFrom, setRangeFrom] = useState("1");
@@ -214,6 +218,8 @@ export const OperatorInputSection: React.FC<OperatorInputSectionProps> = ({
             onSaveRange={onSaveRange}
             savedRanges={savedRanges}
             canReset={isAdmin}
+            canRunAssignedJob={canRunAssignedJob}
+            runBlockedReason={runBlockedReason}
           />
         );
       })}

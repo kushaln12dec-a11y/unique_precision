@@ -41,6 +41,21 @@ const employeeLogsResponseCache = new Map<string, { expiresAt: number; payload: 
 const ACTIVE_OPERATOR_RUNS_CACHE_TTL_MS = 2000;
 const ACTIVE_OPERATOR_RUNS_URL = "/api/employee-logs?role=OPERATOR&status=IN_PROGRESS&limit=250";
 
+export const invalidateEmployeeLogsCache = (matcher?: string | RegExp) => {
+  const shouldDelete = (key: string) => {
+    if (!matcher) return true;
+    if (typeof matcher === "string") return key.includes(matcher);
+    return matcher.test(key);
+  };
+
+  Array.from(employeeLogsInFlight.keys()).forEach((key) => {
+    if (shouldDelete(key)) employeeLogsInFlight.delete(key);
+  });
+  Array.from(employeeLogsResponseCache.keys()).forEach((key) => {
+    if (shouldDelete(key)) employeeLogsResponseCache.delete(key);
+  });
+};
+
 const fetchEmployeeLogsPayload = async (url: string): Promise<any> => {
   const now = Date.now();
   const cached = employeeLogsResponseCache.get(url);

@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { authMiddleware } from "../middleware/auth";
 import { prisma } from "../lib/prisma";
+import { emitJobsUpdated } from "../lib/socket";
 import { parseOperatorDateTime } from "../utils/dateTime";
 import { toBigInt } from "../utils/bigint";
 import { mapEmployeeLog } from "../utils/prismaMappers";
@@ -35,6 +36,18 @@ const getRequestedOperatorNames = (value: unknown): string[] =>
     .split(",")
     .map((entry) => entry.trim().toUpperCase())
     .filter((entry) => entry && entry !== "UNASSIGN" && entry !== "UNASSIGNED");
+
+const getAssignedOperatorNames = (value: unknown): string[] =>
+  String(value || "")
+    .split(",")
+    .map((entry) => entry.trim().toUpperCase())
+    .filter((entry) => entry && entry !== "UNASSIGN" && entry !== "UNASSIGNED");
+
+const isUserAssignedToJob = (reqUser: any, assignedValue: unknown) => {
+  const currentUserName = resolveReqUserName(reqUser);
+  if (!currentUserName) return false;
+  return getAssignedOperatorNames(assignedValue).includes(currentUserName);
+};
 
 const canOperatorAdjustOwnAssignment = (reqUser: any, currentValue: unknown, requestedValue: unknown) => {
   return true;
@@ -556,6 +569,10 @@ router.post("/operator/complete", async (req, res) => {
           })
         : null;
 
+      if (relatedJob && !isUserAssignedToJob(reqUser, relatedJob.assignedTo)) {
+        return res.status(403).json({ message: "You can only run jobs assigned to your name." });
+      }
+
       if (relatedJob && !canOperatorAdjustOwnAssignment(reqUser, relatedJob.assignedTo, opsName || (existingLog.metadata as any)?.opsName)) {
         return res.status(403).json({ message: "Operators can only add or remove their own name." });
       }
@@ -597,6 +614,13 @@ router.post("/operator/complete", async (req, res) => {
         return nextLog;
       });
 
+      emitJobsUpdated({
+        groupId: existingLog.jobGroupId,
+        jobId: resolvedExistingJobId || existingLog.jobId,
+        updatedBy: resolveReqUserName(reqUser),
+        source: "employee-logs:operator-complete",
+      });
+
       return res.status(201).json(mapEmployeeLog(updatedLog));
     }
 
@@ -613,6 +637,9 @@ router.post("/operator/complete", async (req, res) => {
         where: { id: resolvedJobId },
         select: { assignedTo: true },
       });
+      if (relatedJob && !isUserAssignedToJob(reqUser, relatedJob.assignedTo)) {
+        return res.status(403).json({ message: "You can only run jobs assigned to your name." });
+      }
       if (relatedJob && !canOperatorAdjustOwnAssignment(reqUser, relatedJob.assignedTo, opsName)) {
         return res.status(403).json({ message: "Operators can only add or remove their own name." });
       }
@@ -684,6 +711,13 @@ router.post("/operator/complete", async (req, res) => {
       return createdLog;
     });
 
+    emitJobsUpdated({
+      groupId: resolvedGroupId,
+      jobId: resolvedJobId,
+      updatedBy: resolveReqUserName(reqUser),
+      source: "employee-logs:operator-complete",
+    });
+
     res.status(201).json(mapEmployeeLog(log));
   } catch (error: any) {
     console.error("Error creating operator log:", error);
@@ -714,6 +748,16 @@ router.post("/operator/start", async (req, res) => {
     const normalizedMachineNumber = normalizeMachineNumber(machineNumber);
     const resolvedFromQty = Math.max(1, Number(fromQty || 1));
     const resolvedToQty = Math.max(resolvedFromQty, Number(toQty || resolvedFromQty));
+
+    if (resolvedJobId) {
+      const relatedJob = await prisma.job.findUnique({
+        where: { id: resolvedJobId },
+        select: { assignedTo: true },
+      });
+      if (relatedJob && !isUserAssignedToJob(reqUser, relatedJob.assignedTo)) {
+        return res.status(403).json({ message: "You can only run jobs assigned to your name." });
+      }
+    }
 
     if (resolvedJobId) {
       const quantityConflict = await findActiveQuantityConflict(resolvedJobId, resolvedFromQty, resolvedToQty);
@@ -765,6 +809,13 @@ router.post("/operator/start", async (req, res) => {
           opsName: String(opsName || resolveReqUserName(reqUser) || ""),
         },
       },
+    });
+
+    emitJobsUpdated({
+      groupId: toBigInt(jobGroupId) ?? null,
+      jobId: resolvedJobId,
+      updatedBy: resolveReqUserName(reqUser),
+      source: "employee-logs:operator-start",
     });
 
     res.status(201).json(mapEmployeeLog(log));

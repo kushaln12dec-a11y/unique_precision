@@ -4,6 +4,8 @@ import type { OperatorInputField } from "../types/inputFields";
 type Props = {
   canOperateInputs: boolean;
   canReset: boolean;
+  canRunAssignedJob: boolean;
+  runBlockedReason?: string;
   cutId: number | string;
   qtyIndex: number;
   isRangeMode: boolean;
@@ -29,6 +31,8 @@ type Props = {
 const OperatorQuantityActions: React.FC<Props> = ({
   canOperateInputs,
   canReset,
+  canRunAssignedJob,
+  runBlockedReason,
   cutId,
   qtyIndex,
   isRangeMode,
@@ -52,6 +56,7 @@ const OperatorQuantityActions: React.FC<Props> = ({
 }) => {
   const canSaveSingleQuantity = canOperateInputs && Boolean(String(qtyEndTime || "").trim());
   const canSaveRange = canOperateInputs && !isRangeMode ? false : Boolean(String(qtyEndTime || "").trim()) && isRangeValid && isRangeApproved;
+  const showRunBlockedToast = () => onShowToast?.(runBlockedReason || "Your name must be assigned to this job before you can run it.", "error");
 
   return (
     <div className="quantity-save-section">
@@ -61,6 +66,7 @@ const OperatorQuantityActions: React.FC<Props> = ({
           className={`btn-save-quantity ${savedRanges.has(rangeBadgeKey) ? "saved" : ""}`}
           disabled={!canSaveRange}
           onClick={() => {
+            if (!canRunAssignedJob) return showRunBlockedToast();
             if (!String(qtyEndTime || "").trim()) return onShowToast?.("Click End Time before saving.", "error");
             if (!isRangeValid) return onShowToast?.(`Enter range between 1 and ${Math.max(rangeEndQty, rangeStartQty)}.`, "error");
             if (!isRangeApproved) return onShowToast?.("Please click Check to accept the range.", "error");
@@ -75,8 +81,11 @@ const OperatorQuantityActions: React.FC<Props> = ({
             <button
               type="button"
               className="mark-shift-over-button"
-              disabled={!canOperateInputs}
-              onClick={() => (isShiftOverPause ? onRequestResume?.(cutId, qtyIndex) : onRequestShiftOver?.(cutId, qtyIndex))}
+              disabled={!canOperateInputs || !canRunAssignedJob}
+              onClick={() => {
+                if (!canRunAssignedJob) return showRunBlockedToast();
+                isShiftOverPause ? onRequestResume?.(cutId, qtyIndex) : onRequestShiftOver?.(cutId, qtyIndex);
+              }}
             >
               {isShiftOverPause ? "Resume Quantity" : "Shift Over"}
             </button>
@@ -85,7 +94,10 @@ const OperatorQuantityActions: React.FC<Props> = ({
             <button
               type="button"
               className="reset-timer-button"
-              onClick={() => (onRequestResetTimer ? onRequestResetTimer(cutId, qtyIndex) : onInputChange(cutId, qtyIndex, "resetTimer", ""))}
+              onClick={() => {
+                if (!canRunAssignedJob) return showRunBlockedToast();
+                onRequestResetTimer ? onRequestResetTimer(cutId, qtyIndex) : onInputChange(cutId, qtyIndex, "resetTimer", "");
+              }}
               aria-label="Reset timer"
               title="Reset timer"
             >
@@ -95,8 +107,9 @@ const OperatorQuantityActions: React.FC<Props> = ({
           <button
             type="button"
             className="btn-save-quantity"
-            disabled={!canSaveSingleQuantity}
+            disabled={!canSaveSingleQuantity || !canRunAssignedJob}
             onClick={() => {
+              if (!canRunAssignedJob) return showRunBlockedToast();
               if (!String(qtyEndTime || "").trim()) return onShowToast?.("Click End Time before saving.", "error");
               onSaveQuantity?.(cutId, qtyIndex);
             }}

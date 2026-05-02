@@ -9,6 +9,7 @@ import type { QuantityProgressStatus } from "../utils/qaProgress";
 import { loadOperatorUsers, readImageFileAsBase64, seedQaStatusesByCut, seedSavedQuantities, showAndHideToast } from "../utils/operatorViewActionUtils";
 import { createDefaultToast, type ToastState } from "../utils/operatorViewToast";
 import { applyQaStatusToQuantities, buildRangeCapturePayload, buildSingleCapturePayload, getAssignedToValue, getOperatorOpsName } from "../utils/operatorCapturePayloads";
+import { getCurrentISTDateTime } from "../../../utils/dateTime";
 
 type Params = {
   jobs: JobEntry[];
@@ -16,6 +17,12 @@ type Params = {
   setValidationErrors: React.Dispatch<React.SetStateAction<Map<number | string, Record<string, Record<string, string>>>>>;
   currentUserDisplayName: string;
 };
+
+const parseAssignedOperators = (value: unknown): string[] =>
+  String(value || "")
+    .split(",")
+    .map((entry) => String(entry || "").trim().toUpperCase())
+    .filter((entry) => entry && entry !== "UNASSIGN" && entry !== "UNASSIGNED");
 
 export const useOperatorViewActions = ({ jobs, cutInputs, setValidationErrors, currentUserDisplayName }: Params) => {
   const [operatorUsers, setOperatorUsers] = useState<Array<{ id: string | number; name: string }>>([]);
@@ -152,6 +159,16 @@ export const useOperatorViewActions = ({ jobs, cutInputs, setValidationErrors, c
       return next;
     });
   }, [setValidationErrors]);
+
+  const ensureCurrentUserAssigned = useCallback((job: JobEntry | undefined) => {
+    const assignedOperators = parseAssignedOperators(job?.assignedTo || "");
+    const isAssigned = assignedOperators.includes(String(currentUserDisplayName || "").trim().toUpperCase());
+    if (!isAssigned) {
+      showAndHideToast(setActionToast, "Your name must be assigned to this job before you can run it.", "error", 3500);
+      return false;
+    }
+    return true;
+  }, [currentUserDisplayName]);
 
   const handleSaveQuantity = useCallback(async (cutId: number | string, quantityIndex: number) => {
     const cutData = cutInputs.get(cutId);
@@ -321,6 +338,7 @@ export const useOperatorViewActions = ({ jobs, cutInputs, setValidationErrors, c
     if (activeOperatorLogIds.has(key)) return;
     const job = jobs.find((item) => String(item.id) === String(cutId));
     if (!job) return;
+    if (!ensureCurrentUserAssigned(job)) return;
     const qtyData = cutInputs.get(cutId)?.quantities?.[quantityIndex];
     const nextMachineNumber = String(qtyData?.machineNumber || "").trim();
     if (!nextMachineNumber) {
@@ -328,6 +346,8 @@ export const useOperatorViewActions = ({ jobs, cutInputs, setValidationErrors, c
       return;
     }
     try {
+      const startedAtIso = new Date().toISOString();
+      const startedAtDisplay = getCurrentISTDateTime();
       const fromQty = quantityIndex + 1;
       const startedLog = await startOperatorProductionLog({
         jobId: String(job.id),
@@ -339,7 +359,7 @@ export const useOperatorViewActions = ({ jobs, cutInputs, setValidationErrors, c
         fromQty,
         toQty: fromQty,
         quantityCount: 1,
-        startedAt: new Date().toISOString(),
+        startedAt: startedAtIso,
         machineNumber: nextMachineNumber,
         opsName: getOperatorOpsName(qtyData?.opsName || []),
       });
@@ -352,8 +372,12 @@ export const useOperatorViewActions = ({ jobs, cutInputs, setValidationErrors, c
       }
 
       const nextAssignedTo = getAssignedToValue(getOperatorOpsName(qtyData?.opsName || []));
-      if (nextAssignedTo || nextMachineNumber) {
+      if (nextAssignedTo || nextMachineNumber || startedAtDisplay) {
         await updateOperatorJob(String(cutId), {
+          startTime: startedAtDisplay,
+          endTime: "",
+          idleTime: "",
+          idleTimeDuration: "",
           ...(nextAssignedTo ? { assignedTo: nextAssignedTo } : {}),
           ...(nextMachineNumber ? { machineNumber: nextMachineNumber } : {}),
         });
@@ -363,7 +387,7 @@ export const useOperatorViewActions = ({ jobs, cutInputs, setValidationErrors, c
       const message = error instanceof Error ? error.message : "Failed to start operator run.";
       showAndHideToast(setActionToast, message, "error", 3500);
     }
-  }, [activeOperatorLogIds, cutInputs, jobs]);
+  }, [activeOperatorLogIds, cutInputs, ensureCurrentUserAssigned, jobs]);
 
   const handlePauseResumeAction = useCallback(async (
     cutId: number | string,
@@ -381,6 +405,9 @@ export const useOperatorViewActions = ({ jobs, cutInputs, setValidationErrors, c
     const job = jobs.find((item) => String(item.id) === String(cutId));
     if (!job) {
       showAndHideToast(setActionToast, "Job not found.", "error", 3000);
+      return false;
+    }
+    if (!ensureCurrentUserAssigned(job)) {
       return false;
     }
 
@@ -405,6 +432,8 @@ export const useOperatorViewActions = ({ jobs, cutInputs, setValidationErrors, c
           return false;
         }
 
+        const resumedAtIso = new Date().toISOString();
+        const resumedAtDisplay = getCurrentISTDateTime();
         const startedLog = await startOperatorProductionLog({
           jobId: String(job.id),
           jobGroupId: String(job.groupId ?? ""),
@@ -415,7 +444,7 @@ export const useOperatorViewActions = ({ jobs, cutInputs, setValidationErrors, c
           fromQty: quantityIndex + 1,
           toQty: quantityIndex + 1,
           quantityCount: 1,
-          startedAt: new Date().toISOString(),
+          startedAt: resumedAtIso,
           machineNumber: String(qtyData.machineNumber || "").trim(),
           opsName: getOperatorOpsName(qtyData.opsName),
         });
@@ -429,6 +458,10 @@ export const useOperatorViewActions = ({ jobs, cutInputs, setValidationErrors, c
         }
 
         await updateOperatorJob(String(cutId), {
+          startTime: resumedAtDisplay,
+          endTime: "",
+          idleTime: "",
+          idleTimeDuration: "",
           assignedTo: getAssignedToValue(getOperatorOpsName(qtyData.opsName)),
           machineNumber: String(qtyData.machineNumber || "").trim(),
         });
@@ -437,6 +470,7 @@ export const useOperatorViewActions = ({ jobs, cutInputs, setValidationErrors, c
       }
 
       const activeLogId = activeOperatorLogIds.get(key) || await resolveActiveOperatorLogId(cutId, quantityIndex);
+      const pausedAtDisplay = getCurrentISTDateTime();
       if (activeLogId) {
         await completeOperatorProductionLog({
           logId: activeLogId,
@@ -459,6 +493,10 @@ export const useOperatorViewActions = ({ jobs, cutInputs, setValidationErrors, c
       const nextMachineNumber = String(qtyData.machineNumber || "").trim();
       if (nextAssignedTo || nextMachineNumber) {
         await updateOperatorJob(String(cutId), {
+          endTime: "",
+          idleTime: "Shift Over",
+          idleTimeDuration: "",
+          startTime: String(qtyData.startTime || pausedAtDisplay),
           ...(nextAssignedTo ? { assignedTo: nextAssignedTo } : {}),
           ...(nextMachineNumber ? { machineNumber: nextMachineNumber } : {}),
         });
@@ -474,7 +512,7 @@ export const useOperatorViewActions = ({ jobs, cutInputs, setValidationErrors, c
       showAndHideToast(setActionToast, message, "error", 3500);
       return false;
     }
-  }, [activeOperatorLogIds, currentUserDisplayName, cutInputs, jobs, resolveActiveOperatorLogId]);
+  }, [activeOperatorLogIds, currentUserDisplayName, cutInputs, ensureCurrentUserAssigned, jobs, resolveActiveOperatorLogId]);
 
   return {
     operatorUsers,
