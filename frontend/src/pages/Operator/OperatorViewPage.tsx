@@ -154,7 +154,8 @@ const OperatorViewPage = () => {
     const machineHrs = calculateMachineHrs(
       String(qtyData.startTime || ""),
       displayValue,
-      String(qtyData.idleTimeDuration || "")
+      String(qtyData.idleTimeDuration || ""),
+      Number(qtyData.totalPauseTime || 0)
     );
 
     handleInputChange(cutId, quantityIndex, "endTime", displayValue);
