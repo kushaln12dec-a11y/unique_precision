@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useState, useEffect } from "react";
+import { useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import Sidebar from "../../components/Sidebar";
 import Header from "../../components/Header";
@@ -37,6 +38,16 @@ const parseAssignedOperators = (value: unknown) =>
 const isCurrentUserAssignedToJob = (assignedTo: unknown, currentUserDisplayName: string, isAdmin: boolean) =>
   isAdmin || parseAssignedOperators(assignedTo).includes(normalizeOperatorName(currentUserDisplayName));
 
+const buildStableOperatorList = (names: string[]) =>
+  Array.from(
+    new Map(
+      names
+        .map((name) => normalizeOperatorName(name))
+        .filter(Boolean)
+        .map((name) => [name.toLowerCase(), name] as const)
+    ).values()
+  ).sort((left, right) => left.localeCompare(right));
+
 const OperatorViewPage = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -52,6 +63,7 @@ const OperatorViewPage = () => {
   const [liveNowMs, setLiveNowMs] = useState<number>(Date.now());
   const [pendingOperatorAction, setPendingOperatorAction] = useState<{ cutId: number | string; quantityIndex: number; action: "shiftOver" | "resume" } | null>(null);
   const [pendingEndTimeCapture, setPendingEndTimeCapture] = useState<{ cutId: number | string; quantityIndex: number } | null>(null);
+  const pendingAssignmentSyncRef = useRef<Map<string, string>>(new Map());
 
   const {
     jobs,
@@ -212,20 +224,33 @@ const OperatorViewPage = () => {
               })()
             : namesFromInputs;
 
-        const nextAssignedTo = nextAssignedOperators.join(", ") || "Unassign";
-        const currentAssignedTo = currentAssignedOperators.join(", ") || "Unassign";
+        const stableNextAssignedOperators = buildStableOperatorList(nextAssignedOperators);
+        const stableCurrentAssignedOperators = buildStableOperatorList(currentAssignedOperators);
+        const nextAssignedTo = stableNextAssignedOperators.join(", ") || "Unassign";
+        const currentAssignedTo = stableCurrentAssignedOperators.join(", ") || "Unassign";
+        const syncSignature = `${nextAssignedTo}|${nextMachineNumber}`;
+        const jobId = String(job.id);
 
         if (
           currentAssignedTo === nextAssignedTo &&
           String(job.machineNumber || "").trim() === nextMachineNumber
         ) {
+          pendingAssignmentSyncRef.current.delete(jobId);
           return;
         }
+
+        if (pendingAssignmentSyncRef.current.get(jobId) === syncSignature) {
+          return;
+        }
+
+        pendingAssignmentSyncRef.current.set(jobId, syncSignature);
 
         void updateOperatorJob(String(job.id), {
           assignedTo: nextAssignedTo,
           machineNumber: nextMachineNumber,
-        }).catch(() => undefined);
+        }).catch(() => {
+          pendingAssignmentSyncRef.current.delete(jobId);
+        });
       });
     }, 400);
 
