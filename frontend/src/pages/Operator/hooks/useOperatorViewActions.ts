@@ -534,6 +534,11 @@ export const useOperatorViewActions = ({ jobs, cutInputs, setValidationErrors, c
       return false;
     }
 
+    if (qtyData.isPaused) {
+      showAndHideToast(setActionToast, "Resume this quantity before capturing end time.", "error", 3000);
+      return false;
+    }
+
     const job = jobs.find((item) => String(item.id) === String(cutId));
     if (!job) {
       showAndHideToast(setActionToast, "Job not found.", "error", 3000);

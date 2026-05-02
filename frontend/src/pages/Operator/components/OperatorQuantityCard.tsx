@@ -10,7 +10,7 @@ import { decimalHoursToHHMM } from "../utils/machineHrsCalculation";
 import { useQuantityTimer } from "../hooks/useQuantityTimer";
 import { getQaStageLabel, type QuantityProgressStatus } from "../utils/qaProgress";
 import { estimatedDurationSecondsFromHours, formatMachineLabel } from "../../../utils/jobFormatting";
-import { formatIdleDuration } from "../utils/operatorTimeUtils";
+import { formatIdleDuration, parseOperatorDateTime } from "../utils/operatorTimeUtils";
 import type { QuantityInputData } from "../types/cutInput";
 import type { OperatorInputField } from "../types/inputFields";
 import { getOperatorQuantityHistory } from "../utils/operatorQuantityHistory";
@@ -47,6 +47,7 @@ type Props = {
   canReset: boolean;
   canRunAssignedJob: boolean;
   runBlockedReason?: string;
+  isAdmin: boolean;
 };
 
 export const OperatorQuantityCard: React.FC<Props> = ({
@@ -78,6 +79,7 @@ export const OperatorQuantityCard: React.FC<Props> = ({
   canReset,
   canRunAssignedJob,
   runBlockedReason,
+  isAdmin,
 }) => {
   const rangeQuantityCount = isRangeMode && isRangeValid ? Math.max(1, rangeEndQty - rangeStartQty + 1) : 1;
   const quantityRequiredSeconds = estimatedDurationSecondsFromHours(
@@ -160,8 +162,10 @@ export const OperatorQuantityCard: React.FC<Props> = ({
                   return;
                 }
                 if (!qtyData.startTime && !qtyData.endTime) {
-                  onInputChange(cutId, qtyIndex, "startTime", getCurrentISTDateTime(timestampMs));
-                  onInputChange(cutId, qtyIndex, "startTimeEpochMs", String(timestampMs));
+                  const displayValue = getCurrentISTDateTime(timestampMs);
+                  const normalizedTimestamp = parseOperatorDateTime(displayValue) ?? timestampMs;
+                  onInputChange(cutId, qtyIndex, "startTime", displayValue);
+                  onInputChange(cutId, qtyIndex, "startTimeEpochMs", String(normalizedTimestamp));
                   onStartTimeCaptured?.(cutId, qtyIndex);
                   onShowToast?.("Start time captured successfully!", "success");
                 } else {
@@ -201,6 +205,10 @@ export const OperatorQuantityCard: React.FC<Props> = ({
                   blockRunAction();
                   return;
                 }
+                if (qtyData.isPaused) {
+                  onShowToast?.("Resume this quantity before capturing end time.", "error");
+                  return;
+                }
                 if (!qtyData.endTime) {
                   onRequestEndTimeCapture?.(cutId, qtyIndex);
                 } else {
@@ -209,7 +217,7 @@ export const OperatorQuantityCard: React.FC<Props> = ({
               }}
               placeholder="DD/MM/YYYY HH:MM"
               error={validationErrors.endTime}
-              disabled={!canOperateInputs || !!qtyData.endTime || !canRunAssignedJob}
+              disabled={!canOperateInputs || !!qtyData.endTime || qtyData.isPaused || !canRunAssignedJob}
             />
           </div>
           <div className="operator-input-card">
@@ -276,6 +284,7 @@ export const OperatorQuantityCard: React.FC<Props> = ({
           shouldShowOperatorHistory={shouldShowOperatorHistory}
           shouldShowWorkedBySummary={shouldShowWorkedBySummary}
           formatWorkedDuration={formatWorkedDuration}
+          isAdmin={isAdmin}
         />
       </div>
 

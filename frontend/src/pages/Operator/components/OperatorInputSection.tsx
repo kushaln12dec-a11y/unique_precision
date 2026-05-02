@@ -220,6 +220,7 @@ export const OperatorInputSection: React.FC<OperatorInputSectionProps> = ({
             canReset={isAdmin}
             canRunAssignedJob={canRunAssignedJob}
             runBlockedReason={runBlockedReason}
+            isAdmin={isAdmin}
           />
         );
       })}

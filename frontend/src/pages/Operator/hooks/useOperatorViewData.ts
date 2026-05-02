@@ -8,6 +8,7 @@ import { createEmptyQuantityInputData } from "../types/cutInput";
 import { calculateMachineHrs } from "../utils/machineHrsCalculation";
 import { saveOperatorInputsToLocalStorage } from "../utils/operatorViewStorage";
 import { getCurrentISTDateTime } from "../../../utils/dateTime";
+import { parseOperatorDateTime } from "../utils/operatorTimeUtils";
 
 export const useOperatorViewData = (groupId: string | null, cutIdParam: string | null) => {
   const [jobs, setJobs] = useState<JobEntry[]>([]);
@@ -255,17 +256,19 @@ export const useOperatorViewData = (groupId: string | null, cutIdParam: string |
     const sharedMachine = String((job as any).machineNumber || "").trim();
     const assignedOperators = parseAssignedOperators((job as any).assignedTo || "");
     const activeLogStartMs = activeLog?.startedAt ? new Date(String(activeLog.startedAt)).getTime() : null;
+    const activeLogDisplay = activeLogStartMs && Number.isFinite(activeLogStartMs) ? getCurrentISTDateTime(activeLogStartMs) : "";
+    const normalizedActiveLogStartMs = activeLogDisplay ? parseOperatorDateTime(activeLogDisplay) : null;
     const activeOps = parseOpsNames((activeLog?.metadata as any)?.opsName || "");
     const activeMachine = String((activeLog?.metadata as any)?.machineNumber || "").trim();
     const pauseMarker = String(quantity.idleTime || "").trim() || String((job as any).idleTime || "").trim();
     const pauseStartedAt = String((job as any).updatedAt || "").trim();
     const pauseStartedMs = pauseStartedAt ? new Date(pauseStartedAt).getTime() : null;
 
-    if (activeLog && activeLogStartMs && Number.isFinite(activeLogStartMs)) {
+    if (activeLog && normalizedActiveLogStartMs && Number.isFinite(normalizedActiveLogStartMs)) {
       return {
         ...quantity,
-        startTime: getCurrentISTDateTime(activeLogStartMs),
-        startTimeEpochMs: activeLogStartMs,
+        startTime: activeLogDisplay,
+        startTimeEpochMs: normalizedActiveLogStartMs,
         endTime: "",
         endTimeEpochMs: null,
         machineNumber: activeMachine || quantity.machineNumber || sharedMachine,
