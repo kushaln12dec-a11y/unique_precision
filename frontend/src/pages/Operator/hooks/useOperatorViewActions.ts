@@ -16,6 +16,7 @@ type Params = {
   cutInputs: Map<number | string, CutInputData>;
   setValidationErrors: React.Dispatch<React.SetStateAction<Map<number | string, Record<string, Record<string, string>>>>>;
   currentUserDisplayName: string;
+  isAdmin: boolean;
 };
 
 const parseAssignedOperators = (value: unknown): string[] =>
@@ -24,7 +25,7 @@ const parseAssignedOperators = (value: unknown): string[] =>
     .map((entry) => String(entry || "").trim().toUpperCase())
     .filter((entry) => entry && entry !== "UNASSIGN" && entry !== "UNASSIGNED");
 
-export const useOperatorViewActions = ({ jobs, cutInputs, setValidationErrors, currentUserDisplayName }: Params) => {
+export const useOperatorViewActions = ({ jobs, cutInputs, setValidationErrors, currentUserDisplayName, isAdmin }: Params) => {
   const [operatorUsers, setOperatorUsers] = useState<Array<{ id: string | number; name: string }>>([]);
   const [savedQuantities, setSavedQuantities] = useState<Map<number | string, Set<number>>>(new Map());
   const [savedRanges, setSavedRanges] = useState<Map<number | string, Set<string>>>(new Map());
@@ -161,6 +162,7 @@ export const useOperatorViewActions = ({ jobs, cutInputs, setValidationErrors, c
   }, [setValidationErrors]);
 
   const ensureCurrentUserAssigned = useCallback((job: JobEntry | undefined) => {
+    if (isAdmin) return true;
     const assignedOperators = parseAssignedOperators(job?.assignedTo || "");
     const isAssigned = assignedOperators.includes(String(currentUserDisplayName || "").trim().toUpperCase());
     if (!isAssigned) {
@@ -168,7 +170,7 @@ export const useOperatorViewActions = ({ jobs, cutInputs, setValidationErrors, c
       return false;
     }
     return true;
-  }, [currentUserDisplayName]);
+  }, [currentUserDisplayName, isAdmin]);
 
   const handleSaveQuantity = useCallback(async (cutId: number | string, quantityIndex: number) => {
     const cutData = cutInputs.get(cutId);
