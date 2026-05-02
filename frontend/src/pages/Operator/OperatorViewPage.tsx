@@ -385,14 +385,14 @@ const OperatorViewPage = () => {
     const expectedSeconds = estimatedDurationSecondsFromHours(groupEstimatedHrs);
     if (expectedSeconds <= 0) return 0;
 
-    let maxElapsedSeconds = 0;
+    let totalElapsedSeconds = 0;
     cutInputs.forEach((cut) => {
       (cut.quantities || []).forEach((quantity) => {
-        maxElapsedSeconds = Math.max(maxElapsedSeconds, getQuantityElapsedSeconds(quantity, liveNowMs));
+        totalElapsedSeconds += getQuantityElapsedSeconds(quantity, liveNowMs);
       });
     });
 
-    return Math.max(0, maxElapsedSeconds - expectedSeconds);
+    return Math.max(0, totalElapsedSeconds - expectedSeconds);
   }, [cutInputs, groupEstimatedHrs, liveNowMs]);
 
   const getCutInputData = (cutId: number | string, quantity: number = 1): CutInputData => {

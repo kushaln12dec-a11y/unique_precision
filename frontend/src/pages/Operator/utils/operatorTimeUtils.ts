@@ -28,7 +28,12 @@ export const getQuantityElapsedSeconds = (quantity: QuantityInputData, nowMs: nu
 
   if (endMs) {
     const base = Math.max(0, Math.floor((endMs - startMs) / 1000));
-    return Math.max(0, carriedWorkedSeconds + base - Math.floor(quantity.totalPauseTime || 0));
+    const closedSegmentSeconds = Math.max(0, base - Math.floor(quantity.totalPauseTime || 0));
+    const hasLocalEndEpoch = quantity.endTimeEpochMs && Number.isFinite(Number(quantity.endTimeEpochMs));
+    if (hasLocalEndEpoch) {
+      return Math.max(0, carriedWorkedSeconds + closedSegmentSeconds);
+    }
+    return Math.max(0, carriedWorkedSeconds || closedSegmentSeconds);
   }
 
   if (quantity.isPaused) return Math.max(0, Math.floor(quantity.pausedElapsedTime || carriedWorkedSeconds));
