@@ -23,6 +23,7 @@ type SelectDropdownProps = {
   disabled?: boolean;
   align?: "left" | "center";
   className?: string;
+  menuMinWidth?: number;
 };
 
 const SelectDropdown: React.FC<SelectDropdownProps> = ({
@@ -33,6 +34,7 @@ const SelectDropdown: React.FC<SelectDropdownProps> = ({
   disabled = false,
   align = "center",
   className = "",
+  menuMinWidth = 0,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [menuStyle, setMenuStyle] = useState<CSSProperties>({});
@@ -52,7 +54,7 @@ const SelectDropdown: React.FC<SelectDropdownProps> = ({
     const viewportHeight = window.innerHeight;
     const viewportWidth = window.innerWidth;
     const viewportMargin = 8;
-    const desiredWidth = Math.max(triggerRect.width, 1);
+    const desiredWidth = Math.max(triggerRect.width, menuMinWidth, 1);
     const maxAllowedWidth = Math.max(desiredWidth, viewportWidth - viewportMargin * 2);
     const finalWidth = Math.min(desiredWidth, maxAllowedWidth);
     const menuMaxHeight = Math.min(220, Math.max(120, viewportHeight - viewportMargin * 2));
@@ -109,7 +111,7 @@ const SelectDropdown: React.FC<SelectDropdownProps> = ({
       window.removeEventListener("resize", handleViewportChange);
       window.removeEventListener("scroll", handleViewportChange, true);
     };
-  }, [isOpen, options.length]);
+  }, [isOpen, menuMinWidth, options.length]);
 
   useEffect(() => {
     const handleOtherDropdownOpened = (event: Event) => {

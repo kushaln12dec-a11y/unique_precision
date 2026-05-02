@@ -136,7 +136,16 @@ export const buildOperatorLogsColumns = ({
     render: (row) => {
       const raw = String(row.status || "-").toUpperCase();
       const statusClass = raw === "IN_PROGRESS" ? "in-progress" : raw === "REJECTED" ? "rejected" : "completed";
-      return <span className={`log-status-badge ${statusClass}`}>{formatOperatorLogStatus(row.status)}</span>;
+      const historicalStatus = String((row.metadata as any)?.historicalStatus || "").trim().toUpperCase();
+      const historicalLabel = historicalStatus ? formatOperatorLogStatus(historicalStatus) : "";
+      return (
+        <span
+          className={`log-status-badge ${statusClass}`}
+          title={historicalLabel ? `Previously ${historicalLabel}` : undefined}
+        >
+          {formatOperatorLogStatus(row.status)}
+        </span>
+      );
     },
   },
 ];
@@ -172,6 +181,7 @@ export const buildOperatorLogFilter =
     getRevenueForLog,
     getWorkedDurationForLog,
     operatorLogUser,
+    operatorLogStatus,
     operatorLogSearch,
   }: {
     designationByUserName: Map<string, string>;
@@ -179,10 +189,17 @@ export const buildOperatorLogFilter =
     getRevenueForLog: (log: EmployeeLog, workedSecondsMap?: Map<string, number>) => string;
     getWorkedDurationForLog: (log: EmployeeLog) => number;
     operatorLogUser: string;
+    operatorLogStatus: "" | "IN_PROGRESS" | "COMPLETED" | "REJECTED";
     operatorLogSearch: string;
     }) =>
   (logs: EmployeeLog[]) =>
     logs.filter((log) => {
+      const matchesStatus =
+        !operatorLogStatus ||
+        String(log.status || "").trim().toUpperCase() === String(operatorLogStatus || "").trim().toUpperCase();
+
+      if (!matchesStatus) return false;
+
       const normalizedUserName = getLogUserDisplayName(log.userName, log.userEmail, "Operator");
       const matchesUser =
         !operatorLogUser ||

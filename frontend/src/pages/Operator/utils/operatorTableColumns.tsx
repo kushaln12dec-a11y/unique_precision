@@ -146,6 +146,7 @@ export const buildBaseOperatorColumns = ({
           ]}
           placeholder="Select"
           align="left"
+          menuMinWidth={96}
         />
       ) : (
         <div className="assigned-operators-readonly">{formatMachineLabel(getOperatorMachineNumber(row.entry)) || "-"}</div>
