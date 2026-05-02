@@ -27,6 +27,10 @@ const app = express();
 app.set("json replacer", (_key: string, value: any) =>
   typeof value === "bigint" ? value.toString() : value
 );
+app.use((_req, res, next) => {
+  res.setHeader("x-server-time-ms", String(Date.now()));
+  next();
+});
 app.use(cors());
 app.use(helmet());
 app.use(compression());
