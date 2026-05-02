@@ -60,7 +60,12 @@ export const useQuantityTimer = (
     if (!startMs) return 0;
     if (endMs) {
       const base = Math.max(0, Math.floor((endMs - startMs) / 1000));
-      return Math.max(0, carriedWorkedSeconds + base - Math.floor(totalPauseTime || 0));
+      const closedSegmentSeconds = Math.max(0, base - Math.floor(totalPauseTime || 0));
+      const hasLocalEndEpoch = endTimeEpochMs && Number.isFinite(Number(endTimeEpochMs));
+      if (hasLocalEndEpoch) {
+        return Math.max(0, carriedWorkedSeconds + closedSegmentSeconds);
+      }
+      return Math.max(0, carriedWorkedSeconds || closedSegmentSeconds);
     }
 
     if (isPaused) {
@@ -71,7 +76,7 @@ export const useQuantityTimer = (
       pauseStartTime && isPaused ? Math.max(0, Math.floor((now - pauseStartTime) / 1000)) : 0;
     const raw = Math.max(0, Math.floor((now - startMs) / 1000));
     return Math.max(0, carriedWorkedSeconds + raw - Math.floor((totalPauseTime || 0) + runningPauseSeconds));
-  }, [startMs, endMs, isPaused, pausedElapsedTime, totalPauseTime, pauseStartTime, now, workedDurationSeconds]);
+  }, [startMs, endMs, isPaused, pausedElapsedTime, totalPauseTime, pauseStartTime, now, workedDurationSeconds, endTimeEpochMs]);
 
   const computedPauseSeconds = useMemo(() => {
     const base = Math.max(0, Math.floor(totalPauseTime || 0));
