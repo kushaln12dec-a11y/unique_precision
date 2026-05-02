@@ -17,7 +17,7 @@ import type { CutInputData } from "./types/cutInput";
 import { createEmptyCutInputData } from "./types/cutInput";
 import { getUserDisplayNameFromToken, getUserRoleFromToken } from "../../utils/auth";
 import { estimatedDurationSecondsFromHours, estimatedHoursFromAmount, MACHINE_OPTIONS, toMachineIndex } from "../../utils/jobFormatting";
-import { getQuantityElapsedSeconds, parseOperatorDateTime } from "./utils/operatorTimeUtils";
+import { formatDurationToClock, getQuantityElapsedSeconds, parseOperatorDateTime } from "./utils/operatorTimeUtils";
 import { updateOperatorJob } from "../../services/operatorApi";
 import { getServerNowMs } from "../../services/serverTime";
 import { useJobSync } from "../../hooks/useJobSync";
@@ -170,10 +170,14 @@ const OperatorViewPage = () => {
 
     const timestampMs = getServerNowMs();
     const displayValue = getCurrentISTDateTime(timestampMs);
+    const persistedIdleDuration =
+      Number(qtyData.totalPauseTime || 0) > 0
+        ? formatDurationToClock(Number(qtyData.totalPauseTime || 0))
+        : String(qtyData.idleTimeDuration || "");
     const machineHrs = calculateMachineHrs(
       String(qtyData.startTime || ""),
       displayValue,
-      String(qtyData.idleTimeDuration || ""),
+      persistedIdleDuration,
       Number(qtyData.totalPauseTime || 0),
       qtyData.startTimeEpochMs || null,
       timestampMs
@@ -186,7 +190,7 @@ const OperatorViewPage = () => {
       endTime: displayValue,
       machineHrs,
       idleTime: String(qtyData.idleTime || ""),
-      idleTimeDuration: String(qtyData.idleTimeDuration || ""),
+      idleTimeDuration: persistedIdleDuration,
     });
     if (!success) return;
 

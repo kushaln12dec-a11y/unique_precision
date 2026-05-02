@@ -6,6 +6,7 @@ import type { JobEntry } from "../../../types/job";
 import type { CutInputData, QuantityInputData } from "../types/cutInput";
 import { createEmptyQuantityInputData } from "../types/cutInput";
 import { calculateMachineHrs } from "../utils/machineHrsCalculation";
+import { parseDurationToSeconds } from "../utils/operatorTimeUtils";
 import { saveOperatorInputsToLocalStorage } from "../utils/operatorViewStorage";
 import { getCurrentISTDateTime } from "../../../utils/dateTime";
 
@@ -412,6 +413,7 @@ export const useOperatorViewData = (groupId: string | null, cutIdParam: string |
               }
 
               for (let idx = fromQty - 1; idx <= toQty - 1; idx += 1) {
+                const persistedPauseSeconds = parseDurationToSeconds(idleTimeDuration);
                 quantities[idx] = {
                   startTime,
                   startTimeEpochMs: null,
@@ -429,7 +431,7 @@ export const useOperatorViewData = (groupId: string | null, cutIdParam: string |
                   lastImageFile: null,
                   isPaused: false,
                   pauseStartTime: null,
-                  totalPauseTime: 0,
+                  totalPauseTime: persistedPauseSeconds,
                   pausedElapsedTime: 0,
                   pauseSessions: [],
                   currentPauseReason: "",
@@ -480,7 +482,7 @@ export const useOperatorViewData = (groupId: string | null, cutIdParam: string |
               lastImageFile: null,
               isPaused: false,
               pauseStartTime: null,
-              totalPauseTime: 0,
+              totalPauseTime: parseDurationToSeconds(idleTimeDuration),
               pausedElapsedTime: 0,
               pauseSessions: [],
               currentPauseReason: "",
