@@ -34,8 +34,8 @@ const parseAssignedOperators = (value: unknown) =>
     .map((entry) => normalizeOperatorName(entry))
     .filter((entry) => entry && entry.toLowerCase() !== "unassign" && entry.toLowerCase() !== "unassigned");
 
-const isCurrentUserAssignedToJob = (assignedTo: unknown, currentUserDisplayName: string) =>
-  parseAssignedOperators(assignedTo).includes(normalizeOperatorName(currentUserDisplayName));
+const isCurrentUserAssignedToJob = (assignedTo: unknown, currentUserDisplayName: string, isAdmin: boolean) =>
+  isAdmin || parseAssignedOperators(assignedTo).includes(normalizeOperatorName(currentUserDisplayName));
 
 const OperatorViewPage = () => {
   const navigate = useNavigate();
@@ -92,7 +92,7 @@ const OperatorViewPage = () => {
     handleUpdateQaStatus,
     handleStartTimeCaptured,
     handlePauseResumeAction,
-  } = useOperatorViewActions({ jobs, cutInputs, setValidationErrors, currentUserDisplayName });
+  } = useOperatorViewActions({ jobs, cutInputs, setValidationErrors, currentUserDisplayName, isAdmin });
   const allowedOperatorUsers = useMemo(() => operatorUsers, [operatorUsers]);
 
   const handleConfirmEndTimeCapture = (cutId: number | string, quantityIndex: number) => {
@@ -415,7 +415,7 @@ const OperatorViewPage = () => {
                         }}
                         onStartTimeCaptured={handleStartTimeCaptured}
                         isAdmin={isAdmin}
-                        canRunAssignedJob={isCurrentUserAssignedToJob(cutItem.assignedTo, currentUserDisplayName)}
+                        canRunAssignedJob={isCurrentUserAssignedToJob(cutItem.assignedTo, currentUserDisplayName, isAdmin)}
                         runBlockedReason="Your name must be assigned to this job before you can run it."
                       />
                     );
