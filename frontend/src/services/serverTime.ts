@@ -7,6 +7,11 @@ const parseHeaderTime = (value: string | null): number | null => {
 };
 
 export const syncServerTimeOffset = (response: Response) => {
+  const preciseServerTime = Number(response.headers.get("x-server-time-ms"));
+  if (Number.isFinite(preciseServerTime) && preciseServerTime > 0) {
+    serverTimeOffsetMs = preciseServerTime - Date.now();
+    return;
+  }
   const headerTimeMs = parseHeaderTime(response.headers.get("date"));
   if (headerTimeMs === null) return;
   serverTimeOffsetMs = headerTimeMs - Date.now();

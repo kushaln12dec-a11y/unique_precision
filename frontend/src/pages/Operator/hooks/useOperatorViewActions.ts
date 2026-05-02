@@ -15,6 +15,7 @@ import { getCurrentISTDateTime } from "../../../utils/dateTime";
 type Params = {
   jobs: JobEntry[];
   cutInputs: Map<number | string, CutInputData>;
+  setCutInputs: React.Dispatch<React.SetStateAction<Map<number | string, CutInputData>>>;
   setValidationErrors: React.Dispatch<React.SetStateAction<Map<number | string, Record<string, Record<string, string>>>>>;
   currentUserDisplayName: string;
   isAdmin: boolean;
@@ -26,7 +27,7 @@ const parseAssignedOperators = (value: unknown): string[] =>
     .map((entry) => String(entry || "").trim().toUpperCase())
     .filter((entry) => entry && entry !== "UNASSIGN" && entry !== "UNASSIGNED");
 
-export const useOperatorViewActions = ({ jobs, cutInputs, setValidationErrors, currentUserDisplayName, isAdmin }: Params) => {
+export const useOperatorViewActions = ({ jobs, cutInputs, setCutInputs, setValidationErrors, currentUserDisplayName, isAdmin }: Params) => {
   const [operatorUsers, setOperatorUsers] = useState<Array<{ id: string | number; name: string }>>([]);
   const [savedQuantities, setSavedQuantities] = useState<Map<number | string, Set<number>>>(new Map());
   const [savedRanges, setSavedRanges] = useState<Map<number | string, Set<string>>>(new Map());
@@ -350,8 +351,6 @@ export const useOperatorViewActions = ({ jobs, cutInputs, setValidationErrors, c
     }
     try {
       const startedAtMs = getServerNowMs();
-      const startedAtIso = new Date(startedAtMs).toISOString();
-      const startedAtDisplay = getCurrentISTDateTime(startedAtMs);
       const fromQty = quantityIndex + 1;
       const startedLog = await startOperatorProductionLog({
         jobId: String(job.id),
@@ -363,10 +362,15 @@ export const useOperatorViewActions = ({ jobs, cutInputs, setValidationErrors, c
         fromQty,
         toQty: fromQty,
         quantityCount: 1,
-        startedAt: startedAtIso,
         machineNumber: nextMachineNumber,
         opsName: getOperatorOpsName(qtyData?.opsName || []),
       });
+      const authoritativeStartedAtMs = new Date(String(startedLog?.startedAt || "")).getTime();
+      const effectiveStartedAtMs =
+        Number.isFinite(authoritativeStartedAtMs) && authoritativeStartedAtMs > 0
+          ? authoritativeStartedAtMs
+          : startedAtMs;
+      const startedAtDisplay = getCurrentISTDateTime(effectiveStartedAtMs);
       if (startedLog?._id) {
         setActiveOperatorLogIds((prev) => {
           const next = new Map(prev);
@@ -374,6 +378,22 @@ export const useOperatorViewActions = ({ jobs, cutInputs, setValidationErrors, c
           return next;
         });
       }
+      setCutInputs((prev) => {
+        const currentCut = prev.get(cutId);
+        const currentQty = currentCut?.quantities?.[quantityIndex];
+        if (!currentCut || !currentQty) return prev;
+        const next = new Map(prev);
+        const quantities = [...currentCut.quantities];
+        quantities[quantityIndex] = {
+          ...currentQty,
+          startTime: startedAtDisplay,
+          startTimeEpochMs: effectiveStartedAtMs,
+          endTime: "",
+          endTimeEpochMs: null,
+        };
+        next.set(cutId, { ...currentCut, quantities });
+        return next;
+      });
 
       const nextAssignedTo = getAssignedToValue(getOperatorOpsName(qtyData?.opsName || []));
       if (nextAssignedTo || nextMachineNumber || startedAtDisplay) {
@@ -391,7 +411,7 @@ export const useOperatorViewActions = ({ jobs, cutInputs, setValidationErrors, c
       const message = error instanceof Error ? error.message : "Failed to start operator run.";
       showAndHideToast(setActionToast, message, "error", 3500);
     }
-  }, [activeOperatorLogIds, cutInputs, ensureCurrentUserAssigned, jobs]);
+  }, [activeOperatorLogIds, cutInputs, ensureCurrentUserAssigned, jobs, setCutInputs]);
 
   const handlePauseResumeAction = useCallback(async (
     cutId: number | string,
@@ -437,8 +457,6 @@ export const useOperatorViewActions = ({ jobs, cutInputs, setValidationErrors, c
         }
 
         const resumedAtMs = getServerNowMs();
-        const resumedAtIso = new Date(resumedAtMs).toISOString();
-        const resumedAtDisplay = getCurrentISTDateTime(resumedAtMs);
         const startedLog = await startOperatorProductionLog({
           jobId: String(job.id),
           jobGroupId: String(job.groupId ?? ""),
@@ -449,10 +467,15 @@ export const useOperatorViewActions = ({ jobs, cutInputs, setValidationErrors, c
           fromQty: quantityIndex + 1,
           toQty: quantityIndex + 1,
           quantityCount: 1,
-          startedAt: resumedAtIso,
           machineNumber: String(qtyData.machineNumber || "").trim(),
           opsName: getOperatorOpsName(qtyData.opsName),
         });
+        const authoritativeStartedAtMs = new Date(String(startedLog?.startedAt || "")).getTime();
+        const effectiveStartedAtMs =
+          Number.isFinite(authoritativeStartedAtMs) && authoritativeStartedAtMs > 0
+            ? authoritativeStartedAtMs
+            : resumedAtMs;
+        const resumedAtDisplay = getCurrentISTDateTime(effectiveStartedAtMs);
 
         if (startedLog?._id) {
           setActiveOperatorLogIds((prev) => {
@@ -461,6 +484,22 @@ export const useOperatorViewActions = ({ jobs, cutInputs, setValidationErrors, c
             return next;
           });
         }
+        setCutInputs((prev) => {
+          const currentCut = prev.get(cutId);
+          const currentQty = currentCut?.quantities?.[quantityIndex];
+          if (!currentCut || !currentQty) return prev;
+          const next = new Map(prev);
+          const quantities = [...currentCut.quantities];
+          quantities[quantityIndex] = {
+            ...currentQty,
+            startTime: resumedAtDisplay,
+            startTimeEpochMs: effectiveStartedAtMs,
+            endTime: "",
+            endTimeEpochMs: null,
+          };
+          next.set(cutId, { ...currentCut, quantities });
+          return next;
+        });
 
         await updateOperatorJob(String(cutId), {
           startTime: resumedAtDisplay,
@@ -517,7 +556,7 @@ export const useOperatorViewActions = ({ jobs, cutInputs, setValidationErrors, c
       showAndHideToast(setActionToast, message, "error", 3500);
       return false;
     }
-  }, [activeOperatorLogIds, currentUserDisplayName, cutInputs, ensureCurrentUserAssigned, jobs, resolveActiveOperatorLogId]);
+  }, [activeOperatorLogIds, currentUserDisplayName, cutInputs, ensureCurrentUserAssigned, jobs, resolveActiveOperatorLogId, setCutInputs]);
 
   const handleEndTimeCaptured = useCallback(async (
     cutId: number | string,
