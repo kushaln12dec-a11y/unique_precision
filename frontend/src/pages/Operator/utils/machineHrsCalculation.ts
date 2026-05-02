@@ -55,12 +55,20 @@ export const calculateMachineHrs = (
   startTime: string,
   endTime: string,
   idleTimeDuration: string,
-  pauseDurationSeconds: number = 0
+  pauseDurationSeconds: number = 0,
+  startTimeEpochMs?: number | null,
+  endTimeEpochMs?: number | null
 ): string => {
   if (!startTime || !endTime) return "0.000";
 
-  const start = parseDateTimeToHours(startTime);
-  const end = parseDateTimeToHours(endTime);
+  const start =
+    startTimeEpochMs && Number.isFinite(Number(startTimeEpochMs))
+      ? Number(startTimeEpochMs) / (1000 * 60 * 60)
+      : parseDateTimeToHours(startTime);
+  const end =
+    endTimeEpochMs && Number.isFinite(Number(endTimeEpochMs))
+      ? Number(endTimeEpochMs) / (1000 * 60 * 60)
+      : parseDateTimeToHours(endTime);
   const configuredIdleHours = parseIdleTimeToHours(idleTimeDuration);
   const pauseIdleHours = Math.max(0, Number(pauseDurationSeconds || 0)) / 3600;
 

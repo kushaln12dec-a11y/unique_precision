@@ -10,7 +10,7 @@ import { decimalHoursToHHMM } from "../utils/machineHrsCalculation";
 import { useQuantityTimer } from "../hooks/useQuantityTimer";
 import { getQaStageLabel, type QuantityProgressStatus } from "../utils/qaProgress";
 import { estimatedDurationSecondsFromHours, formatMachineLabel } from "../../../utils/jobFormatting";
-import { formatIdleDuration, parseOperatorDateTime } from "../utils/operatorTimeUtils";
+import { formatIdleDuration } from "../utils/operatorTimeUtils";
 import type { QuantityInputData } from "../types/cutInput";
 import type { OperatorInputField } from "../types/inputFields";
 import { getOperatorQuantityHistory } from "../utils/operatorQuantityHistory";
@@ -162,10 +162,8 @@ export const OperatorQuantityCard: React.FC<Props> = ({
                   return;
                 }
                 if (!qtyData.startTime && !qtyData.endTime) {
-                  const displayValue = getCurrentISTDateTime(timestampMs);
-                  const normalizedTimestamp = parseOperatorDateTime(displayValue) ?? timestampMs;
-                  onInputChange(cutId, qtyIndex, "startTime", displayValue);
-                  onInputChange(cutId, qtyIndex, "startTimeEpochMs", String(normalizedTimestamp));
+                  onInputChange(cutId, qtyIndex, "startTime", getCurrentISTDateTime(timestampMs));
+                  onInputChange(cutId, qtyIndex, "startTimeEpochMs", String(timestampMs));
                   onStartTimeCaptured?.(cutId, qtyIndex);
                   onShowToast?.("Start time captured successfully!", "success");
                 } else {
