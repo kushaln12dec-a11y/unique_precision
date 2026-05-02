@@ -140,7 +140,10 @@ export const buildBaseOperatorColumns = ({
           className="operator-machine-dropdown-wrapper"
           value={machineDropdownOptions.includes(getOperatorMachineNumber(row.entry)) ? getOperatorMachineNumber(row.entry) : ""}
           onChange={(nextValue) => row.kind === "parent" ? handleMachineNumberChange(row.groupId, nextValue) : handleChildMachineNumberChange(row.entry.id, nextValue)}
-          options={machineDropdownOptions.map((machine) => ({ label: formatMachineLabel(machine), value: machine }))}
+          options={[
+            { label: "Unassign", value: "" },
+            ...machineDropdownOptions.map((machine) => ({ label: formatMachineLabel(machine), value: machine })),
+          ]}
           placeholder="Select"
           align="left"
         />

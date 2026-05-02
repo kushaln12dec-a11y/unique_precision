@@ -65,10 +65,11 @@ export const useOperatorPageHandlers = ({
   const handleMachineNumberChange = useCallback(
     async (groupId: string, machineNumber: string) => {
       try {
+        const nextMachineNumber = String(machineNumber || "").trim();
         const targetJobs = jobs.filter((job) => String(job.groupId) === groupId);
         if (targetJobs.length === 0) return;
-        await Promise.all(targetJobs.map((job) => updateOperatorJob(String(job.id), { machineNumber })));
-        syncJob((job) => String(job.groupId) === groupId, (job) => ({ ...job, machineNumber }));
+        await Promise.all(targetJobs.map((job) => updateOperatorJob(String(job.id), { machineNumber: nextMachineNumber })));
+        syncJob((job) => String(job.groupId) === groupId, (job) => ({ ...job, machineNumber: nextMachineNumber }));
       } catch {
         setToast({ message: "Failed to update machine number.", variant: "error", visible: true });
       }
@@ -79,8 +80,9 @@ export const useOperatorPageHandlers = ({
   const handleChildMachineNumberChange = useCallback(
     async (jobId: number | string, machineNumber: string) => {
       try {
-        await updateOperatorJob(String(jobId), { machineNumber });
-        syncJob((job) => String(job.id) === String(jobId), (job) => ({ ...job, machineNumber }));
+        const nextMachineNumber = String(machineNumber || "").trim();
+        await updateOperatorJob(String(jobId), { machineNumber: nextMachineNumber });
+        syncJob((job) => String(job.id) === String(jobId), (job) => ({ ...job, machineNumber: nextMachineNumber }));
       } catch {
         setToast({ message: "Failed to update machine number.", variant: "error", visible: true });
       }
