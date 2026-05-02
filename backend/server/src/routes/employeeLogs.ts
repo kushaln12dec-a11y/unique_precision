@@ -44,6 +44,8 @@ const getAssignedOperatorNames = (value: unknown): string[] =>
     .filter((entry) => entry && entry !== "UNASSIGN" && entry !== "UNASSIGNED");
 
 const isUserAssignedToJob = (reqUser: any, assignedValue: unknown) => {
+  const role = String(reqUser?.role || "").trim().toUpperCase();
+  if (role === "ADMIN") return true;
   const currentUserName = resolveReqUserName(reqUser);
   if (!currentUserName) return false;
   return getAssignedOperatorNames(assignedValue).includes(currentUserName);
