@@ -715,7 +715,7 @@ router.post("/operator/complete", async (req, res) => {
 
     emitJobsUpdated({
       groupId: resolvedGroupId,
-      jobId: resolvedJobId,
+      jobId: resolvedJobId ?? null,
       updatedBy: resolveReqUserName(reqUser),
       source: "employee-logs:operator-complete",
     });
@@ -815,7 +815,7 @@ router.post("/operator/start", async (req, res) => {
 
     emitJobsUpdated({
       groupId: toBigInt(jobGroupId) ?? null,
-      jobId: resolvedJobId,
+      jobId: resolvedJobId ?? null,
       updatedBy: resolveReqUserName(reqUser),
       source: "employee-logs:operator-start",
     });
