@@ -564,56 +564,52 @@ router.post("/jobs/:id/capture-input", async (req, res) => {
 
     const parsedStart = parseOperatorDateTime(startTime);
     const parsedEnd = parseOperatorDateTime(endTime);
-    if (parsedStart && parsedEnd) {
+    if (parsedStart && parsedEnd && operatorLogId) {
       const reqUser = req.user as any;
-      const existingLog = operatorLogId
-        ? await prisma.employeeLog.findFirst({
-            where: {
-              id: String(operatorLogId),
-              role: "OPERATOR",
-              activityType: "OPERATOR_PRODUCTION",
-            },
-          })
-        : null;
-
-      const { payload: basePayload } = buildOperatorLogPayload({
-        existingLogId: existingLog?.id,
-        reqUser,
-        refreshedJob,
-        parsedStart: existingLog?.startedAt instanceof Date ? existingLog.startedAt : parsedStart,
-        parsedEnd,
-        mode,
-        machineNumber,
-        opsName,
-        machineHrs,
-        idleTime,
-        idleTimeDuration,
-        resolvedFromQty,
-        resolvedToQty,
-        quantityCount,
-        captureEntry,
-        forceDurationSeconds: String(existingLog?.status || "").toUpperCase() === "IN_PROGRESS",
+      const existingLog = await prisma.employeeLog.findFirst({
+        where: {
+          id: String(operatorLogId),
+          role: "OPERATOR",
+          activityType: "OPERATOR_PRODUCTION",
+        },
       });
 
-      const finalPayload = {
-        ...basePayload,
-        metadata: {
-          ...(basePayload.metadata || {}),
-        },
-      };
+      if (existingLog) {
+        const { payload: basePayload } = buildOperatorLogPayload({
+          existingLogId: existingLog.id,
+          reqUser,
+          refreshedJob,
+          parsedStart: existingLog.startedAt instanceof Date ? existingLog.startedAt : parsedStart,
+          parsedEnd,
+          mode,
+          machineNumber,
+          opsName,
+          machineHrs,
+          idleTime,
+          idleTimeDuration,
+          resolvedFromQty,
+          resolvedToQty,
+          quantityCount,
+          captureEntry,
+          forceDurationSeconds: String(existingLog.status || "").toUpperCase() === "IN_PROGRESS",
+        });
 
-      await prisma.$transaction(async (tx) => {
-        if (existingLog) {
+        const finalPayload = {
+          ...basePayload,
+          metadata: {
+            ...(basePayload.metadata || {}),
+          },
+        };
+
+        await prisma.$transaction(async (tx) => {
           await tx.employeeLog.update({
             where: { id: existingLog.id },
             data: finalPayload,
           });
-        } else {
-          await tx.employeeLog.create({ data: finalPayload });
-        }
 
-        await rebalanceOperatorRevenueForJob(tx, refreshedJob);
-      });
+          await rebalanceOperatorRevenueForJob(tx, refreshedJob);
+        });
+      }
     }
 
     emitJobsUpdated({
