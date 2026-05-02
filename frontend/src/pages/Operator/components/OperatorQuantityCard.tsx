@@ -14,6 +14,7 @@ import { formatIdleDuration } from "../utils/operatorTimeUtils";
 import type { QuantityInputData } from "../types/cutInput";
 import type { OperatorInputField } from "../types/inputFields";
 import { getOperatorQuantityHistory } from "../utils/operatorQuantityHistory";
+import { getCurrentISTDateTime } from "../../../utils/dateTime";
 
 const IDLE_REASON_OPTIONS = ["Power Break", "Machine Breakdown", "Vertical Dial", "Cleaning", "Consumables Change", "Others"];
 
@@ -44,6 +45,8 @@ type Props = {
   onSaveRange?: (cutId: number | string, sourceQuantityIndex: number, fromQty: number, toQty: number) => void;
   savedRanges: Set<string>;
   canReset: boolean;
+  canRunAssignedJob: boolean;
+  runBlockedReason?: string;
 };
 
 export const OperatorQuantityCard: React.FC<Props> = ({
@@ -73,6 +76,8 @@ export const OperatorQuantityCard: React.FC<Props> = ({
   onSaveRange,
   savedRanges,
   canReset,
+  canRunAssignedJob,
+  runBlockedReason,
 }) => {
   const rangeQuantityCount = isRangeMode && isRangeValid ? Math.max(1, rangeEndQty - rangeStartQty + 1) : 1;
   const quantityRequiredSeconds = estimatedDurationSecondsFromHours(
@@ -95,6 +100,10 @@ export const OperatorQuantityCard: React.FC<Props> = ({
   const { latestWorkedByName, operatorHistoryDetails, shouldShowOperatorHistory, shouldShowWorkedBySummary, formatWorkedDuration } =
     getOperatorQuantityHistory(qtyData, isRangeMode);
   const estimatedTimerLabel = hasOvertime ? "Overtime:" : "Remaining Time:";
+
+  const blockRunAction = () => {
+    onShowToast?.(runBlockedReason || "Your name must be assigned to this job before you can run it.", "error");
+  };
 
   return (
     <div className="quantity-input-group">
@@ -126,9 +135,13 @@ export const OperatorQuantityCard: React.FC<Props> = ({
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
+                      if (!canRunAssignedJob) {
+                        blockRunAction();
+                        return;
+                      }
                       if (!qtyData.endTime && !isShiftOverPause) onInputChange(cutId, qtyIndex, "togglePause", "");
                     }}
-                    disabled={!!qtyData.endTime || isShiftOverPause}
+                    disabled={!!qtyData.endTime || isShiftOverPause || !canRunAssignedJob}
                     aria-label={qtyData.isPaused ? "Resume timer" : "Idle timer"}
                     title={isShiftOverPause ? "Use Shift Over button to resume" : qtyData.isPaused ? "Resume timer" : "Idle timer"}
                   >
@@ -142,7 +155,12 @@ export const OperatorQuantityCard: React.FC<Props> = ({
               onChange={(value) => { if (!qtyData.startTime && !qtyData.endTime) onInputChange(cutId, qtyIndex, "startTime", value); }}
               onTimeCapture={(timestampMs) => {
                 if (!canOperateInputs) return;
+                if (!canRunAssignedJob) {
+                  blockRunAction();
+                  return;
+                }
                 if (!qtyData.startTime && !qtyData.endTime) {
+                  onInputChange(cutId, qtyIndex, "startTime", getCurrentISTDateTime(timestampMs));
                   onInputChange(cutId, qtyIndex, "startTimeEpochMs", String(timestampMs));
                   onStartTimeCaptured?.(cutId, qtyIndex);
                   onShowToast?.("Start time captured successfully!", "success");
@@ -155,9 +173,15 @@ export const OperatorQuantityCard: React.FC<Props> = ({
               showPauseButton={true}
               showPauseButtonInInput={false}
               isPaused={qtyData.isPaused || false}
-              onPauseToggle={() => { if (canOperateInputs && !qtyData.endTime && !isShiftOverPause) onInputChange(cutId, qtyIndex, "togglePause", ""); }}
-              disablePauseButton={!canOperateInputs || !!qtyData.endTime || isShiftOverPause}
-              disabled={!canOperateInputs || !!qtyData.startTime || !!qtyData.endTime}
+              onPauseToggle={() => {
+                if (!canRunAssignedJob) {
+                  blockRunAction();
+                  return;
+                }
+                if (canOperateInputs && !qtyData.endTime && !isShiftOverPause) onInputChange(cutId, qtyIndex, "togglePause", "");
+              }}
+              disablePauseButton={!canOperateInputs || !!qtyData.endTime || isShiftOverPause || !canRunAssignedJob}
+              disabled={!canOperateInputs || !!qtyData.startTime || !!qtyData.endTime || !canRunAssignedJob}
             />
           </div>
           <div className="operator-input-card">
@@ -173,6 +197,10 @@ export const OperatorQuantityCard: React.FC<Props> = ({
               }}
               onTimeCapture={() => {
                 if (!canOperateInputs) return;
+                if (!canRunAssignedJob) {
+                  blockRunAction();
+                  return;
+                }
                 if (!qtyData.endTime) {
                   onRequestEndTimeCapture?.(cutId, qtyIndex);
                 } else {
@@ -181,7 +209,7 @@ export const OperatorQuantityCard: React.FC<Props> = ({
               }}
               placeholder="DD/MM/YYYY HH:MM"
               error={validationErrors.endTime}
-              disabled={!canOperateInputs || !!qtyData.endTime}
+              disabled={!canOperateInputs || !!qtyData.endTime || !canRunAssignedJob}
             />
           </div>
           <div className="operator-input-card">
@@ -222,6 +250,7 @@ export const OperatorQuantityCard: React.FC<Props> = ({
               disabled={!canEditAssignments}
             />
             {validationErrors.opsName && <p className="field-error">{validationErrors.opsName}</p>}
+            {!canRunAssignedJob && <p className="field-error">{runBlockedReason || "Assigned operator only can run this job."}</p>}
           </div>
           {qtyData.isPaused && !qtyData.endTime && (
             <div className="operator-input-card pause-reason-card">
@@ -271,6 +300,8 @@ export const OperatorQuantityCard: React.FC<Props> = ({
       <OperatorQuantityActions
         canOperateInputs={canOperateInputs}
         canReset={canReset}
+        canRunAssignedJob={canRunAssignedJob}
+        runBlockedReason={runBlockedReason}
         cutId={cutId}
         qtyIndex={qtyIndex}
         isRangeMode={isRangeMode}

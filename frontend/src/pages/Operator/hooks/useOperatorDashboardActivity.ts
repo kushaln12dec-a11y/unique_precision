@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
-import { getActiveOperatorRunLogs, getEmployeeLogs } from "../../../services/employeeLogsApi";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { getActiveOperatorRunLogs, getEmployeeLogs, invalidateEmployeeLogsCache } from "../../../services/employeeLogsApi";
 import type { EmployeeLog } from "../../../types/employeeLog";
 import type { JobEntry } from "../../../types/job";
 import { getLogUserDisplayName } from "../../../utils/jobFormatting";
+import { useJobSync } from "../../../hooks/useJobSync";
 import { buildOperatorCompletionAlerts } from "../utils/completionAlerts";
 
 export const useOperatorDashboardActivity = ({
@@ -15,36 +16,38 @@ export const useOperatorDashboardActivity = ({
   const [activeOperatorRuns, setActiveOperatorRuns] = useState<EmployeeLog[]>([]);
   const [operatorHistoryLogs, setOperatorHistoryLogs] = useState<EmployeeLog[]>([]);
 
-  const refreshActiveRuns = async (isMounted: boolean) => {
+  const refreshActiveRuns = useCallback(async (isMounted: boolean = true) => {
     if (document.visibilityState !== "visible") return;
 
     try {
+      invalidateEmployeeLogsCache(/employee-logs/);
       const logs = await getActiveOperatorRunLogs();
       if (!isMounted) return;
       setActiveOperatorRuns(logs.filter((log) => String(log.jobId || "").trim() && !log.endedAt));
     } catch {
       if (isMounted) setActiveOperatorRuns([]);
     }
-  };
+  }, []);
+
+  const refreshOperatorHistory = useCallback(async (isMounted: boolean = true) => {
+    try {
+      invalidateEmployeeLogsCache(/employee-logs/);
+      const logs = await getEmployeeLogs({ role: "OPERATOR", limit: 500 });
+      if (!isMounted) return;
+      setOperatorHistoryLogs(logs.filter((log) => String(log.jobId || "").trim()));
+    } catch {
+      if (isMounted) setOperatorHistoryLogs([]);
+    }
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
 
-    const loadOperatorHistory = async () => {
-      try {
-        const logs = await getEmployeeLogs({ role: "OPERATOR", limit: 500 });
-        if (!isMounted) return;
-        setOperatorHistoryLogs(logs.filter((log) => String(log.jobId || "").trim()));
-      } catch {
-        if (isMounted) setOperatorHistoryLogs([]);
-      }
-    };
-
-    void loadOperatorHistory();
+    void refreshOperatorHistory(isMounted);
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [refreshOperatorHistory]);
 
   useEffect(() => {
     let isMounted = true;
@@ -77,7 +80,12 @@ export const useOperatorDashboardActivity = ({
       window.clearInterval(intervalId);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
-  }, [activeTab]);
+  }, [activeTab, refreshActiveRuns]);
+
+  useJobSync(() => {
+    void refreshActiveRuns(true);
+    void refreshOperatorHistory(true);
+  }, activeTab === "jobs");
 
   const activeRunsByJobId = useMemo(() => {
     const map = new Map<string, EmployeeLog>();

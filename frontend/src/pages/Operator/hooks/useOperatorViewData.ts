@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useState } from "react";
 import { getOperatorJobsByGroupId } from "../../../services/operatorApi";
 import { getIdleTimeConfigs } from "../../../services/idleTimeConfigApi";
-import { getEmployeeLogs } from "../../../services/employeeLogsApi";
+import { getEmployeeLogs, invalidateEmployeeLogsCache } from "../../../services/employeeLogsApi";
 import type { JobEntry } from "../../../types/job";
 import type { CutInputData, QuantityInputData } from "../types/cutInput";
 import { createEmptyQuantityInputData } from "../types/cutInput";
 import { calculateMachineHrs } from "../utils/machineHrsCalculation";
-import { loadOperatorInputsFromLocalStorage, saveOperatorInputsToLocalStorage } from "../utils/operatorViewStorage";
+import { saveOperatorInputsToLocalStorage } from "../utils/operatorViewStorage";
+import { getCurrentISTDateTime } from "../../../utils/dateTime";
 
 export const useOperatorViewData = (groupId: string | null, cutIdParam: string | null) => {
   const [jobs, setJobs] = useState<JobEntry[]>([]);
@@ -27,6 +28,37 @@ export const useOperatorViewData = (groupId: string | null, cutIdParam: string |
     if (!normalized || normalizedLower === "unassigned" || normalizedLower === "unassign") return [];
     return [...new Set(normalized.split(",").map((value) => normalizeOperatorName(value)).filter(Boolean))];
   };
+
+  const parseOpsNames = (rawValue: unknown): string[] =>
+    String(rawValue || "")
+      .split(",")
+      .map((value) => normalizeOperatorName(value))
+      .filter(Boolean);
+
+  const getLatestActiveLogForQuantity = (
+    quantityNumber: number,
+    logsForJob: Array<{
+      quantityFrom?: number | null;
+      quantityTo?: number | null;
+      metadata?: Record<string, any> | null;
+      startedAt?: string | null;
+      endedAt?: string | null;
+      status?: string | null;
+    }>
+  ) =>
+    logsForJob
+      .filter((log) => {
+        const status = String(log.status || "").toUpperCase();
+        if (status !== "IN_PROGRESS" || log.endedAt) return false;
+        const fromQty = Math.max(1, Number(log?.quantityFrom || 1));
+        const toQty = Math.max(fromQty, Number(log?.quantityTo || fromQty));
+        return quantityNumber >= fromQty && quantityNumber <= toQty;
+      })
+      .sort((left, right) => {
+        const leftTime = new Date(String(left.startedAt || 0)).getTime();
+        const rightTime = new Date(String(right.startedAt || 0)).getTime();
+        return rightTime - leftTime;
+      })[0];
 
   const mergeJobAssignmentsIntoInputs = (
     previousInputs: Map<number | string, CutInputData>,
@@ -200,6 +232,76 @@ export const useOperatorViewData = (groupId: string | null, cutIdParam: string |
       return sum + logDuration / rangeCount;
     }, 0);
 
+  const hydrateQuantityFromLogs = (
+    quantity: QuantityInputData,
+    quantityNumber: number,
+    job: JobEntry,
+    logsForJob: Array<{
+      quantityFrom?: number | null;
+      quantityTo?: number | null;
+      userName?: string | null;
+      metadata?: Record<string, any> | null;
+      startedAt?: string | null;
+      endedAt?: string | null;
+      durationSeconds?: number | null;
+      status?: string | null;
+    }>
+  ): QuantityInputData => {
+    const workedDurationSeconds = Math.max(
+      0,
+      Math.round(getWorkedDurationSecondsForQuantity(quantityNumber, logsForJob))
+    );
+    const activeLog = getLatestActiveLogForQuantity(quantityNumber, logsForJob);
+    const sharedMachine = String((job as any).machineNumber || "").trim();
+    const assignedOperators = parseAssignedOperators((job as any).assignedTo || "");
+    const activeLogStartMs = activeLog?.startedAt ? new Date(String(activeLog.startedAt)).getTime() : null;
+    const activeOps = parseOpsNames((activeLog?.metadata as any)?.opsName || "");
+    const activeMachine = String((activeLog?.metadata as any)?.machineNumber || "").trim();
+    const pauseMarker = String(quantity.idleTime || "").trim() || String((job as any).idleTime || "").trim();
+    const pauseStartedAt = String((job as any).updatedAt || "").trim();
+    const pauseStartedMs = pauseStartedAt ? new Date(pauseStartedAt).getTime() : null;
+
+    if (activeLog && activeLogStartMs && Number.isFinite(activeLogStartMs)) {
+      return {
+        ...quantity,
+        startTime: getCurrentISTDateTime(activeLogStartMs),
+        startTimeEpochMs: activeLogStartMs,
+        endTime: "",
+        endTimeEpochMs: null,
+        machineNumber: activeMachine || quantity.machineNumber || sharedMachine,
+        opsName: activeOps.length > 0 ? activeOps : quantity.opsName.length > 0 ? quantity.opsName : assignedOperators,
+        workedDurationSeconds,
+        operatorHistory: collectOperatorHistoryForQuantity(quantityNumber, logsForJob),
+        operatorHistoryDetails: collectOperatorHistoryDetailsForQuantity(quantityNumber, logsForJob),
+        idleTime: "",
+        idleTimeDuration: "",
+        isPaused: false,
+        pauseStartTime: null,
+        totalPauseTime: 0,
+        pausedElapsedTime: 0,
+        pauseSessions: [],
+        currentPauseReason: "",
+      };
+    }
+
+    const hasOpenServerState = Boolean(String(quantity.startTime || "").trim()) && !String(quantity.endTime || "").trim();
+    const isPaused = hasOpenServerState && Boolean(pauseMarker);
+
+    return {
+      ...quantity,
+      machineNumber: String(quantity.machineNumber || "").trim() || sharedMachine,
+      opsName: quantity.opsName.length > 0 ? quantity.opsName : assignedOperators,
+      workedDurationSeconds,
+      operatorHistory: collectOperatorHistoryForQuantity(quantityNumber, logsForJob),
+      operatorHistoryDetails: collectOperatorHistoryDetailsForQuantity(quantityNumber, logsForJob),
+      isPaused,
+      pauseStartTime: isPaused && pauseStartedMs && Number.isFinite(pauseStartedMs) ? pauseStartedMs : null,
+      pausedElapsedTime: isPaused ? workedDurationSeconds : 0,
+      totalPauseTime: 0,
+      currentPauseReason: isPaused ? pauseMarker : "",
+    };
+  };
+
   // Fetch idle time configs
   useEffect(() => {
     const fetchIdleTimeConfigs = async () => {
@@ -232,6 +334,7 @@ export const useOperatorViewData = (groupId: string | null, cutIdParam: string |
     }
     try {
       setLoadingJobs(true);
+      invalidateEmployeeLogsCache(/employee-logs/);
       const fetchedJobs = await getOperatorJobsByGroupId(groupId);
         const operatorLogs = await getEmployeeLogs({ role: "OPERATOR", limit: 500 }).catch(() => []);
         const logsByJobId = new Map<string, Array<{
@@ -257,9 +360,6 @@ export const useOperatorViewData = (groupId: string | null, cutIdParam: string |
           filteredJobs = fetchedJobs.filter((job) => String(job.id) === String(cutIdParam));
         }
         
-        // Try to load from localStorage first
-        const savedInputs = loadOperatorInputsFromLocalStorage(groupId);
-        
         // Initialize inputs for all cuts
         const initialInputs = new Map<number | string, CutInputData>();
         filteredJobs.forEach((job) => {
@@ -272,42 +372,6 @@ export const useOperatorViewData = (groupId: string | null, cutIdParam: string |
               : [];
           };
           const assignedToArray = parseAssignedOperators(existing.assignedTo || "");
-          
-          // If we have saved data for this cut, use it
-          if (savedInputs && savedInputs.has(jobId)) {
-            const saved = savedInputs.get(jobId)!;
-            const savedQuantities = Array.isArray(saved.quantities) ? saved.quantities : [];
-            const requiredQuantity = Math.max(1, Number(job.qty || 1));
-            const sharedMachine = String(existing.machineNumber || "").trim();
-            initialInputs.set(jobId, {
-              quantities: Array.from({ length: requiredQuantity }, (_, index) => {
-                const qty = savedQuantities[index];
-                if (!qty) {
-                  return {
-                    ...createEmptyQuantityInputData(),
-                    machineNumber: sharedMachine,
-                    opsName: assignedToArray,
-                  };
-                }
-                const qtyOps = Array.isArray(qty.opsName)
-                  ? qty.opsName.map((value) => normalizeOperatorName(value)).filter(Boolean)
-                  : [];
-                return {
-                    ...qty,
-                    machineNumber: String(qty.machineNumber || "").trim() || sharedMachine,
-                    opsName: qtyOps.length > 0 ? qtyOps : assignedToArray,
-                    workedDurationSeconds:
-                      Number(qty.workedDurationSeconds || 0) ||
-                      Math.max(0, Math.round(getWorkedDurationSecondsForQuantity(index + 1, logsByJobId.get(String(jobId)) || []))),
-                    operatorHistory: Array.isArray(qty.operatorHistory)
-                      ? qty.operatorHistory.map((value) => normalizeOperatorName(value)).filter(Boolean)
-                      : collectOperatorHistoryForQuantity(index + 1, logsByJobId.get(String(jobId)) || []),
-                    operatorHistoryDetails: collectOperatorHistoryDetailsForQuantity(index + 1, logsByJobId.get(String(jobId)) || []),
-                };
-              }),
-            });
-            return;
-          }
           
           // Otherwise, initialize from job data
           const quantity = Math.max(1, Number(job.qty || 1));
@@ -421,7 +485,9 @@ export const useOperatorViewData = (groupId: string | null, cutIdParam: string |
           }
           
           initialInputs.set(jobId, {
-            quantities,
+            quantities: quantities.map((qty, index) =>
+              hydrateQuantityFromLogs(qty, index + 1, job, logsByJobId.get(String(jobId)) || [])
+            ),
           });
         });
         
@@ -449,6 +515,7 @@ export const useOperatorViewData = (groupId: string | null, cutIdParam: string |
 
     const syncJobsOnly = async () => {
       try {
+        invalidateEmployeeLogsCache(/employee-logs/);
         const fetchedJobs = await getOperatorJobsByGroupId(groupId);
         const filteredJobs = cutIdParam
           ? fetchedJobs.filter((job) => String(job.id) === String(cutIdParam))

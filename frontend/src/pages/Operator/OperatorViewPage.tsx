@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from "react";
+import { useCallback, useMemo, useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import Sidebar from "../../components/Sidebar";
 import Header from "../../components/Header";
@@ -18,6 +18,8 @@ import { getUserDisplayNameFromToken, getUserRoleFromToken } from "../../utils/a
 import { estimatedDurationSecondsFromHours, estimatedHoursFromAmount, MACHINE_OPTIONS, toMachineIndex } from "../../utils/jobFormatting";
 import { getQuantityElapsedSeconds, parseOperatorDateTime } from "./utils/operatorTimeUtils";
 import { updateOperatorJob } from "../../services/operatorApi";
+import { useJobSync } from "../../hooks/useJobSync";
+import { getCurrentISTDateTime } from "../../utils/dateTime";
 import "../RoleBoard.css";
 import "../Programmer/Programmer.css";
 import "../Programmer/components/JobDetailsModal.css";
@@ -31,6 +33,9 @@ const parseAssignedOperators = (value: unknown) =>
     .split(",")
     .map((entry) => normalizeOperatorName(entry))
     .filter((entry) => entry && entry.toLowerCase() !== "unassign" && entry.toLowerCase() !== "unassigned");
+
+const isCurrentUserAssignedToJob = (assignedTo: unknown, currentUserDisplayName: string) =>
+  parseAssignedOperators(assignedTo).includes(normalizeOperatorName(currentUserDisplayName));
 
 const OperatorViewPage = () => {
   const navigate = useNavigate();
@@ -92,7 +97,12 @@ const OperatorViewPage = () => {
 
   const handleConfirmEndTimeCapture = (cutId: number | string, quantityIndex: number) => {
     const timestampMs = Date.now();
+    const displayValue = getCurrentISTDateTime(timestampMs);
+    handleInputChange(cutId, quantityIndex, "endTime", displayValue);
     handleInputChange(cutId, quantityIndex, "endTimeEpochMs", String(timestampMs));
+    void updateOperatorJob(String(cutId), {
+      endTime: displayValue,
+    }).catch(() => undefined);
     setActionToast({
       message: "End time captured successfully!",
       variant: "success",
@@ -102,6 +112,17 @@ const OperatorViewPage = () => {
       setActionToast((prev) => ({ ...prev, visible: false }));
     }, 2200);
   };
+
+  const refreshRemoteOperatorView = useCallback(() => {
+    void reloadOperatorViewData();
+  }, [reloadOperatorViewData]);
+
+  useJobSync((event) => {
+    if (event.updatedBy && event.updatedBy === currentUserDisplayName) {
+      return;
+    }
+    refreshRemoteOperatorView();
+  }, Boolean(groupId));
 
   useEffect(() => {
     if (allowedOperatorUsers.length === 0 || cutInputs.size === 0) return;
@@ -394,6 +415,8 @@ const OperatorViewPage = () => {
                         }}
                         onStartTimeCaptured={handleStartTimeCaptured}
                         isAdmin={isAdmin}
+                        canRunAssignedJob={isCurrentUserAssignedToJob(cutItem.assignedTo, currentUserDisplayName)}
+                        runBlockedReason="Your name must be assigned to this job before you can run it."
                       />
                     );
                   })}

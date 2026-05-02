@@ -26,8 +26,17 @@ export type JobEntry = CutForm & {
   totalAmount: number;
   createdAt: string;
   createdBy: string;
+  updatedAt?: string;
+  updatedBy?: string;
   assignedTo: string;
   machineNumber?: string;
+  startTime?: string;
+  endTime?: string;
+  machineHrs?: string;
+  opsName?: string | string[];
+  idleTime?: string;
+  idleTimeDuration?: string;
+  lastImage?: string | null;
   qcDecision?: "PENDING" | "APPROVED" | "REJECTED";
   qcReportClosed?: boolean;
   operatorCaptures?: OperatorCaptureEntry[];
