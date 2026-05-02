@@ -114,7 +114,7 @@ const OperatorViewPage = () => {
     handleStartTimeCaptured,
     handlePauseResumeAction,
     handleEndTimeCaptured,
-  } = useOperatorViewActions({ jobs, cutInputs, setValidationErrors, currentUserDisplayName, isAdmin });
+  } = useOperatorViewActions({ jobs, cutInputs, setCutInputs, setValidationErrors, currentUserDisplayName, isAdmin });
   const allowedOperatorUsers = useMemo(() => operatorUsers, [operatorUsers]);
 
   const restoreScrollPosition = useCallback(() => {

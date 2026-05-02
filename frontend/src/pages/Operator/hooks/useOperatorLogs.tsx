@@ -3,6 +3,7 @@ import type { Column } from "../../../components/DataTable";
 import type { EmployeeLog } from "../../../types/employeeLog";
 import type { JobEntry } from "../../../types/job";
 import { formatDisplayDateTime } from "../../../utils/date";
+import { getUserRoleFromToken } from "../../../utils/auth";
 import {
   getDisplayName,
   formatMachineLabel,
@@ -44,6 +45,9 @@ export const useOperatorLogs = ({
   operatorLogMachine,
   setToast,
 }: Params) => {
+  const viewerRole = String(getUserRoleFromToken() || "").toUpperCase();
+  const canViewRevenue = viewerRole !== "OPERATOR";
+
   const getLogQuantityNumbers = useCallback((log: EmployeeLog): number[] => {
     const fromMeta = Array.isArray((log.metadata as any)?.quantityNumbers)
       ? ((log.metadata as any).quantityNumbers as unknown[])
@@ -171,7 +175,8 @@ export const useOperatorLogs = ({
     designationByUserName,
     getMachineNumberForLog,
     getRevenueForLog,
-  }), [designationByUserName, getMachineNumberForLog, getRevenueForLog]);
+    canViewRevenue,
+  }), [canViewRevenue, designationByUserName, getMachineNumberForLog, getRevenueForLog]);
 
   const filterOperatorLogs = useMemo(
     () =>
@@ -180,11 +185,12 @@ export const useOperatorLogs = ({
         getMachineNumberForLog,
         getRevenueForLog,
         getWorkedDurationForLog,
+        canViewRevenue,
         operatorLogStatus,
         operatorLogUser,
         operatorLogSearch,
       }),
-    [designationByUserName, getMachineNumberForLog, getRevenueForLog, getWorkedDurationForLog, operatorLogSearch, operatorLogStatus, operatorLogUser]
+    [canViewRevenue, designationByUserName, getMachineNumberForLog, getRevenueForLog, getWorkedDurationForLog, operatorLogSearch, operatorLogStatus, operatorLogUser]
   );
 
   const hasOperatorLogSearch = operatorLogSearch.trim().length > 0;
@@ -204,7 +210,24 @@ export const useOperatorLogs = ({
         OPERATOR_LOG_SEARCH_FETCH_PAGE_SIZE
       );
       const filteredLogs = filterOperatorLogs(promoteSupersededHoldLogs(allLogs));
-      const headers = ["User", "MACH #", "Job Ref", "Description", "Summary", "Started at", "Ended at", "Shift", "Duration", "Estimated", "Overtime", "Qty Split", "Idle Time", "Remark", "Revenue", "Revenue Split", "Status"];
+      const headers = [
+        "User",
+        "MACH #",
+        "Job Ref",
+        "Description",
+        "Summary",
+        "Started at",
+        "Ended at",
+        "Shift",
+        "Duration",
+        "Estimated",
+        "Overtime",
+        "Qty",
+        "Idle Time",
+        "Remark",
+        ...(canViewRevenue ? ["Revenue", "Revenue Split"] : []),
+        "Status",
+      ];
       const rows = filteredLogs.map((row) => {
         const name = getLogUserDisplayName(row.userName, row.userEmail, "");
         const designation = designationByUserName.get(name.toLowerCase()) || "OPS";
@@ -228,8 +251,7 @@ export const useOperatorLogs = ({
             : "-",
           String((row.metadata as any)?.idleTime || "-"),
           String((row.metadata as any)?.remark || "-"),
-          getRevenueForLog(row),
-          revenueByQuantity || "-",
+          ...(canViewRevenue ? [getRevenueForLog(row), revenueByQuantity || "-"] : []),
           formatOperatorLogStatus(row.status),
         ];
       });
@@ -251,6 +273,7 @@ export const useOperatorLogs = ({
     filterOperatorLogs,
     getMachineNumberForLog,
     getRevenueForLog,
+    canViewRevenue,
     operatorLogMachine,
     promoteSupersededHoldLogs,
     setToast,

@@ -26,10 +26,12 @@ export const buildOperatorLogsColumns = ({
   designationByUserName,
   getMachineNumberForLog,
   getRevenueForLog,
+  canViewRevenue,
 }: {
   designationByUserName: Map<string, string>;
   getMachineNumberForLog: (log: EmployeeLog) => string;
   getRevenueForLog: (log: EmployeeLog, workedSecondsMap?: Map<string, number>) => string;
+  canViewRevenue: boolean;
 }): Column<EmployeeLog>[] => [
   {
     key: "userName",
@@ -88,7 +90,7 @@ export const buildOperatorLogsColumns = ({
   { key: "overtimeSeconds", label: "Overtime", sortable: false, render: (row) => formatOperatorDuration(Number((row.metadata as any)?.overtimeSeconds || 0)) },
   {
     key: "quantityNumbers",
-    label: "Qty Split",
+    label: "Qty",
     sortable: false,
     render: (row) => {
       const quantities = Array.isArray((row.metadata as any)?.quantityNumbers)
@@ -99,36 +101,38 @@ export const buildOperatorLogsColumns = ({
   },
   { key: "idleTime", label: "Idle Time", sortable: false, render: (row) => String((row.metadata as any)?.idleTime || "-") },
   { key: "remark", label: "Remark", sortable: false, render: (row) => String((row.metadata as any)?.remark || "-") },
-  {
-    key: "revenue",
-    label: "Revenue",
-    sortable: false,
-    render: (row: EmployeeLog) => {
-      const displayRevenue = getRevenueForLog(row);
-      if (displayRevenue === "-") {
-        return <span className="log-revenue-value">-</span>;
-      }
+  ...(canViewRevenue
+    ? [{
+        key: "revenue",
+        label: "Revenue",
+        sortable: false,
+        render: (row: EmployeeLog) => {
+          const displayRevenue = getRevenueForLog(row);
+          if (displayRevenue === "-") {
+            return <span className="log-revenue-value">-</span>;
+          }
 
-      const revenueByQuantity = ((row.metadata as any)?.revenueByQuantity || {}) as Record<string, number>;
-      const splitEntries = Object.entries(revenueByQuantity)
-        .map(([qty, amount]) => [Number(qty), Number(amount)] as const)
-        .filter(([qty, amount]) => Number.isInteger(qty) && Number.isFinite(amount))
-        .sort((left, right) => left[0] - right[0]);
+          const revenueByQuantity = ((row.metadata as any)?.revenueByQuantity || {}) as Record<string, number>;
+          const splitEntries = Object.entries(revenueByQuantity)
+            .map(([qty, amount]) => [Number(qty), Number(amount)] as const)
+            .filter(([qty, amount]) => Number.isInteger(qty) && Number.isFinite(amount))
+            .sort((left, right) => left[0] - right[0]);
 
-      if (splitEntries.length === 0) {
-        return <span className="log-revenue-value">{displayRevenue}</span>;
-      }
+          if (splitEntries.length === 0) {
+            return <span className="log-revenue-value">{displayRevenue}</span>;
+          }
 
-      return (
-        <div className="log-revenue-breakdown" title={splitEntries.map(([qty, amount]) => `Q${qty}: Rs. ${amount.toFixed(2)}`).join(" | ")}>
-          <span className="log-revenue-value">{displayRevenue}</span>
-          <span className="log-revenue-split">
-            {splitEntries.map(([qty, amount]) => `Q${qty}: Rs. ${amount.toFixed(2)}`).join(" | ")}
-          </span>
-        </div>
-      );
-    },
-  } as Column<EmployeeLog>,
+          return (
+            <div className="log-revenue-breakdown" title={splitEntries.map(([qty, amount]) => `Q${qty}: Rs. ${amount.toFixed(2)}`).join(" | ")}>
+              <span className="log-revenue-value">{displayRevenue}</span>
+              <span className="log-revenue-split">
+                {splitEntries.map(([qty, amount]) => `Q${qty}: Rs. ${amount.toFixed(2)}`).join(" | ")}
+              </span>
+            </div>
+          );
+        },
+      } as Column<EmployeeLog>]
+    : []),
   {
     key: "status",
     label: "Status",
@@ -180,6 +184,7 @@ export const buildOperatorLogFilter =
     getMachineNumberForLog,
     getRevenueForLog,
     getWorkedDurationForLog,
+    canViewRevenue,
     operatorLogUser,
     operatorLogStatus,
     operatorLogSearch,
@@ -188,6 +193,7 @@ export const buildOperatorLogFilter =
     getMachineNumberForLog: (log: EmployeeLog) => string;
     getRevenueForLog: (log: EmployeeLog, workedSecondsMap?: Map<string, number>) => string;
     getWorkedDurationForLog: (log: EmployeeLog) => number;
+    canViewRevenue: boolean;
     operatorLogUser: string;
     operatorLogStatus: "" | "IN_PROGRESS" | "COMPLETED" | "REJECTED";
     operatorLogSearch: string;
@@ -226,7 +232,7 @@ export const buildOperatorLogFilter =
             : "-",
           String((log.metadata as any)?.idleTime || "-"),
           String((log.metadata as any)?.remark || "-"),
-          getRevenueForLog(log),
+          ...(canViewRevenue ? [getRevenueForLog(log)] : []),
           formatOperatorLogStatus(log.status),
         ],
         operatorLogSearch
