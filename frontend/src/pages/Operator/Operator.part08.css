@@ -47,6 +47,23 @@
   text-align: left;
 }
 
+/* Increase width for time-related columns */
+.operator-logs-table .ag-header-cell[col-id="durationSeconds"],
+.operator-logs-table .ag-header-cell[col-id="estimatedSeconds"],
+.operator-logs-table .ag-header-cell[col-id="overtimeSeconds"] {
+  min-width: 120px;
+  width: 120px;
+}
+
+.operator-logs-table .ag-cell[col-id="durationSeconds"],
+.operator-logs-table .ag-cell[col-id="estimatedSeconds"],
+.operator-logs-table .ag-cell[col-id="overtimeSeconds"] {
+  min-width: 120px;
+  width: 120px;
+  text-align: center;
+  justify-content: center;
+}
+
 .operator-logs-table .description-marquee .marquee-animated {
   display: inline-block;
   visibility: visible;
