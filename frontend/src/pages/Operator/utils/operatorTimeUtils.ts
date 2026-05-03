@@ -48,6 +48,7 @@ export const formatDurationToClock = (seconds: number): string => {
 
 export const getQuantityElapsedSeconds = (quantity: QuantityInputData, nowMs: number): number => {
   const carriedWorkedSeconds = Math.max(0, Math.floor(quantity.workedDurationSeconds || 0));
+  const segmentPauseSeconds = Math.max(0, Math.floor((quantity.totalPauseTime || 0) - (quantity.pauseTimeOffsetSeconds || 0)));
   const startMs =
     quantity.startTimeEpochMs && Number.isFinite(Number(quantity.startTimeEpochMs))
       ? Number(quantity.startTimeEpochMs)
@@ -61,7 +62,7 @@ export const getQuantityElapsedSeconds = (quantity: QuantityInputData, nowMs: nu
 
   if (endMs) {
     const base = Math.max(0, Math.floor((endMs - startMs) / 1000));
-    const closedSegmentSeconds = Math.max(0, base - Math.floor(quantity.totalPauseTime || 0));
+    const closedSegmentSeconds = Math.max(0, base - segmentPauseSeconds);
     const hasLocalEndEpoch = quantity.endTimeEpochMs && Number.isFinite(Number(quantity.endTimeEpochMs));
     if (hasLocalEndEpoch) {
       return Math.max(0, carriedWorkedSeconds + closedSegmentSeconds);
@@ -76,7 +77,7 @@ export const getQuantityElapsedSeconds = (quantity: QuantityInputData, nowMs: nu
       ? Math.max(0, Math.floor((nowMs - quantity.pauseStartTime) / 1000))
       : 0;
   const raw = Math.max(0, Math.floor((nowMs - startMs) / 1000));
-  return Math.max(0, carriedWorkedSeconds + raw - Math.floor((quantity.totalPauseTime || 0) + runningPauseSeconds));
+  return Math.max(0, carriedWorkedSeconds + raw - Math.floor(segmentPauseSeconds + runningPauseSeconds));
 };
 
 export const formatIdleDuration = (seconds: number): string => {

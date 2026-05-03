@@ -75,6 +75,40 @@ export const getQuantityLabel = (row: EmployeeLog) =>
   Number((row.metadata as any)?.quantityCount || 0) ||
   (Number(row.quantityTo || 0) && Number(row.quantityFrom || 0) ? Number(row.quantityTo) - Number(row.quantityFrom) + 1 : 0);
 
+const formatIdleWindowRange = (startedAt: unknown, endedAt: unknown) => {
+  const startedParts = getDisplayDateTimeParts(startedAt as any);
+  const endedParts = endedAt ? getDisplayDateTimeParts(endedAt as any) : { date: "Open", time: "" };
+  const startedLabel = `${startedParts.date} ${startedParts.time}`.trim();
+  if (!startedLabel || startedLabel === "-") return "-";
+  const endedLabel = endedAt ? `${endedParts.date} ${endedParts.time}`.trim() : "Open";
+  return `${startedLabel} -> ${endedLabel || "Open"}`;
+};
+
+export const formatEmployeeIdleWindow = (row: EmployeeLog) => {
+  const metadata = ((row.metadata as any) || {}) as Record<string, any>;
+  const pauseSessions = Array.isArray(metadata.pauseSessions) ? metadata.pauseSessions : [];
+
+  if (pauseSessions.length > 0) {
+    return pauseSessions
+      .map((session: any) => {
+        const reason = String(session?.reason || metadata.idleTime || "Idle").trim();
+        const range = formatIdleWindowRange(session?.pauseStartTime, session?.pauseEndTime);
+        const duration = formatDuration(Number(session?.pauseDuration || 0));
+        return `${reason}: ${range} (${duration})`;
+      })
+      .join(" | ");
+  }
+
+  if (metadata.idleStartedAt) {
+    const reason = String(metadata.idleTime || "Idle").trim();
+    const range = formatIdleWindowRange(metadata.idleStartedAt, metadata.idleEndedAt);
+    const duration = metadata.idleEndedAt ? formatDuration(Number(metadata.idleDurationSeconds || 0)) : "Open";
+    return `${reason}: ${range} (${duration})`;
+  }
+
+  return "-";
+};
+
 export const createEmployeeLogColumns = ({
   activeRole,
   isAdmin,
@@ -122,6 +156,7 @@ export const createEmployeeLogColumns = ({
       { key: "jobDescription", label: "Description", sortable: false, render: (row) => <MarqueeCopyText text={String(row.jobDescription || "-")} /> },
       { key: "workSummary", label: "Summary", sortable: false, render: (row) => <MarqueeCopyText text={String(row.workSummary || "-")} /> },
       { key: "idleTime", label: "Idle Time", sortable: false, render: (row) => String((row.metadata as any)?.idleTime || "-") },
+      { key: "idleWindow", label: "Idle Window", sortable: false, render: (row) => <MarqueeCopyText text={formatEmployeeIdleWindow(row)} /> },
       { key: "remark", label: "Remark", sortable: false, render: (row) => String((row.metadata as any)?.remark || "-") },
       ...(isAdmin ? [{ key: "revenue", label: "Revenue", sortable: false, render: (row) => getRevenueLabel(row) } as Column<EmployeeLog>] : []),
       createDateColumn("startedAt", "Started At"),

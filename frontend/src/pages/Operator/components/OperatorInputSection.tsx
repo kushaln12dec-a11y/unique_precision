@@ -42,6 +42,8 @@ const createFallbackQuantity = () => ({
   startTimeEpochMs: null,
   endTime: "",
   endTimeEpochMs: null,
+  workedDurationSeconds: 0,
+  pauseTimeOffsetSeconds: 0,
   machineHrs: "",
   machineNumber: "",
   opsName: [],

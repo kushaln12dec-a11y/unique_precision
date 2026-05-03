@@ -2,6 +2,7 @@ type OperatorActionModalProps = {
   action: "shiftOver" | "resume";
   settingNumber: number;
   quantityNumber: number;
+  isSubmitting?: boolean;
   onConfirm: () => void | Promise<void>;
   onCancel: () => void;
 };
@@ -10,6 +11,7 @@ const OperatorActionModal = ({
   action,
   settingNumber,
   quantityNumber,
+  isSubmitting = false,
   onConfirm,
   onCancel,
 }: OperatorActionModalProps) => {
@@ -17,7 +19,7 @@ const OperatorActionModal = ({
 
   return (
     <>
-      <div className="operator-action-modal-backdrop" onClick={onCancel} />
+      <div className="operator-action-modal-backdrop" onClick={() => { if (!isSubmitting) onCancel(); }} />
       <div className={`operator-action-modal ${isResume ? "resume" : "shift-over"}`} role="dialog" aria-modal="true">
         <div className="operator-action-modal-accent" />
         <div className="operator-action-modal-body">
@@ -39,15 +41,16 @@ const OperatorActionModal = ({
             </div>
           </div>
           <div className="operator-action-modal-actions">
-            <button type="button" className="operator-action-secondary-btn" onClick={onCancel}>
+            <button type="button" className="operator-action-secondary-btn" onClick={onCancel} disabled={isSubmitting}>
               Cancel
             </button>
             <button
               type="button"
               className={`operator-action-primary-btn ${isResume ? "resume" : "shift-over"}`}
+              disabled={isSubmitting}
               onClick={() => void onConfirm()}
             >
-              {isResume ? "Resume Quantity" : "Confirm Shift Over"}
+              {isSubmitting ? "Please wait..." : isResume ? "Resume Quantity" : "Confirm Shift Over"}
             </button>
           </div>
         </div>

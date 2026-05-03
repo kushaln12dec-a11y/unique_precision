@@ -1,0 +1,35 @@
+import type { QuantityInputData } from "./cutInput";
+import type { OperatorInputField } from "./inputFields";
+import type { QuantityProgressStatus } from "../utils/qaProgress";
+
+export type OperatorQuantityCardProps = {
+  qtyData: QuantityInputData;
+  qtyIndex: number;
+  cutId: number | string;
+  isRangeMode: boolean;
+  isRangeValid: boolean;
+  rangeStartQty: number;
+  rangeEndQty: number;
+  isRangeApproved: boolean;
+  getStatus: (qty: number) => QuantityProgressStatus;
+  operatorUsers: Array<{ id: string | number; name: string }>;
+  machineOptions: string[];
+  canEditAssignments: boolean;
+  canOperateInputs: boolean;
+  onInputChange: (cutId: number | string, quantityIndex: number, field: OperatorInputField, value: string | string[]) => void;
+  onShowToast?: (message: string, variant?: "success" | "error" | "info") => void;
+  onStartTimeCaptured?: (cutId: number | string, quantityIndex: number) => void;
+  validationErrors?: Record<string, string>;
+  requiredHoursPerQuantity: number;
+  onRequestResetTimer?: (cutId: number | string, quantityIndex: number) => void;
+  onRequestShiftOver?: (cutId: number | string, quantityIndex: number) => void;
+  onRequestResume?: (cutId: number | string, quantityIndex: number) => void;
+  onRequestEndTimeCapture?: (cutId: number | string, quantityIndex: number) => void;
+  onSaveQuantity?: (cutId: number | string, quantityIndex: number) => void;
+  onSaveRange?: (cutId: number | string, sourceQuantityIndex: number, fromQty: number, toQty: number) => void;
+  savedRanges: Set<string>;
+  canReset: boolean;
+  canRunAssignedJob: boolean;
+  runBlockedReason?: string;
+  isAdmin: boolean;
+};

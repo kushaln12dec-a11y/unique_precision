@@ -41,7 +41,8 @@ export const pauseRunningQuantity = (qtyData: QuantityInputData, now: number): Q
   const startTimestamp = qtyData.startTimeEpochMs || parseOperatorInputStartTime(qtyData.startTime);
   let currentElapsed = qtyData.pausedElapsedTime;
   if (startTimestamp) {
-    const elapsedMs = now - startTimestamp - qtyData.totalPauseTime * 1000;
+    const segmentPauseSeconds = Math.max(0, (qtyData.totalPauseTime || 0) - (qtyData.pauseTimeOffsetSeconds || 0));
+    const elapsedMs = now - startTimestamp - segmentPauseSeconds * 1000;
     currentElapsed = Math.max(0, qtyData.workedDurationSeconds + Math.floor(elapsedMs / 1000));
   }
   return {

@@ -29,6 +29,7 @@ export const useQuantityTimer = (
   pauseStartTime?: number | null,
   currentPauseReason?: string,
   totalPauseTime?: number,
+  pauseTimeOffsetSeconds?: number,
   pausedElapsedTime?: number,
   workedDurationSeconds?: number,
   startTimeEpochMs?: number | null,
@@ -58,10 +59,12 @@ export const useQuantityTimer = (
 
   const computedElapsedSeconds = useMemo(() => {
     const carriedWorkedSeconds = Math.max(0, Math.floor(Number(workedDurationSeconds || 0)));
+    const pauseOffsetSeconds = Math.max(0, Math.floor(Number(pauseTimeOffsetSeconds || 0)));
+    const segmentPauseSeconds = Math.max(0, Math.floor(Number(totalPauseTime || 0)) - pauseOffsetSeconds);
     if (!startMs) return 0;
     if (endMs) {
       const base = Math.max(0, Math.floor((endMs - startMs) / 1000));
-      const closedSegmentSeconds = Math.max(0, base - Math.floor(totalPauseTime || 0));
+      const closedSegmentSeconds = Math.max(0, base - segmentPauseSeconds);
       const hasLocalEndEpoch = endTimeEpochMs && Number.isFinite(Number(endTimeEpochMs));
       if (hasLocalEndEpoch) {
         return Math.max(0, carriedWorkedSeconds + closedSegmentSeconds);
@@ -77,12 +80,12 @@ export const useQuantityTimer = (
     const runningPauseSeconds =
       pauseStartTime && isPaused && shouldTrackLivePause ? Math.max(0, Math.floor((now - pauseStartTime) / 1000)) : 0;
     const raw = Math.max(0, Math.floor((now - startMs) / 1000));
-    return Math.max(0, carriedWorkedSeconds + raw - Math.floor((totalPauseTime || 0) + runningPauseSeconds));
-  }, [startMs, endMs, isPaused, pausedElapsedTime, totalPauseTime, pauseStartTime, currentPauseReason, now, workedDurationSeconds, endTimeEpochMs]);
+    return Math.max(0, carriedWorkedSeconds + raw - Math.floor(segmentPauseSeconds + runningPauseSeconds));
+  }, [startMs, endMs, isPaused, pausedElapsedTime, totalPauseTime, pauseTimeOffsetSeconds, pauseStartTime, currentPauseReason, now, workedDurationSeconds, endTimeEpochMs]);
 
   const computedPauseSeconds = useMemo(() => {
     const base = Math.max(0, Math.floor(totalPauseTime || 0));
-    if (isPaused && pauseStartTime && currentPauseReason !== "Shift Over") {
+    if (isPaused && pauseStartTime) {
       return base + Math.max(0, Math.floor((now - pauseStartTime) / 1000));
     }
     return base;

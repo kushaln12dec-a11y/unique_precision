@@ -20,7 +20,12 @@ import {
   getOperatorShiftLabel,
   OPERATOR_LOG_SEARCH_FETCH_PAGE_SIZE,
 } from "../utils/operatorLogHelpers";
-import { buildOperatorLogColumnDefs, buildOperatorLogFilter, buildOperatorLogsColumns } from "../utils/operatorLogsUtils";
+import {
+  buildOperatorLogColumnDefs,
+  buildOperatorLogFilter,
+  buildOperatorLogsColumns,
+  formatOperatorIdleWindow,
+} from "../utils/operatorLogsUtils";
 
 type Params = {
   jobs: JobEntry[];
@@ -224,6 +229,7 @@ export const useOperatorLogs = ({
         "Overtime",
         "Qty",
         "Idle Time",
+        "Idle Window",
         "Remark",
         ...(canViewRevenue ? ["Revenue", "Revenue Split"] : []),
         "Status",
@@ -250,6 +256,7 @@ export const useOperatorLogs = ({
             ? (row.metadata as any).quantityNumbers.map((qty: number) => `Q${qty}`).join(", ")
             : "-",
           String((row.metadata as any)?.idleTime || "-"),
+          formatOperatorIdleWindow(row),
           String((row.metadata as any)?.remark || "-"),
           ...(canViewRevenue ? [getRevenueForLog(row), revenueByQuantity || "-"] : []),
           formatOperatorLogStatus(row.status),

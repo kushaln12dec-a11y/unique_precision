@@ -10,6 +10,7 @@ import { matchesSearchQuery } from "../../../utils/searchUtils";
 import {
   type RoleTab,
   createEmployeeLogColumns,
+  formatEmployeeIdleWindow,
   formatDuration,
   formatLogStatus,
   formatRoleLabel,
@@ -55,6 +56,7 @@ export const EmployeeLogsPanel = () => {
     if (columnKey === "startedAt" || columnKey === "endedAt") return 104;
     if (columnKey === "durationSeconds") return 92;
     if (columnKey === "status") return 118;
+    if (columnKey === "idleWindow") return 168;
     if (columnKey === "idleTime" || columnKey === "remark") return 88;
     if (columnKey === "revenue") return 90;
     return 80;
@@ -80,7 +82,7 @@ export const EmployeeLogsPanel = () => {
 
         const roleSpecificValues =
           activeRole === "OPERATOR"
-            ? [normalizeJobReference(log.refNumber || log.workItemTitle), String(log.jobDescription || "-"), String(log.workSummary || "-"), String((log.metadata as any)?.idleTime || "-"), String((log.metadata as any)?.remark || "-"), ...(isAdmin ? [getRevenueLabel(log)] : [])]
+            ? [normalizeJobReference(log.refNumber || log.workItemTitle), String(log.jobDescription || "-"), String(log.workSummary || "-"), String((log.metadata as any)?.idleTime || "-"), formatEmployeeIdleWindow(log), String((log.metadata as any)?.remark || "-"), ...(isAdmin ? [getRevenueLabel(log)] : [])]
             : [normalizeJobReference(log.refNumber), String(log.jobDescription || "-"), getQuantityLabel(log) || "-"];
 
         return matchesSearchQuery([...commonValues, ...roleSpecificValues], searchQuery);
@@ -110,7 +112,7 @@ export const EmployeeLogsPanel = () => {
     const filteredLogs = filterVisibleLogs(logs);
     const headers =
       activeRole === "OPERATOR"
-        ? ["Employee", "Job Ref", "Description", "Summary", "Idle Time", "Remark", ...(isAdmin ? ["Revenue"] : []), "Started At", "Ended At", "Time Taken", "Status"]
+        ? ["Employee", "Job Ref", "Description", "Summary", "Idle Time", "Idle Window", "Remark", ...(isAdmin ? ["Revenue"] : []), "Started At", "Ended At", "Time Taken", "Status"]
         : ["Employee", "Job Ref", "Description", "Quantities", "Started At", "Ended At", "Time Taken", "Status"];
     const rows = filteredLogs.map((row) =>
       activeRole === "OPERATOR"
@@ -120,6 +122,7 @@ export const EmployeeLogsPanel = () => {
             String(row.jobDescription || "-"),
             String(row.workSummary || "-"),
             String((row.metadata as any)?.idleTime || "-"),
+            formatEmployeeIdleWindow(row),
             String((row.metadata as any)?.remark || "-"),
             ...(isAdmin ? [getRevenueLabel(row)] : []),
             `${getDisplayDateTimeParts(row.startedAt).date} ${getDisplayDateTimeParts(row.startedAt).time}`.trim(),

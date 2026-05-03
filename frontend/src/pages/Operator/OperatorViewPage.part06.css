@@ -215,10 +215,6 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .operator-input-card.operator-input-card-time {
-    grid-column: span 2;
-  }
-
   .quantity-timers {
     width: 100%;
   }
@@ -236,10 +232,6 @@
 
   .operator-inputs-grid {
     grid-template-columns: repeat(5, minmax(0, 1fr));
-  }
-
-  .operator-input-card.operator-input-card-time {
-    grid-column: span 2;
   }
 
   .quantity-content-wrapper {
