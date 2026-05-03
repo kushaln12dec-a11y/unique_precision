@@ -131,19 +131,23 @@ export const buildOperatorLogsColumns = ({
   },
   { key: "idleTime", label: "Idle Time", sortable: false, render: (row) => {
     const metadata = (row.metadata as any) || {};
-    const pauseSessions = Array.isArray(metadata.pauseSessions) ? metadata.pauseSessions : [];
     
+    // First check for idleTimeDuration in metadata (this is the actual idle duration)
+    if (metadata.idleTimeDuration) {
+      return formatOperatorDuration(Number(metadata.idleTimeDuration));
+    }
+    
+    // Fallback to pause sessions
+    const pauseSessions = Array.isArray(metadata.pauseSessions) ? metadata.pauseSessions : [];
     if (pauseSessions.length > 0) {
       const totalIdleTime = pauseSessions.reduce((sum: number, session: any) => 
         sum + (Number(session?.pauseDuration || 0)), 0);
       return formatOperatorDuration(totalIdleTime);
     }
     
-    if (metadata.idleStartedAt) {
-      const duration = metadata.idleEndedAt
-        ? Number(metadata.idleDurationSeconds || 0)
-        : 0;
-      return formatOperatorDuration(duration);
+    // Fallback to idleDurationSeconds
+    if (metadata.idleDurationSeconds) {
+      return formatOperatorDuration(Number(metadata.idleDurationSeconds));
     }
     
     return "-";
@@ -277,7 +281,22 @@ export const buildOperatorLogFilter =
           Array.isArray((log.metadata as any)?.quantityNumbers)
             ? (log.metadata as any).quantityNumbers.map((qty: number) => `Q${qty}`).join(", ")
             : "-",
-          String((log.metadata as any)?.idleTime || "-"),
+          (() => {
+    const metadata = (log.metadata as any) || {};
+    if (metadata.idleTimeDuration) {
+      return formatOperatorDuration(Number(metadata.idleTimeDuration));
+    }
+    const pauseSessions = Array.isArray(metadata.pauseSessions) ? metadata.pauseSessions : [];
+    if (pauseSessions.length > 0) {
+      const totalIdleTime = pauseSessions.reduce((sum: number, session: any) => 
+        sum + (Number(session?.pauseDuration || 0)), 0);
+      return formatOperatorDuration(totalIdleTime);
+    }
+    if (metadata.idleDurationSeconds) {
+      return formatOperatorDuration(Number(metadata.idleDurationSeconds));
+    }
+    return "-";
+  })(),
           formatOperatorIdleWindow(log),
           String((log.metadata as any)?.remark || "-"),
           ...(canViewRevenue ? [getRevenueForLog(log)] : []),
