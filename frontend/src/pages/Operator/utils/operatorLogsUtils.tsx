@@ -14,13 +14,6 @@ import {
 } from "./operatorLogHelpers";
 import { matchesSearchQuery } from "../../../utils/searchUtils";
 
-const getDisplayedWorkedSeconds = (row: EmployeeLog) => {
-  const workedSeconds = Number((row.metadata as any)?.workedSeconds || 0);
-  if (Number.isFinite(workedSeconds) && workedSeconds > 0) {
-    return Math.max(0, Math.round(workedSeconds));
-  }
-  return Math.max(0, Number(row.durationSeconds || 0));
-};
 
 export const formatOperatorIdleWindow = (row: EmployeeLog) => {
   const metadata = ((row.metadata as any) || {}) as Record<string, any>;
@@ -112,7 +105,11 @@ export const buildOperatorLogsColumns = ({
     },
   },
   { key: "shift", label: "Shift", sortable: false, render: (row) => renderOperatorShiftBadge(row.startedAt) },
-  { key: "durationSeconds", label: "Duration", sortable: false, render: (row) => formatOperatorDuration(getDisplayedWorkedSeconds(row)) },
+  { key: "durationSeconds", label: "Duration", sortable: false, render: (row) => {
+    // Use the actual durationSeconds from the log, fallback to metadata workedSeconds
+    const duration = Number(row.durationSeconds || (row.metadata as any)?.workedSeconds || 0);
+    return formatOperatorDuration(duration);
+  }},
   { key: "estimatedSeconds", label: "Est. Time", sortable: false, render: (row) => {
     const value = (row.metadata as any)?.estimatedSeconds;
     return formatOperatorDuration(value);
@@ -139,15 +136,14 @@ export const buildOperatorLogsColumns = ({
     if (pauseSessions.length > 0) {
       const totalIdleTime = pauseSessions.reduce((sum: number, session: any) => 
         sum + (Number(session?.pauseDuration || 0)), 0);
-      return `${formatOperatorDuration(totalIdleTime)} (${pauseSessions.length} sessions)`;
+      return formatOperatorDuration(totalIdleTime);
     }
     
     if (metadata.idleStartedAt) {
       const duration = metadata.idleEndedAt
         ? Number(metadata.idleDurationSeconds || 0)
         : 0;
-      const reason = metadata.idleTime || "Unknown";
-      return `${formatOperatorDuration(duration)} - ${reason}`;
+      return formatOperatorDuration(duration);
     }
     
     return "-";
@@ -236,7 +232,6 @@ export const buildOperatorLogFilter =
     designationByUserName,
     getMachineNumberForLog,
     getRevenueForLog,
-    getWorkedDurationForLog,
     canViewRevenue,
     operatorLogUser,
     operatorLogStatus,
@@ -245,12 +240,11 @@ export const buildOperatorLogFilter =
     designationByUserName: Map<string, string>;
     getMachineNumberForLog: (log: EmployeeLog) => string;
     getRevenueForLog: (log: EmployeeLog, workedSecondsMap?: Map<string, number>) => string;
-    getWorkedDurationForLog: (log: EmployeeLog) => number;
     canViewRevenue: boolean;
     operatorLogUser: string;
     operatorLogStatus: "" | "IN_PROGRESS" | "COMPLETED" | "REJECTED";
     operatorLogSearch: string;
-    }) =>
+  }) =>
   (logs: EmployeeLog[]) =>
     logs.filter((log) => {
       const matchesStatus =
@@ -277,7 +271,7 @@ export const buildOperatorLogFilter =
           formatDisplayDateTime(log.startedAt),
           formatDisplayDateTime(log.endedAt || null),
           getOperatorShiftLabel(log.startedAt),
-          formatOperatorDuration(getWorkedDurationForLog(log)),
+          formatOperatorDuration(Number(log.durationSeconds || (log.metadata as any)?.workedSeconds || 0)),
           formatOperatorDuration((log.metadata as any)?.estimatedSeconds),
           formatOperatorDuration((log.metadata as any)?.overtimeSeconds),
           Array.isArray((log.metadata as any)?.quantityNumbers)
