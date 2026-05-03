@@ -20,6 +20,7 @@ import { calculateMachineHrs } from "./utils/machineHrsCalculation";
 import { useOperatorAssignmentSync } from "./hooks/useOperatorAssignmentSync";
 import { getPersistedIdleDuration, getPersistedIdleReason } from "./utils/operatorViewPageHelpers";
 import { getEffectiveSegmentPauseSeconds } from "./utils/operatorInputState";
+import { formatWorkedSecondsAsMachineHrs, getCurrentSegmentWorkedSeconds } from "./utils/operatorTimeUtils";
 import "../RoleBoard.css";
 import "../Programmer/Programmer.css";
 import "../Programmer/components/JobDetailsModal.css";
@@ -240,6 +241,8 @@ const OperatorViewPage = () => {
     const persistedIdleDuration = getPersistedIdleDuration(Number(qtyData.totalPauseTime || 0), qtyData.idleTimeDuration);
     const persistedIdleReason = getPersistedIdleReason(qtyData.pauseSessions || [], qtyData.idleTime);
     const segmentPauseSeconds = getEffectiveSegmentPauseSeconds(qtyData);
+    const logWorkedSeconds = getCurrentSegmentWorkedSeconds(qtyData, timestampMs);
+    const logMachineHrs = formatWorkedSecondsAsMachineHrs(logWorkedSeconds);
     const machineHrs = calculateMachineHrs(
       String(qtyData.startTime || ""),
       displayValue,
@@ -254,6 +257,8 @@ const OperatorViewPage = () => {
       timestampMs,
       endTime: displayValue,
       machineHrs,
+      logMachineHrs,
+      logWorkedSeconds,
       idleTime: persistedIdleReason,
       idleTimeDuration: persistedIdleDuration,
     });

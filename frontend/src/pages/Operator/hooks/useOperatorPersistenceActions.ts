@@ -179,7 +179,15 @@ export const useOperatorPersistenceActions = ({
   const handleEndTimeCaptured = useCallback(async (
     cutId: number | string,
     quantityIndex: number,
-    options: { timestampMs: number; endTime: string; machineHrs: string; idleTime: string; idleTimeDuration: string; }
+    options: {
+      timestampMs: number;
+      endTime: string;
+      machineHrs: string;
+      logMachineHrs: string;
+      logWorkedSeconds: number;
+      idleTime: string;
+      idleTimeDuration: string;
+    }
   ) => {
     const cutData = cutInputs.get(cutId);
     const qtyData = cutData?.quantities?.[quantityIndex];
@@ -212,7 +220,8 @@ export const useOperatorPersistenceActions = ({
           endedAt: new Date(options.timestampMs).toISOString(),
           machineNumber,
           opsName,
-          machineHrs: options.machineHrs,
+          machineHrs: options.logMachineHrs,
+          workedSeconds: options.logWorkedSeconds,
           idleTime: options.idleTime,
           idleTimeDuration: options.idleTimeDuration,
           pauseSessions: getPauseSessionsForCurrentSegment(qtyData),
