@@ -34,8 +34,8 @@ type Props = {
   setActionToast: React.Dispatch<React.SetStateAction<{ message: string; variant: "success" | "error" | "info"; visible: boolean }>>;
   setPendingReset: React.Dispatch<React.SetStateAction<{ cutId: number | string; quantityIndex: number } | null>>;
   handleImmediateOperatorAction: (cutId: number | string, quantityIndex: number, action: "shiftOver" | "resume") => void | Promise<void>;
-  setPendingEndTimeCapture: React.Dispatch<React.SetStateAction<{ cutId: number | string; quantityIndex: number } | null>>;
-  handleStartTimeCaptured: (cutId: number | string, quantityIndex: number) => void | Promise<void>;
+  onRequestEndTimeCapture: (cutId: number | string, quantityIndex: number, timestampMs: number) => void;
+  handleStartTimeCaptured: (cutId: number | string, quantityIndex: number, timestampMs: number) => void | Promise<void>;
   isAdmin: boolean;
   currentUserDisplayName: string;
   groupEstimatedHrs: number;
@@ -65,6 +65,7 @@ const getCutInputData = (cutInputs: Map<number | string, CutInputData>, cutId: n
     lastImageFile: null,
     isPaused: false,
     pauseStartTime: null,
+    currentPauseOperatorName: "",
     totalPauseTime: 0,
     pausedElapsedTime: 0,
     pauseSessions: [],
@@ -98,7 +99,7 @@ const OperatorViewBody: React.FC<Props> = ({
   setActionToast,
   setPendingReset,
   handleImmediateOperatorAction,
-  setPendingEndTimeCapture,
+  onRequestEndTimeCapture,
   handleStartTimeCaptured,
   isAdmin,
   currentUserDisplayName,
@@ -187,7 +188,7 @@ const OperatorViewBody: React.FC<Props> = ({
                 onRequestResetTimer={(cutId, quantityIndex) => setPendingReset({ cutId, quantityIndex })}
                 onRequestShiftOver={(cutId, quantityIndex) => { void handleImmediateOperatorAction(cutId, quantityIndex, "shiftOver"); }}
                 onRequestResume={(cutId, quantityIndex) => { void handleImmediateOperatorAction(cutId, quantityIndex, "resume"); }}
-                onRequestEndTimeCapture={(cutId, quantityIndex) => setPendingEndTimeCapture({ cutId, quantityIndex })}
+                onRequestEndTimeCapture={onRequestEndTimeCapture}
                 onStartTimeCaptured={handleStartTimeCaptured}
                 isAdmin={isAdmin}
                 canRunAssignedJob={isCurrentUserAssignedToJob(cutItem.assignedTo, currentUserDisplayName, isAdmin)}

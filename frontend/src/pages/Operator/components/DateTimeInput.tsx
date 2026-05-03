@@ -18,6 +18,7 @@ type DateTimeInputProps = {
   onPauseToggle?: () => void; // Callback for idle/resume
   disabled?: boolean; // Disable input (for End Time after first click)
   disablePauseButton?: boolean;
+  applyCapturedValue?: boolean;
 };
 
 /**
@@ -58,7 +59,7 @@ const DateTimeInput: React.FC<DateTimeInputProps> = ({
   value,
   onChange,
   onTimeCapture,
-  placeholder = "DD/MM/YYYY HH:MM",
+  placeholder = "DD/MM/YYYY HH:MM:SS",
   error,
   className = "",
   showPauseButton = false,
@@ -67,6 +68,7 @@ const DateTimeInput: React.FC<DateTimeInputProps> = ({
   onPauseToggle,
   disabled = false,
   disablePauseButton = false,
+  applyCapturedValue = true,
 }) => {
   /**
    * Handles the clock icon click event
@@ -76,7 +78,9 @@ const DateTimeInput: React.FC<DateTimeInputProps> = ({
     if (disabled) return; // Don't allow changes if disabled
     const captureTimestamp = getServerNowMs();
     const currentISTTime = getCurrentISTDateTime(captureTimestamp);
-    onChange(currentISTTime);
+    if (applyCapturedValue) {
+      onChange(currentISTTime);
+    }
     // Notify parent that time was captured (for timer start)
     if (onTimeCapture) {
       onTimeCapture(captureTimestamp);

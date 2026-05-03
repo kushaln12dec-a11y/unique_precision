@@ -858,17 +858,129 @@
   gap: 0.12rem;
 }
 
+.operator-history-proof.modern {
+  margin-top: 0;
+  gap: 0.55rem;
+  width: 100%;
+  text-transform: none;
+}
+
 .operator-history-proof-line {
   display: block;
 }
 
 .operator-history-panel {
   min-width: 0;
-  padding: 0.75rem 0.85rem;
-  border: 1px solid #dbe4f0;
-  border-radius: 12px;
-  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  padding: 0.85rem;
+  border: 1px solid #d9e6f5;
+  border-radius: 18px;
+  background:
+    radial-gradient(circle at top right, rgba(59, 130, 246, 0.08), transparent 34%),
+    linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+  box-shadow: 0 14px 28px rgba(15, 23, 42, 0.06);
   align-self: start;
+}
+
+.operator-history-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.operator-history-title {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #475569;
+}
+
+.operator-history-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  height: 28px;
+  padding: 0 0.45rem;
+  border-radius: 999px;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  color: #1d4ed8;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.operator-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.46rem;
+  width: 100%;
+}
+
+.operator-history-item {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.55rem;
+  width: 100%;
+  padding: 0.46rem 0.52rem;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid #dbe7f5;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+
+.operator-history-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #dbeafe 0%, #eff6ff 100%);
+  border: 1px solid #bfdbfe;
+  color: #1d4ed8;
+  font-size: 0.76rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  flex: 0 0 auto;
+}
+
+.operator-history-meta {
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.14rem;
+}
+
+.operator-history-name {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #0f172a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.operator-history-note {
+  font-size: 0.64rem;
+  font-weight: 700;
+  color: #64748b;
+}
+
+.operator-history-duration {
+  margin-left: auto;
+  flex: 0 0 auto;
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: #0f766e;
+  background: #ecfeff;
+  border: 1px solid #a5f3fc;
+  border-radius: 999px;
+  padding: 0.18rem 0.5rem;
+  white-space: nowrap;
 }
 
 .operator-job-ref-cell .job-ref-copy-text,

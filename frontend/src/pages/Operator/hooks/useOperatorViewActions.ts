@@ -92,6 +92,7 @@ export const useOperatorViewActions = ({ jobs, cutInputs, setCutInputs, setValid
     setActionToast,
     setCutInputs,
     ensureCurrentUserAssigned,
+    currentUserDisplayName,
   });
 
   return {

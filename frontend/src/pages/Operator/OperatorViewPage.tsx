@@ -40,7 +40,14 @@ const OperatorViewPage = () => {
 
   const [validationErrors, setValidationErrors] = useState<Map<number | string, Record<string, Record<string, string>>>>(new Map());
   const [liveNowMs, setLiveNowMs] = useState<number>(getServerNowMs());
-  const [pendingEndTimeCapture, setPendingEndTimeCapture] = useState<{ cutId: number | string; quantityIndex: number } | null>(null);
+  const [pendingEndTimeCapture, setPendingEndTimeCapture] = useState<{
+    cutId: number | string;
+    quantityIndex: number;
+    timestampMs: number;
+    previousEndTime: string;
+    previousEndTimeEpochMs: number | null;
+    previousMachineHrs: string;
+  } | null>(null);
   const pendingScrollRestoreRef = useRef<number | null>(null);
   const reloadInFlightRef = useRef<Promise<void> | null>(null);
 
@@ -139,7 +146,7 @@ const OperatorViewPage = () => {
     }
   }, [getScrollContainer, reloadOperatorViewData]);
 
-  const handleConfirmEndTimeCapture = async (cutId: number | string, quantityIndex: number) => {
+  const handleRequestEndTimeCapture = useCallback((cutId: number | string, quantityIndex: number, timestampMs: number) => {
     const qtyData = cutInputs.get(cutId)?.quantities?.[quantityIndex];
     if (!qtyData?.startTime) {
       setActionToast({
@@ -153,7 +160,79 @@ const OperatorViewPage = () => {
       return;
     }
 
-    const timestampMs = getServerNowMs();
+    const displayValue = getCurrentISTDateTime(timestampMs);
+    const persistedIdleDuration = getPersistedIdleDuration(Number(qtyData.totalPauseTime || 0), qtyData.idleTimeDuration);
+    const machineHrs = calculateMachineHrs(
+      String(qtyData.startTime || ""),
+      displayValue,
+      persistedIdleDuration,
+      Number(qtyData.totalPauseTime || 0),
+      qtyData.startTimeEpochMs || null,
+      timestampMs
+    );
+
+    setCutInputs((prev) => {
+      const currentCut = prev.get(cutId);
+      const currentQty = currentCut?.quantities?.[quantityIndex];
+      if (!currentCut || !currentQty) return prev;
+      const next = new Map(prev);
+      const quantities = [...currentCut.quantities];
+      quantities[quantityIndex] = {
+        ...currentQty,
+        endTime: displayValue,
+        endTimeEpochMs: timestampMs,
+        machineHrs,
+      };
+      next.set(cutId, { ...currentCut, quantities });
+      return next;
+    });
+
+    setPendingEndTimeCapture({
+      cutId,
+      quantityIndex,
+      timestampMs,
+      previousEndTime: String(qtyData.endTime || ""),
+      previousEndTimeEpochMs: qtyData.endTimeEpochMs || null,
+      previousMachineHrs: String(qtyData.machineHrs || ""),
+    });
+  }, [cutInputs, getPersistedIdleDuration, setActionToast, setCutInputs]);
+
+  const handleCancelEndTimeCapture = useCallback(() => {
+    if (!pendingEndTimeCapture) return;
+
+    setCutInputs((prev) => {
+      const currentCut = prev.get(pendingEndTimeCapture.cutId);
+      const currentQty = currentCut?.quantities?.[pendingEndTimeCapture.quantityIndex];
+      if (!currentCut || !currentQty) return prev;
+      const next = new Map(prev);
+      const quantities = [...currentCut.quantities];
+      quantities[pendingEndTimeCapture.quantityIndex] = {
+        ...currentQty,
+        endTime: pendingEndTimeCapture.previousEndTime,
+        endTimeEpochMs: pendingEndTimeCapture.previousEndTimeEpochMs,
+        machineHrs: pendingEndTimeCapture.previousMachineHrs,
+      };
+      next.set(pendingEndTimeCapture.cutId, { ...currentCut, quantities });
+      return next;
+    });
+
+    setPendingEndTimeCapture(null);
+  }, [pendingEndTimeCapture, setCutInputs]);
+
+  const handleConfirmEndTimeCapture = async (cutId: number | string, quantityIndex: number, timestampMs: number) => {
+    const qtyData = cutInputs.get(cutId)?.quantities?.[quantityIndex];
+    if (!qtyData?.startTime) {
+      setActionToast({
+        message: "Start time is required before capturing end time.",
+        variant: "error",
+        visible: true,
+      });
+      setTimeout(() => {
+        setActionToast((prev) => ({ ...prev, visible: false }));
+      }, 2200);
+      return false;
+    }
+
     const displayValue = getCurrentISTDateTime(timestampMs);
     const persistedIdleDuration = getPersistedIdleDuration(Number(qtyData.totalPauseTime || 0), qtyData.idleTimeDuration);
     const persistedIdleReason = getPersistedIdleReason(qtyData.pauseSessions || [], qtyData.idleTime);
@@ -166,8 +245,6 @@ const OperatorViewPage = () => {
       timestampMs
     );
 
-    handleInputChange(cutId, quantityIndex, "endTime", displayValue);
-    handleInputChange(cutId, quantityIndex, "endTimeEpochMs", String(timestampMs));
     const success = await handleEndTimeCaptured(cutId, quantityIndex, {
       timestampMs,
       endTime: displayValue,
@@ -175,9 +252,10 @@ const OperatorViewPage = () => {
       idleTime: persistedIdleReason,
       idleTimeDuration: persistedIdleDuration,
     });
-    if (!success) return;
+    if (!success) return false;
 
     await reloadOperatorViewDataPreservingScroll();
+    setPendingEndTimeCapture(null);
     setActionToast({
       message: "End time captured successfully!",
       variant: "success",
@@ -186,6 +264,7 @@ const OperatorViewPage = () => {
     setTimeout(() => {
       setActionToast((prev) => ({ ...prev, visible: false }));
     }, 2200);
+    return true;
   };
 
   const refreshRemoteOperatorView = useCallback(() => {
@@ -334,7 +413,7 @@ const OperatorViewPage = () => {
             setActionToast={setActionToast}
             setPendingReset={setPendingReset}
             handleImmediateOperatorAction={handleImmediateOperatorAction}
-            setPendingEndTimeCapture={setPendingEndTimeCapture}
+            onRequestEndTimeCapture={handleRequestEndTimeCapture}
             handleStartTimeCaptured={handleStartTimeCaptured}
             isAdmin={isAdmin}
             currentUserDisplayName={currentUserDisplayName}
@@ -366,7 +445,7 @@ const OperatorViewPage = () => {
         pendingReset={pendingReset}
         setPendingReset={setPendingReset}
         pendingEndTimeCapture={pendingEndTimeCapture}
-        setPendingEndTimeCapture={setPendingEndTimeCapture}
+        handleCancelEndTimeCapture={handleCancelEndTimeCapture}
         handleUpdateQaStatus={handleUpdateQaStatus}
         handleResetQuantity={handleResetQuantity}
         handleConfirmEndTimeCapture={handleConfirmEndTimeCapture}

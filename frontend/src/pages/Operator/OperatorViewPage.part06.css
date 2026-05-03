@@ -8,93 +8,89 @@
 }
 
 .idle-history-inline-section {
-  margin-top: 0.7rem;
-  padding-top: 0.7rem;
+  margin-top: 0.4rem;
+  padding-top: 0.4rem;
   border-top: 1px solid #e2e8f0;
-}
-
-.idle-history-inline-header {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 0.55rem;
-}
-
-.idle-history-inline-title {
-  font-size: 0.78rem;
-  font-weight: 700;
-  color: #92400e;
-  text-transform: uppercase;
-  letter-spacing: 0.3px;
-}
-
-.idle-history-inline-count {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  color: #d97706;
-  font-weight: 700;
-  font-size: 0.72rem;
-  padding: 0.08rem 0.45rem;
-  border-radius: 12px;
-  border: 1px solid #fcd34d;
-  background: #fffbeb;
-  min-width: 22px;
 }
 
 .idle-history-inline-list {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.45rem;
+  gap: 0.35rem;
 }
 
 .idle-history-inline-item {
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  gap: 0.42rem;
-  padding: 0.4rem 0.6rem;
-  border-radius: 999px;
-  border: 1px solid #fde68a;
-  background: #fffdf4;
+  gap: 0.5rem;
+  max-width: 100%;
+  padding: 0.34rem 0.42rem;
+  border-radius: 14px;
+  border: 1px solid #fed7aa;
+  background:
+    linear-gradient(180deg, #fffdf7 0%, #fff8eb 100%);
   color: #92400e;
   min-height: 34px;
+  box-shadow: 0 8px 18px rgba(217, 119, 6, 0.08);
 }
 
-.idle-history-inline-index,
+.idle-history-inline-item.active {
+  background:
+    linear-gradient(180deg, #fff7ed 0%, #ffedd5 100%);
+  border-color: #fb923c;
+}
+
+.idle-history-inline-reason {
+  flex: 0 0 auto;
+  font-size: 0.66rem;
+  font-weight: 800;
+  color: #9a3412;
+  background: #ffffff;
+  border: 1px solid #fdba74;
+  border-radius: 999px;
+  padding: 0.1rem 0.38rem;
+  text-transform: uppercase;
+}
+
+.idle-history-inline-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.38rem;
+  min-width: 0;
+}
+
+.idle-history-inline-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #7c2d12;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 150px;
+}
+
+.idle-history-inline-separator {
+  width: 4px;
+  height: 4px;
+  border-radius: 999px;
+  background: #f59e0b;
+  flex: 0 0 auto;
+}
+
 .idle-history-inline-duration {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.72rem;
+  font-size: 0.66rem;
   font-weight: 700;
   border-radius: 999px;
   background: #ffffff;
   border: 1px solid #fcd34d;
   color: #d97706;
-}
-
-.idle-history-inline-index {
-  min-width: 34px;
-  padding: 0.14rem 0.35rem;
-}
-
-.idle-history-inline-duration {
-  padding: 0.14rem 0.5rem;
-}
-
-.idle-history-inline-user {
-  font-size: 0.72rem;
-  font-weight: 800;
-  color: #92400e;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
-}
-
-.idle-history-inline-reason {
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: #475569;
-  white-space: nowrap;
+  flex: 0 0 auto;
+  padding: 0.1rem 0.38rem;
 }
 
 @media (max-width: 768px) {

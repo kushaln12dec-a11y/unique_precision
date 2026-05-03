@@ -21,27 +21,43 @@ const OperatorQuantityHistoryPanel: React.FC<Props> = ({
 }) => {
   if (!shouldShowOperatorHistory) return null;
 
+  const fallbackEntries =
+    operatorHistoryDetails.length > 0
+      ? operatorHistoryDetails
+      : latestWorkedByName
+        ? [{ name: latestWorkedByName, durationSeconds: 0 }]
+        : [];
+
   return (
     <div className="quantity-side-panel">
       <div className="operator-history-panel">
-        {operatorHistoryDetails.length > 0 ? (
+        {fallbackEntries.length > 0 && (!isRangeMode || operatorHistoryDetails.length > 0) && !shouldShowWorkedBySummary ? (
           <div
-            className="operator-history-proof"
-            title={operatorHistoryDetails
-              .map((entry) => `${entry.name}: ${formatWorkedDuration(entry.durationSeconds)}${isAdmin && entry.revenue ? ` | Rs. ${entry.revenue.toFixed(2)}` : ""}`)
+            className="operator-history-proof modern"
+            title={fallbackEntries
+              .map((entry) => `${entry.name}${entry.durationSeconds > 0 ? `: ${formatWorkedDuration(entry.durationSeconds)}` : ""}${isAdmin && entry.revenue ? ` | Rs. ${entry.revenue.toFixed(2)}` : ""}`)
               .join(" | ")}
           >
-            <span className="operator-history-proof-line">Worked By:</span>
-            {operatorHistoryDetails.map((entry) => (
-              <span key={`${entry.name}-${entry.durationSeconds}`} className="operator-history-proof-line">
-                {entry.name} ({formatWorkedDuration(entry.durationSeconds)}){isAdmin && entry.revenue ? ` | Rs. ${entry.revenue.toFixed(2)}` : ""}
-              </span>
-            ))}
-          </div>
-        ) : !isRangeMode && !shouldShowWorkedBySummary && latestWorkedByName ? (
-          <div className="operator-history-proof" title={latestWorkedByName}>
-            <span className="operator-history-proof-line">Worked By:</span>
-            <span className="operator-history-proof-line">{latestWorkedByName}</span>
+            <div className="operator-history-header">
+              <span className="operator-history-title">Worked By</span>
+              <span className="operator-history-count">{fallbackEntries.length}</span>
+            </div>
+            <div className="operator-history-list">
+              {fallbackEntries.map((entry) => (
+                <div key={`${entry.name}-${entry.durationSeconds}`} className="operator-history-item">
+                  <span className="operator-history-avatar">{entry.name.slice(0, 1) || "O"}</span>
+                  <div className="operator-history-meta">
+                    <span className="operator-history-name">{entry.name}</span>
+                    {isAdmin && entry.revenue ? (
+                      <span className="operator-history-note">Rs. {entry.revenue.toFixed(2)}</span>
+                    ) : null}
+                  </div>
+                  <span className="operator-history-duration">
+                    {entry.durationSeconds > 0 ? formatWorkedDuration(entry.durationSeconds) : "Recent"}
+                  </span>
+                </div>
+              ))}
+            </div>
           </div>
         ) : null}
       </div>

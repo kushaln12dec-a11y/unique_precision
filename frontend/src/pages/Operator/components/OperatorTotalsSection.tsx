@@ -1,5 +1,6 @@
 ﻿import React from "react";
-import { formatEstimatedTime } from "../../../utils/jobFormatting";
+import { estimatedDurationSecondsFromHours } from "../../../utils/jobFormatting";
+import { formatCompactDurationWords } from "../utils/operatorTimeUtils";
 import "../OperatorViewPage.css";
 
 type OperatorTotalsSectionProps = {
@@ -20,13 +21,14 @@ export const OperatorTotalsSection: React.FC<OperatorTotalsSectionProps> = ({
   overtimeSeconds = 0,
 }) => {
   const hasOvertime = overtimeSeconds > 0;
+  const estimatedDuration = formatCompactDurationWords(estimatedDurationSecondsFromHours(groupEstimatedHrs));
 
   return (
     <div className="operator-totals-section">
       <div className={`operator-total-card ${hasOvertime ? "overtime-card" : ""}`.trim()}>
         <label>{hasOvertime ? "Overtime" : "Estimated Time"}</label>
-        <span>{hasOvertime ? formatEstimatedTime(overtimeSeconds / 3600) : formatEstimatedTime(groupEstimatedHrs)}</span>
-        {hasOvertime && <small className="operator-total-meta">Estimated {formatEstimatedTime(groupEstimatedHrs)}</small>}
+        <span>{hasOvertime ? formatCompactDurationWords(overtimeSeconds) : estimatedDuration}</span>
+        {hasOvertime && <small className="operator-total-meta">Estimated {estimatedDuration}</small>}
       </div>
       {isAdmin && (
         <>

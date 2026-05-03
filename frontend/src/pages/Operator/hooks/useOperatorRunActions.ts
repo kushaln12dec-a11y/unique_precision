@@ -19,6 +19,7 @@ type Params = {
   setActionToast: React.Dispatch<React.SetStateAction<any>>;
   setCutInputs: React.Dispatch<React.SetStateAction<Map<number | string, CutInputData>>>;
   ensureCurrentUserAssigned: (job: JobEntry | undefined) => boolean;
+  currentUserDisplayName: string;
 };
 
 export const useOperatorRunActions = ({
@@ -30,6 +31,7 @@ export const useOperatorRunActions = ({
   setActionToast,
   setCutInputs,
   ensureCurrentUserAssigned,
+  currentUserDisplayName,
 }: Params) => {
   const getShiftOverKey = (cutId: number | string, quantityIndex: number) => `${String(cutId)}:${quantityIndex}`;
 
@@ -43,7 +45,7 @@ export const useOperatorRunActions = ({
   };
 
   const buildShiftOverState = (qtyData: QuantityInputData, pausedAtMs: number) => ({
-    ...pauseRunningQuantity(qtyData, pausedAtMs),
+    ...pauseRunningQuantity(qtyData, pausedAtMs, currentUserDisplayName),
     pauseTimeOffsetSeconds: Number(qtyData.pauseTimeOffsetSeconds || 0),
     idleTime: "Shift Over",
     idleTimeDuration: formatDurationToClock(Number(qtyData.totalPauseTime || 0)),
@@ -87,14 +89,15 @@ export const useOperatorRunActions = ({
           pauseEndTime: resumedAtMs,
           pauseDuration: pauseDurationSeconds,
           reason: "Shift Over",
-          operatorName: getOperatorOpsName(qtyData.opsName),
+          operatorName: String(qtyData.currentPauseOperatorName || currentUserDisplayName || "").trim(),
         },
       ],
+      currentPauseOperatorName: "",
       currentPauseReason: "",
     };
   };
 
-  const handleStartTimeCaptured = useCallback(async (cutId: number | string, quantityIndex: number) => {
+  const handleStartTimeCaptured = useCallback(async (cutId: number | string, quantityIndex: number, timestampMs: number) => {
     const key = getShiftOverKey(cutId, quantityIndex);
     if (activeOperatorLogIds.has(key)) return;
     const job = jobs.find((item) => String(item.id) === String(cutId));
@@ -108,7 +111,6 @@ export const useOperatorRunActions = ({
     }
 
     try {
-      const startedAtMs = getServerNowMs();
       const fromQty = quantityIndex + 1;
       const startedLog = await startOperatorProductionLog({
         jobId: String(job.id),
@@ -120,11 +122,12 @@ export const useOperatorRunActions = ({
         fromQty,
         toQty: fromQty,
         quantityCount: 1,
+        startedAt: new Date(timestampMs).toISOString(),
         machineNumber: nextMachineNumber,
         opsName: getOperatorOpsName(qtyData?.opsName || []),
       });
       const authoritativeStartedAtMs = new Date(String(startedLog?.startedAt || "")).getTime();
-      const effectiveStartedAtMs = Number.isFinite(authoritativeStartedAtMs) && authoritativeStartedAtMs > 0 ? authoritativeStartedAtMs : startedAtMs;
+      const effectiveStartedAtMs = Number.isFinite(authoritativeStartedAtMs) && authoritativeStartedAtMs > 0 ? authoritativeStartedAtMs : timestampMs;
       const startedAtDisplay = getCurrentISTDateTime(effectiveStartedAtMs);
 
       if (startedLog?._id) {
@@ -202,6 +205,7 @@ export const useOperatorRunActions = ({
           fromQty: quantityIndex + 1,
           toQty: quantityIndex + 1,
           quantityCount: 1,
+          startedAt: new Date(resumedAtMs).toISOString(),
           machineNumber: String(qtyData.machineNumber || "").trim(),
           opsName: getOperatorOpsName(qtyData.opsName),
         });
@@ -301,7 +305,7 @@ export const useOperatorRunActions = ({
       showAndHideToast(setActionToast, message, "error", 3500);
       return false;
     }
-  }, [activeOperatorLogIds, cutInputs, ensureCurrentUserAssigned, jobs, resolveActiveOperatorLogId, setActionToast, setActiveOperatorLogIds, setCutInputs]);
+  }, [activeOperatorLogIds, currentUserDisplayName, cutInputs, ensureCurrentUserAssigned, jobs, resolveActiveOperatorLogId, setActionToast, setActiveOperatorLogIds, setCutInputs]);
 
   return {
     handleStartTimeCaptured,

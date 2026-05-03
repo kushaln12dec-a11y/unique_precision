@@ -18,13 +18,13 @@ export type OperatorQuantityCardProps = {
   canOperateInputs: boolean;
   onInputChange: (cutId: number | string, quantityIndex: number, field: OperatorInputField, value: string | string[]) => void;
   onShowToast?: (message: string, variant?: "success" | "error" | "info") => void;
-  onStartTimeCaptured?: (cutId: number | string, quantityIndex: number) => void;
+  onStartTimeCaptured?: (cutId: number | string, quantityIndex: number, timestampMs: number) => void;
   validationErrors?: Record<string, string>;
   requiredHoursPerQuantity: number;
   onRequestResetTimer?: (cutId: number | string, quantityIndex: number) => void;
   onRequestShiftOver?: (cutId: number | string, quantityIndex: number) => void;
   onRequestResume?: (cutId: number | string, quantityIndex: number) => void;
-  onRequestEndTimeCapture?: (cutId: number | string, quantityIndex: number) => void;
+  onRequestEndTimeCapture?: (cutId: number | string, quantityIndex: number, timestampMs: number) => void;
   onSaveQuantity?: (cutId: number | string, quantityIndex: number) => void;
   onSaveRange?: (cutId: number | string, sourceQuantityIndex: number, fromQty: number, toQty: number) => void;
   savedRanges: Set<string>;

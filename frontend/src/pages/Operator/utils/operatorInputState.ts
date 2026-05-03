@@ -41,6 +41,7 @@ export const buildResetQuantityState = (qtyData: QuantityInputData): QuantityInp
   operatorHistoryDetails: [],
   isPaused: false,
   pauseStartTime: null,
+  currentPauseOperatorName: "",
   totalPauseTime: 0,
   pausedElapsedTime: 0,
   pauseSessions: [],
@@ -53,13 +54,14 @@ export const parseOperatorInputStartTime = (timeStr: string): number | null => {
   if (parts.length !== 2) return null;
   const datePart = parts[0].split("/");
   const timePart = parts[1].split(":");
-  if (datePart.length !== 3 || timePart.length !== 2) return null;
+  if (datePart.length !== 3 || (timePart.length !== 2 && timePart.length !== 3)) return null;
   const day = parseInt(datePart[0], 10) || 0;
   const month = parseInt(datePart[1], 10) || 0;
   const year = parseInt(datePart[2], 10) || 0;
   const hours = parseInt(timePart[0], 10) || 0;
   const minutes = parseInt(timePart[1], 10) || 0;
-  return new Date(year, month - 1, day, hours, minutes).getTime();
+  const seconds = parseInt(timePart[2] || "0", 10) || 0;
+  return new Date(year, month - 1, day, hours, minutes, seconds).getTime();
 };
 
 export const updateQuantityMachineHours = (

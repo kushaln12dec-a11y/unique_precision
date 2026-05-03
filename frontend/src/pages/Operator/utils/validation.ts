@@ -9,20 +9,18 @@ export const validateQuantityInputs = (qtyData: QuantityInputData): Record<strin
   if (!qtyData.startTime || !qtyData.startTime.trim()) {
     errors.startTime = "Start Time is required.";
   } else {
-    // Validate date/time format (DD/MM/YYYY HH:mm)
-    const dateTimeRegex = /^\d{2}\/\d{2}\/\d{4} \d{2}:\d{2}$/;
+    const dateTimeRegex = /^\d{2}\/\d{2}\/\d{4} \d{2}:\d{2}(?::\d{2})?$/;
     if (!dateTimeRegex.test(qtyData.startTime.trim())) {
-      errors.startTime = "Please enter date and time in DD/MM/YYYY HH:MM format.";
+      errors.startTime = "Please enter date and time in DD/MM/YYYY HH:MM[:SS] format.";
     }
   }
   
   if (!qtyData.endTime || !qtyData.endTime.trim()) {
     errors.endTime = "End Time is required.";
   } else {
-    // Validate date/time format (DD/MM/YYYY HH:mm)
-    const dateTimeRegex = /^\d{2}\/\d{2}\/\d{4} \d{2}:\d{2}$/;
+    const dateTimeRegex = /^\d{2}\/\d{2}\/\d{4} \d{2}:\d{2}(?::\d{2})?$/;
     if (!dateTimeRegex.test(qtyData.endTime.trim())) {
-      errors.endTime = "Please enter date and time in DD/MM/YYYY HH:MM format.";
+      errors.endTime = "Please enter date and time in DD/MM/YYYY HH:MM[:SS] format.";
     }
   }
 

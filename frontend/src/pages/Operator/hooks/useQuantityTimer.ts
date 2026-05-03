@@ -11,14 +11,15 @@ const formatHMS = (seconds: number): string => {
 
 const parseDateTime = (value?: string): number | null => {
   if (!value || typeof value !== "string") return null;
-  const match = value.trim().match(/^(\d{2})\/(\d{2})\/(\d{4})\s+(\d{2}):(\d{2})$/);
+  const match = value.trim().match(/^(\d{2})\/(\d{2})\/(\d{4})\s+(\d{2}):(\d{2})(?::(\d{2}))?$/);
   if (!match) return null;
   const day = Number(match[1]);
   const month = Number(match[2]);
   const year = Number(match[3]);
   const hour = Number(match[4]);
   const minute = Number(match[5]);
-  const date = new Date(year, month - 1, day, hour, minute, 0, 0);
+  const second = Number(match[6] || 0);
+  const date = new Date(year, month - 1, day, hour, minute, second, 0);
   return Number.isNaN(date.getTime()) ? null : date.getTime();
 };
 

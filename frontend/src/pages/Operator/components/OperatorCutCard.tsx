@@ -54,8 +54,8 @@ type OperatorCutCardProps = {
   onRequestResetTimer?: (cutId: number | string, quantityIndex: number) => void;
   onRequestShiftOver?: (cutId: number | string, quantityIndex: number) => void;
   onRequestResume?: (cutId: number | string, quantityIndex: number) => void;
-  onRequestEndTimeCapture?: (cutId: number | string, quantityIndex: number) => void;
-  onStartTimeCaptured?: (cutId: number | string, quantityIndex: number) => void;
+  onRequestEndTimeCapture?: (cutId: number | string, quantityIndex: number, timestampMs: number) => void;
+  onStartTimeCaptured?: (cutId: number | string, quantityIndex: number, timestampMs: number) => void;
   isAdmin: boolean;
   canRunAssignedJob?: boolean;
   runBlockedReason?: string;

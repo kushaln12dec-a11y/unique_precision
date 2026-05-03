@@ -1,7 +1,7 @@
 import type { JobEntry } from "../../../types/job";
 import { getCurrentISTDateTime } from "../../../utils/dateTime";
 import type { CutInputData, PauseSession, QuantityInputData } from "../types/cutInput";
-import { parseDurationToSeconds } from "./operatorTimeUtils";
+import { parseDurationToSeconds, parseOperatorDateTime } from "./operatorTimeUtils";
 
 const normalizeOperatorName = (value: unknown) => String(value || "").trim().toUpperCase();
 
@@ -93,7 +93,7 @@ const collectPauseSessionsForQuantity = (quantityNumber: number, logsForJob: Ope
       pauseEndTime: idleEndedAt,
       pauseDuration,
       reason: String(metadata.idleTime || "").trim() || "Shift Over",
-      operatorName: String(metadata.opsName || log.userName || "").trim() || undefined,
+      operatorName: String(metadata.idleOperatorName || log.userName || "").trim() || undefined,
     };
     deduped.set(buildPauseSessionKey(session), session);
   });
@@ -187,10 +187,10 @@ export const getDurationSeconds = (entry: {
   const endValue = String(entry.endTime || entry.endedAt || "").trim();
   if (!startValue || !endValue) return 0;
 
-  const startDate = Number.isNaN(new Date(startValue).getTime()) ? null : new Date(startValue);
-  const endDate = Number.isNaN(new Date(endValue).getTime()) ? null : new Date(endValue);
-  if (startDate && endDate) {
-    return Math.max(0, Math.round((endDate.getTime() - startDate.getTime()) / 1000));
+  const startMs = parseOperatorDateTime(startValue) ?? new Date(startValue).getTime();
+  const endMs = parseOperatorDateTime(endValue) ?? new Date(endValue).getTime();
+  if (Number.isFinite(startMs) && Number.isFinite(endMs)) {
+    return Math.max(0, Math.round((endMs - startMs) / 1000));
   }
   return 0;
 };
@@ -312,6 +312,7 @@ export const hydrateQuantityFromLogs = (
       idleTimeDuration: persistedIdleDuration,
       isPaused: false,
       pauseStartTime: null,
+      currentPauseOperatorName: "",
       totalPauseTime: persistedPauseSeconds,
       pausedElapsedTime: 0,
       pauseSessions,
@@ -333,6 +334,12 @@ export const hydrateQuantityFromLogs = (
     idleTimeDuration: persistedIdleDuration,
     isPaused,
     pauseStartTime: isPaused && pauseStartedMs && Number.isFinite(pauseStartedMs) ? pauseStartedMs : null,
+    currentPauseOperatorName:
+      isPaused && pauseMarker
+        ? String(
+            ((latestShiftOverLog?.metadata as any)?.idleOperatorName || latestShiftOverLog?.userName || quantity.currentPauseOperatorName || "")
+          ).trim()
+        : "",
     pausedElapsedTime: isPaused ? workedDurationSeconds : 0,
     totalPauseTime: persistedPauseSeconds,
     pauseSessions,

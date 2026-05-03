@@ -14,6 +14,7 @@ export const resumePausedQuantity = (qtyData: QuantityInputData, now: number, op
       ...qtyData,
       isPaused: false,
       pauseStartTime: null,
+      currentPauseOperatorName: "",
       currentPauseReason: "",
     };
   }
@@ -30,14 +31,15 @@ export const resumePausedQuantity = (qtyData: QuantityInputData, now: number, op
         pauseEndTime: now,
         pauseDuration,
         reason: qtyData.currentPauseReason || "",
-        operatorName: resolvePauseOperatorName(qtyData, operatorName),
+        operatorName: resolvePauseOperatorName(qtyData, qtyData.currentPauseOperatorName || operatorName),
       },
     ],
+    currentPauseOperatorName: "",
     currentPauseReason: "",
   };
 };
 
-export const pauseRunningQuantity = (qtyData: QuantityInputData, now: number): QuantityInputData => {
+export const pauseRunningQuantity = (qtyData: QuantityInputData, now: number, operatorName?: string): QuantityInputData => {
   const startTimestamp = qtyData.startTimeEpochMs || parseOperatorInputStartTime(qtyData.startTime);
   let currentElapsed = qtyData.pausedElapsedTime;
   if (startTimestamp) {
@@ -49,6 +51,7 @@ export const pauseRunningQuantity = (qtyData: QuantityInputData, now: number): Q
     ...qtyData,
     isPaused: true,
     pauseStartTime: now,
+    currentPauseOperatorName: resolvePauseOperatorName(qtyData, operatorName),
     pausedElapsedTime: currentElapsed,
     currentPauseReason: "",
   };
@@ -60,6 +63,7 @@ export const closePauseOnEndTime = (qtyData: QuantityInputData, now: number, ope
       ...qtyData,
       isPaused: false,
       pauseStartTime: null,
+      currentPauseOperatorName: "",
       currentPauseReason: "",
     };
   }
@@ -76,9 +80,10 @@ export const closePauseOnEndTime = (qtyData: QuantityInputData, now: number, ope
         pauseEndTime: now,
         pauseDuration,
         reason: (qtyData.currentPauseReason || "").trim() || "Ended while idle",
-        operatorName: resolvePauseOperatorName(qtyData, operatorName),
+        operatorName: resolvePauseOperatorName(qtyData, qtyData.currentPauseOperatorName || operatorName),
       },
     ],
+    currentPauseOperatorName: "",
     currentPauseReason: "",
   };
 };

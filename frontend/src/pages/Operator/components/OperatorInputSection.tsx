@@ -30,8 +30,8 @@ type OperatorInputSectionProps = {
   onRequestResetTimer?: (cutId: number | string, quantityIndex: number) => void;
   onRequestShiftOver?: (cutId: number | string, quantityIndex: number) => void;
   onRequestResume?: (cutId: number | string, quantityIndex: number) => void;
-  onRequestEndTimeCapture?: (cutId: number | string, quantityIndex: number) => void;
-  onStartTimeCaptured?: (cutId: number | string, quantityIndex: number) => void;
+  onRequestEndTimeCapture?: (cutId: number | string, quantityIndex: number, timestampMs: number) => void;
+  onStartTimeCaptured?: (cutId: number | string, quantityIndex: number, timestampMs: number) => void;
   requiredHoursPerQuantity?: number;
   canRunAssignedJob?: boolean;
   runBlockedReason?: string;
@@ -53,6 +53,7 @@ const createFallbackQuantity = () => ({
   lastImageFile: null,
   isPaused: false,
   pauseStartTime: null,
+  currentPauseOperatorName: "",
   totalPauseTime: 0,
   pausedElapsedTime: 0,
   pauseSessions: [],

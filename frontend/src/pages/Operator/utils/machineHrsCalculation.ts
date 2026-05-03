@@ -15,13 +15,14 @@ const parseDateTimeToHours = (dateTimeStr: string): number => {
   if (parts.length === 2) {
     const datePart = parts[0].split("/");
     const timePart = parts[1].split(":");
-    if (datePart.length === 3 && timePart.length === 2) {
+    if (datePart.length === 3 && (timePart.length === 2 || timePart.length === 3)) {
       const day = parseInt(datePart[0], 10) || 0;
       const month = parseInt(datePart[1], 10) || 0;
       const year = parseInt(datePart[2], 10) || 0;
       const hours = parseInt(timePart[0], 10) || 0;
       const minutes = parseInt(timePart[1], 10) || 0;
-      const date = new Date(year, month - 1, day, hours, minutes);
+      const seconds = parseInt(timePart[2] || "0", 10) || 0;
+      const date = new Date(year, month - 1, day, hours, minutes, seconds);
       return date.getTime() / (1000 * 60 * 60);
     }
   }

@@ -57,6 +57,7 @@ export const useOperatorInputs = (
           ...copiedFields,
           isPaused: false,
           pauseStartTime: null,
+          currentPauseOperatorName: "",
           totalPauseTime: 0,
           pausedElapsedTime: 0,
           pauseSessions: [],
@@ -93,6 +94,7 @@ export const useOperatorInputs = (
           ...copiedFields,
           isPaused: false,
           pauseStartTime: null,
+          currentPauseOperatorName: "",
           totalPauseTime: 0,
           pausedElapsedTime: 0,
           pauseSessions: [],
@@ -182,9 +184,9 @@ export const useOperatorInputs = (
           if (qtyData.currentPauseReason === "Shift Over") {
             return newMap;
           }
-          if (tryResumePausedQuantity(now)) return newMap;
-        } else {
-          quantities[quantityIndex] = pauseRunningQuantity(qtyData, now);
+        if (tryResumePausedQuantity(now)) return newMap;
+      } else {
+          quantities[quantityIndex] = pauseRunningQuantity(qtyData, now, currentUserDisplayName);
           newMap.set(cutId, { ...current, quantities });
           return newMap;
         }

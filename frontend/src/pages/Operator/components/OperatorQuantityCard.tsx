@@ -127,6 +127,7 @@ export const OperatorQuantityCard: React.FC<OperatorQuantityCardProps> = ({
             <DateTimeInput
               value={qtyData.startTime}
               onChange={(value) => { if (!qtyData.startTime && !qtyData.endTime) onInputChange(cutId, qtyIndex, "startTime", value); }}
+              applyCapturedValue={false}
               onTimeCapture={(timestampMs) => {
                 if (!canOperateInputs) return;
                 if (!canRunAssignedJob) {
@@ -136,13 +137,13 @@ export const OperatorQuantityCard: React.FC<OperatorQuantityCardProps> = ({
                 if (!qtyData.startTime && !qtyData.endTime) {
                   onInputChange(cutId, qtyIndex, "startTime", getCurrentISTDateTime(timestampMs));
                   onInputChange(cutId, qtyIndex, "startTimeEpochMs", String(timestampMs));
-                  onStartTimeCaptured?.(cutId, qtyIndex);
+                  onStartTimeCaptured?.(cutId, qtyIndex, timestampMs);
                   onShowToast?.("Start time captured successfully!", "success");
                 } else {
                   onShowToast?.("Start time can only be set once!", "error");
                 }
               }}
-              placeholder="DD/MM/YYYY HH:MM"
+              placeholder="DD/MM/YYYY HH:MM:SS"
               error={validationErrors.startTime}
               showPauseButton={true}
               showPauseButtonInInput={false}
@@ -169,7 +170,8 @@ export const OperatorQuantityCard: React.FC<OperatorQuantityCardProps> = ({
                   if (qtyData.startTime && value) setTimeout(() => onInputChange(cutId, qtyIndex, "recalculateMachineHrs", ""), 100);
                 }
               }}
-              onTimeCapture={() => {
+              applyCapturedValue={false}
+              onTimeCapture={(timestampMs) => {
                 if (!canOperateInputs) return;
                 if (!canRunAssignedJob) {
                   blockRunAction();
@@ -180,12 +182,12 @@ export const OperatorQuantityCard: React.FC<OperatorQuantityCardProps> = ({
                   return;
                 }
                 if (!qtyData.endTime) {
-                  onRequestEndTimeCapture?.(cutId, qtyIndex);
+                  onRequestEndTimeCapture?.(cutId, qtyIndex, timestampMs);
                 } else {
                   onShowToast?.("End time can only be set once!", "error");
                 }
               }}
-              placeholder="DD/MM/YYYY HH:MM"
+              placeholder="DD/MM/YYYY HH:MM:SS"
               error={validationErrors.endTime}
               disabled={!canOperateInputs || !!qtyData.endTime || qtyData.isPaused || !canRunAssignedJob}
             />
@@ -253,7 +255,13 @@ export const OperatorQuantityCard: React.FC<OperatorQuantityCardProps> = ({
         />
       </div>
 
-      <OperatorIdleHistory pauseSessions={qtyData.pauseSessions || []} />
+      <OperatorIdleHistory
+        pauseSessions={qtyData.pauseSessions || []}
+        isPaused={qtyData.isPaused || false}
+        pauseStartTime={qtyData.pauseStartTime || null}
+        currentPauseReason={qtyData.currentPauseReason || ""}
+        currentPauseOperatorName={qtyData.currentPauseOperatorName || ""}
+      />
 
       <OperatorQuantityActions
         canOperateInputs={canOperateInputs}

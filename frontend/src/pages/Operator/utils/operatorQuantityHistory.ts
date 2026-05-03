@@ -1,12 +1,8 @@
 import type { QuantityInputData } from "../types/cutInput";
+import { formatCompactDurationWords } from "./operatorTimeUtils";
 
 const formatWorkedDuration = (seconds: number) => {
-  const safeSeconds = Math.max(0, Math.round(seconds));
-  const hours = Math.floor(safeSeconds / 3600);
-  const minutes = Math.floor((safeSeconds % 3600) / 60);
-  if (hours > 0) return `${hours}h ${minutes}m`;
-  if (minutes > 0) return `${minutes}m`;
-  return `${safeSeconds}s`;
+  return formatCompactDurationWords(seconds);
 };
 
 export const getOperatorQuantityHistory = (qtyData: QuantityInputData, isRangeMode: boolean) => {

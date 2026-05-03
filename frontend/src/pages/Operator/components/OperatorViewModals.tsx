@@ -2,10 +2,18 @@ import ConfirmDeleteModal from "../../../components/ConfirmDeleteModal";
 import Modal from "../../../components/Modal";
 import type { JobEntry } from "../../../types/job";
 import type { Dispatch, SetStateAction } from "react";
+import { getCurrentISTDateTime } from "../../../utils/dateTime";
 
 type PendingDispatch = { cutId: number | string; quantityNumbers: number[] } | null;
 type PendingQuantity = { cutId: number | string; quantityIndex: number } | null;
-type PendingEndTimeCapture = { cutId: number | string; quantityIndex: number } | null;
+type PendingEndTimeCapture = {
+  cutId: number | string;
+  quantityIndex: number;
+  timestampMs: number;
+  previousEndTime: string;
+  previousEndTimeEpochMs: number | null;
+  previousMachineHrs: string;
+} | null;
 
 type OperatorViewModalsProps = {
   jobs: JobEntry[];
@@ -14,10 +22,10 @@ type OperatorViewModalsProps = {
   pendingReset: PendingQuantity;
   setPendingReset: Dispatch<SetStateAction<PendingQuantity>>;
   pendingEndTimeCapture: PendingEndTimeCapture;
-  setPendingEndTimeCapture: Dispatch<SetStateAction<PendingEndTimeCapture>>;
+  handleCancelEndTimeCapture: () => void;
   handleUpdateQaStatus: (cutId: number | string, quantityNumbers: number[], status: "SENT_TO_QA" | "SAVED" | "READY_FOR_QA") => Promise<void>;
   handleResetQuantity: (cutId: number | string, quantityIndex: number) => Promise<void>;
-  handleConfirmEndTimeCapture: (cutId: number | string, quantityIndex: number) => Promise<void>;
+  handleConfirmEndTimeCapture: (cutId: number | string, quantityIndex: number, timestampMs: number) => Promise<boolean>;
 };
 
 const OperatorViewModals = ({
@@ -27,7 +35,7 @@ const OperatorViewModals = ({
   pendingReset,
   setPendingReset,
   pendingEndTimeCapture,
-  setPendingEndTimeCapture,
+  handleCancelEndTimeCapture,
   handleUpdateQaStatus,
   handleResetQuantity,
   handleConfirmEndTimeCapture,
@@ -82,7 +90,7 @@ const OperatorViewModals = ({
 
       <Modal
         isOpen={Boolean(pendingEndTimeCapture)}
-        onClose={() => setPendingEndTimeCapture(null)}
+        onClose={handleCancelEndTimeCapture}
         title="Confirm End Time"
         size="small"
       >
@@ -93,17 +101,22 @@ const OperatorViewModals = ({
               <p><strong>Setting:</strong> {pendingEndTimeJob ? String(jobs.findIndex((j) => String(j.id) === String(pendingEndTimeCapture.cutId)) + 1) : "N/A"}</p>
               <p><strong>Quantity:</strong> {String(pendingEndTimeCapture.quantityIndex + 1)}</p>
               <p><strong>Job Ref:</strong> {String(pendingEndTimeJob?.refNumber || "-")}</p>
+              <p><strong>Captured At:</strong> {getCurrentISTDateTime(pendingEndTimeCapture.timestampMs)}</p>
             </div>
             <div className="confirm-delete-footer">
-              <button type="button" className="btn-secondary" onClick={() => setPendingEndTimeCapture(null)}>
+              <button type="button" className="btn-secondary" onClick={handleCancelEndTimeCapture}>
                 Cancel
               </button>
               <button
                 type="button"
                 className="btn-primary"
                 onClick={async () => {
-                  await handleConfirmEndTimeCapture(pendingEndTimeCapture.cutId, pendingEndTimeCapture.quantityIndex);
-                  setPendingEndTimeCapture(null);
+                  const success = await handleConfirmEndTimeCapture(
+                    pendingEndTimeCapture.cutId,
+                    pendingEndTimeCapture.quantityIndex,
+                    pendingEndTimeCapture.timestampMs
+                  );
+                  if (!success) return;
                 }}
               >
                 Confirm End Time
