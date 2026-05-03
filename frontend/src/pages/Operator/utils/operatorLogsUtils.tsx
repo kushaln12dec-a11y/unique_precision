@@ -110,10 +110,6 @@ export const buildOperatorLogsColumns = ({
     const duration = Number(row.durationSeconds || (row.metadata as any)?.workedSeconds || 0);
     return formatOperatorDuration(duration);
   }},
-  { key: "estimatedSeconds", label: "Est. Time", sortable: false, render: (row) => {
-    const value = (row.metadata as any)?.estimatedSecondsPerQuantity;
-    return formatOperatorDuration(value);
-  }},
   { key: "overtimeSeconds", label: "OT", sortable: false, render: (row) => {
     const value = (row.metadata as any)?.overtimeSeconds;
     return formatOperatorDuration(value);
@@ -253,7 +249,6 @@ export const buildOperatorLogFilter =
           formatDisplayDateTime(log.endedAt || null),
           getOperatorShiftLabel(log.startedAt),
           formatOperatorDuration(Number(log.durationSeconds || (log.metadata as any)?.workedSeconds || 0)),
-          formatOperatorDuration((log.metadata as any)?.estimatedSecondsPerQuantity),
           formatOperatorDuration((log.metadata as any)?.overtimeSeconds),
           Array.isArray((log.metadata as any)?.quantityNumbers)
             ? (log.metadata as any).quantityNumbers.map((qty: number) => `Q${qty}`).join(", ")
