@@ -977,6 +977,8 @@ router.get("/", async (req, res) => {
     const activityType = String(req.query.activityType || "").trim().toUpperCase();
     const search = String(req.query.search || "").trim();
     const machine = String(req.query.machine || "").trim();
+    const jobId = String(req.query.jobId || "").trim();
+    const jobGroupId = String(req.query.jobGroupId || "").trim();
 
     if (role && ["PROGRAMMER", "OPERATOR", "QC"].includes(role)) {
       where.role = role;
@@ -991,6 +993,15 @@ router.get("/", async (req, res) => {
     }
     if (status && ["IN_PROGRESS", "COMPLETED", "REJECTED"].includes(status)) {
       where.status = status;
+    }
+    if (jobId) {
+      where.jobId = jobId;
+    }
+    if (jobGroupId) {
+      const parsedGroupId = toBigInt(jobGroupId);
+      if (parsedGroupId !== undefined) {
+        where.jobGroupId = parsedGroupId;
+      }
     }
 
     if (req.query.startDate || req.query.endDate) {
