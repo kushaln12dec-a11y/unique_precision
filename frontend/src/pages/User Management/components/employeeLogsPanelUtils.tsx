@@ -97,7 +97,7 @@ export const getRevenueLabelForLog = (log: EmployeeLog) => {
   }
 
   const metadata = (log.metadata || {}) as Record<string, any>;
-  const explicitRevenue = log.revenue ?? metadata.revenue;
+  const explicitRevenue = metadata.revenue ?? log.revenue;
   if (explicitRevenue !== undefined && explicitRevenue !== null && String(explicitRevenue).trim() !== "") {
     const numeric = Number(explicitRevenue);
     return Number.isFinite(numeric) ? `Rs. ${numeric.toFixed(2)}` : String(explicitRevenue);
