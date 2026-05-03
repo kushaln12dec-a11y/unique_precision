@@ -380,6 +380,42 @@
   color: #334155;
 }
 
+/* Operator History Toggle Button */
+.operator-history-toggle {
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 2px 6px;
+  margin-left: 4px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  line-height: 1;
+  min-width: 20px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.operator-history-toggle:hover {
+  background: #2563eb;
+  transform: scale(1.05);
+}
+
+.operator-history-toggle:active {
+  transform: scale(0.95);
+}
+
+.assigned-operators-readonly {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
 /* ============================================
    RESPONSIVE ADJUSTMENTS
    ============================================ */

@@ -125,6 +125,18 @@ export const buildBaseOperatorColumns = ({
       ) : (
         <div className="assigned-operators-readonly" title={operatorHistory.length ? `Worked By: ${operatorHistory.join(", ")}` : undefined}>
           {displayAssignedValue}
+          {operatorHistory.length > 1 && (
+            <button
+              className="operator-history-toggle"
+              onClick={(e) => {
+                e.stopPropagation();
+                alert(`Worked By: ${operatorHistory.join(", ")}`);
+              }}
+              title="Click to see all operators"
+            >
+              +{operatorHistory.length - 1}
+            </button>
+          )}
         </div>
       );
     },
