@@ -111,8 +111,8 @@ export const buildOperatorLogsColumns = ({
     return formatOperatorDuration(duration);
   }},
   { key: "estimatedSeconds", label: "Est. Time", sortable: false, render: (row) => {
-    const value = (row.metadata as any)?.estimatedSeconds;
-        return formatOperatorDuration(value);
+    const value = (row.metadata as any)?.estimatedSecondsPerQuantity;
+    return formatOperatorDuration(value);
   }},
   { key: "overtimeSeconds", label: "OT", sortable: false, render: (row) => {
     const value = (row.metadata as any)?.overtimeSeconds;
@@ -129,46 +129,6 @@ export const buildOperatorLogsColumns = ({
       return quantities.length ? quantities.map((qty: number) => `Q${qty}`).join(", ") : "-";
     },
   },
-  { key: "idleTime", label: "Idle Time", sortable: false, render: (row) => {
-    const metadata = (row.metadata as any) || {};
-    
-        
-    // First check for idleTimeDuration in metadata (this is the actual idle duration)
-    if (metadata.idleTimeDuration) {
-      const timeStr = String(metadata.idleTimeDuration);
-      // Handle HH:MM:SS format
-      if (timeStr.includes(':')) {
-        const parts = timeStr.split(':');
-        if (parts.length === 3) {
-          const hours = Number(parts[0]) || 0;
-          const minutes = Number(parts[1]) || 0;
-          const seconds = Number(parts[2]) || 0;
-          const totalSeconds = hours * 3600 + minutes * 60 + seconds;
-          return formatOperatorDuration(totalSeconds);
-        }
-      }
-      // Handle seconds as number
-      const duration = Number(timeStr.replace(/[^\d.]/g, ''));
-      if (!isNaN(duration)) {
-        return formatOperatorDuration(duration);
-      }
-    }
-    
-    // Fallback to pause sessions
-    const pauseSessions = Array.isArray(metadata.pauseSessions) ? metadata.pauseSessions : [];
-    if (pauseSessions.length > 0) {
-      const totalIdleTime = pauseSessions.reduce((sum: number, session: any) => 
-        sum + (Number(session?.pauseDuration || 0)), 0);
-      return formatOperatorDuration(totalIdleTime);
-    }
-    
-    // Fallback to idleDurationSeconds
-    if (metadata.idleDurationSeconds) {
-      return formatOperatorDuration(Number(metadata.idleDurationSeconds));
-    }
-    
-    return "-";
-  }},
   { key: "idleWindow", label: "Idle Window", sortable: false, className: "operator-log-text-col", render: (row) => <MarqueeCopyText text={formatOperatorIdleWindow(row)} /> },
   { key: "remark", label: "Remark", sortable: false, render: (row) => String((row.metadata as any)?.remark || "-") },
   ...(canViewRevenue
@@ -293,27 +253,11 @@ export const buildOperatorLogFilter =
           formatDisplayDateTime(log.endedAt || null),
           getOperatorShiftLabel(log.startedAt),
           formatOperatorDuration(Number(log.durationSeconds || (log.metadata as any)?.workedSeconds || 0)),
-          formatOperatorDuration((log.metadata as any)?.estimatedSeconds),
+          formatOperatorDuration((log.metadata as any)?.estimatedSecondsPerQuantity),
           formatOperatorDuration((log.metadata as any)?.overtimeSeconds),
           Array.isArray((log.metadata as any)?.quantityNumbers)
             ? (log.metadata as any).quantityNumbers.map((qty: number) => `Q${qty}`).join(", ")
             : "-",
-          (() => {
-    const metadata = (log.metadata as any) || {};
-    if (metadata.idleTimeDuration) {
-      return formatOperatorDuration(Number(metadata.idleTimeDuration));
-    }
-    const pauseSessions = Array.isArray(metadata.pauseSessions) ? metadata.pauseSessions : [];
-    if (pauseSessions.length > 0) {
-      const totalIdleTime = pauseSessions.reduce((sum: number, session: any) => 
-        sum + (Number(session?.pauseDuration || 0)), 0);
-      return formatOperatorDuration(totalIdleTime);
-    }
-    if (metadata.idleDurationSeconds) {
-      return formatOperatorDuration(Number(metadata.idleDurationSeconds));
-    }
-    return "-";
-  })(),
           formatOperatorIdleWindow(log),
           String((log.metadata as any)?.remark || "-"),
           ...(canViewRevenue ? [getRevenueForLog(log)] : []),
