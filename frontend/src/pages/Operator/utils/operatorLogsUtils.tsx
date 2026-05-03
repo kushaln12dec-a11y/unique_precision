@@ -109,8 +109,16 @@ export const buildOperatorLogsColumns = ({
   },
   { key: "shift", label: "Shift", sortable: false, render: (row) => renderOperatorShiftBadge(row.startedAt) },
   { key: "durationSeconds", label: "Duration", sortable: false, render: (row) => formatOperatorDuration(getDisplayedWorkedSeconds(row)) },
-  { key: "estimatedSeconds", label: "Estimated", sortable: false, render: (row) => formatOperatorDuration(Number((row.metadata as any)?.estimatedSeconds || 0)) },
-  { key: "overtimeSeconds", label: "Overtime", sortable: false, render: (row) => formatOperatorDuration(Number((row.metadata as any)?.overtimeSeconds || 0)) },
+  { key: "estimatedSeconds", label: "Estimated", sortable: false, render: (row) => {
+    const value = (row.metadata as any)?.estimatedSeconds;
+    const seconds = typeof value === 'string' ? parseFloat(value) : Number(value || 0);
+    return formatOperatorDuration(seconds);
+  }},
+  { key: "overtimeSeconds", label: "Overtime", sortable: false, render: (row) => {
+    const value = (row.metadata as any)?.overtimeSeconds;
+    const seconds = typeof value === 'string' ? parseFloat(value) : Number(value || 0);
+    return formatOperatorDuration(seconds);
+  }},
   {
     key: "quantityNumbers",
     label: "Qty",
@@ -249,8 +257,16 @@ export const buildOperatorLogFilter =
           formatDisplayDateTime(log.endedAt || null),
           getOperatorShiftLabel(log.startedAt),
           formatOperatorDuration(getWorkedDurationForLog(log)),
-          formatOperatorDuration(Number((log.metadata as any)?.estimatedSeconds || 0)),
-          formatOperatorDuration(Number((log.metadata as any)?.overtimeSeconds || 0)),
+          (() => {
+            const value = (log.metadata as any)?.estimatedSeconds;
+            const seconds = typeof value === 'string' ? parseFloat(value) : Number(value || 0);
+            return formatOperatorDuration(seconds);
+          })(),
+          (() => {
+            const value = (log.metadata as any)?.overtimeSeconds;
+            const seconds = typeof value === 'string' ? parseFloat(value) : Number(value || 0);
+            return formatOperatorDuration(seconds);
+          })(),
           Array.isArray((log.metadata as any)?.quantityNumbers)
             ? (log.metadata as any).quantityNumbers.map((qty: number) => `Q${qty}`).join(", ")
             : "-",

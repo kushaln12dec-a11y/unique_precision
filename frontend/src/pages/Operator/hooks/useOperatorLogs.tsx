@@ -250,8 +250,16 @@ export const useOperatorLogs = ({
           formatDisplayDateTime(row.endedAt || null),
           getOperatorShiftLabel(row.startedAt),
           formatOperatorDuration(getWorkedDurationForLog(row)),
-          formatOperatorDuration(Number((row.metadata as any)?.estimatedSeconds || 0)),
-          formatOperatorDuration(Number((row.metadata as any)?.overtimeSeconds || 0)),
+          (() => {
+            const value = (row.metadata as any)?.estimatedSeconds;
+            const seconds = typeof value === 'string' ? parseFloat(value) : Number(value || 0);
+            return formatOperatorDuration(seconds);
+          })(),
+          (() => {
+            const value = (row.metadata as any)?.overtimeSeconds;
+            const seconds = typeof value === 'string' ? parseFloat(value) : Number(value || 0);
+            return formatOperatorDuration(seconds);
+          })(),
           Array.isArray((row.metadata as any)?.quantityNumbers)
             ? (row.metadata as any).quantityNumbers.map((qty: number) => `Q${qty}`).join(", ")
             : "-",
