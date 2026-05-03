@@ -272,6 +272,7 @@ export const rebalanceOperatorRevenueForJob = async (
   const estimatedSecondsByLogId = new Map<string, number>();
   const creditedWorkedSecondsByLogId = new Map<string, number>();
   const overtimeSecondsByLogId = new Map<string, number>();
+  const actualWorkedSecondsByLogId = new Map<string, number>();
 
   workedByQuantity.forEach((entries, quantityNumber) => {
     const sortedEntries = [...entries].sort((left, right) => {
@@ -305,13 +306,12 @@ export const rebalanceOperatorRevenueForJob = async (
 
     const totalWorkedSeconds = normalizedEntries.reduce((sum, entry) => sum + Math.max(0, entry.workedSeconds), 0);
     const hasEstimatedCap = estimatedSecondsPerQuantity > 0;
-    let remainingEstimatedSeconds = estimatedSecondsPerQuantity;
 
     normalizedEntries.forEach((entry) => {
       const currentRevenueByQuantity = revenueByLogId.get(entry.logId) || {};
       const safeWorkedSeconds = Math.max(0, entry.workedSeconds);
       const creditedWorkedSeconds = hasEstimatedCap
-        ? Math.max(0, Math.min(safeWorkedSeconds, remainingEstimatedSeconds))
+        ? Math.max(0, Math.min(safeWorkedSeconds, estimatedSecondsPerQuantity))
         : safeWorkedSeconds;
       const overtimeSeconds = Math.max(0, safeWorkedSeconds - creditedWorkedSeconds);
 
@@ -333,10 +333,7 @@ export const rebalanceOperatorRevenueForJob = async (
         (creditedWorkedSecondsByLogId.get(entry.logId) || 0) + creditedWorkedSeconds
       );
       overtimeSecondsByLogId.set(entry.logId, (overtimeSecondsByLogId.get(entry.logId) || 0) + overtimeSeconds);
-
-      if (hasEstimatedCap) {
-        remainingEstimatedSeconds = Math.max(0, remainingEstimatedSeconds - creditedWorkedSeconds);
-      }
+      actualWorkedSecondsByLogId.set(entry.logId, (actualWorkedSecondsByLogId.get(entry.logId) || 0) + safeWorkedSeconds);
     });
   });
 
@@ -345,26 +342,25 @@ export const rebalanceOperatorRevenueForJob = async (
     const quantityNumbers = getQuantityNumbersFromLog(log as any);
     const revenueByQuantity = revenueByLogId.get(String(log.id)) || {};
     const revenue = Object.values(revenueByQuantity).reduce((sum, amount) => sum + Number(amount || 0), 0);
-    const normalizedWorkedSeconds =
-      (creditedWorkedSecondsByLogId.get(String(log.id)) || 0) + (overtimeSecondsByLogId.get(String(log.id)) || 0);
+    const actualWorkedSeconds = actualWorkedSecondsByLogId.get(String(log.id)) || getRawWorkedSecondsForOperatorLog(log as any);
     const estimatedSeconds = estimatedSecondsByLogId.get(String(log.id)) || 0;
     const creditedWorkedSeconds = creditedWorkedSecondsByLogId.get(String(log.id)) || 0;
     const overtimeSeconds = Math.max(
       0,
-      overtimeSecondsByLogId.get(String(log.id)) || Math.max(0, normalizedWorkedSeconds - creditedWorkedSeconds)
+      overtimeSecondsByLogId.get(String(log.id)) || Math.max(0, actualWorkedSeconds - creditedWorkedSeconds)
     );
 
     await tx.employeeLog.update({
       where: { id: String(log.id) },
       data: {
-        durationSeconds: Math.max(0, Math.round(normalizedWorkedSeconds)),
+        durationSeconds: Math.max(0, Math.round(actualWorkedSeconds)),
         metadata: {
           ...metadata,
           quantityNumbers,
           perQuantityRevenue: Number(perQuantityRevenue.toFixed(2)),
           revenueByQuantity,
           revenue: Number(revenue.toFixed(2)),
-          workedSeconds: Math.max(0, Math.round(normalizedWorkedSeconds)),
+          workedSeconds: Math.max(0, Math.round(actualWorkedSeconds)),
           creditedWorkedSeconds,
           estimatedSeconds,
           estimatedSecondsPerQuantity,

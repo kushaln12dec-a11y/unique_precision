@@ -120,7 +120,7 @@ const getQuantityNumbersFromLog = (log: {
 
 const getOperatorRevenueValue = (log: any): number | null => {
   const metadata = (log?.metadata || {}) as Record<string, any>;
-  const explicitRevenue = log?.revenue ?? metadata.revenue;
+  const explicitRevenue = metadata.revenue ?? log?.revenue;
   const numericRevenue = Number(explicitRevenue);
   return Number.isFinite(numericRevenue) ? numericRevenue : null;
 };
@@ -1161,12 +1161,17 @@ router.get("/", async (req, res) => {
       if (String(log.role || "").toUpperCase() !== "OPERATOR") return log;
       const explicitRevenue = getOperatorRevenueValue(log);
       if (explicitRevenue === null) return log;
+      const metadata = ((log.metadata || {}) as Record<string, any>) || {};
       return {
         ...log,
         revenue: Number(explicitRevenue.toFixed(2)),
         metadata: {
-          ...(log.metadata || {}),
+          ...metadata,
           revenue: Number(explicitRevenue.toFixed(2)),
+          revenueByQuantity:
+            metadata.revenueByQuantity && typeof metadata.revenueByQuantity === "object"
+              ? metadata.revenueByQuantity
+              : {},
         },
       };
     });
