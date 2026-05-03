@@ -44,12 +44,53 @@ export const formatOperatorWorkItem = (value?: string) => {
   return formatJobRefDisplay(withoutPrefix) || "-";
 };
 
-export const formatOperatorDuration = (seconds?: number): string => {
-  const total = Math.max(0, Number(seconds || 0));
+export const formatOperatorDuration = (seconds?: number | string): string => {
+  // Handle various input types and edge cases
+  let total = 0;
+  
+  if (typeof seconds === 'string') {
+    // Handle scientific notation and very large numbers
+    const cleanValue = seconds.trim().replace(/[,+_]/g, '');
+    const parsed = parseFloat(cleanValue);
+    if (!Number.isFinite(parsed) || parsed < 0) {
+      return "0s";
+    }
+    total = parsed;
+  } else if (typeof seconds === 'number') {
+    if (!Number.isFinite(seconds) || seconds < 0) {
+      return "0s";
+    }
+    total = seconds;
+  } else {
+    return "0s";
+  }
+
+  // Handle extremely large values (might be database precision issues)
+  if (total > 999999999999) {
+    // If it's an absurdly large number, it's likely a data issue
+    return "Invalid";
+  }
+
+  // Cap at reasonable maximum for display
+  if (total > 999999999) {
+    return "999999+ hrs";
+  }
+
+  // Convert to integer seconds if we have fractional seconds
+  total = Math.round(total);
+
   const h = Math.floor(total / 3600);
   const m = Math.floor((total % 3600) / 60);
   const s = total % 60;
-  if (h > 0) return `${h}h ${m}m ${s}s`;
+  
+  if (h > 0) {
+    if (h >= 24) {
+      const days = Math.floor(h / 24);
+      const remainingHours = h % 24;
+      return days > 0 ? `${days}d ${remainingHours}h ${m}m` : `${remainingHours}h ${m}m`;
+    }
+    return `${h}h ${m}m ${s}s`;
+  }
   if (m > 0) return `${m}m ${s}s`;
   return `${s}s`;
 };

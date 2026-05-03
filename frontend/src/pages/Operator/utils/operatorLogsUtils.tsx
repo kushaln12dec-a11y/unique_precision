@@ -111,13 +111,11 @@ export const buildOperatorLogsColumns = ({
   { key: "durationSeconds", label: "Duration", sortable: false, render: (row) => formatOperatorDuration(getDisplayedWorkedSeconds(row)) },
   { key: "estimatedSeconds", label: "Estimated", sortable: false, render: (row) => {
     const value = (row.metadata as any)?.estimatedSeconds;
-    const seconds = typeof value === 'string' ? parseFloat(value) : Number(value || 0);
-    return formatOperatorDuration(seconds);
+    return formatOperatorDuration(value);
   }},
   { key: "overtimeSeconds", label: "Overtime", sortable: false, render: (row) => {
     const value = (row.metadata as any)?.overtimeSeconds;
-    const seconds = typeof value === 'string' ? parseFloat(value) : Number(value || 0);
-    return formatOperatorDuration(seconds);
+    return formatOperatorDuration(value);
   }},
   {
     key: "quantityNumbers",
@@ -257,16 +255,8 @@ export const buildOperatorLogFilter =
           formatDisplayDateTime(log.endedAt || null),
           getOperatorShiftLabel(log.startedAt),
           formatOperatorDuration(getWorkedDurationForLog(log)),
-          (() => {
-            const value = (log.metadata as any)?.estimatedSeconds;
-            const seconds = typeof value === 'string' ? parseFloat(value) : Number(value || 0);
-            return formatOperatorDuration(seconds);
-          })(),
-          (() => {
-            const value = (log.metadata as any)?.overtimeSeconds;
-            const seconds = typeof value === 'string' ? parseFloat(value) : Number(value || 0);
-            return formatOperatorDuration(seconds);
-          })(),
+          formatOperatorDuration((log.metadata as any)?.estimatedSeconds),
+          formatOperatorDuration((log.metadata as any)?.overtimeSeconds),
           Array.isArray((log.metadata as any)?.quantityNumbers)
             ? (log.metadata as any).quantityNumbers.map((qty: number) => `Q${qty}`).join(", ")
             : "-",
