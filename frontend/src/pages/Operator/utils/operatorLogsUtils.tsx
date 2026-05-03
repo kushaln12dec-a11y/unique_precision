@@ -112,12 +112,7 @@ export const buildOperatorLogsColumns = ({
   }},
   { key: "estimatedSeconds", label: "Est. Time", sortable: false, render: (row) => {
     const value = (row.metadata as any)?.estimatedSeconds;
-    console.log('Estimated Time Debug:', {
-      metadata: row.metadata,
-      estimatedSeconds: value,
-      formattedValue: formatOperatorDuration(value)
-    });
-    return formatOperatorDuration(value);
+        return formatOperatorDuration(value);
   }},
   { key: "overtimeSeconds", label: "OT", sortable: false, render: (row) => {
     const value = (row.metadata as any)?.overtimeSeconds;
@@ -137,16 +132,23 @@ export const buildOperatorLogsColumns = ({
   { key: "idleTime", label: "Idle Time", sortable: false, render: (row) => {
     const metadata = (row.metadata as any) || {};
     
-    // Debug: log what we have
-    console.log('Idle Time Debug:', {
-      idleTimeDuration: metadata.idleTimeDuration,
-      idleDurationSeconds: metadata.idleDurationSeconds,
-      pauseSessions: metadata.pauseSessions
-    });
-    
+        
     // First check for idleTimeDuration in metadata (this is the actual idle duration)
     if (metadata.idleTimeDuration) {
-      const duration = Number(String(metadata.idleTimeDuration).replace(/[^\d.]/g, ''));
+      const timeStr = String(metadata.idleTimeDuration);
+      // Handle HH:MM:SS format
+      if (timeStr.includes(':')) {
+        const parts = timeStr.split(':');
+        if (parts.length === 3) {
+          const hours = Number(parts[0]) || 0;
+          const minutes = Number(parts[1]) || 0;
+          const seconds = Number(parts[2]) || 0;
+          const totalSeconds = hours * 3600 + minutes * 60 + seconds;
+          return formatOperatorDuration(totalSeconds);
+        }
+      }
+      // Handle seconds as number
+      const duration = Number(timeStr.replace(/[^\d.]/g, ''));
       if (!isNaN(duration)) {
         return formatOperatorDuration(duration);
       }

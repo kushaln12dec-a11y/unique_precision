@@ -503,7 +503,8 @@ export const buildOperatorLogPayload = ({
 }) => {
   const userId = toUuid(reqUser?.userId);
   const durationSeconds = Math.max(0, Math.floor((parsedEnd.getTime() - parsedStart.getTime()) / 1000));
-  const workedSeconds = parseMachineHoursToSeconds(machineHrs) ?? durationSeconds;
+  // Use the job's actual worked hours, not the machineHrs parameter which might be wrong
+  const workedSeconds = durationSeconds;
   const jobWedmAmount = Math.max(0, Number((refreshedJob as any).totalHrs || 0) * Number((refreshedJob as any).rate || 0));
   const totalQuantity = Math.max(1, Number((refreshedJob as any).qty || quantityCount || 1));
   const perQuantityRevenue = jobWedmAmount / totalQuantity;
