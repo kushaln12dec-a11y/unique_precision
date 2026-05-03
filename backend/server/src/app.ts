@@ -28,7 +28,13 @@ app.set("json replacer", (_key: string, value: any) =>
   typeof value === "bigint" ? value.toString() : value
 );
 app.use((_req, res, next) => {
-  res.setHeader("x-server-time-ms", String(Date.now()));
+  const originalWriteHead = res.writeHead.bind(res);
+  res.writeHead = ((...args: any[]) => {
+    if (!res.headersSent) {
+      res.setHeader("x-server-time-ms", String(Date.now()));
+    }
+    return originalWriteHead.apply(res, args as any);
+  }) as typeof res.writeHead;
   next();
 });
 app.use(cors());

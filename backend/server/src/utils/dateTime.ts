@@ -1,4 +1,6 @@
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const IST_OFFSET_MINUTES = 5 * 60 + 30;
+const IST_OFFSET_MS = IST_OFFSET_MINUTES * 60 * 1000;
 
 export const formatDbDateTime = (date = new Date()): string => {
   const day = date.getDate().toString().padStart(2, "0");
@@ -28,7 +30,7 @@ export const parseOperatorDateTime = (value?: string): Date | null => {
   const hour = Number(match[4]);
   const minute = Number(match[5]);
   const second = Number(match[6] || 0);
-  const date = new Date(year, month - 1, day, hour, minute, second, 0);
+  const date = new Date(Date.UTC(year, month - 1, day, hour, minute, second, 0) - IST_OFFSET_MS);
   return Number.isNaN(date.getTime()) ? null : date;
 };
 
