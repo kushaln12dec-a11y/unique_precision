@@ -216,7 +216,6 @@ export const useOperatorLogs = ({
         "Ended at",
         "Shift",
         "Duration",
-        "Est. Time",
         "OT",
         "Qty",
         "Idle Window",
@@ -240,7 +239,6 @@ export const useOperatorLogs = ({
           formatDisplayDateTime(row.endedAt || null),
           getOperatorShiftLabel(row.startedAt),
           formatOperatorDuration(Number(row.durationSeconds || (row.metadata as any)?.workedSeconds || 0)),
-          formatOperatorDuration((row.metadata as any)?.estimatedSecondsPerQuantity),
           formatOperatorDuration((row.metadata as any)?.overtimeSeconds),
           Array.isArray((row.metadata as any)?.quantityNumbers)
             ? (row.metadata as any).quantityNumbers.map((qty: number) => `Q${qty}`).join(", ")
