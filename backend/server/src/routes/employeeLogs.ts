@@ -276,6 +276,7 @@ const normalizeIdleWindowMetadata = ({
   pauseSessions,
   endedAt,
   status,
+  actorName,
 }: {
   metadata?: Record<string, any>;
   idleTime: unknown;
@@ -283,8 +284,10 @@ const normalizeIdleWindowMetadata = ({
   pauseSessions?: unknown;
   endedAt: Date;
   status: "COMPLETED" | "REJECTED";
+  actorName?: string;
 }) => {
   const normalizedIdleTime = String(idleTime || "").trim();
+  const normalizedActorName = String(actorName || "").trim();
   const normalizedPauseSessions = normalizeOperatorPauseSessions(pauseSessions);
   const nextMetadata: Record<string, any> = {
     ...(metadata || {}),
@@ -297,6 +300,9 @@ const normalizeIdleWindowMetadata = ({
     nextMetadata.idleStartedAt = endedAt.toISOString();
     nextMetadata.idleEndedAt = null;
     nextMetadata.idleDurationSeconds = null;
+    if (normalizedActorName) {
+      nextMetadata.idleOperatorName = normalizedActorName;
+    }
   }
 
   return nextMetadata;
@@ -622,6 +628,7 @@ router.post("/operator/complete", async (req, res) => {
           pauseSessions,
           endedAt: parsedEnd,
           status: normalizedStatus,
+          actorName: resolveReqUserName(reqUser),
         });
         const nextLog = await tx.employeeLog.update({
           where: { id: existingLog.id },
@@ -663,7 +670,7 @@ router.post("/operator/complete", async (req, res) => {
     const parsedStart = parseOperatorDateTime(startTime);
     const parsedEnd = parseOperatorDateTime(endTime);
     if (!parsedStart || !parsedEnd) {
-      return res.status(400).json({ message: "startTime and endTime are required in DD/MM/YYYY HH:MM format" });
+      return res.status(400).json({ message: "startTime and endTime are required in DD/MM/YYYY HH:MM[:SS] format" });
     }
 
     const durationSeconds = Math.max(0, Math.floor((parsedEnd.getTime() - parsedStart.getTime()) / 1000));
@@ -674,6 +681,7 @@ router.post("/operator/complete", async (req, res) => {
       pauseSessions,
       endedAt: parsedEnd,
       status: normalizedStatus,
+      actorName: resolveReqUserName(reqUser),
     });
     const resolvedGroupId = toBigInt(jobGroupId) ?? null;
     if (resolvedJobId) {
