@@ -28,7 +28,7 @@ const OperatorQuantityHistoryPanel: React.FC<Props> = ({
         ? [{ name: latestWorkedByName, durationSeconds: 0 }]
         : [];
 
-  const primaryEntry = fallbackEntries[fallbackEntries.length - 1] || null;
+  const primaryEntry = fallbackEntries[0] || null;
   const additionalCount = Math.max(0, fallbackEntries.length - 1);
   const tooltipText = fallbackEntries
     .map((entry) => `${entry.name}${entry.durationSeconds > 0 ? `: ${formatWorkedDuration(entry.durationSeconds)}` : ""}`)

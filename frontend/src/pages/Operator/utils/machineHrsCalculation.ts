@@ -95,3 +95,16 @@ export const decimalHoursToHHMM = (decimal: number): string => {
     .toString()
     .padStart(2, "0")}`;
 };
+
+export const decimalHoursToHHMMSS = (decimal: number): string => {
+  if (isNaN(decimal) || decimal <= 0) return "00:00:00";
+
+  const totalSeconds = Math.max(0, Math.round(decimal * 3600));
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+
+  return `${hours.toString().padStart(2, "0")}:${minutes
+    .toString()
+    .padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
+};

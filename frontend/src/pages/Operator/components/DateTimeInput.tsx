@@ -106,6 +106,7 @@ const DateTimeInput: React.FC<DateTimeInputProps> = ({
           className={`datetime-input ${error ? "input-error" : ""} ${disabled ? "disabled" : ""}`}
           disabled={disabled}
           readOnly={disabled}
+          title={value || placeholder}
         />
         {showPauseButton && showPauseButtonInInput && value && (
           <button
