@@ -153,14 +153,6 @@ export const useOperatorLogs = ({
     []
   );
 
-  const getWorkedDurationForLog = useCallback((log: EmployeeLog) => {
-    const workedSeconds = Number((log.metadata as any)?.workedSeconds || 0);
-    if (Number.isFinite(workedSeconds) && workedSeconds > 0) {
-      return Math.max(0, Math.round(workedSeconds));
-    }
-    return Math.max(0, Number(log.durationSeconds || 0));
-  }, []);
-
   const machineFilterOptions = machineOptionsForDropdown;
 
   const userFilterOptions = useMemo(() => {
@@ -189,13 +181,12 @@ export const useOperatorLogs = ({
         designationByUserName,
         getMachineNumberForLog,
         getRevenueForLog,
-        getWorkedDurationForLog,
         canViewRevenue,
         operatorLogStatus,
         operatorLogUser,
         operatorLogSearch,
       }),
-    [canViewRevenue, designationByUserName, getMachineNumberForLog, getRevenueForLog, getWorkedDurationForLog, operatorLogSearch, operatorLogStatus, operatorLogUser]
+    [canViewRevenue, designationByUserName, getMachineNumberForLog, getRevenueForLog, operatorLogSearch, operatorLogStatus, operatorLogUser]
   );
 
   const hasOperatorLogSearch = operatorLogSearch.trim().length > 0;
@@ -228,7 +219,6 @@ export const useOperatorLogs = ({
         "Est. Time",
         "OT",
         "Qty",
-        "Idle Time",
         "Idle Window",
         "Remark",
         ...(canViewRevenue ? ["Revenue", "Revenue Split"] : []),
@@ -249,13 +239,12 @@ export const useOperatorLogs = ({
           formatDisplayDateTime(row.startedAt),
           formatDisplayDateTime(row.endedAt || null),
           getOperatorShiftLabel(row.startedAt),
-          formatOperatorDuration(getWorkedDurationForLog(row)),
-          formatOperatorDuration((row.metadata as any)?.estimatedSeconds),
+          formatOperatorDuration(Number(row.durationSeconds || (row.metadata as any)?.workedSeconds || 0)),
+          formatOperatorDuration((row.metadata as any)?.estimatedSecondsPerQuantity),
           formatOperatorDuration((row.metadata as any)?.overtimeSeconds),
           Array.isArray((row.metadata as any)?.quantityNumbers)
             ? (row.metadata as any).quantityNumbers.map((qty: number) => `Q${qty}`).join(", ")
             : "-",
-          String((row.metadata as any)?.idleTime || "-"),
           formatOperatorIdleWindow(row),
           String((row.metadata as any)?.remark || "-"),
           ...(canViewRevenue ? [getRevenueForLog(row), revenueByQuantity || "-"] : []),
