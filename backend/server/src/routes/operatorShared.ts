@@ -133,11 +133,8 @@ const estimatedHoursFromAmount = (amount: number): number => {
 const estimatedDurationSecondsFromHours = (hours: number): number => {
   const safeHours = Number(hours || 0) || 0;
   if (safeHours <= 0) return 0;
-  if (safeHours < 1) {
-    const minutes = Math.max(1, Math.round(safeHours * 60));
-    return minutes * 60;
-  }
-  return Math.max(0, Math.round(Number(safeHours.toFixed(2)) * 3600));
+  // Convert hours directly to seconds without minimum minute constraint
+  return Math.max(0, Math.round(Number(safeHours.toFixed(4)) * 3600));
 };
 
 export const getQuantityNumbersFromLog = (log: {

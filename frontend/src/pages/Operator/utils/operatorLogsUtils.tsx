@@ -30,7 +30,9 @@ export const formatOperatorIdleWindow = (row: EmployeeLog) => {
     return pauseSessions
       .map((session: any) => {
         const duration = formatOperatorDuration(Number(session?.pauseDuration || 0));
-        return duration;
+        const reason = session?.pauseReason || "Unknown";
+        const sessionTime = session?.startedAt ? new Date(session.startedAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : "";
+        return `${reason} (${duration})${sessionTime ? ` at ${sessionTime}` : ""}`;
       })
       .join(" | ");
   }
@@ -39,7 +41,9 @@ export const formatOperatorIdleWindow = (row: EmployeeLog) => {
     const duration = metadata.idleEndedAt
       ? formatOperatorDuration(Number(metadata.idleDurationSeconds || 0))
       : "Open";
-    return duration;
+    const reason = metadata.idleTime || "Unknown";
+    const startTime = metadata.idleStartedAt ? new Date(metadata.idleStartedAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : "";
+    return `${reason} (${duration})${startTime ? ` from ${startTime}` : ""}`;
   }
 
   return "-";
@@ -128,7 +132,26 @@ export const buildOperatorLogsColumns = ({
       return quantities.length ? quantities.map((qty: number) => `Q${qty}`).join(", ") : "-";
     },
   },
-  { key: "idleTime", label: "Idle Time", sortable: false, render: (row) => String((row.metadata as any)?.idleTime || "-") },
+  { key: "idleTime", label: "Idle Time", sortable: false, render: (row) => {
+    const metadata = (row.metadata as any) || {};
+    const pauseSessions = Array.isArray(metadata.pauseSessions) ? metadata.pauseSessions : [];
+    
+    if (pauseSessions.length > 0) {
+      const totalIdleTime = pauseSessions.reduce((sum: number, session: any) => 
+        sum + (Number(session?.pauseDuration || 0)), 0);
+      return `${formatOperatorDuration(totalIdleTime)} (${pauseSessions.length} sessions)`;
+    }
+    
+    if (metadata.idleStartedAt) {
+      const duration = metadata.idleEndedAt
+        ? Number(metadata.idleDurationSeconds || 0)
+        : 0;
+      const reason = metadata.idleTime || "Unknown";
+      return `${formatOperatorDuration(duration)} - ${reason}`;
+    }
+    
+    return "-";
+  }},
   { key: "idleWindow", label: "Idle Window", sortable: false, className: "operator-log-text-col", render: (row) => <MarqueeCopyText text={formatOperatorIdleWindow(row)} /> },
   { key: "remark", label: "Remark", sortable: false, render: (row) => String((row.metadata as any)?.remark || "-") },
   ...(canViewRevenue
