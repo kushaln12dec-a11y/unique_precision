@@ -237,6 +237,7 @@ export const startOperatorProductionLog = async (payload: {
     throw new Error(error.message || "Failed to start operator production log");
   }
 
+  invalidateEmployeeLogsCache(/employee-logs/);
   return res.json();
 };
 
@@ -247,6 +248,7 @@ export const completeOperatorProductionLog = async (payload: {
   machineNumber?: string;
   opsName?: string;
   machineHrs?: string;
+  workedSeconds?: number;
   idleTime?: string;
   idleTimeDuration?: string;
   pauseSessions?: Array<{
@@ -268,6 +270,7 @@ export const completeOperatorProductionLog = async (payload: {
     throw new Error(error.message || "Failed to complete operator production log");
   }
 
+  invalidateEmployeeLogsCache(/employee-logs/);
   return res.json();
 };
 

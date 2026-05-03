@@ -305,32 +305,32 @@ export const rebalanceOperatorRevenueForJob = async (
     });
 
     const totalWorkedSeconds = normalizedEntries.reduce((sum, entry) => sum + Math.max(0, entry.workedSeconds), 0);
-    const hasEstimatedCap = estimatedSecondsPerQuantity > 0;
+    const fallbackShare = normalizedEntries.length > 0 ? 1 / normalizedEntries.length : 0;
+    let remainingRevenue = Math.max(0, Number(perQuantityRevenue.toFixed(2)));
+    let remainingEstimatedSeconds = Math.max(0, estimatedSecondsPerQuantity);
 
-    normalizedEntries.forEach((entry) => {
+    normalizedEntries.forEach((entry, index) => {
       const currentRevenueByQuantity = revenueByLogId.get(entry.logId) || {};
       const safeWorkedSeconds = Math.max(0, entry.workedSeconds);
-      const creditedWorkedSeconds = hasEstimatedCap
-        ? Math.max(0, Math.min(safeWorkedSeconds, estimatedSecondsPerQuantity))
-        : safeWorkedSeconds;
-      const overtimeSeconds = Math.max(0, safeWorkedSeconds - creditedWorkedSeconds);
+      const workShare = totalWorkedSeconds > 0 ? safeWorkedSeconds / totalWorkedSeconds : fallbackShare;
+      const isLastEntry = index === normalizedEntries.length - 1;
+      const allocatedRevenue = isLastEntry
+        ? Math.max(0, Number(remainingRevenue.toFixed(2)))
+        : Math.max(0, Number((perQuantityRevenue * workShare).toFixed(2)));
+      const estimatedSecondsShare = isLastEntry
+        ? Math.max(0, remainingEstimatedSeconds)
+        : Math.max(0, estimatedSecondsPerQuantity * workShare);
+      const overtimeSeconds = Math.max(0, safeWorkedSeconds - estimatedSecondsShare);
 
-      const allocatedRevenue = hasEstimatedCap
-        ? estimatedSecondsPerQuantity > 0
-          ? perQuantityRevenue * (creditedWorkedSeconds / estimatedSecondsPerQuantity)
-          : 0
-        : totalWorkedSeconds > 0
-          ? perQuantityRevenue * (safeWorkedSeconds / totalWorkedSeconds)
-          : sortedEntries.length > 0
-            ? perQuantityRevenue / sortedEntries.length
-            : 0;
+      remainingRevenue = Math.max(0, Number((remainingRevenue - allocatedRevenue).toFixed(4)));
+      remainingEstimatedSeconds = Math.max(0, remainingEstimatedSeconds - estimatedSecondsShare);
 
-      currentRevenueByQuantity[String(quantityNumber)] = Number(allocatedRevenue.toFixed(2));
+      currentRevenueByQuantity[String(quantityNumber)] = allocatedRevenue;
       revenueByLogId.set(entry.logId, currentRevenueByQuantity);
-      estimatedSecondsByLogId.set(entry.logId, (estimatedSecondsByLogId.get(entry.logId) || 0) + estimatedSecondsPerQuantity);
+      estimatedSecondsByLogId.set(entry.logId, (estimatedSecondsByLogId.get(entry.logId) || 0) + estimatedSecondsShare);
       creditedWorkedSecondsByLogId.set(
         entry.logId,
-        (creditedWorkedSecondsByLogId.get(entry.logId) || 0) + creditedWorkedSeconds
+        (creditedWorkedSecondsByLogId.get(entry.logId) || 0) + safeWorkedSeconds
       );
       overtimeSecondsByLogId.set(entry.logId, (overtimeSecondsByLogId.get(entry.logId) || 0) + overtimeSeconds);
       actualWorkedSecondsByLogId.set(entry.logId, (actualWorkedSecondsByLogId.get(entry.logId) || 0) + safeWorkedSeconds);
@@ -366,9 +366,9 @@ export const rebalanceOperatorRevenueForJob = async (
           estimatedSecondsPerQuantity,
           overtimeSeconds,
           workedToEstimatedRatio:
-            estimatedSeconds > 0 ? Number(Math.min(1, Math.max(0, creditedWorkedSeconds / estimatedSeconds)).toFixed(4)) : 0,
-          quantityRevenueModel: "WEDM_TIME_SPLIT",
-          revenueCapMode: estimatedSecondsPerQuantity > 0 ? "CAP_TO_ESTIMATED_TIME" : "UNCAPPED",
+            estimatedSeconds > 0 ? Number((Math.max(0, actualWorkedSeconds / estimatedSeconds)).toFixed(4)) : 0,
+          quantityRevenueModel: "WEDM_PROPORTIONAL_TIME_SPLIT",
+          revenueCapMode: "PROPORTIONAL_ACTUAL_TIME",
         },
       },
     });

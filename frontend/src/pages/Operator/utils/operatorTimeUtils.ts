@@ -38,19 +38,42 @@ export const formatDurationToClock = (seconds: number): string => {
   return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
 };
 
+const getQuantityStartMs = (quantity: QuantityInputData): number | null =>
+  quantity.startTimeEpochMs && Number.isFinite(Number(quantity.startTimeEpochMs))
+    ? Number(quantity.startTimeEpochMs)
+    : parseOperatorDateTime(quantity.startTime);
+
+const getQuantityEndMs = (quantity: QuantityInputData): number | null =>
+  quantity.endTimeEpochMs && Number.isFinite(Number(quantity.endTimeEpochMs))
+    ? Number(quantity.endTimeEpochMs)
+    : parseOperatorDateTime(quantity.endTime);
+
+export const getCurrentSegmentWorkedSeconds = (quantity: QuantityInputData, endMs: number): number => {
+  const startMs = getQuantityStartMs(quantity);
+  if (!startMs) return 0;
+
+  const safeEndMs = Number.isFinite(Number(endMs)) ? Math.max(startMs, Number(endMs)) : startMs;
+  const rawSeconds = Math.max(0, Math.floor((safeEndMs - startMs) / 1000));
+  const segmentPauseSeconds = Math.max(
+    0,
+    Math.floor(Number(quantity.totalPauseTime || 0) - Number(quantity.pauseTimeOffsetSeconds || 0))
+  );
+
+  return Math.max(0, rawSeconds - segmentPauseSeconds);
+};
+
+export const formatWorkedSecondsAsMachineHrs = (seconds: number): string => {
+  const safeSeconds = Math.max(0, Number(seconds || 0));
+  return (safeSeconds / 3600).toFixed(3);
+};
+
 export const getQuantityElapsedSeconds = (quantity: QuantityInputData, nowMs: number): number => {
   const carriedWorkedSeconds = Math.max(0, Math.floor(quantity.workedDurationSeconds || 0));
   const segmentPauseSeconds = Math.max(0, Math.floor((quantity.totalPauseTime || 0) - (quantity.pauseTimeOffsetSeconds || 0)));
-  const startMs =
-    quantity.startTimeEpochMs && Number.isFinite(Number(quantity.startTimeEpochMs))
-      ? Number(quantity.startTimeEpochMs)
-      : parseOperatorDateTime(quantity.startTime);
+  const startMs = getQuantityStartMs(quantity);
   if (!startMs) return 0;
 
-  const endMs =
-    quantity.endTimeEpochMs && Number.isFinite(Number(quantity.endTimeEpochMs))
-      ? Number(quantity.endTimeEpochMs)
-      : parseOperatorDateTime(quantity.endTime);
+  const endMs = getQuantityEndMs(quantity);
 
   if (endMs) {
     const base = Math.max(0, Math.floor((endMs - startMs) / 1000));

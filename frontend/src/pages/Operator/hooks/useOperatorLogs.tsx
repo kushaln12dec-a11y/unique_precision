@@ -141,7 +141,7 @@ export const useOperatorLogs = ({
       }
 
       const metadata = (log.metadata || {}) as Record<string, any>;
-      const explicitRevenue = log.revenue ?? metadata.revenue;
+      const explicitRevenue = metadata.revenue ?? log.revenue;
       if (explicitRevenue !== undefined && explicitRevenue !== null && String(explicitRevenue).trim() !== "") {
         const numericValue = Number(explicitRevenue);
         if (Number.isFinite(numericValue)) return `Rs. ${numericValue.toFixed(2)}`;

@@ -5,7 +5,7 @@ import { getServerNowMs } from "../../../services/serverTime";
 import type { JobEntry } from "../../../types/job";
 import { getCurrentISTDateTime } from "../../../utils/dateTime";
 import type { CutInputData, QuantityInputData } from "../types/cutInput";
-import { formatDurationToClock } from "../utils/operatorTimeUtils";
+import { formatDurationToClock, formatWorkedSecondsAsMachineHrs, getCurrentSegmentWorkedSeconds } from "../utils/operatorTimeUtils";
 import { getAssignedToValue, getOperatorOpsName } from "../utils/operatorCapturePayloads";
 import { pauseRunningQuantity } from "../utils/operatorPauseState";
 import { showAndHideToast } from "../utils/operatorViewActionUtils";
@@ -249,6 +249,8 @@ export const useOperatorRunActions = ({
       const activeLogId = activeOperatorLogIds.get(key) || await resolveActiveOperatorLogId(cutId, quantityIndex);
       const pausedAtMs = getServerNowMs();
       const pausedAtDisplay = getCurrentISTDateTime(pausedAtMs);
+      const segmentWorkedSeconds = getCurrentSegmentWorkedSeconds(qtyData, pausedAtMs);
+      const segmentMachineHrs = formatWorkedSecondsAsMachineHrs(segmentWorkedSeconds);
       const nextPausedState = buildShiftOverState(qtyData, pausedAtMs);
       setCutInputs((prev) => {
         const currentCut = prev.get(cutId);
@@ -268,7 +270,8 @@ export const useOperatorRunActions = ({
           endedAt: new Date(pausedAtMs).toISOString(),
           machineNumber: String(qtyData.machineNumber || "").trim(),
           opsName: getOperatorOpsName(qtyData.opsName),
-          machineHrs: String(qtyData.machineHrs || ""),
+          machineHrs: segmentMachineHrs,
+          workedSeconds: segmentWorkedSeconds,
           idleTime: "Shift Over",
           idleTimeDuration: nextPausedState.idleTimeDuration,
         });

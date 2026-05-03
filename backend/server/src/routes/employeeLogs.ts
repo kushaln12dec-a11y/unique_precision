@@ -84,6 +84,12 @@ const parseMachineHoursToSeconds = (value: unknown): number | null => {
   return Math.round(numeric * 3600);
 };
 
+const parseWorkedSeconds = (value: unknown): number | null => {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric) || numeric < 0) return null;
+  return Math.max(0, Math.round(numeric));
+};
+
 const getWorkedSecondsForOperatorLog = (log: any): number => {
   const metadata = (log?.metadata || {}) as Record<string, any>;
   const fromWorkedSeconds = Number(metadata.workedSeconds || 0);
@@ -567,6 +573,7 @@ router.post("/operator/complete", async (req, res) => {
       machineNumber,
       opsName,
       machineHrs,
+      workedSeconds: requestedWorkedSeconds,
       idleTime,
       idleTimeDuration,
       pauseSessions,
@@ -591,7 +598,8 @@ router.post("/operator/complete", async (req, res) => {
       const parsedEnd = parseFlexibleDate(endTime || req.body?.endedAt) || new Date();
       const parsedStart = existingLog.startedAt instanceof Date ? existingLog.startedAt : parseFlexibleDate(startTime) || parsedEnd;
       const elapsedSeconds = Math.max(0, Math.floor((parsedEnd.getTime() - parsedStart.getTime()) / 1000));
-      const workedSeconds = parseMachineHoursToSeconds(machineHrs) ?? elapsedSeconds;
+      const explicitWorkedSeconds = parseWorkedSeconds(requestedWorkedSeconds);
+      const workedSeconds = explicitWorkedSeconds ?? parseMachineHoursToSeconds(machineHrs) ?? elapsedSeconds;
       const quantityNumbers = getQuantityNumbersFromLog(existingLog);
       const resolvedExistingJobId = String(existingLog.jobId || "").trim();
       const relatedJob = resolvedExistingJobId
@@ -674,7 +682,8 @@ router.post("/operator/complete", async (req, res) => {
     }
 
     const durationSeconds = Math.max(0, Math.floor((parsedEnd.getTime() - parsedStart.getTime()) / 1000));
-    const workedSeconds = parseMachineHoursToSeconds(machineHrs) ?? durationSeconds;
+    const explicitWorkedSeconds = parseWorkedSeconds(requestedWorkedSeconds);
+    const workedSeconds = explicitWorkedSeconds ?? parseMachineHoursToSeconds(machineHrs) ?? durationSeconds;
     const createdMetadata = normalizeIdleWindowMetadata({
       idleTime,
       idleTimeDuration,
