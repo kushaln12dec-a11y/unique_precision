@@ -110,9 +110,17 @@ export const buildOperatorLogsColumns = ({
     const duration = Number(row.durationSeconds || (row.metadata as any)?.workedSeconds || 0);
     return formatOperatorDuration(duration);
   }},
-  { key: "overtimeSeconds", label: "OT", sortable: false, render: (row) => {
-    const value = (row.metadata as any)?.overtimeSeconds;
+  { key: "estimatedSeconds", label: "Est. Time", sortable: false, render: (row) => {
+    const value = (row.metadata as any)?.estimatedSecondsPerQuantity;
     return formatOperatorDuration(value);
+  }},
+  { key: "overtimeSeconds", label: "OT", sortable: false, render: (row) => {
+    const metadata = (row.metadata as any) || {};
+    const duration = Number(row.durationSeconds || metadata.workedSeconds || 0);
+    const estimatedSeconds = Number(metadata.estimatedSecondsPerQuantity || 0);
+    // Calculate overtime on the fly: actual duration - estimated time
+    const overtime = Math.max(0, duration - estimatedSeconds);
+    return formatOperatorDuration(overtime);
   }},
   {
     key: "quantityNumbers",
@@ -249,7 +257,13 @@ export const buildOperatorLogFilter =
           formatDisplayDateTime(log.endedAt || null),
           getOperatorShiftLabel(log.startedAt),
           formatOperatorDuration(Number(log.durationSeconds || (log.metadata as any)?.workedSeconds || 0)),
-          formatOperatorDuration((log.metadata as any)?.overtimeSeconds),
+          formatOperatorDuration((log.metadata as any)?.estimatedSecondsPerQuantity),
+          (() => {
+            const duration = Number(log.durationSeconds || (log.metadata as any)?.workedSeconds || 0);
+            const estimatedSeconds = Number((log.metadata as any)?.estimatedSecondsPerQuantity || 0);
+            const overtime = Math.max(0, duration - estimatedSeconds);
+            return formatOperatorDuration(overtime);
+          })(),
           Array.isArray((log.metadata as any)?.quantityNumbers)
             ? (log.metadata as any).quantityNumbers.map((qty: number) => `Q${qty}`).join(", ")
             : "-",
