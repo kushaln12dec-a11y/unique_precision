@@ -15,13 +15,23 @@ const getAuthHeaders = () => {
   };
 };
 
+const fetchWithServerTime = async (input: string, init?: RequestInit) => {
+  const requestStartedAtMs = Date.now();
+  const response = await fetch(apiUrl(input), init);
+  syncServerTimeOffset(response, {
+    requestStartedAtMs,
+    responseReceivedAtMs: Date.now(),
+    maxRoundTripMs: 2000,
+  });
+  return response;
+};
+
 // Get all idle time configurations
 export const getIdleTimeConfigs = async (): Promise<IdleTimeConfig[]> => {
-  const res = await fetch(apiUrl("/api/idle-time-config"), {
+  const res = await fetchWithServerTime("/api/idle-time-config", {
     method: "GET",
     headers: getAuthHeaders(),
   });
-  syncServerTimeOffset(res);
 
   if (!res.ok) {
     throw new Error("Failed to fetch idle time configurations");
@@ -32,11 +42,10 @@ export const getIdleTimeConfigs = async (): Promise<IdleTimeConfig[]> => {
 
 // Get single idle time configuration
 export const getIdleTimeConfig = async (type: string): Promise<IdleTimeConfig> => {
-  const res = await fetch(apiUrl(`/api/idle-time-config/${type}`), {
+  const res = await fetchWithServerTime(`/api/idle-time-config/${type}`, {
     method: "GET",
     headers: getAuthHeaders(),
   });
-  syncServerTimeOffset(res);
 
   if (!res.ok) {
     throw new Error("Failed to fetch idle time configuration");
@@ -50,12 +59,11 @@ export const upsertIdleTimeConfig = async (
   idleTimeType: string,
   durationMinutes: number
 ): Promise<IdleTimeConfig> => {
-  const res = await fetch(apiUrl("/api/idle-time-config"), {
+  const res = await fetchWithServerTime("/api/idle-time-config", {
     method: "POST",
     headers: getAuthHeaders(),
     body: JSON.stringify({ idleTimeType, durationMinutes }),
   });
-  syncServerTimeOffset(res);
 
   if (!res.ok) {
     const error = await res.json();
@@ -70,12 +78,11 @@ export const updateIdleTimeConfig = async (
   type: string,
   durationMinutes: number
 ): Promise<IdleTimeConfig> => {
-  const res = await fetch(apiUrl(`/api/idle-time-config/${type}`), {
+  const res = await fetchWithServerTime(`/api/idle-time-config/${type}`, {
     method: "PUT",
     headers: getAuthHeaders(),
     body: JSON.stringify({ durationMinutes }),
   });
-  syncServerTimeOffset(res);
 
   if (!res.ok) {
     const error = await res.json();
@@ -87,11 +94,10 @@ export const updateIdleTimeConfig = async (
 
 // Delete idle time configuration
 export const deleteIdleTimeConfig = async (type: string): Promise<void> => {
-  const res = await fetch(apiUrl(`/api/idle-time-config/${type}`), {
+  const res = await fetchWithServerTime(`/api/idle-time-config/${type}`, {
     method: "DELETE",
     headers: getAuthHeaders(),
   });
-  syncServerTimeOffset(res);
 
   if (!res.ok) {
     throw new Error("Failed to delete idle time configuration");
