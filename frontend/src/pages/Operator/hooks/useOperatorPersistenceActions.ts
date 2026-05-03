@@ -4,7 +4,14 @@ import { captureOperatorInput, updateOperatorJob, updateOperatorQaStatus } from 
 import type { CutInputData } from "../types/cutInput";
 import type { JobEntry, QuantityQaStatus } from "../../../types/job";
 import { readImageFileAsBase64, showAndHideToast } from "../utils/operatorViewActionUtils";
-import { applyQaStatusToQuantities, buildRangeCapturePayload, buildSingleCapturePayload, getAssignedToValue, getOperatorOpsName } from "../utils/operatorCapturePayloads";
+import {
+  applyQaStatusToQuantities,
+  buildRangeCapturePayload,
+  buildSingleCapturePayload,
+  getAssignedToValue,
+  getOperatorOpsName,
+  getPauseSessionsForCurrentSegment,
+} from "../utils/operatorCapturePayloads";
 import { validateQuantityInputs, validateRangeSelection } from "../utils/validation";
 
 type Params = {
@@ -208,7 +215,7 @@ export const useOperatorPersistenceActions = ({
           machineHrs: options.machineHrs,
           idleTime: options.idleTime,
           idleTimeDuration: options.idleTimeDuration,
-          pauseSessions: qtyData.pauseSessions || [],
+          pauseSessions: getPauseSessionsForCurrentSegment(qtyData),
         });
 
         const completedLogId = String((completedLog as any)?._id || (completedLog as any)?.id || logId);

@@ -14,6 +14,7 @@ import {
   formatDuration,
   formatLogStatus,
   formatRoleLabel,
+  getRevenueLabelForLog,
   normalizeJobReference,
   getQuantityLabel,
   getWorkedSecondsForLog,
@@ -26,25 +27,7 @@ export const EmployeeLogsPanel = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [error, setError] = useState("");
 
-  const getRevenueLabel = (row: EmployeeLog) => {
-    const metadata = (row.metadata || {}) as Record<string, any>;
-    const explicit = row.revenue ?? metadata.revenue;
-    if (explicit !== undefined && explicit !== null && String(explicit).trim() !== "") {
-      const numeric = Number(explicit);
-      return Number.isFinite(numeric) ? `Rs. ${numeric.toFixed(2)}` : String(explicit);
-    }
-
-    const wedm = Number(metadata.wedmAmount || 0);
-    if (!wedm) return "-";
-
-    const groupWorkedSecondsByGroupId = new Map<string, number>();
-    const groupId = String(row.jobGroupId || "").trim();
-    const totalWorkedSeconds = groupId ? groupWorkedSecondsByGroupId.get(groupId) || 0 : 0;
-    if (!totalWorkedSeconds) return `Rs. ${wedm.toFixed(2)}`;
-
-    const share = Math.max(0, getWorkedSecondsForLog(row)) / totalWorkedSeconds;
-    return `Rs. ${(wedm * share).toFixed(2)}`;
-  };
+  const getRevenueLabel = (row: EmployeeLog) => getRevenueLabelForLog(row);
 
   const columns = useMemo(() => createEmployeeLogColumns({ activeRole, isAdmin, getRevenueLabel }), [activeRole, isAdmin]);
 
@@ -76,7 +59,7 @@ export const EmployeeLogsPanel = () => {
           endedAtParts.date,
           endedAtParts.time,
           `${endedAtParts.date} ${endedAtParts.time}`.trim(),
-          formatDuration(log.durationSeconds),
+          formatDuration(activeRole === "OPERATOR" ? getWorkedSecondsForLog(log) : log.durationSeconds),
           formatLogStatus(log.status),
         ];
 
@@ -127,7 +110,7 @@ export const EmployeeLogsPanel = () => {
             ...(isAdmin ? [getRevenueLabel(row)] : []),
             `${getDisplayDateTimeParts(row.startedAt).date} ${getDisplayDateTimeParts(row.startedAt).time}`.trim(),
             `${getDisplayDateTimeParts(row.endedAt || null).date} ${getDisplayDateTimeParts(row.endedAt || null).time}`.trim(),
-            formatDuration(row.durationSeconds),
+            formatDuration(getWorkedSecondsForLog(row)),
             formatLogStatus(row.status),
           ]
         : [

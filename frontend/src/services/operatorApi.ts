@@ -51,6 +51,16 @@ const getAuthHeaders = () => {
   };
 };
 
+const fetchWithServerTime = async (input: string, init?: RequestInit) => {
+  const requestStartedAtMs = Date.now();
+  const response = await fetch(apiUrl(input), init);
+  syncServerTimeOffset(response, {
+    requestStartedAtMs,
+    responseReceivedAtMs: Date.now(),
+  });
+  return response;
+};
+
 // Get operator jobs
 export const getOperatorJobs = async (
   customerFilter?: string,
@@ -64,11 +74,10 @@ export const getOperatorJobs = async (
 
   const url = params.toString() ? `/api/operator/jobs?${params.toString()}` : "/api/operator/jobs";
 
-  const res = await fetch(apiUrl(url), {
+  const res = await fetchWithServerTime(url, {
     method: "GET",
     headers: getAuthHeaders(),
   });
-  syncServerTimeOffset(res);
 
   if (!res.ok) {
     throw new Error("Failed to fetch operator jobs");
@@ -98,11 +107,10 @@ export const getOperatorJobsPage = async (
 
   const url = params.toString() ? `/api/operator/jobs?${params.toString()}` : "/api/operator/jobs";
 
-  const res = await fetch(apiUrl(url), {
+  const res = await fetchWithServerTime(url, {
     method: "GET",
     headers: getAuthHeaders(),
   });
-  syncServerTimeOffset(res);
 
   if (!res.ok) {
     throw new Error("Failed to fetch operator jobs");
@@ -129,11 +137,10 @@ export const getOperatorJobsPage = async (
 
 // Get operator job by ID
 export const getOperatorJobById = async (id: string): Promise<JobEntry> => {
-  const res = await fetch(apiUrl(`/api/operator/jobs/${id}`), {
+  const res = await fetchWithServerTime(`/api/operator/jobs/${id}`, {
     method: "GET",
     headers: getAuthHeaders(),
   });
-  syncServerTimeOffset(res);
 
   if (!res.ok) {
     throw new Error("Failed to fetch operator job");
@@ -150,11 +157,10 @@ export const getOperatorJobById = async (id: string): Promise<JobEntry> => {
 
 // Get operator jobs by groupId
 export const getOperatorJobsByGroupId = async (groupId: string): Promise<JobEntry[]> => {
-  const res = await fetch(apiUrl(`/api/operator/jobs/group/${groupId}`), {
+  const res = await fetchWithServerTime(`/api/operator/jobs/group/${groupId}`, {
     method: "GET",
     headers: getAuthHeaders(),
   });
-  syncServerTimeOffset(res);
 
   if (!res.ok) {
     throw new Error("Failed to fetch operator jobs");
@@ -171,12 +177,11 @@ export const getOperatorJobsByGroupId = async (groupId: string): Promise<JobEntr
 
 // Update operator job
 export const updateOperatorJob = async (id: string, jobData: Partial<JobEntry>): Promise<JobEntry> => {
-  const res = await fetch(apiUrl(`/api/operator/jobs/${id}`), {
+  const res = await fetchWithServerTime(`/api/operator/jobs/${id}`, {
     method: "PUT",
     headers: getAuthHeaders(),
     body: JSON.stringify(jobData),
   });
-  syncServerTimeOffset(res);
 
   if (!res.ok) {
     const error = await res.json();
@@ -194,12 +199,11 @@ export const updateOperatorJob = async (id: string, jobData: Partial<JobEntry>):
 
 // Capture operator input (POST)
 export const captureOperatorInput = async (id: string, inputData: CaptureOperatorInputPayload): Promise<JobEntry> => {
-  const res = await fetch(apiUrl(`/api/operator/jobs/${id}/capture-input`), {
+  const res = await fetchWithServerTime(`/api/operator/jobs/${id}/capture-input`, {
     method: "POST",
     headers: getAuthHeaders(),
     body: JSON.stringify(inputData),
   });
-  syncServerTimeOffset(res);
 
   if (!res.ok) {
     const error = await res.json();
@@ -219,12 +223,11 @@ export const updateOperatorQaStatus = async (
   id: string,
   payload: UpdateQaStatusPayload
 ): Promise<JobEntry> => {
-  const res = await fetch(apiUrl(`/api/operator/jobs/${id}/qa-status`), {
+  const res = await fetchWithServerTime(`/api/operator/jobs/${id}/qa-status`, {
     method: "POST",
     headers: getAuthHeaders(),
     body: JSON.stringify(payload),
   });
-  syncServerTimeOffset(res);
 
   if (!res.ok) {
     const error = await res.json();
@@ -244,12 +247,11 @@ export const resetOperatorQuantity = async (
   id: string,
   payload: ResetOperatorQuantityPayload
 ): Promise<JobEntry> => {
-  const res = await fetch(apiUrl(`/api/operator/jobs/${id}/reset-quantity`), {
+  const res = await fetchWithServerTime(`/api/operator/jobs/${id}/reset-quantity`, {
     method: "POST",
     headers: getAuthHeaders(),
     body: JSON.stringify(payload),
   });
-  syncServerTimeOffset(res);
 
   if (!res.ok) {
     const error = await res.json().catch(() => ({ message: "Failed to reset quantity" }));
@@ -270,12 +272,11 @@ export const bulkUpdateOperatorJobs = async (
   jobIds: (string | number)[],
   updateData: Partial<JobEntry>
 ): Promise<{ message: string; modifiedCount: number }> => {
-  const res = await fetch(apiUrl("/api/operator/jobs/bulk"), {
+  const res = await fetchWithServerTime("/api/operator/jobs/bulk", {
     method: "PUT",
     headers: getAuthHeaders(),
     body: JSON.stringify({ jobIds, updateData }),
   });
-  syncServerTimeOffset(res);
 
   if (!res.ok) {
     const error = await res.json();

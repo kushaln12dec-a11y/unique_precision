@@ -64,6 +64,15 @@ export const parseOperatorInputStartTime = (timeStr: string): number | null => {
   return new Date(year, month - 1, day, hours, minutes, seconds).getTime();
 };
 
+export const getEffectiveSegmentPauseSeconds = (
+  quantity: Pick<QuantityInputData, "totalPauseTime" | "pauseTimeOffsetSeconds">
+) => {
+  return Math.max(
+    0,
+    Math.floor(Number(quantity.totalPauseTime || 0) - Number(quantity.pauseTimeOffsetSeconds || 0))
+  );
+};
+
 export const updateQuantityMachineHours = (
   qtyData: QuantityInputData,
   mode: "auto" | "recalculate" | "add_idle"
@@ -78,7 +87,7 @@ export const updateQuantityMachineHours = (
     updatedQtyData.startTime,
     updatedQtyData.endTime,
     idleTimeDuration,
-    updatedQtyData.totalPauseTime || 0,
+    getEffectiveSegmentPauseSeconds(updatedQtyData),
     updatedQtyData.startTimeEpochMs || null,
     updatedQtyData.endTimeEpochMs || null
   );

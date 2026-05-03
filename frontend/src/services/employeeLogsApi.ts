@@ -18,12 +18,24 @@ const getAuthHeaders = () => {
   };
 };
 
+const fetchWithServerTime = async (input: string, init?: RequestInit) => {
+  const requestStartedAtMs = Date.now();
+  const response = await fetch(apiUrl(input), init);
+  syncServerTimeOffset(response, {
+    requestStartedAtMs,
+    responseReceivedAtMs: Date.now(),
+  });
+  return response;
+};
+
 type GetEmployeeLogsParams = {
   role?: "PROGRAMMER" | "OPERATOR" | "QC";
   status?: EmployeeLogQueryStatus;
   activityType?: "PROGRAMMER_JOB_CREATION" | "OPERATOR_PRODUCTION" | "OPERATOR_ASSIGNMENT" | "QA_REVIEW";
   search?: string;
   machine?: string;
+  jobId?: string;
+  jobGroupId?: string;
   startDate?: string;
   endDate?: string;
   offset?: number;
@@ -69,12 +81,11 @@ const fetchEmployeeLogsPayload = async (url: string): Promise<any> => {
     return inFlight;
   }
 
-  const request = fetch(apiUrl(url), {
+  const request = fetchWithServerTime(url, {
     method: "GET",
     headers: getAuthHeaders(),
   })
     .then(async (res) => {
-      syncServerTimeOffset(res);
       if (!res.ok) {
         throw new Error("Failed to fetch employee logs");
       }
@@ -101,6 +112,8 @@ export const getEmployeeLogs = async (params: GetEmployeeLogsParams = {}): Promi
   if (params.activityType) query.append("activityType", params.activityType);
   if (params.search) query.append("search", params.search);
   if (params.machine) query.append("machine", params.machine);
+  if (params.jobId) query.append("jobId", params.jobId);
+  if (params.jobGroupId) query.append("jobGroupId", params.jobGroupId);
   if (params.startDate) query.append("startDate", params.startDate);
   if (params.endDate) query.append("endDate", params.endDate);
 
@@ -127,6 +140,8 @@ export const getEmployeeLogsPage = async (
   if (params.activityType) query.append("activityType", params.activityType);
   if (params.search) query.append("search", params.search);
   if (params.machine) query.append("machine", params.machine);
+  if (params.jobId) query.append("jobId", params.jobId);
+  if (params.jobGroupId) query.append("jobGroupId", params.jobGroupId);
   if (params.startDate) query.append("startDate", params.startDate);
   if (params.endDate) query.append("endDate", params.endDate);
   if (params.offset !== undefined) query.append("offset", String(Math.max(0, params.offset)));
@@ -145,12 +160,11 @@ export const getEmployeeLogsPage = async (
 };
 
 export const startProgrammerJobLog = async (payload: { refNumber?: string } = {}): Promise<EmployeeLog> => {
-  const res = await fetch(apiUrl("/api/employee-logs/programmer/start"), {
+  const res = await fetchWithServerTime("/api/employee-logs/programmer/start", {
     method: "POST",
     headers: getAuthHeaders(),
     body: JSON.stringify(payload),
   });
-  syncServerTimeOffset(res);
 
   if (!res.ok) {
     throw new Error("Failed to start programmer log");
@@ -168,12 +182,11 @@ export const completeProgrammerJobLog = async (payload: {
   settingsCount?: number;
   quantityCount?: number;
 }): Promise<EmployeeLog> => {
-  const res = await fetch(apiUrl("/api/employee-logs/programmer/complete"), {
+  const res = await fetchWithServerTime("/api/employee-logs/programmer/complete", {
     method: "POST",
     headers: getAuthHeaders(),
     body: JSON.stringify(payload),
   });
-  syncServerTimeOffset(res);
 
   if (!res.ok) {
     throw new Error("Failed to complete programmer log");
@@ -185,12 +198,11 @@ export const completeProgrammerJobLog = async (payload: {
 export const rejectProgrammerJobLog = async (payload: {
   logId?: string;
 }): Promise<EmployeeLog> => {
-  const res = await fetch(apiUrl("/api/employee-logs/programmer/reject"), {
+  const res = await fetchWithServerTime("/api/employee-logs/programmer/reject", {
     method: "POST",
     headers: getAuthHeaders(),
     body: JSON.stringify(payload),
   });
-  syncServerTimeOffset(res);
 
   if (!res.ok) {
     throw new Error("Failed to reject programmer log");
@@ -213,12 +225,11 @@ export const startOperatorProductionLog = async (payload: {
   machineNumber?: string;
   opsName?: string;
 }): Promise<EmployeeLog> => {
-  const res = await fetch(apiUrl("/api/employee-logs/operator/start"), {
+  const res = await fetchWithServerTime("/api/employee-logs/operator/start", {
     method: "POST",
     headers: getAuthHeaders(),
     body: JSON.stringify(payload),
   });
-  syncServerTimeOffset(res);
 
   if (!res.ok) {
     const error = await res.json().catch(() => ({ message: "Failed to start operator production log" }));
@@ -245,12 +256,11 @@ export const completeOperatorProductionLog = async (payload: {
     operatorName?: string;
   }>;
 }): Promise<EmployeeLog> => {
-  const res = await fetch(apiUrl("/api/employee-logs/operator/complete"), {
+  const res = await fetchWithServerTime("/api/employee-logs/operator/complete", {
     method: "POST",
     headers: getAuthHeaders(),
     body: JSON.stringify(payload),
   });
-  syncServerTimeOffset(res);
 
   if (!res.ok) {
     const error = await res.json().catch(() => ({ message: "Failed to complete operator production log" }));
@@ -267,12 +277,11 @@ export const createOperatorTaskSwitchLog = async (payload: {
   endedAt: string;
   durationSeconds: number;
 }): Promise<EmployeeLog> => {
-  const res = await fetch(apiUrl("/api/employee-logs/operator/task-switch"), {
+  const res = await fetchWithServerTime("/api/employee-logs/operator/task-switch", {
     method: "POST",
     headers: getAuthHeaders(),
     body: JSON.stringify(payload),
   });
-  syncServerTimeOffset(res);
 
   if (!res.ok) {
     const error = await res.json().catch(() => ({ message: "Failed to save task switch log" }));

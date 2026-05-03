@@ -63,7 +63,11 @@ export const useOperatorViewData = (groupId: string | null, cutIdParam: string |
       }
       invalidateEmployeeLogsCache(/employee-logs/);
       const fetchedJobs = await getOperatorJobsByGroupId(groupId);
-        const operatorLogs = await getEmployeeLogs({ role: "OPERATOR", limit: 500 }).catch(() => []);
+        const operatorLogs = await getEmployeeLogs({
+          role: "OPERATOR",
+          jobGroupId: groupId,
+          limit: 2000,
+        }).catch(() => []);
         const logsByJobId = new Map<string, Array<{
           quantityFrom?: number | null;
           quantityTo?: number | null;

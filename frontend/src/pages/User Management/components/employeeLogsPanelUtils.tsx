@@ -65,9 +65,56 @@ export const getInitials = (value: string) => {
 
 export const getWorkedSecondsForLog = (log: EmployeeLog) => {
   const metadata = (log.metadata || {}) as Record<string, any>;
-  const machineHrs = Number(metadata.machineHrs || 0);
-  if (Number.isFinite(machineHrs) && machineHrs > 0) return Math.max(0, Math.round(machineHrs * 3600));
+  const explicitWorkedSeconds = Number(metadata.workedSeconds || 0);
+  if (Number.isFinite(explicitWorkedSeconds) && explicitWorkedSeconds > 0) {
+    return Math.max(0, Math.round(explicitWorkedSeconds));
+  }
+
+  const rawMachineHrs = String(metadata.machineHrs || "").trim();
+  if (rawMachineHrs) {
+    const hmsMatch = rawMachineHrs.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
+    if (hmsMatch) {
+      const hours = Number(hmsMatch[1] || 0);
+      const minutes = Number(hmsMatch[2] || 0);
+      const seconds = Number(hmsMatch[3] || 0);
+      if (Number.isFinite(hours) && Number.isFinite(minutes) && Number.isFinite(seconds)) {
+        return Math.max(0, (hours * 3600) + (minutes * 60) + seconds);
+      }
+    }
+
+    const decimalHours = Number(rawMachineHrs);
+    if (Number.isFinite(decimalHours) && decimalHours > 0) {
+      return Math.max(0, Math.round(decimalHours * 3600));
+    }
+  }
+
   return Math.max(0, Number(log.durationSeconds || 0));
+};
+
+export const getRevenueLabelForLog = (log: EmployeeLog) => {
+  if (String(log.status || "").trim().toUpperCase() === "IN_PROGRESS") {
+    return "-";
+  }
+
+  const metadata = (log.metadata || {}) as Record<string, any>;
+  const explicitRevenue = log.revenue ?? metadata.revenue;
+  if (explicitRevenue !== undefined && explicitRevenue !== null && String(explicitRevenue).trim() !== "") {
+    const numeric = Number(explicitRevenue);
+    return Number.isFinite(numeric) ? `Rs. ${numeric.toFixed(2)}` : String(explicitRevenue);
+  }
+
+  const splitRevenue = Object.values((metadata.revenueByQuantity || {}) as Record<string, unknown>).reduce<number>(
+    (sum, value) => {
+      const numeric = Number(value || 0);
+      return Number.isFinite(numeric) ? sum + numeric : sum;
+    },
+    0
+  );
+  if (splitRevenue > 0) {
+    return `Rs. ${splitRevenue.toFixed(2)}`;
+  }
+
+  return "-";
 };
 
 export const getQuantityLabel = (row: EmployeeLog) =>
@@ -161,7 +208,7 @@ export const createEmployeeLogColumns = ({
       ...(isAdmin ? [{ key: "revenue", label: "Revenue", sortable: false, render: (row) => getRevenueLabel(row) } as Column<EmployeeLog>] : []),
       createDateColumn("startedAt", "Started At"),
       createDateColumn("endedAt", "Ended At", true),
-      { key: "durationSeconds", label: "Time Taken", sortable: false, render: (row) => formatDuration(row.durationSeconds) },
+      { key: "durationSeconds", label: "Time Taken", sortable: false, render: (row) => formatDuration(getWorkedSecondsForLog(row)) },
       createStatusColumn(),
     ];
   }
