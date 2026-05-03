@@ -3,7 +3,7 @@ import Modal from "../../../components/Modal";
 import type { JobEntry } from "../../../types/job";
 import type { Dispatch, SetStateAction } from "react";
 import { getCurrentISTDateTime } from "../../../utils/dateTime";
-import { decimalHoursToHHMM } from "../utils/machineHrsCalculation";
+import { decimalHoursToHHMMSS } from "../utils/machineHrsCalculation";
 import type { CutInputData, QuantityInputData } from "../types/cutInput";
 import { formatCompactDurationWords, getQuantityElapsedSeconds } from "../utils/operatorTimeUtils";
 import { getPersistedIdleDuration } from "../utils/operatorViewPageHelpers";
@@ -114,8 +114,8 @@ const OperatorViewModals = ({
   const machineHoursDecimal = Number(pendingEndTimeQty?.machineHrs || 0);
   const machineHoursLabel =
     Number.isFinite(machineHoursDecimal) && machineHoursDecimal > 0
-      ? `${decimalHoursToHHMM(machineHoursDecimal)} (${machineHoursDecimal.toFixed(3)} h)`
-      : "00:00";
+      ? `${decimalHoursToHHMMSS(machineHoursDecimal)} (${machineHoursDecimal.toFixed(3)} h)`
+      : "00:00:00";
 
   return (
     <>

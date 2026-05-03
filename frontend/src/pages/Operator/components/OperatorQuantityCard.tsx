@@ -9,7 +9,7 @@ import OperatorIdleHistory from "./OperatorIdleHistory";
 import OperatorQuantityHistoryPanel from "./OperatorQuantityHistoryPanel";
 import OperatorPauseReasonCard from "./OperatorPauseReasonCard";
 import OperatorQuantityTimers from "./OperatorQuantityTimers";
-import { decimalHoursToHHMM } from "../utils/machineHrsCalculation";
+import { decimalHoursToHHMMSS } from "../utils/machineHrsCalculation";
 import { useQuantityTimer } from "../hooks/useQuantityTimer";
 import { getQaStageLabel } from "../utils/qaProgress";
 import { estimatedDurationSecondsFromHours, formatMachineLabel } from "../../../utils/jobFormatting";
@@ -194,7 +194,14 @@ export const OperatorQuantityCard: React.FC<OperatorQuantityCardProps> = ({
           </div>
           <div className="operator-input-card">
             <label>Machine Hrs</label>
-            <input type="text" value={qtyData.machineHrs ? decimalHoursToHHMM(parseFloat(qtyData.machineHrs)) : "00:00"} readOnly placeholder="00:00" className="readonly-input machine-hrs-input" />
+            <input
+              type="text"
+              value={qtyData.machineHrs ? decimalHoursToHHMMSS(parseFloat(qtyData.machineHrs)) : "00:00:00"}
+              readOnly
+              placeholder="00:00:00"
+              className="readonly-input machine-hrs-input"
+              title={qtyData.machineHrs ? `${decimalHoursToHHMMSS(parseFloat(qtyData.machineHrs))} (${parseFloat(qtyData.machineHrs).toFixed(3)} h)` : "00:00:00"}
+            />
             {validationErrors.machineHrs && <p className="field-error">{validationErrors.machineHrs}</p>}
           </div>
           <div className="operator-input-card">
