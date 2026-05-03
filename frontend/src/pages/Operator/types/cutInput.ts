@@ -39,6 +39,9 @@ export type QuantityInputData = {
   pausedElapsedTime: number; // Elapsed time when paused
   pauseSessions: PauseSession[]; // Array of all pause sessions with reasons
   currentPauseReason: string; // Current pause reason (for active pause)
+  // Additional fields for end time capture
+  currentSegmentWorkedSeconds?: number; // Calculated worked seconds for current segment
+  logMachineHrs?: string; // Machine hours formatted for logging
 };
 
 export type CutInputData = {
