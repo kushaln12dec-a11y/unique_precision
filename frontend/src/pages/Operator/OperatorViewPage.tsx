@@ -165,6 +165,11 @@ const OperatorViewPage = () => {
     const displayValue = getCurrentISTDateTime(timestampMs);
     const persistedIdleDuration = getPersistedIdleDuration(Number(qtyData.totalPauseTime || 0), qtyData.idleTimeDuration);
     const segmentPauseSeconds = getEffectiveSegmentPauseSeconds(qtyData);
+    
+    // Calculate worked seconds for the current segment
+    const currentSegmentWorkedSeconds = getCurrentSegmentWorkedSeconds(qtyData, timestampMs);
+    const logMachineHrs = formatWorkedSecondsAsMachineHrs(currentSegmentWorkedSeconds);
+    
     const machineHrs = calculateMachineHrs(
       String(qtyData.startTime || ""),
       displayValue,
@@ -186,6 +191,9 @@ const OperatorViewPage = () => {
         endTime: displayValue,
         endTimeEpochMs: timestampMs,
         machineHrs,
+        // Store the current segment worked seconds for logging
+        currentSegmentWorkedSeconds,
+        logMachineHrs,
       };
       next.set(cutId, { ...currentCut, quantities });
       return next;
@@ -237,24 +245,32 @@ const OperatorViewPage = () => {
       return false;
     }
 
-    const displayValue = getCurrentISTDateTime(timestampMs);
+    // Use the already calculated values from the modal state
+    const displayValue = qtyData.endTime || getCurrentISTDateTime(timestampMs);
     const persistedIdleDuration = getPersistedIdleDuration(Number(qtyData.totalPauseTime || 0), qtyData.idleTimeDuration);
     const persistedIdleReason = getPersistedIdleReason(qtyData.pauseSessions || [], qtyData.idleTime);
     const segmentPauseSeconds = getEffectiveSegmentPauseSeconds(qtyData);
-    const logWorkedSeconds = getCurrentSegmentWorkedSeconds(qtyData, timestampMs);
-    const logMachineHrs = formatWorkedSecondsAsMachineHrs(logWorkedSeconds);
+    
+    // Use the preserved values if available, otherwise calculate
+    const logWorkedSeconds = qtyData.currentSegmentWorkedSeconds !== undefined 
+      ? qtyData.currentSegmentWorkedSeconds 
+      : getCurrentSegmentWorkedSeconds(qtyData, timestampMs);
+    const logMachineHrs = qtyData.logMachineHrs !== undefined 
+      ? qtyData.logMachineHrs 
+      : formatWorkedSecondsAsMachineHrs(logWorkedSeconds);
+    
     const machineHrs = calculateMachineHrs(
       String(qtyData.startTime || ""),
       displayValue,
       persistedIdleDuration,
       segmentPauseSeconds,
       qtyData.startTimeEpochMs || null,
-      timestampMs,
+      qtyData.endTimeEpochMs || timestampMs,
       Number(qtyData.workedDurationSeconds || 0)
     );
 
     const success = await handleEndTimeCaptured(cutId, quantityIndex, {
-      timestampMs,
+      timestampMs: qtyData.endTimeEpochMs || timestampMs,
       endTime: displayValue,
       machineHrs,
       logMachineHrs,

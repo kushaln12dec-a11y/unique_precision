@@ -36,8 +36,12 @@ const buildOperatorBreakdown = (qtyData: QuantityInputData, timestampMs: number)
   });
 
   const previousWorkedSeconds = Math.max(0, Math.round(Number(qtyData.workedDurationSeconds || 0)));
-  const totalWorkedSeconds = Math.max(previousWorkedSeconds, getQuantityElapsedSeconds(qtyData, timestampMs));
-  const currentSegmentSeconds = Math.max(0, totalWorkedSeconds - previousWorkedSeconds);
+  
+  // Use the preserved current segment worked seconds if available, otherwise calculate
+  const currentSegmentSeconds = qtyData.currentSegmentWorkedSeconds !== undefined
+    ? Math.max(0, qtyData.currentSegmentWorkedSeconds)
+    : Math.max(0, getQuantityElapsedSeconds(qtyData, timestampMs) - previousWorkedSeconds);
+    
   const currentOperators = Array.from(
     new Set((qtyData.opsName || []).map((name) => normalizeOperatorName(name)).filter(Boolean))
   );
@@ -102,14 +106,16 @@ const OperatorViewModals = ({
     : "N/A";
   const pendingEndTimeWorkedSeconds =
     pendingEndTimeCapture && pendingEndTimeQty
-      ? getQuantityElapsedSeconds(pendingEndTimeQty, pendingEndTimeCapture.timestampMs)
+      ? (pendingEndTimeQty.currentSegmentWorkedSeconds !== undefined
+          ? pendingEndTimeQty.currentSegmentWorkedSeconds + Math.max(0, Number(pendingEndTimeQty.workedDurationSeconds || 0))
+          : getQuantityElapsedSeconds(pendingEndTimeQty, pendingEndTimeQty.endTimeEpochMs || pendingEndTimeCapture.timestampMs))
       : 0;
   const pendingEndTimeIdleDuration = pendingEndTimeQty
     ? getPersistedIdleDuration(Number(pendingEndTimeQty.totalPauseTime || 0), pendingEndTimeQty.idleTimeDuration)
     : "";
   const pendingEndTimeBreakdown =
     pendingEndTimeCapture && pendingEndTimeQty
-      ? buildOperatorBreakdown(pendingEndTimeQty, pendingEndTimeCapture.timestampMs)
+      ? buildOperatorBreakdown(pendingEndTimeQty, pendingEndTimeQty.endTimeEpochMs || pendingEndTimeCapture.timestampMs)
       : [];
   const machineHoursDecimal = Number(pendingEndTimeQty?.machineHrs || 0);
   const machineHoursLabel =
