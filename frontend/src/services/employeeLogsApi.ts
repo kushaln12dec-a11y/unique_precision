@@ -24,6 +24,7 @@ const fetchWithServerTime = async (input: string, init?: RequestInit) => {
   syncServerTimeOffset(response, {
     requestStartedAtMs,
     responseReceivedAtMs: Date.now(),
+    maxRoundTripMs: 2000,
   });
   return response;
 };

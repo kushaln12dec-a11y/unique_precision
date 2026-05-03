@@ -1,3 +1,6 @@
+const IST_OFFSET_MINUTES = 5 * 60 + 30;
+const IST_OFFSET_MS = IST_OFFSET_MINUTES * 60 * 1000;
+
 /**
  * Get current date and time in IST (Indian Standard Time) format
  * 
@@ -53,5 +56,20 @@ export const getCurrentISTDateTime = (timestampMs?: number): string => {
   const seconds = parts.find(p => p.type === 'second')?.value || '00';
 
   return `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
+};
+
+export const parseISTDateTimeToMs = (value?: string): number | null => {
+  if (!value || typeof value !== "string") return null;
+  const match = value.trim().match(/^(\d{2})\/(\d{2})\/(\d{4})\s+(\d{2}):(\d{2})(?::(\d{2}))?$/);
+  if (!match) return null;
+
+  const day = Number(match[1]);
+  const month = Number(match[2]);
+  const year = Number(match[3]);
+  const hour = Number(match[4]);
+  const minute = Number(match[5]);
+  const second = Number(match[6] || 0);
+  const utcMs = Date.UTC(year, month - 1, day, hour, minute, second, 0) - IST_OFFSET_MS;
+  return Number.isNaN(utcMs) ? null : utcMs;
 };
   
