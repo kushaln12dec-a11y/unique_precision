@@ -217,7 +217,12 @@ export const useOperatorRunActions = ({
           setActiveOperatorLogIds((prev) => new Map(prev).set(key, startedLog._id));
         }
 
-        const nextQuantityState = buildResumeState(qtyData, resumedAtMs, resumedAtDisplay, effectiveStartedAtMs);
+        const nextQuantityState = buildResumeState(
+          qtyData,
+          effectiveStartedAtMs,
+          resumedAtDisplay,
+          effectiveStartedAtMs
+        );
 
         setCutInputs((prev) => {
           const currentCut = prev.get(cutId);

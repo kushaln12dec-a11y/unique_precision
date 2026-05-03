@@ -13,12 +13,13 @@ import OperatorViewModals from "./components/OperatorViewModals";
 import { getUserDisplayNameFromToken, getUserRoleFromToken } from "../../utils/auth";
 import { estimatedDurationSecondsFromHours, estimatedHoursFromAmount, MACHINE_OPTIONS, toMachineIndex } from "../../utils/jobFormatting";
 import { getQuantityElapsedSeconds, parseOperatorDateTime } from "./utils/operatorTimeUtils";
-import { getServerNowMs } from "../../services/serverTime";
+import { getServerNowMs, refreshServerTimeOffset } from "../../services/serverTime";
 import { useJobSync } from "../../hooks/useJobSync";
 import { getCurrentISTDateTime } from "../../utils/dateTime";
 import { calculateMachineHrs } from "./utils/machineHrsCalculation";
 import { useOperatorAssignmentSync } from "./hooks/useOperatorAssignmentSync";
 import { getPersistedIdleDuration, getPersistedIdleReason } from "./utils/operatorViewPageHelpers";
+import { getEffectiveSegmentPauseSeconds } from "./utils/operatorInputState";
 import "../RoleBoard.css";
 import "../Programmer/Programmer.css";
 import "../Programmer/components/JobDetailsModal.css";
@@ -162,11 +163,12 @@ const OperatorViewPage = () => {
 
     const displayValue = getCurrentISTDateTime(timestampMs);
     const persistedIdleDuration = getPersistedIdleDuration(Number(qtyData.totalPauseTime || 0), qtyData.idleTimeDuration);
+    const segmentPauseSeconds = getEffectiveSegmentPauseSeconds(qtyData);
     const machineHrs = calculateMachineHrs(
       String(qtyData.startTime || ""),
       displayValue,
       persistedIdleDuration,
-      Number(qtyData.totalPauseTime || 0),
+      segmentPauseSeconds,
       qtyData.startTimeEpochMs || null,
       timestampMs
     );
@@ -236,11 +238,12 @@ const OperatorViewPage = () => {
     const displayValue = getCurrentISTDateTime(timestampMs);
     const persistedIdleDuration = getPersistedIdleDuration(Number(qtyData.totalPauseTime || 0), qtyData.idleTimeDuration);
     const persistedIdleReason = getPersistedIdleReason(qtyData.pauseSessions || [], qtyData.idleTime);
+    const segmentPauseSeconds = getEffectiveSegmentPauseSeconds(qtyData);
     const machineHrs = calculateMachineHrs(
       String(qtyData.startTime || ""),
       displayValue,
       persistedIdleDuration,
-      Number(qtyData.totalPauseTime || 0),
+      segmentPauseSeconds,
       qtyData.startTimeEpochMs || null,
       timestampMs
     );
@@ -314,6 +317,14 @@ const OperatorViewPage = () => {
       ),
     [cutInputs]
   );
+
+  useEffect(() => {
+    void refreshServerTimeOffset(true).catch(() => {});
+    const syncTimerId = window.setInterval(() => {
+      void refreshServerTimeOffset().catch(() => {});
+    }, 15000);
+    return () => window.clearInterval(syncTimerId);
+  }, []);
 
   useEffect(() => {
     if (!hasActiveQuantityTimer) return;

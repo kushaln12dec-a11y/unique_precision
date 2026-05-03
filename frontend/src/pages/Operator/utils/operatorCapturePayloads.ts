@@ -1,6 +1,7 @@
 import type { QuantityQaStatus } from "../../../types/job";
 import type { QuantityProgressStatus } from "./qaProgress";
 import type { PauseSession } from "../types/cutInput";
+import { parseOperatorDateTime } from "./operatorTimeUtils";
 
 type QuantityInput = {
   startTime: string;
@@ -11,12 +12,27 @@ type QuantityInput = {
   idleTime?: string;
   idleTimeDuration?: string;
   pauseSessions?: PauseSession[];
+  startTimeEpochMs?: number | null;
 };
 
 export const getOperatorOpsName = (value: string[] | string | undefined) =>
   Array.isArray(value) ? value.join(", ") : value || "";
 
 export const getAssignedToValue = (opsName: string) => opsName.trim() || "Unassign";
+
+const getSegmentStartMs = (qtyData: QuantityInput) => {
+  if (qtyData.startTimeEpochMs && Number.isFinite(Number(qtyData.startTimeEpochMs))) {
+    return Number(qtyData.startTimeEpochMs);
+  }
+  return parseOperatorDateTime(qtyData.startTime) ?? null;
+};
+
+export const getPauseSessionsForCurrentSegment = (qtyData: QuantityInput) => {
+  const sessions = Array.isArray(qtyData.pauseSessions) ? qtyData.pauseSessions : [];
+  const segmentStartMs = getSegmentStartMs(qtyData);
+  if (!segmentStartMs) return sessions;
+  return sessions.filter((session) => Number(session?.pauseStartTime || 0) >= segmentStartMs);
+};
 
 export const buildSingleCapturePayload = (
   qtyData: QuantityInput,
@@ -31,7 +47,7 @@ export const buildSingleCapturePayload = (
   opsName: getOperatorOpsName(qtyData.opsName),
   idleTime: qtyData.idleTime || "",
   idleTimeDuration: qtyData.idleTimeDuration || "",
-  pauseSessions: qtyData.pauseSessions || [],
+  pauseSessions: getPauseSessionsForCurrentSegment(qtyData),
   lastImage: imageBase64,
   quantityIndex,
   captureMode: "SINGLE" as const,
@@ -55,7 +71,7 @@ export const buildRangeCapturePayload = (
   opsName: getOperatorOpsName(qtyData.opsName),
   idleTime: qtyData.idleTime || "",
   idleTimeDuration: qtyData.idleTimeDuration || "",
-  pauseSessions: qtyData.pauseSessions || [],
+  pauseSessions: getPauseSessionsForCurrentSegment(qtyData),
   lastImage: imageBase64,
   quantityIndex,
   captureMode: "RANGE" as const,
