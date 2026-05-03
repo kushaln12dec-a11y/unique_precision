@@ -16,7 +16,6 @@ import {
   updateQuantityMachineHours,
 } from "../utils/operatorInputState";
 import { getServerNowMs } from "../../../services/serverTime";
-import { getCurrentISTDateTime } from "../../../utils/dateTime";
 
 export const useOperatorInputs = (
   _cutInputs: Map<number | string, CutInputData>,
@@ -58,6 +57,7 @@ export const useOperatorInputs = (
           ...copiedFields,
           isPaused: false,
           pauseStartTime: null,
+          currentPauseOperatorName: "",
           totalPauseTime: 0,
           pausedElapsedTime: 0,
           pauseSessions: [],
@@ -94,6 +94,7 @@ export const useOperatorInputs = (
           ...copiedFields,
           isPaused: false,
           pauseStartTime: null,
+          currentPauseOperatorName: "",
           totalPauseTime: 0,
           pausedElapsedTime: 0,
           pauseSessions: [],
@@ -183,53 +184,12 @@ export const useOperatorInputs = (
           if (qtyData.currentPauseReason === "Shift Over") {
             return newMap;
           }
-          if (tryResumePausedQuantity(now)) return newMap;
-        } else {
-          quantities[quantityIndex] = pauseRunningQuantity(qtyData, now);
+        if (tryResumePausedQuantity(now)) return newMap;
+      } else {
+          quantities[quantityIndex] = pauseRunningQuantity(qtyData, now, currentUserDisplayName);
           newMap.set(cutId, { ...current, quantities });
           return newMap;
         }
-        return newMap;
-      }
-      if (field === "markShiftOver") {
-        if (!qtyData.startTime || qtyData.endTime) return newMap;
-        const now = getServerNowMs();
-        if (qtyData.isPaused) {
-          if (qtyData.currentPauseReason !== "Shift Over") return newMap;
-          if (tryResumePausedQuantity(now)) return newMap;
-          return newMap;
-        }
-        const paused = pauseRunningQuantity(qtyData, now);
-        quantities[quantityIndex] = {
-          ...paused,
-          currentPauseReason: "Shift Over",
-        };
-        newMap.set(cutId, { ...current, quantities });
-        return newMap;
-      }
-      if (field === "resumeShiftOver") {
-        const now = getServerNowMs();
-        const carriedWorkedSeconds = Math.max(
-          0,
-          Number(qtyData.pausedElapsedTime || qtyData.workedDurationSeconds || 0)
-        );
-        quantities[quantityIndex] = {
-          ...qtyData,
-          startTime: getCurrentISTDateTime(now),
-          startTimeEpochMs: now,
-          endTime: "",
-          endTimeEpochMs: null,
-          workedDurationSeconds: carriedWorkedSeconds,
-          machineHrs: "",
-          idleTime: "",
-          idleTimeDuration: "",
-          isPaused: false,
-          pauseStartTime: null,
-          totalPauseTime: 0,
-          pausedElapsedTime: carriedWorkedSeconds,
-          currentPauseReason: "",
-        };
-        newMap.set(cutId, { ...current, quantities });
         return newMap;
       }
       if (field === "pauseReason") {

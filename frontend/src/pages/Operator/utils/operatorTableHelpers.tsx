@@ -8,6 +8,7 @@ import {
 } from "../../../utils/jobFormatting";
 import type { OperatorDisplayRow } from "../hooks/useOperatorTable";
 import type { EmployeeLog } from "../../../types/employeeLog";
+import { parseOperatorDateTime } from "./operatorTimeUtils";
 
 export const getOperatorMachineDropdownOptions = (machineOptions: string[]) => {
   const normalized = machineOptions.map((value) => toMachineIndex(value)).filter(Boolean);
@@ -52,10 +53,11 @@ export const getLatestActiveCaptureSummary = (entries: JobEntry[]): ActiveCaptur
     const captures = Array.isArray(entry.operatorCaptures) ? entry.operatorCaptures : [];
     captures.forEach((capture) => {
       if (!capture?.startTime || capture?.endTime) return;
-      const startedAt = new Date(capture.startTime);
-      if (Number.isNaN(startedAt.getTime())) return;
+      const startedAtMs = parseOperatorDateTime(String(capture.startTime || ""));
+      if (!startedAtMs) return;
 
-      if (!latestCapture || startedAt.getTime() > new Date(latestCapture.startTime).getTime()) {
+      const latestCaptureStartMs = latestCapture ? parseOperatorDateTime(latestCapture.startTime) : null;
+      if (!latestCapture || !latestCaptureStartMs || startedAtMs > latestCaptureStartMs) {
         latestCapture = {
           entry,
           startTime: capture.startTime,

@@ -39,6 +39,7 @@ export const getCurrentISTDateTime = (timestampMs?: number): string => {
     day: '2-digit',
     hour: '2-digit',
     minute: '2-digit',
+    second: '2-digit',
     hour12: false, // Use 24-hour format
   });
   
@@ -49,7 +50,8 @@ export const getCurrentISTDateTime = (timestampMs?: number): string => {
   const year = parts.find(p => p.type === 'year')?.value || '2026';
   const hours = parts.find(p => p.type === 'hour')?.value || '00';
   const minutes = parts.find(p => p.type === 'minute')?.value || '00';
-  
-  return `${day}/${month}/${year} ${hours}:${minutes}`;
+  const seconds = parts.find(p => p.type === 'second')?.value || '00';
+
+  return `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
 };
   

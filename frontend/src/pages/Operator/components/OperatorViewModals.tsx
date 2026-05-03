@@ -2,12 +2,18 @@ import ConfirmDeleteModal from "../../../components/ConfirmDeleteModal";
 import Modal from "../../../components/Modal";
 import type { JobEntry } from "../../../types/job";
 import type { Dispatch, SetStateAction } from "react";
-import OperatorActionModal from "./OperatorActionModal";
+import { getCurrentISTDateTime } from "../../../utils/dateTime";
 
 type PendingDispatch = { cutId: number | string; quantityNumbers: number[] } | null;
 type PendingQuantity = { cutId: number | string; quantityIndex: number } | null;
-type PendingOperatorAction = { cutId: number | string; quantityIndex: number; action: "shiftOver" | "resume" } | null;
-type PendingEndTimeCapture = { cutId: number | string; quantityIndex: number } | null;
+type PendingEndTimeCapture = {
+  cutId: number | string;
+  quantityIndex: number;
+  timestampMs: number;
+  previousEndTime: string;
+  previousEndTimeEpochMs: number | null;
+  previousMachineHrs: string;
+} | null;
 
 type OperatorViewModalsProps = {
   jobs: JobEntry[];
@@ -15,21 +21,11 @@ type OperatorViewModalsProps = {
   setPendingDispatch: Dispatch<SetStateAction<PendingDispatch>>;
   pendingReset: PendingQuantity;
   setPendingReset: Dispatch<SetStateAction<PendingQuantity>>;
-  pendingOperatorAction: PendingOperatorAction;
-  setPendingOperatorAction: Dispatch<SetStateAction<PendingOperatorAction>>;
   pendingEndTimeCapture: PendingEndTimeCapture;
-  setPendingEndTimeCapture: Dispatch<SetStateAction<PendingEndTimeCapture>>;
+  handleCancelEndTimeCapture: () => void;
   handleUpdateQaStatus: (cutId: number | string, quantityNumbers: number[], status: "SENT_TO_QA" | "SAVED" | "READY_FOR_QA") => Promise<void>;
   handleResetQuantity: (cutId: number | string, quantityIndex: number) => Promise<void>;
-  handleInputChange: (
-    cutId: number | string,
-    quantityIndex: number,
-    field: "markShiftOver" | "resumeShiftOver",
-    value: string
-  ) => void;
-  handlePauseResumeAction: (cutId: number | string, quantityIndex: number, action: "shiftOver" | "resume") => Promise<boolean>;
-  handleConfirmEndTimeCapture: (cutId: number | string, quantityIndex: number) => Promise<void>;
-  setActionToast: Dispatch<SetStateAction<{ message: string; variant: "success" | "error" | "info"; visible: boolean }>>;
+  handleConfirmEndTimeCapture: (cutId: number | string, quantityIndex: number, timestampMs: number) => Promise<boolean>;
 };
 
 const OperatorViewModals = ({
@@ -38,16 +34,11 @@ const OperatorViewModals = ({
   setPendingDispatch,
   pendingReset,
   setPendingReset,
-  pendingOperatorAction,
-  setPendingOperatorAction,
   pendingEndTimeCapture,
-  setPendingEndTimeCapture,
+  handleCancelEndTimeCapture,
   handleUpdateQaStatus,
   handleResetQuantity,
-  handleInputChange,
-  handlePauseResumeAction,
   handleConfirmEndTimeCapture,
-  setActionToast,
 }: OperatorViewModalsProps) => {
   const pendingDispatchJob = pendingDispatch
     ? jobs.find((job) => String(job.id) === String(pendingDispatch.cutId))
@@ -97,41 +88,9 @@ const OperatorViewModals = ({
         />
       )}
 
-      {pendingOperatorAction && (
-        <OperatorActionModal
-          action={pendingOperatorAction.action}
-          settingNumber={jobs.findIndex((j) => String(j.id) === String(pendingOperatorAction.cutId)) + 1}
-          quantityNumber={pendingOperatorAction.quantityIndex + 1}
-          onConfirm={async () => {
-            const success = await handlePauseResumeAction(
-              pendingOperatorAction.cutId,
-              pendingOperatorAction.quantityIndex,
-              pendingOperatorAction.action
-            );
-            if (!success) return;
-            handleInputChange(
-              pendingOperatorAction.cutId,
-              pendingOperatorAction.quantityIndex,
-              pendingOperatorAction.action === "resume" ? "resumeShiftOver" : "markShiftOver",
-              ""
-            );
-            setActionToast({
-              message: pendingOperatorAction.action === "resume" ? "Quantity resumed." : "Shift over saved.",
-              variant: "info",
-              visible: true,
-            });
-            setTimeout(() => {
-              setActionToast((prev) => ({ ...prev, visible: false }));
-            }, 3200);
-            setPendingOperatorAction(null);
-          }}
-          onCancel={() => setPendingOperatorAction(null)}
-        />
-      )}
-
       <Modal
         isOpen={Boolean(pendingEndTimeCapture)}
-        onClose={() => setPendingEndTimeCapture(null)}
+        onClose={handleCancelEndTimeCapture}
         title="Confirm End Time"
         size="small"
       >
@@ -142,17 +101,22 @@ const OperatorViewModals = ({
               <p><strong>Setting:</strong> {pendingEndTimeJob ? String(jobs.findIndex((j) => String(j.id) === String(pendingEndTimeCapture.cutId)) + 1) : "N/A"}</p>
               <p><strong>Quantity:</strong> {String(pendingEndTimeCapture.quantityIndex + 1)}</p>
               <p><strong>Job Ref:</strong> {String(pendingEndTimeJob?.refNumber || "-")}</p>
+              <p><strong>Captured At:</strong> {getCurrentISTDateTime(pendingEndTimeCapture.timestampMs)}</p>
             </div>
             <div className="confirm-delete-footer">
-              <button type="button" className="btn-secondary" onClick={() => setPendingEndTimeCapture(null)}>
+              <button type="button" className="btn-secondary" onClick={handleCancelEndTimeCapture}>
                 Cancel
               </button>
               <button
                 type="button"
                 className="btn-primary"
                 onClick={async () => {
-                  await handleConfirmEndTimeCapture(pendingEndTimeCapture.cutId, pendingEndTimeCapture.quantityIndex);
-                  setPendingEndTimeCapture(null);
+                  const success = await handleConfirmEndTimeCapture(
+                    pendingEndTimeCapture.cutId,
+                    pendingEndTimeCapture.quantityIndex,
+                    pendingEndTimeCapture.timestampMs
+                  );
+                  if (!success) return;
                 }}
               >
                 Confirm End Time

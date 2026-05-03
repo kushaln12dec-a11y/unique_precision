@@ -22,6 +22,29 @@ const getDisplayedWorkedSeconds = (row: EmployeeLog) => {
   return Math.max(0, Number(row.durationSeconds || 0));
 };
 
+export const formatOperatorIdleWindow = (row: EmployeeLog) => {
+  const metadata = ((row.metadata as any) || {}) as Record<string, any>;
+  const pauseSessions = Array.isArray(metadata.pauseSessions) ? metadata.pauseSessions : [];
+
+  if (pauseSessions.length > 0) {
+    return pauseSessions
+      .map((session: any) => {
+        const duration = formatOperatorDuration(Number(session?.pauseDuration || 0));
+        return duration;
+      })
+      .join(" | ");
+  }
+
+  if (metadata.idleStartedAt) {
+    const duration = metadata.idleEndedAt
+      ? formatOperatorDuration(Number(metadata.idleDurationSeconds || 0))
+      : "Open";
+    return duration;
+  }
+
+  return "-";
+};
+
 export const buildOperatorLogsColumns = ({
   designationByUserName,
   getMachineNumberForLog,
@@ -100,6 +123,7 @@ export const buildOperatorLogsColumns = ({
     },
   },
   { key: "idleTime", label: "Idle Time", sortable: false, render: (row) => String((row.metadata as any)?.idleTime || "-") },
+  { key: "idleWindow", label: "Idle Window", sortable: false, className: "operator-log-text-col", render: (row) => <MarqueeCopyText text={formatOperatorIdleWindow(row)} /> },
   { key: "remark", label: "Remark", sortable: false, render: (row) => String((row.metadata as any)?.remark || "-") },
   ...(canViewRevenue
     ? [{
@@ -159,7 +183,7 @@ export const buildOperatorLogColumnDefs = (columns: Column<EmployeeLog>[]) =>
     const key = String(column.key);
     const preferredWidth = getOperatorLogColumnWidth(key);
     const minWidth =
-      key === "jobDescription" || key === "workSummary"
+      key === "jobDescription" || key === "workSummary" || key === "idleWindow"
         ? 110
         : key === "status"
           ? 96
@@ -231,6 +255,7 @@ export const buildOperatorLogFilter =
             ? (log.metadata as any).quantityNumbers.map((qty: number) => `Q${qty}`).join(", ")
             : "-",
           String((log.metadata as any)?.idleTime || "-"),
+          formatOperatorIdleWindow(log),
           String((log.metadata as any)?.remark || "-"),
           ...(canViewRevenue ? [getRevenueForLog(log)] : []),
           formatOperatorLogStatus(log.status),

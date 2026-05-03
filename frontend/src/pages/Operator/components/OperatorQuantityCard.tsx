@@ -5,52 +5,18 @@ import DateTimeInput from "./DateTimeInput";
 import SelectDropdown from "../../Programmer/components/SelectDropdown";
 import { MultiSelectOperators } from "./MultiSelectOperators";
 import OperatorQuantityActions from "./OperatorQuantityActions";
+import OperatorIdleHistory from "./OperatorIdleHistory";
 import OperatorQuantityHistoryPanel from "./OperatorQuantityHistoryPanel";
+import OperatorPauseReasonCard from "./OperatorPauseReasonCard";
+import OperatorQuantityTimers from "./OperatorQuantityTimers";
 import { decimalHoursToHHMM } from "../utils/machineHrsCalculation";
 import { useQuantityTimer } from "../hooks/useQuantityTimer";
-import { getQaStageLabel, type QuantityProgressStatus } from "../utils/qaProgress";
+import { getQaStageLabel } from "../utils/qaProgress";
 import { estimatedDurationSecondsFromHours, formatMachineLabel } from "../../../utils/jobFormatting";
-import { formatIdleDuration } from "../utils/operatorTimeUtils";
-import type { QuantityInputData } from "../types/cutInput";
-import type { OperatorInputField } from "../types/inputFields";
+import type { OperatorQuantityCardProps } from "../types/operatorQuantityCard";
 import { getOperatorQuantityHistory } from "../utils/operatorQuantityHistory";
 import { getCurrentISTDateTime } from "../../../utils/dateTime";
-
-const IDLE_REASON_OPTIONS = ["Power Break", "Machine Breakdown", "Vertical Dial", "Cleaning", "Consumables Change", "Others"];
-
-type Props = {
-  qtyData: QuantityInputData;
-  qtyIndex: number;
-  cutId: number | string;
-  isRangeMode: boolean;
-  isRangeValid: boolean;
-  rangeStartQty: number;
-  rangeEndQty: number;
-  isRangeApproved: boolean;
-  getStatus: (qty: number) => QuantityProgressStatus;
-  operatorUsers: Array<{ id: string | number; name: string }>;
-  machineOptions: string[];
-  canEditAssignments: boolean;
-  canOperateInputs: boolean;
-  onInputChange: (cutId: number | string, quantityIndex: number, field: OperatorInputField, value: string | string[]) => void;
-  onShowToast?: (message: string, variant?: "success" | "error" | "info") => void;
-  onStartTimeCaptured?: (cutId: number | string, quantityIndex: number) => void;
-  validationErrors?: Record<string, string>;
-  requiredHoursPerQuantity: number;
-  onRequestResetTimer?: (cutId: number | string, quantityIndex: number) => void;
-  onRequestShiftOver?: (cutId: number | string, quantityIndex: number) => void;
-  onRequestResume?: (cutId: number | string, quantityIndex: number) => void;
-  onRequestEndTimeCapture?: (cutId: number | string, quantityIndex: number) => void;
-  onSaveQuantity?: (cutId: number | string, quantityIndex: number) => void;
-  onSaveRange?: (cutId: number | string, sourceQuantityIndex: number, fromQty: number, toQty: number) => void;
-  savedRanges: Set<string>;
-  canReset: boolean;
-  canRunAssignedJob: boolean;
-  runBlockedReason?: string;
-  isAdmin: boolean;
-};
-
-export const OperatorQuantityCard: React.FC<Props> = ({
+export const OperatorQuantityCard: React.FC<OperatorQuantityCardProps> = ({
   qtyData,
   qtyIndex,
   cutId,
@@ -92,6 +58,7 @@ export const OperatorQuantityCard: React.FC<Props> = ({
     qtyData.pauseStartTime || null,
     qtyData.currentPauseReason || "",
     qtyData.totalPauseTime || 0,
+    qtyData.pauseTimeOffsetSeconds || 0,
     qtyData.pausedElapsedTime || 0,
     qtyData.workedDurationSeconds || 0,
     qtyData.startTimeEpochMs || null,
@@ -102,7 +69,6 @@ export const OperatorQuantityCard: React.FC<Props> = ({
   const isShiftOverPause = qtyData.isPaused && qtyData.currentPauseReason === "Shift Over";
   const { latestWorkedByName, operatorHistoryDetails, shouldShowOperatorHistory, shouldShowWorkedBySummary, formatWorkedDuration } =
     getOperatorQuantityHistory(qtyData, isRangeMode);
-  const estimatedTimerLabel = hasOvertime ? "Overtime:" : "Remaining Time:";
 
   const blockRunAction = () => {
     onShowToast?.(runBlockedReason || "Your name must be assigned to this job before you can run it.", "error");
@@ -117,11 +83,16 @@ export const OperatorQuantityCard: React.FC<Props> = ({
           {isRangeMode && isRangeValid && <span className={`range-status-badge ${isRangeApproved ? "approved" : "pending"}`}>{isRangeApproved ? "Confirmed" : "Selected"}</span>}
         </div>
         {qtyData.startTime && (
-          <div className="quantity-timers">
-            {((qtyData.isPaused || Number(qtyData.totalPauseTime || 0) > 0) && pauseTime && pauseTime !== "00:00:00") && <div className="quantity-timer idle-timer"><span className="timer-label">Idle Time:</span><span className={`timer-value ${isRunning ? "running" : ""}`}>{pauseTime}</span></div>}
-            <div className={`quantity-timer required-timer ${hasOvertime ? "overtime-timer" : ""}`.trim()}><span className="timer-label">{estimatedTimerLabel}</span><span className={`timer-value ${hasOvertime ? "overtime" : isRunning ? "running" : ""}`.trim()}>{hasOvertime ? overtimeTime : remainingTime}</span></div>
-            <div className="quantity-timer"><span className="timer-label">Running Time:</span><span className={`timer-value ${isRunning ? "running" : ""}`}>{elapsedTime}</span></div>
-          </div>
+          <OperatorQuantityTimers
+            elapsedTime={elapsedTime}
+            pauseTime={pauseTime}
+            remainingTime={remainingTime}
+            overtimeTime={overtimeTime}
+            hasOvertime={hasOvertime}
+            isPaused={qtyData.isPaused || false}
+            isRunning={isRunning}
+            totalPauseTime={Number(qtyData.totalPauseTime || 0)}
+          />
         )}
       </div>
 
@@ -156,6 +127,7 @@ export const OperatorQuantityCard: React.FC<Props> = ({
             <DateTimeInput
               value={qtyData.startTime}
               onChange={(value) => { if (!qtyData.startTime && !qtyData.endTime) onInputChange(cutId, qtyIndex, "startTime", value); }}
+              applyCapturedValue={false}
               onTimeCapture={(timestampMs) => {
                 if (!canOperateInputs) return;
                 if (!canRunAssignedJob) {
@@ -165,13 +137,13 @@ export const OperatorQuantityCard: React.FC<Props> = ({
                 if (!qtyData.startTime && !qtyData.endTime) {
                   onInputChange(cutId, qtyIndex, "startTime", getCurrentISTDateTime(timestampMs));
                   onInputChange(cutId, qtyIndex, "startTimeEpochMs", String(timestampMs));
-                  onStartTimeCaptured?.(cutId, qtyIndex);
+                  onStartTimeCaptured?.(cutId, qtyIndex, timestampMs);
                   onShowToast?.("Start time captured successfully!", "success");
                 } else {
                   onShowToast?.("Start time can only be set once!", "error");
                 }
               }}
-              placeholder="DD/MM/YYYY HH:MM"
+              placeholder="DD/MM/YYYY HH:MM:SS"
               error={validationErrors.startTime}
               showPauseButton={true}
               showPauseButtonInInput={false}
@@ -198,7 +170,8 @@ export const OperatorQuantityCard: React.FC<Props> = ({
                   if (qtyData.startTime && value) setTimeout(() => onInputChange(cutId, qtyIndex, "recalculateMachineHrs", ""), 100);
                 }
               }}
-              onTimeCapture={() => {
+              applyCapturedValue={false}
+              onTimeCapture={(timestampMs) => {
                 if (!canOperateInputs) return;
                 if (!canRunAssignedJob) {
                   blockRunAction();
@@ -209,12 +182,12 @@ export const OperatorQuantityCard: React.FC<Props> = ({
                   return;
                 }
                 if (!qtyData.endTime) {
-                  onRequestEndTimeCapture?.(cutId, qtyIndex);
+                  onRequestEndTimeCapture?.(cutId, qtyIndex, timestampMs);
                 } else {
                   onShowToast?.("End time can only be set once!", "error");
                 }
               }}
-              placeholder="DD/MM/YYYY HH:MM"
+              placeholder="DD/MM/YYYY HH:MM:SS"
               error={validationErrors.endTime}
               disabled={!canOperateInputs || !!qtyData.endTime || qtyData.isPaused || !canRunAssignedJob}
             />
@@ -261,18 +234,13 @@ export const OperatorQuantityCard: React.FC<Props> = ({
             {!canRunAssignedJob && <p className="field-error">{runBlockedReason || "Assigned operator only can run this job."}</p>}
           </div>
           {qtyData.isPaused && !qtyData.endTime && (
-            <div className="operator-input-card pause-reason-card">
-              <label>Idle Reason <span style={{ color: "#ef4444" }}>*</span></label>
-              {isShiftOverPause ? (
-                <div className="pause-reason-fixed-tag">Shift Over</div>
-              ) : (
-                <select value={qtyData.currentPauseReason || ""} onChange={(e) => onInputChange(cutId, qtyIndex, "pauseReason", e.target.value)} className={`pause-reason-input ${validationErrors.pauseReason ? "input-error" : ""}`} disabled={!canOperateInputs}>
-                  <option value="">Select reason</option>
-                  {IDLE_REASON_OPTIONS.map((reason) => <option key={reason} value={reason}>{reason}</option>)}
-                </select>
-              )}
-              {validationErrors.pauseReason && <p className="field-error">{validationErrors.pauseReason}</p>}
-            </div>
+            <OperatorPauseReasonCard
+              canOperateInputs={canOperateInputs}
+              currentPauseReason={qtyData.currentPauseReason || ""}
+              isShiftOverPause={isShiftOverPause}
+              pauseReasonError={validationErrors.pauseReason}
+              onPauseReasonChange={(value) => onInputChange(cutId, qtyIndex, "pauseReason", value)}
+            />
           )}
         </div>
 
@@ -287,24 +255,13 @@ export const OperatorQuantityCard: React.FC<Props> = ({
         />
       </div>
 
-      {qtyData.pauseSessions && qtyData.pauseSessions.length > 0 ? (
-        <div className="idle-history-inline-section">
-          <div className="idle-history-inline-header">
-            <span className="idle-history-inline-title">Idle Time</span>
-            <span className="idle-history-inline-count">{qtyData.pauseSessions.length}</span>
-          </div>
-          <div className="idle-history-inline-list">
-            {qtyData.pauseSessions.map((session, sessionIndex) => (
-              <div key={sessionIndex} className="idle-history-inline-item">
-                <span className="idle-history-inline-index">#{sessionIndex + 1}</span>
-                <span className="idle-history-inline-duration">{formatIdleDuration(session.pauseDuration)}</span>
-                {session.operatorName ? <span className="idle-history-inline-user">{session.operatorName}</span> : null}
-                <span className="idle-history-inline-reason">{session.reason || "Idle"}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      ) : null}
+      <OperatorIdleHistory
+        pauseSessions={qtyData.pauseSessions || []}
+        isPaused={qtyData.isPaused || false}
+        pauseStartTime={qtyData.pauseStartTime || null}
+        currentPauseReason={qtyData.currentPauseReason || ""}
+        currentPauseOperatorName={qtyData.currentPauseOperatorName || ""}
+      />
 
       <OperatorQuantityActions
         canOperateInputs={canOperateInputs}

@@ -1,5 +1,6 @@
 import type { QuantityQaStatus } from "../../../types/job";
 import type { QuantityProgressStatus } from "./qaProgress";
+import type { PauseSession } from "../types/cutInput";
 
 type QuantityInput = {
   startTime: string;
@@ -9,6 +10,7 @@ type QuantityInput = {
   opsName: string[] | string;
   idleTime?: string;
   idleTimeDuration?: string;
+  pauseSessions?: PauseSession[];
 };
 
 export const getOperatorOpsName = (value: string[] | string | undefined) =>
@@ -29,6 +31,7 @@ export const buildSingleCapturePayload = (
   opsName: getOperatorOpsName(qtyData.opsName),
   idleTime: qtyData.idleTime || "",
   idleTimeDuration: qtyData.idleTimeDuration || "",
+  pauseSessions: qtyData.pauseSessions || [],
   lastImage: imageBase64,
   quantityIndex,
   captureMode: "SINGLE" as const,
@@ -52,6 +55,7 @@ export const buildRangeCapturePayload = (
   opsName: getOperatorOpsName(qtyData.opsName),
   idleTime: qtyData.idleTime || "",
   idleTimeDuration: qtyData.idleTimeDuration || "",
+  pauseSessions: qtyData.pauseSessions || [],
   lastImage: imageBase64,
   quantityIndex,
   captureMode: "RANGE" as const,

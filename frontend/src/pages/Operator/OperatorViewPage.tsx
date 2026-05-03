@@ -4,25 +4,21 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import Sidebar from "../../components/Sidebar";
 import Header from "../../components/Header";
 import Toast from "../../components/Toast";
-import AppLoader from "../../components/AppLoader";
 import { resetOperatorQuantity } from "../../services/operatorApi";
 import { useOperatorViewData } from "./hooks/useOperatorViewData";
 import { useOperatorInputs } from "./hooks/useOperatorInputs";
 import { useOperatorViewActions } from "./hooks/useOperatorViewActions";
-import { OperatorJobInfo } from "./components/OperatorJobInfo";
-import { OperatorCutCard } from "./components/OperatorCutCard";
-import { OperatorTotalsSection } from "./components/OperatorTotalsSection";
+import OperatorViewBody from "./components/OperatorViewBody";
 import OperatorViewModals from "./components/OperatorViewModals";
-import type { CutInputData } from "./types/cutInput";
-import { createEmptyCutInputData } from "./types/cutInput";
 import { getUserDisplayNameFromToken, getUserRoleFromToken } from "../../utils/auth";
 import { estimatedDurationSecondsFromHours, estimatedHoursFromAmount, MACHINE_OPTIONS, toMachineIndex } from "../../utils/jobFormatting";
-import { formatDurationToClock, getQuantityElapsedSeconds, parseOperatorDateTime } from "./utils/operatorTimeUtils";
-import { updateOperatorJob } from "../../services/operatorApi";
+import { getQuantityElapsedSeconds, parseOperatorDateTime } from "./utils/operatorTimeUtils";
 import { getServerNowMs } from "../../services/serverTime";
 import { useJobSync } from "../../hooks/useJobSync";
 import { getCurrentISTDateTime } from "../../utils/dateTime";
 import { calculateMachineHrs } from "./utils/machineHrsCalculation";
+import { useOperatorAssignmentSync } from "./hooks/useOperatorAssignmentSync";
+import { getPersistedIdleDuration, getPersistedIdleReason } from "./utils/operatorViewPageHelpers";
 import "../RoleBoard.css";
 import "../Programmer/Programmer.css";
 import "../Programmer/components/JobDetailsModal.css";
@@ -30,25 +26,6 @@ import "./OperatorViewPage.css";
 import "./components/DateTimeInput.css";
 
 const normalizeOperatorName = (value: unknown) => String(value || "").trim().toUpperCase();
-
-const parseAssignedOperators = (value: unknown) =>
-  String(value || "")
-    .split(",")
-    .map((entry) => normalizeOperatorName(entry))
-    .filter((entry) => entry && entry.toLowerCase() !== "unassign" && entry.toLowerCase() !== "unassigned");
-
-const isCurrentUserAssignedToJob = (assignedTo: unknown, currentUserDisplayName: string, isAdmin: boolean) =>
-  isAdmin || parseAssignedOperators(assignedTo).includes(normalizeOperatorName(currentUserDisplayName));
-
-const buildStableOperatorList = (names: string[]) =>
-  Array.from(
-    new Map(
-      names
-        .map((name) => normalizeOperatorName(name))
-        .filter(Boolean)
-        .map((name) => [name.toLowerCase(), name] as const)
-    ).values()
-  ).sort((left, right) => left.localeCompare(right));
 
 const OperatorViewPage = () => {
   const navigate = useNavigate();
@@ -63,9 +40,14 @@ const OperatorViewPage = () => {
 
   const [validationErrors, setValidationErrors] = useState<Map<number | string, Record<string, Record<string, string>>>>(new Map());
   const [liveNowMs, setLiveNowMs] = useState<number>(getServerNowMs());
-  const [pendingOperatorAction, setPendingOperatorAction] = useState<{ cutId: number | string; quantityIndex: number; action: "shiftOver" | "resume" } | null>(null);
-  const [pendingEndTimeCapture, setPendingEndTimeCapture] = useState<{ cutId: number | string; quantityIndex: number } | null>(null);
-  const pendingAssignmentSyncRef = useRef<Map<string, string>>(new Map());
+  const [pendingEndTimeCapture, setPendingEndTimeCapture] = useState<{
+    cutId: number | string;
+    quantityIndex: number;
+    timestampMs: number;
+    previousEndTime: string;
+    previousEndTimeEpochMs: number | null;
+    previousMachineHrs: string;
+  } | null>(null);
   const pendingScrollRestoreRef = useRef<number | null>(null);
   const reloadInFlightRef = useRef<Promise<void> | null>(null);
 
@@ -117,6 +99,16 @@ const OperatorViewPage = () => {
   } = useOperatorViewActions({ jobs, cutInputs, setCutInputs, setValidationErrors, currentUserDisplayName, isAdmin });
   const allowedOperatorUsers = useMemo(() => operatorUsers, [operatorUsers]);
 
+  useOperatorAssignmentSync({
+    allowedOperatorUsers,
+    canEditAssignments,
+    cutInputs,
+    currentUserDisplayName,
+    jobs,
+    setCutInputs,
+    userRole,
+  });
+
   const restoreScrollPosition = useCallback(() => {
     if (pendingScrollRestoreRef.current === null) return;
     const nextScrollTop = pendingScrollRestoreRef.current;
@@ -154,7 +146,7 @@ const OperatorViewPage = () => {
     }
   }, [getScrollContainer, reloadOperatorViewData]);
 
-  const handleConfirmEndTimeCapture = async (cutId: number | string, quantityIndex: number) => {
+  const handleRequestEndTimeCapture = useCallback((cutId: number | string, quantityIndex: number, timestampMs: number) => {
     const qtyData = cutInputs.get(cutId)?.quantities?.[quantityIndex];
     if (!qtyData?.startTime) {
       setActionToast({
@@ -168,12 +160,8 @@ const OperatorViewPage = () => {
       return;
     }
 
-    const timestampMs = getServerNowMs();
     const displayValue = getCurrentISTDateTime(timestampMs);
-    const persistedIdleDuration =
-      Number(qtyData.totalPauseTime || 0) > 0
-        ? formatDurationToClock(Number(qtyData.totalPauseTime || 0))
-        : String(qtyData.idleTimeDuration || "");
+    const persistedIdleDuration = getPersistedIdleDuration(Number(qtyData.totalPauseTime || 0), qtyData.idleTimeDuration);
     const machineHrs = calculateMachineHrs(
       String(qtyData.startTime || ""),
       displayValue,
@@ -183,18 +171,91 @@ const OperatorViewPage = () => {
       timestampMs
     );
 
-    handleInputChange(cutId, quantityIndex, "endTime", displayValue);
-    handleInputChange(cutId, quantityIndex, "endTimeEpochMs", String(timestampMs));
+    setCutInputs((prev) => {
+      const currentCut = prev.get(cutId);
+      const currentQty = currentCut?.quantities?.[quantityIndex];
+      if (!currentCut || !currentQty) return prev;
+      const next = new Map(prev);
+      const quantities = [...currentCut.quantities];
+      quantities[quantityIndex] = {
+        ...currentQty,
+        endTime: displayValue,
+        endTimeEpochMs: timestampMs,
+        machineHrs,
+      };
+      next.set(cutId, { ...currentCut, quantities });
+      return next;
+    });
+
+    setPendingEndTimeCapture({
+      cutId,
+      quantityIndex,
+      timestampMs,
+      previousEndTime: String(qtyData.endTime || ""),
+      previousEndTimeEpochMs: qtyData.endTimeEpochMs || null,
+      previousMachineHrs: String(qtyData.machineHrs || ""),
+    });
+  }, [cutInputs, getPersistedIdleDuration, setActionToast, setCutInputs]);
+
+  const handleCancelEndTimeCapture = useCallback(() => {
+    if (!pendingEndTimeCapture) return;
+
+    setCutInputs((prev) => {
+      const currentCut = prev.get(pendingEndTimeCapture.cutId);
+      const currentQty = currentCut?.quantities?.[pendingEndTimeCapture.quantityIndex];
+      if (!currentCut || !currentQty) return prev;
+      const next = new Map(prev);
+      const quantities = [...currentCut.quantities];
+      quantities[pendingEndTimeCapture.quantityIndex] = {
+        ...currentQty,
+        endTime: pendingEndTimeCapture.previousEndTime,
+        endTimeEpochMs: pendingEndTimeCapture.previousEndTimeEpochMs,
+        machineHrs: pendingEndTimeCapture.previousMachineHrs,
+      };
+      next.set(pendingEndTimeCapture.cutId, { ...currentCut, quantities });
+      return next;
+    });
+
+    setPendingEndTimeCapture(null);
+  }, [pendingEndTimeCapture, setCutInputs]);
+
+  const handleConfirmEndTimeCapture = async (cutId: number | string, quantityIndex: number, timestampMs: number) => {
+    const qtyData = cutInputs.get(cutId)?.quantities?.[quantityIndex];
+    if (!qtyData?.startTime) {
+      setActionToast({
+        message: "Start time is required before capturing end time.",
+        variant: "error",
+        visible: true,
+      });
+      setTimeout(() => {
+        setActionToast((prev) => ({ ...prev, visible: false }));
+      }, 2200);
+      return false;
+    }
+
+    const displayValue = getCurrentISTDateTime(timestampMs);
+    const persistedIdleDuration = getPersistedIdleDuration(Number(qtyData.totalPauseTime || 0), qtyData.idleTimeDuration);
+    const persistedIdleReason = getPersistedIdleReason(qtyData.pauseSessions || [], qtyData.idleTime);
+    const machineHrs = calculateMachineHrs(
+      String(qtyData.startTime || ""),
+      displayValue,
+      persistedIdleDuration,
+      Number(qtyData.totalPauseTime || 0),
+      qtyData.startTimeEpochMs || null,
+      timestampMs
+    );
+
     const success = await handleEndTimeCaptured(cutId, quantityIndex, {
       timestampMs,
       endTime: displayValue,
       machineHrs,
-      idleTime: String(qtyData.idleTime || ""),
+      idleTime: persistedIdleReason,
       idleTimeDuration: persistedIdleDuration,
     });
-    if (!success) return;
+    if (!success) return false;
 
     await reloadOperatorViewDataPreservingScroll();
+    setPendingEndTimeCapture(null);
     setActionToast({
       message: "End time captured successfully!",
       variant: "success",
@@ -203,6 +264,7 @@ const OperatorViewPage = () => {
     setTimeout(() => {
       setActionToast((prev) => ({ ...prev, visible: false }));
     }, 2200);
+    return true;
   };
 
   const refreshRemoteOperatorView = useCallback(() => {
@@ -216,130 +278,6 @@ const OperatorViewPage = () => {
   useEffect(() => {
     if (!loadingJobs) restoreScrollPosition();
   }, [loadingJobs, restoreScrollPosition]);
-
-  useEffect(() => {
-    if (allowedOperatorUsers.length === 0 || cutInputs.size === 0) return;
-
-    const allowedNames = new Map(
-      allowedOperatorUsers.map((operator) => {
-        const name = normalizeOperatorName(operator.name);
-        return [name.toLowerCase(), name] as const;
-      })
-    );
-
-    setCutInputs((prev) => {
-      let hasChanged = false;
-      const next = new Map(prev);
-
-      prev.forEach((cutData, cutId) => {
-        const nextQuantities = (cutData.quantities || []).map((quantity) => {
-          const sanitizedOps = (Array.isArray(quantity.opsName) ? quantity.opsName : [])
-            .map((name) => allowedNames.get(normalizeOperatorName(name).toLowerCase()) || "")
-            .filter(Boolean);
-
-          const uniqueSanitizedOps = Array.from(new Set(sanitizedOps));
-          const currentOpsSnapshot = JSON.stringify(Array.isArray(quantity.opsName) ? quantity.opsName : []);
-          const nextOpsSnapshot = JSON.stringify(uniqueSanitizedOps);
-          if (currentOpsSnapshot === nextOpsSnapshot) return quantity;
-
-          hasChanged = true;
-          return {
-            ...quantity,
-            opsName: uniqueSanitizedOps,
-          };
-        });
-
-        if (hasChanged) {
-          next.set(cutId, {
-            ...cutData,
-            quantities: nextQuantities,
-          });
-        }
-      });
-
-      return hasChanged ? next : prev;
-    });
-  }, [allowedOperatorUsers, cutInputs.size, setCutInputs]);
-
-  useEffect(() => {
-    if (!canEditAssignments || jobs.length === 0 || cutInputs.size === 0) return;
-
-    const timeoutId = window.setTimeout(() => {
-      jobs.forEach((job) => {
-        const cutData = cutInputs.get(job.id);
-        if (!cutData) return;
-
-        const namesFromInputs = Array.from(
-          new Map(
-            (cutData.quantities || [])
-              .flatMap((quantity) => (Array.isArray(quantity.opsName) ? quantity.opsName : []))
-              .map((name) => {
-                const normalized = normalizeOperatorName(name);
-                return [normalized.toLowerCase(), normalized] as const;
-              })
-              .filter((entry) => entry[1])
-          ).values()
-        );
-
-        const nextMachineNumber =
-          (cutData.quantities || [])
-            .map((quantity) => String(quantity.machineNumber || "").trim())
-            .find(Boolean) || "";
-
-        const validOperatorNames = new Map(
-          allowedOperatorUsers.map((operator) => {
-            const name = normalizeOperatorName(operator.name);
-            return [name.toLowerCase(), name] as const;
-          })
-        );
-        const currentAssignedOperators = parseAssignedOperators(job.assignedTo || "").filter((name) =>
-          validOperatorNames.has(normalizeOperatorName(name).toLowerCase())
-        );
-        const normalizedCurrentUser = String(currentUserDisplayName || "").trim().toLowerCase();
-
-        const nextAssignedOperators =
-          userRole === "OPERATOR" && normalizedCurrentUser
-            ? (() => {
-                const retainedOthers = currentAssignedOperators.filter((name) => name.toLowerCase() !== normalizedCurrentUser);
-                const hasSelfSelected = namesFromInputs.some((name) => name.toLowerCase() === normalizedCurrentUser);
-                return hasSelfSelected
-                  ? [...retainedOthers, currentUserDisplayName]
-                  : retainedOthers;
-              })()
-            : namesFromInputs;
-
-        const stableNextAssignedOperators = buildStableOperatorList(nextAssignedOperators);
-        const stableCurrentAssignedOperators = buildStableOperatorList(currentAssignedOperators);
-        const nextAssignedTo = stableNextAssignedOperators.join(", ") || "Unassign";
-        const currentAssignedTo = stableCurrentAssignedOperators.join(", ") || "Unassign";
-        const syncSignature = `${nextAssignedTo}|${nextMachineNumber}`;
-        const jobId = String(job.id);
-
-        if (
-          currentAssignedTo === nextAssignedTo &&
-          String(job.machineNumber || "").trim() === nextMachineNumber
-        ) {
-          pendingAssignmentSyncRef.current.delete(jobId);
-          return;
-        }
-
-        if (pendingAssignmentSyncRef.current.get(jobId) === syncSignature) {
-          return;
-        }
-
-        pendingAssignmentSyncRef.current.set(jobId, syncSignature);
-
-        void updateOperatorJob(String(job.id), {
-          assignedTo: nextAssignedTo,
-          machineNumber: nextMachineNumber,
-        }).catch(() => {
-          pendingAssignmentSyncRef.current.delete(jobId);
-        });
-      });
-    }, 400);
-
-    return () => window.clearTimeout(timeoutId);
-  }, [allowedOperatorUsers, canEditAssignments, cutInputs, currentUserDisplayName, jobs, userRole]);
 
   const parentJob = jobs.length > 0 ? jobs[0] : null;
   const totalGroupQuantity = jobs.reduce((sum, job) => sum + Math.max(1, Number(job.qty || 1)), 0);
@@ -399,10 +337,6 @@ const OperatorViewPage = () => {
     return Math.max(0, totalElapsedSeconds - expectedSeconds);
   }, [cutInputs, groupEstimatedHrs, liveNowMs]);
 
-  const getCutInputData = (cutId: number | string, quantity: number = 1): CutInputData => {
-    return cutInputs.get(cutId) || createEmptyCutInputData(quantity);
-  };
-
   const handleResetQuantity = async (cutId: number | string, quantityIndex: number) => {
     try {
       await resetOperatorQuantity(String(cutId), { quantityNumber: quantityIndex + 1 });
@@ -429,121 +363,67 @@ const OperatorViewPage = () => {
     }
   };
 
+  const handleImmediateOperatorAction = useCallback(async (
+    cutId: number | string,
+    quantityIndex: number,
+    action: "shiftOver" | "resume"
+  ) => {
+    const success = await handlePauseResumeAction(cutId, quantityIndex, action);
+    if (!success) return;
+    setActionToast({
+      message: action === "resume" ? "Quantity resumed." : "Shift over saved.",
+      variant: "info",
+      visible: true,
+    });
+    window.setTimeout(() => {
+      setActionToast((prev) => ({ ...prev, visible: false }));
+    }, 3200);
+  }, [handlePauseResumeAction, setActionToast]);
+
   return (
     <div className="roleboard-container">
       <Sidebar currentPath="/operator" onNavigate={(path) => navigate(path)} />
       <div className="roleboard-content operator-viewpage-content">
         <Header title="Operator View" />
         <div className="programmer-panel operator-viewpage-panel">
-          {loadingJobs ? (
-            <AppLoader message="Loading operator details..." />
-          ) : jobs.length > 0 && parentJob ? (
-            <>
-              {/* Page Heading */}
-              <div className="operator-page-heading">
-                <div className="operator-page-heading-left">
-                  <h2>Job Details - {parentJob.customer || "N/A"}</h2>
-                  <div className="operator-page-heading-meta">
-                    <span>
-                      <strong>Description:</strong> {parentJob.description || "-"}
-                    </span>
-                    <span>
-                      <strong>Total Qty:</strong> {totalGroupQuantity}
-                    </span>
-                  </div>
-                </div>
-                {cutIdParam && (
-                  <span className="cut-indicator">
-                    Viewing Setting {jobs.findIndex((j) => String(j.id) === String(cutIdParam)) + 1}
-                  </span>
-                )}
-              </div>
-
-              {/* Job Information Section */}
-              <OperatorJobInfo parentJob={parentJob} groupId={groupId} />
-
-              {/* Cuts Information Section */}
-              <div className="operator-cuts-section">
-                <h3 className="operator-section-title">Settings ({jobs.length})</h3>
-                <div className="operator-cuts-container">
-                  {jobs.map((cutItem, index) => {
-                    const quantity = Number(cutItem.qty || 1);
-                    const cutData = getCutInputData(cutItem.id, quantity);
-                    const isExpanded = expandedCuts.has(cutItem.id);
-                    const errors = validationErrors.get(cutItem.id as number) || {};
-                    const saved = savedQuantities.get(cutItem.id) || new Set<number>();
-                    const savedRangeSet = savedRanges.get(cutItem.id) || new Set<string>();
-                    const qaStatuses = qaStatusesByCut.get(cutItem.id) || {};
-
-                    return (
-                      <OperatorCutCard
-                        key={cutItem.id}
-                        cutItem={cutItem}
-                        index={index}
-                        cutData={cutData}
-                        isExpanded={isExpanded}
-                        operatorUsers={allowedOperatorUsers}
-                        machineOptions={machineOptions}
-                        canEditAssignments={canEditAssignments}
-                        canOperateInputs={canOperateInputs}
-                        onToggleExpansion={() => toggleCutExpansion(cutItem.id)}
-                        onImageChange={(files) => handleCutImageChange(cutItem.id, files)}
-                        onInputChange={handleInputChange}
-                        onApplyToAllQuantities={copyQuantityToAll}
-                        onApplyToCountQuantities={copyQuantityToCount}
-                        onSaveQuantity={handleSaveQuantity}
-                        onSaveRange={handleSaveRange}
-                        qaStatuses={qaStatuses}
-                        onSendToQa={(cutId, quantityNumbers) => {
-                          if (!quantityNumbers.length) return;
-                          setPendingDispatch({ cutId, quantityNumbers });
-                        }}
-                        savedQuantities={saved}
-                        savedRanges={savedRangeSet}
-                        validationErrors={errors}
-                        onShowToast={(message, variant = "info") => {
-                          setActionToast({ message, variant, visible: true });
-                          setTimeout(() => {
-                            setActionToast((prev) => ({ ...prev, visible: false }));
-                          }, 2000);
-                        }}
-                        onRequestResetTimer={(cutId, quantityIndex) => {
-                          setPendingReset({ cutId, quantityIndex });
-                        }}
-                        onRequestShiftOver={(cutId, quantityIndex) => {
-                          setPendingOperatorAction({ cutId, quantityIndex, action: "shiftOver" });
-                        }}
-                        onRequestResume={(cutId, quantityIndex) => {
-                          setPendingOperatorAction({ cutId, quantityIndex, action: "resume" });
-                        }}
-                        onRequestEndTimeCapture={(cutId, quantityIndex) => {
-                          setPendingEndTimeCapture({ cutId, quantityIndex });
-                        }}
-                        onStartTimeCaptured={handleStartTimeCaptured}
-                        isAdmin={isAdmin}
-                        canRunAssignedJob={isCurrentUserAssignedToJob(cutItem.assignedTo, currentUserDisplayName, isAdmin)}
-                        runBlockedReason="Your name must be assigned to this job before you can run it."
-                      />
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Totals Section */}
-              <OperatorTotalsSection
-                groupEstimatedHrs={groupEstimatedHrs}
-                totalWedmAmount={amounts.totalWedmAmount}
-                totalSedmAmount={amounts.totalSedmAmount}
-                groupTotalAmount={groupTotalAmount}
-                isAdmin={isAdmin}
-                overtimeSeconds={groupOvertimeSeconds}
-              />
-            </>
-          ) : (
-            <div className="roleboard-body">
-              <AppLoader variant="inline" message="No data available." />
-            </div>
-          )}
+          <OperatorViewBody
+            jobs={jobs}
+            parentJob={parentJob}
+            groupId={groupId}
+            cutIdParam={cutIdParam}
+            totalGroupQuantity={totalGroupQuantity}
+            cutInputs={cutInputs}
+            expandedCuts={expandedCuts}
+            validationErrors={validationErrors}
+            savedQuantities={savedQuantities}
+            savedRanges={savedRanges}
+            qaStatusesByCut={qaStatusesByCut}
+            allowedOperatorUsers={allowedOperatorUsers}
+            machineOptions={machineOptions}
+            canEditAssignments={canEditAssignments}
+            canOperateInputs={canOperateInputs}
+            toggleCutExpansion={toggleCutExpansion}
+            handleCutImageChange={handleCutImageChange}
+            handleInputChange={handleInputChange}
+            copyQuantityToAll={copyQuantityToAll}
+            copyQuantityToCount={copyQuantityToCount}
+            handleSaveQuantity={handleSaveQuantity}
+            handleSaveRange={handleSaveRange}
+            setPendingDispatch={setPendingDispatch}
+            setActionToast={setActionToast}
+            setPendingReset={setPendingReset}
+            handleImmediateOperatorAction={handleImmediateOperatorAction}
+            onRequestEndTimeCapture={handleRequestEndTimeCapture}
+            handleStartTimeCaptured={handleStartTimeCaptured}
+            isAdmin={isAdmin}
+            currentUserDisplayName={currentUserDisplayName}
+            groupEstimatedHrs={groupEstimatedHrs}
+            totalWedmAmount={amounts.totalWedmAmount}
+            totalSedmAmount={amounts.totalSedmAmount}
+            groupTotalAmount={groupTotalAmount}
+            groupOvertimeSeconds={groupOvertimeSeconds}
+            loadingJobs={loadingJobs}
+          />
         </div>
       </div>
       <Toast
@@ -564,16 +444,11 @@ const OperatorViewPage = () => {
         setPendingDispatch={setPendingDispatch}
         pendingReset={pendingReset}
         setPendingReset={setPendingReset}
-        pendingOperatorAction={pendingOperatorAction}
-        setPendingOperatorAction={setPendingOperatorAction}
         pendingEndTimeCapture={pendingEndTimeCapture}
-        setPendingEndTimeCapture={setPendingEndTimeCapture}
+        handleCancelEndTimeCapture={handleCancelEndTimeCapture}
         handleUpdateQaStatus={handleUpdateQaStatus}
         handleResetQuantity={handleResetQuantity}
-        handleInputChange={handleInputChange}
-        handlePauseResumeAction={handlePauseResumeAction}
         handleConfirmEndTimeCapture={handleConfirmEndTimeCapture}
-        setActionToast={setActionToast}
       />
     </div>
   );

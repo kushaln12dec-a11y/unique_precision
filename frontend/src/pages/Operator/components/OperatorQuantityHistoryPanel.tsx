@@ -21,30 +21,42 @@ const OperatorQuantityHistoryPanel: React.FC<Props> = ({
 }) => {
   if (!shouldShowOperatorHistory) return null;
 
+  const fallbackEntries =
+    operatorHistoryDetails.length > 0
+      ? operatorHistoryDetails
+      : latestWorkedByName
+        ? [{ name: latestWorkedByName, durationSeconds: 0 }]
+        : [];
+
+  const primaryEntry = fallbackEntries[fallbackEntries.length - 1] || null;
+  const additionalCount = Math.max(0, fallbackEntries.length - 1);
+  const tooltipText = fallbackEntries
+    .map((entry) => `${entry.name}${entry.durationSeconds > 0 ? `: ${formatWorkedDuration(entry.durationSeconds)}` : ""}`)
+    .join(" | ");
+
+  void isAdmin;
+
   return (
     <div className="quantity-side-panel">
-      <div className="operator-history-panel">
-        {operatorHistoryDetails.length > 0 ? (
-          <div
-            className="operator-history-proof"
-            title={operatorHistoryDetails
-              .map((entry) => `${entry.name}: ${formatWorkedDuration(entry.durationSeconds)}${isAdmin && entry.revenue ? ` | Rs. ${entry.revenue.toFixed(2)}` : ""}`)
-              .join(" | ")}
-          >
-            <span className="operator-history-proof-line">Worked By:</span>
-            {operatorHistoryDetails.map((entry) => (
-              <span key={`${entry.name}-${entry.durationSeconds}`} className="operator-history-proof-line">
-                {entry.name} ({formatWorkedDuration(entry.durationSeconds)}){isAdmin && entry.revenue ? ` | Rs. ${entry.revenue.toFixed(2)}` : ""}
-              </span>
-            ))}
+      {primaryEntry && (!isRangeMode || operatorHistoryDetails.length > 0) && !shouldShowWorkedBySummary ? (
+        <div className="operator-history-compact-card" title={tooltipText}>
+          <span className="operator-history-compact-label">Worked by</span>
+          <div className="operator-history-compact-main">
+            <span className="operator-history-compact-avatar">{primaryEntry.name.slice(0, 1) || "O"}</span>
+            <div className="operator-history-compact-copy">
+              <strong className="operator-history-compact-name">{primaryEntry.name}</strong>
+              <div className="operator-history-compact-meta">
+                {primaryEntry.durationSeconds > 0 ? (
+                  <span className="operator-history-compact-chip">{formatWorkedDuration(primaryEntry.durationSeconds)}</span>
+                ) : null}
+                {additionalCount > 0 ? (
+                  <span className="operator-history-compact-note">+{additionalCount} more</span>
+                ) : null}
+              </div>
+            </div>
           </div>
-        ) : !isRangeMode && !shouldShowWorkedBySummary && latestWorkedByName ? (
-          <div className="operator-history-proof" title={latestWorkedByName}>
-            <span className="operator-history-proof-line">Worked By:</span>
-            <span className="operator-history-proof-line">{latestWorkedByName}</span>
-          </div>
-        ) : null}
-      </div>
+        </div>
+      ) : null}
     </div>
   );
 };

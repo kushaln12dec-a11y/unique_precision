@@ -18,6 +18,13 @@ export type CaptureOperatorInputPayload = {
   opsName: string;
   idleTime: string;
   idleTimeDuration: string;
+  pauseSessions?: Array<{
+    pauseStartTime: number;
+    pauseEndTime: number | null;
+    pauseDuration: number;
+    reason: string;
+    operatorName?: string;
+  }>;
   lastImage: string | null;
   quantityIndex?: number;
   captureMode?: "SINGLE" | "RANGE";

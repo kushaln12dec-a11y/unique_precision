@@ -22,6 +22,7 @@ export type QuantityInputData = {
   endTime: string;
   endTimeEpochMs: number | null;
   workedDurationSeconds: number;
+  pauseTimeOffsetSeconds: number;
   machineHrs: string;
   machineNumber: string;
   opsName: string[];
@@ -33,6 +34,7 @@ export type QuantityInputData = {
   lastImageFile: File | null;
   isPaused: boolean; // Pause state
   pauseStartTime: number | null; // Timestamp when paused (current pause session)
+  currentPauseOperatorName?: string;
   totalPauseTime: number; // Total accumulated pause time in seconds
   pausedElapsedTime: number; // Elapsed time when paused
   pauseSessions: PauseSession[]; // Array of all pause sessions with reasons
@@ -49,6 +51,7 @@ export const createEmptyQuantityInputData = (): QuantityInputData => ({
   endTime: "",
   endTimeEpochMs: null,
   workedDurationSeconds: 0,
+  pauseTimeOffsetSeconds: 0,
   machineHrs: "",
   machineNumber: "",
   opsName: [],
@@ -60,6 +63,7 @@ export const createEmptyQuantityInputData = (): QuantityInputData => ({
   lastImageFile: null,
   isPaused: false,
   pauseStartTime: null,
+  currentPauseOperatorName: "",
   totalPauseTime: 0,
   pausedElapsedTime: 0,
   pauseSessions: [],

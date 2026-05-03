@@ -2,14 +2,15 @@ import type { QuantityInputData } from "../types/cutInput";
 
 export const parseOperatorDateTime = (value?: string): number | null => {
   if (!value || typeof value !== "string") return null;
-  const match = value.trim().match(/^(\d{2})\/(\d{2})\/(\d{4})\s+(\d{2}):(\d{2})$/);
+  const match = value.trim().match(/^(\d{2})\/(\d{2})\/(\d{4})\s+(\d{2}):(\d{2})(?::(\d{2}))?$/);
   if (!match) return null;
   const day = Number(match[1]);
   const month = Number(match[2]);
   const year = Number(match[3]);
   const hour = Number(match[4]);
   const minute = Number(match[5]);
-  const date = new Date(year, month - 1, day, hour, minute, 0, 0);
+  const second = Number(match[6] || 0);
+  const date = new Date(year, month - 1, day, hour, minute, second, 0);
   return Number.isNaN(date.getTime()) ? null : date.getTime();
 };
 
@@ -48,6 +49,7 @@ export const formatDurationToClock = (seconds: number): string => {
 
 export const getQuantityElapsedSeconds = (quantity: QuantityInputData, nowMs: number): number => {
   const carriedWorkedSeconds = Math.max(0, Math.floor(quantity.workedDurationSeconds || 0));
+  const segmentPauseSeconds = Math.max(0, Math.floor((quantity.totalPauseTime || 0) - (quantity.pauseTimeOffsetSeconds || 0)));
   const startMs =
     quantity.startTimeEpochMs && Number.isFinite(Number(quantity.startTimeEpochMs))
       ? Number(quantity.startTimeEpochMs)
@@ -61,7 +63,7 @@ export const getQuantityElapsedSeconds = (quantity: QuantityInputData, nowMs: nu
 
   if (endMs) {
     const base = Math.max(0, Math.floor((endMs - startMs) / 1000));
-    const closedSegmentSeconds = Math.max(0, base - Math.floor(quantity.totalPauseTime || 0));
+    const closedSegmentSeconds = Math.max(0, base - segmentPauseSeconds);
     const hasLocalEndEpoch = quantity.endTimeEpochMs && Number.isFinite(Number(quantity.endTimeEpochMs));
     if (hasLocalEndEpoch) {
       return Math.max(0, carriedWorkedSeconds + closedSegmentSeconds);
@@ -76,7 +78,7 @@ export const getQuantityElapsedSeconds = (quantity: QuantityInputData, nowMs: nu
       ? Math.max(0, Math.floor((nowMs - quantity.pauseStartTime) / 1000))
       : 0;
   const raw = Math.max(0, Math.floor((nowMs - startMs) / 1000));
-  return Math.max(0, carriedWorkedSeconds + raw - Math.floor((quantity.totalPauseTime || 0) + runningPauseSeconds));
+  return Math.max(0, carriedWorkedSeconds + raw - Math.floor(segmentPauseSeconds + runningPauseSeconds));
 };
 
 export const formatIdleDuration = (seconds: number): string => {
@@ -86,4 +88,21 @@ export const formatIdleDuration = (seconds: number): string => {
   if (hours > 0) return `${hours}h ${minutes}m ${secs}s`;
   if (minutes > 0) return `${minutes}m ${secs}s`;
   return `${secs}s`;
+};
+
+export const formatCompactDurationWords = (seconds: number): string => {
+  const safe = Math.max(0, Math.floor(seconds));
+  const hours = Math.floor(safe / 3600);
+  const minutes = Math.floor((safe % 3600) / 60);
+  const secs = safe % 60;
+
+  if (hours > 0) {
+    if (minutes > 0) return `${hours} hr ${minutes} min`;
+    return `${hours} hr`;
+  }
+  if (minutes > 0) {
+    if (secs > 0) return `${minutes} min ${secs} sec`;
+    return `${minutes} min`;
+  }
+  return `${secs} sec`;
 };

@@ -11,14 +11,15 @@ const formatHMS = (seconds: number): string => {
 
 const parseDateTime = (value?: string): number | null => {
   if (!value || typeof value !== "string") return null;
-  const match = value.trim().match(/^(\d{2})\/(\d{2})\/(\d{4})\s+(\d{2}):(\d{2})$/);
+  const match = value.trim().match(/^(\d{2})\/(\d{2})\/(\d{4})\s+(\d{2}):(\d{2})(?::(\d{2}))?$/);
   if (!match) return null;
   const day = Number(match[1]);
   const month = Number(match[2]);
   const year = Number(match[3]);
   const hour = Number(match[4]);
   const minute = Number(match[5]);
-  const date = new Date(year, month - 1, day, hour, minute, 0, 0);
+  const second = Number(match[6] || 0);
+  const date = new Date(year, month - 1, day, hour, minute, second, 0);
   return Number.isNaN(date.getTime()) ? null : date.getTime();
 };
 
@@ -29,6 +30,7 @@ export const useQuantityTimer = (
   pauseStartTime?: number | null,
   currentPauseReason?: string,
   totalPauseTime?: number,
+  pauseTimeOffsetSeconds?: number,
   pausedElapsedTime?: number,
   workedDurationSeconds?: number,
   startTimeEpochMs?: number | null,
@@ -58,10 +60,12 @@ export const useQuantityTimer = (
 
   const computedElapsedSeconds = useMemo(() => {
     const carriedWorkedSeconds = Math.max(0, Math.floor(Number(workedDurationSeconds || 0)));
+    const pauseOffsetSeconds = Math.max(0, Math.floor(Number(pauseTimeOffsetSeconds || 0)));
+    const segmentPauseSeconds = Math.max(0, Math.floor(Number(totalPauseTime || 0)) - pauseOffsetSeconds);
     if (!startMs) return 0;
     if (endMs) {
       const base = Math.max(0, Math.floor((endMs - startMs) / 1000));
-      const closedSegmentSeconds = Math.max(0, base - Math.floor(totalPauseTime || 0));
+      const closedSegmentSeconds = Math.max(0, base - segmentPauseSeconds);
       const hasLocalEndEpoch = endTimeEpochMs && Number.isFinite(Number(endTimeEpochMs));
       if (hasLocalEndEpoch) {
         return Math.max(0, carriedWorkedSeconds + closedSegmentSeconds);
@@ -77,12 +81,12 @@ export const useQuantityTimer = (
     const runningPauseSeconds =
       pauseStartTime && isPaused && shouldTrackLivePause ? Math.max(0, Math.floor((now - pauseStartTime) / 1000)) : 0;
     const raw = Math.max(0, Math.floor((now - startMs) / 1000));
-    return Math.max(0, carriedWorkedSeconds + raw - Math.floor((totalPauseTime || 0) + runningPauseSeconds));
-  }, [startMs, endMs, isPaused, pausedElapsedTime, totalPauseTime, pauseStartTime, currentPauseReason, now, workedDurationSeconds, endTimeEpochMs]);
+    return Math.max(0, carriedWorkedSeconds + raw - Math.floor(segmentPauseSeconds + runningPauseSeconds));
+  }, [startMs, endMs, isPaused, pausedElapsedTime, totalPauseTime, pauseTimeOffsetSeconds, pauseStartTime, currentPauseReason, now, workedDurationSeconds, endTimeEpochMs]);
 
   const computedPauseSeconds = useMemo(() => {
     const base = Math.max(0, Math.floor(totalPauseTime || 0));
-    if (isPaused && pauseStartTime && currentPauseReason !== "Shift Over") {
+    if (isPaused && pauseStartTime) {
       return base + Math.max(0, Math.floor((now - pauseStartTime) / 1000));
     }
     return base;
