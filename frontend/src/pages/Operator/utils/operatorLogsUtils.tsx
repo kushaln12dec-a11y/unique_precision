@@ -109,11 +109,11 @@ export const buildOperatorLogsColumns = ({
   },
   { key: "shift", label: "Shift", sortable: false, render: (row) => renderOperatorShiftBadge(row.startedAt) },
   { key: "durationSeconds", label: "Duration", sortable: false, render: (row) => formatOperatorDuration(getDisplayedWorkedSeconds(row)) },
-  { key: "estimatedSeconds", label: "Estimated", sortable: false, render: (row) => {
+  { key: "estimatedSeconds", label: "Est. Time", sortable: false, render: (row) => {
     const value = (row.metadata as any)?.estimatedSeconds;
     return formatOperatorDuration(value);
   }},
-  { key: "overtimeSeconds", label: "Overtime", sortable: false, render: (row) => {
+  { key: "overtimeSeconds", label: "OT", sortable: false, render: (row) => {
     const value = (row.metadata as any)?.overtimeSeconds;
     return formatOperatorDuration(value);
   }},
