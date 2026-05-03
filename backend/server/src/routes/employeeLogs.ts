@@ -5,7 +5,7 @@ import { emitJobsUpdated } from "../lib/socket";
 import { parseOperatorDateTime } from "../utils/dateTime";
 import { toBigInt } from "../utils/bigint";
 import { mapEmployeeLog } from "../utils/prismaMappers";
-import { rebalanceOperatorRevenueForJob } from "./operatorShared";
+import { normalizeOperatorPauseSessions, rebalanceOperatorRevenueForJob } from "./operatorShared";
 
 const router = Router();
 
@@ -269,6 +269,39 @@ const parseFlexibleDate = (value: unknown): Date | null => {
   return parseOperatorDateTime(raw);
 };
 
+const normalizeIdleWindowMetadata = ({
+  metadata,
+  idleTime,
+  idleTimeDuration,
+  pauseSessions,
+  endedAt,
+  status,
+}: {
+  metadata?: Record<string, any>;
+  idleTime: unknown;
+  idleTimeDuration: unknown;
+  pauseSessions?: unknown;
+  endedAt: Date;
+  status: "COMPLETED" | "REJECTED";
+}) => {
+  const normalizedIdleTime = String(idleTime || "").trim();
+  const normalizedPauseSessions = normalizeOperatorPauseSessions(pauseSessions);
+  const nextMetadata: Record<string, any> = {
+    ...(metadata || {}),
+    idleTime: normalizedIdleTime,
+    idleTimeDuration: String(idleTimeDuration || ""),
+    pauseSessions: normalizedPauseSessions,
+  };
+
+  if (status === "REJECTED" && normalizedIdleTime) {
+    nextMetadata.idleStartedAt = endedAt.toISOString();
+    nextMetadata.idleEndedAt = null;
+    nextMetadata.idleDurationSeconds = null;
+  }
+
+  return nextMetadata;
+};
+
 const getRevenueByQuantityForLog = (log: {
   quantityFrom?: number | null;
   quantityTo?: number | null;
@@ -530,6 +563,7 @@ router.post("/operator/complete", async (req, res) => {
       machineHrs,
       idleTime,
       idleTimeDuration,
+      pauseSessions,
       status,
     } = req.body || {};
 
@@ -550,7 +584,8 @@ router.post("/operator/complete", async (req, res) => {
     if (existingLog) {
       const parsedEnd = parseFlexibleDate(endTime || req.body?.endedAt) || new Date();
       const parsedStart = existingLog.startedAt instanceof Date ? existingLog.startedAt : parseFlexibleDate(startTime) || parsedEnd;
-      const workedSeconds = Math.max(0, Math.floor((parsedEnd.getTime() - parsedStart.getTime()) / 1000));
+      const elapsedSeconds = Math.max(0, Math.floor((parsedEnd.getTime() - parsedStart.getTime()) / 1000));
+      const workedSeconds = parseMachineHoursToSeconds(machineHrs) ?? elapsedSeconds;
       const quantityNumbers = getQuantityNumbersFromLog(existingLog);
       const resolvedExistingJobId = String(existingLog.jobId || "").trim();
       const relatedJob = resolvedExistingJobId
@@ -580,6 +615,14 @@ router.post("/operator/complete", async (req, res) => {
       }
 
       const updatedLog = await prisma.$transaction(async (tx) => {
+        const nextMetadata = normalizeIdleWindowMetadata({
+          metadata: ((existingLog.metadata as any) || {}) as Record<string, any>,
+          idleTime: idleTime || "Shift Over",
+          idleTimeDuration,
+          pauseSessions,
+          endedAt: parsedEnd,
+          status: normalizedStatus,
+        });
         const nextLog = await tx.employeeLog.update({
           where: { id: existingLog.id },
           data: {
@@ -597,12 +640,10 @@ router.post("/operator/complete", async (req, res) => {
             workItemTitle: `Job #${String(refNumber || existingLog.refNumber || relatedJob?.refNumber || "-")}`,
             workSummary: `Machine ${machineNumber || (existingLog.metadata as any)?.machineNumber || "-"} | Ops ${opsName || (existingLog.metadata as any)?.opsName || existingLog.userName || "-"} | Hrs ${machineHrs || "-"}`,
             metadata: {
-              ...((existingLog.metadata as any) || {}),
+              ...nextMetadata,
               machineNumber: String(machineNumber || (existingLog.metadata as any)?.machineNumber || ""),
               opsName: String(opsName || (existingLog.metadata as any)?.opsName || existingLog.userName || ""),
               machineHrs: String(machineHrs || ""),
-              idleTime: String(idleTime || "Shift Over"),
-              idleTimeDuration: String(idleTimeDuration || ""),
               quantityNumbers,
               workedSeconds,
             },
@@ -616,13 +657,6 @@ router.post("/operator/complete", async (req, res) => {
         return nextLog;
       });
 
-      emitJobsUpdated({
-        groupId: existingLog.jobGroupId,
-        jobId: resolvedExistingJobId || existingLog.jobId,
-        updatedBy: resolveReqUserName(reqUser),
-        source: "employee-logs:operator-complete",
-      });
-
       return res.status(201).json(mapEmployeeLog(updatedLog));
     }
 
@@ -633,6 +667,14 @@ router.post("/operator/complete", async (req, res) => {
     }
 
     const durationSeconds = Math.max(0, Math.floor((parsedEnd.getTime() - parsedStart.getTime()) / 1000));
+    const workedSeconds = parseMachineHoursToSeconds(machineHrs) ?? durationSeconds;
+    const createdMetadata = normalizeIdleWindowMetadata({
+      idleTime,
+      idleTimeDuration,
+      pauseSessions,
+      endedAt: parsedEnd,
+      status: normalizedStatus,
+    });
     const resolvedGroupId = toBigInt(jobGroupId) ?? null;
     if (resolvedJobId) {
       const relatedJob = await prisma.job.findUnique({
@@ -687,13 +729,13 @@ router.post("/operator/complete", async (req, res) => {
           workSummary: `Machine ${machineNumber || "-"} | Ops ${opsName || "-"} | Hrs ${machineHrs || "-"}`,
           startedAt: parsedStart,
           endedAt: parsedEnd,
-          durationSeconds,
+          durationSeconds: workedSeconds,
           metadata: {
+            ...createdMetadata,
             machineNumber: String(machineNumber || ""),
             opsName: String(opsName || ""),
             machineHrs: String(machineHrs || ""),
-            idleTime: String(idleTime || ""),
-            idleTimeDuration: String(idleTimeDuration || ""),
+            workedSeconds,
             wedmAmount: groupWedmAmount,
             revenue: currentJobRevenue > 0 ? currentJobRevenue : undefined,
           },
@@ -711,13 +753,6 @@ router.post("/operator/complete", async (req, res) => {
       }
 
       return createdLog;
-    });
-
-    emitJobsUpdated({
-      groupId: resolvedGroupId,
-      jobId: resolvedJobId ?? null,
-      updatedBy: resolveReqUserName(reqUser),
-      source: "employee-logs:operator-complete",
     });
 
     res.status(201).json(mapEmployeeLog(log));
@@ -783,41 +818,75 @@ router.post("/operator/start", async (req, res) => {
 
     const parsedStartedAt = startedAt ? new Date(startedAt) : new Date();
     const safeStartedAt = Number.isNaN(parsedStartedAt.getTime()) ? new Date() : parsedStartedAt;
+    const openShiftOverLogs = resolvedJobId
+      ? await prisma.employeeLog.findMany({
+          where: {
+            jobId: resolvedJobId,
+            role: "OPERATOR",
+            activityType: "OPERATOR_PRODUCTION",
+            status: "REJECTED",
+          },
+          orderBy: [{ endedAt: "desc" }, { createdAt: "desc" }],
+          take: 25,
+        })
+      : [];
 
-    const log = await prisma.employeeLog.create({
-      data: {
-        role: "OPERATOR",
-        activityType: "OPERATOR_PRODUCTION",
-        status: "IN_PROGRESS",
-        ...withUserId(userId),
-        userEmail: String(reqUser?.email || ""),
-        userName: resolveReqUserName(reqUser),
-        ...withJobId(resolvedJobId),
-        jobGroupId: toBigInt(jobGroupId) ?? null,
-        refNumber: String(refNumber || ""),
-        settingLabel: String(settingLabel || ""),
-        quantityFrom: Number(fromQty || 0) || null,
-        quantityTo: Number(toQty || 0) || null,
-        quantityCount:
-          Number(quantityCount || 0) ||
-          (Number(toQty || 0) && Number(fromQty || 0) ? Number(toQty) - Number(fromQty) + 1 : null),
-        jobCustomer: String(customer || ""),
-        jobDescription: String(description || ""),
-        workItemTitle: `Job #${String(refNumber || "-")}`,
-        workSummary: `Machine ${normalizedMachineNumber ? `M${normalizedMachineNumber}` : "-"} | Ops ${String(opsName || resolveReqUserName(reqUser) || "-")} | Running`,
-        startedAt: safeStartedAt,
-        metadata: {
-          machineNumber: normalizedMachineNumber,
-          opsName: String(opsName || resolveReqUserName(reqUser) || ""),
+    const log = await prisma.$transaction(async (tx) => {
+      const openShiftOverLog = openShiftOverLogs.find((candidate) => {
+        const metadata = ((candidate.metadata as any) || {}) as Record<string, any>;
+        const idleStartedAt = parseFlexibleDate(metadata.idleStartedAt);
+        const idleEndedAt = parseFlexibleDate(metadata.idleEndedAt);
+        const idleReason = String(metadata.idleTime || "").trim();
+        const openFromQty = Math.max(1, Number(candidate.quantityFrom || 1));
+        const openToQty = Math.max(openFromQty, Number(candidate.quantityTo || openFromQty));
+        return Boolean(idleStartedAt) && !idleEndedAt && idleReason === "Shift Over" && resolvedFromQty <= openToQty && resolvedToQty >= openFromQty;
+      });
+
+      if (openShiftOverLog) {
+        const metadata = ((openShiftOverLog.metadata as any) || {}) as Record<string, any>;
+        const idleStartedAt = parseFlexibleDate(metadata.idleStartedAt);
+        if (idleStartedAt) {
+          await tx.employeeLog.update({
+            where: { id: openShiftOverLog.id },
+            data: {
+              metadata: {
+                ...metadata,
+                idleEndedAt: safeStartedAt.toISOString(),
+                idleDurationSeconds: Math.max(0, Math.floor((safeStartedAt.getTime() - idleStartedAt.getTime()) / 1000)),
+              },
+            },
+          });
+        }
+      }
+
+      return tx.employeeLog.create({
+        data: {
+          role: "OPERATOR",
+          activityType: "OPERATOR_PRODUCTION",
+          status: "IN_PROGRESS",
+          ...withUserId(userId),
+          userEmail: String(reqUser?.email || ""),
+          userName: resolveReqUserName(reqUser),
+          ...withJobId(resolvedJobId),
+          jobGroupId: toBigInt(jobGroupId) ?? null,
+          refNumber: String(refNumber || ""),
+          settingLabel: String(settingLabel || ""),
+          quantityFrom: Number(fromQty || 0) || null,
+          quantityTo: Number(toQty || 0) || null,
+          quantityCount:
+            Number(quantityCount || 0) ||
+            (Number(toQty || 0) && Number(fromQty || 0) ? Number(toQty) - Number(fromQty) + 1 : null),
+          jobCustomer: String(customer || ""),
+          jobDescription: String(description || ""),
+          workItemTitle: `Job #${String(refNumber || "-")}`,
+          workSummary: `Machine ${normalizedMachineNumber ? `M${normalizedMachineNumber}` : "-"} | Ops ${String(opsName || resolveReqUserName(reqUser) || "-")} | Running`,
+          startedAt: safeStartedAt,
+          metadata: {
+            machineNumber: normalizedMachineNumber,
+            opsName: String(opsName || resolveReqUserName(reqUser) || ""),
+          },
         },
-      },
-    });
-
-    emitJobsUpdated({
-      groupId: toBigInt(jobGroupId) ?? null,
-      jobId: resolvedJobId ?? null,
-      updatedBy: resolveReqUserName(reqUser),
-      source: "employee-logs:operator-start",
+      });
     });
 
     res.status(201).json(mapEmployeeLog(log));

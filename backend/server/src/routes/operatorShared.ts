@@ -78,6 +78,54 @@ const parseMachineHoursToSeconds = (value: unknown): number | null => {
   return Math.round(numeric * 3600);
 };
 
+const parsePauseSessionDate = (value: unknown): Date | null => {
+  if (value instanceof Date && !Number.isNaN(value.getTime())) return value;
+  if (typeof value === "number" && Number.isFinite(value)) {
+    const parsed = new Date(value);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+  }
+  const raw = String(value || "").trim();
+  if (!raw) return null;
+  const numeric = Number(raw);
+  if (Number.isFinite(numeric)) {
+    const parsedNumeric = new Date(numeric);
+    if (!Number.isNaN(parsedNumeric.getTime())) return parsedNumeric;
+  }
+  const parsed = new Date(raw);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+};
+
+export const normalizeOperatorPauseSessions = (value: unknown) => {
+  if (!Array.isArray(value)) return [];
+
+  return value
+    .map((entry) => {
+      const pauseStart = parsePauseSessionDate((entry as any)?.pauseStartTime);
+      const pauseEnd = parsePauseSessionDate((entry as any)?.pauseEndTime);
+      if (!pauseStart) return null;
+
+      const explicitDuration = Number((entry as any)?.pauseDuration || 0);
+      const computedDuration = pauseEnd
+        ? Math.max(0, Math.floor((pauseEnd.getTime() - pauseStart.getTime()) / 1000))
+        : Math.max(0, Math.floor(explicitDuration));
+
+      return {
+        pauseStartTime: pauseStart.toISOString(),
+        pauseEndTime: pauseEnd ? pauseEnd.toISOString() : null,
+        pauseDuration: computedDuration,
+        reason: String((entry as any)?.reason || "").trim(),
+        operatorName: String((entry as any)?.operatorName || "").trim(),
+      };
+    })
+    .filter((entry): entry is {
+      pauseStartTime: string;
+      pauseEndTime: string | null;
+      pauseDuration: number;
+      reason: string;
+      operatorName: string;
+    } => Boolean(entry));
+};
+
 const estimatedHoursFromAmount = (amount: number): number => {
   return (Number(amount || 0) || 0) / 625;
 };
@@ -433,6 +481,7 @@ export const buildOperatorLogPayload = ({
   machineHrs,
   idleTime,
   idleTimeDuration,
+  pauseSessions,
   resolvedFromQty,
   resolvedToQty,
   quantityCount,
@@ -450,6 +499,7 @@ export const buildOperatorLogPayload = ({
   machineHrs: unknown;
   idleTime: unknown;
   idleTimeDuration: unknown;
+  pauseSessions?: unknown;
   resolvedFromQty: number;
   resolvedToQty: number;
   quantityCount: number;
@@ -458,7 +508,7 @@ export const buildOperatorLogPayload = ({
 }) => {
   const userId = toUuid(reqUser?.userId);
   const durationSeconds = Math.max(0, Math.floor((parsedEnd.getTime() - parsedStart.getTime()) / 1000));
-  const workedSeconds = forceDurationSeconds ? durationSeconds : parseMachineHoursToSeconds(machineHrs) ?? durationSeconds;
+  const workedSeconds = parseMachineHoursToSeconds(machineHrs) ?? durationSeconds;
   const jobWedmAmount = Math.max(0, Number((refreshedJob as any).totalHrs || 0) * Number((refreshedJob as any).rate || 0));
   const totalQuantity = Math.max(1, Number((refreshedJob as any).qty || quantityCount || 1));
   const perQuantityRevenue = jobWedmAmount / totalQuantity;
@@ -467,6 +517,7 @@ export const buildOperatorLogPayload = ({
   const overtimeSeconds = Math.max(0, workedSeconds - estimatedSeconds);
   const quantityNumbers = Array.from({ length: Math.max(1, quantityCount) }, (_, index) => resolvedFromQty + index);
   const workedToEstimatedRatio = estimatedSeconds > 0 ? Math.max(0, Math.min(1, workedSeconds / estimatedSeconds)) : 0;
+  const normalizedPauseSessions = normalizeOperatorPauseSessions(pauseSessions);
   const settingNumber = (() => {
     const foundIndex = Array.isArray(refreshedJob.operatorCaptures)
       ? refreshedJob.operatorCaptures.findIndex(
@@ -505,6 +556,7 @@ export const buildOperatorLogPayload = ({
         machineHrs: String(machineHrs || ""),
         idleTime: String(idleTime || ""),
         idleTimeDuration: String(idleTimeDuration || ""),
+        pauseSessions: normalizedPauseSessions,
         captureMode: mode,
         quantityNumbers,
         workedSeconds,
