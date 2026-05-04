@@ -126,8 +126,6 @@ export const OperatorJobsSection: React.FC<Props> = ({
       const metadata = (log.metadata || {}) as Record<string, any>;
       const quantityFrom = Math.max(1, Number(log.quantityFrom || 1));
       const quantityTo = Math.max(quantityFrom, Number(log.quantityTo || quantityFrom));
-      const quantityCount = Math.max(1, quantityTo - quantityFrom + 1);
-      const perQuantityHours = Number(entry.totalHrs || 0) / Math.max(1, Number(entry.qty || 1));
       const completionAlert = completionAlertByCutId.get(String(entry.id));
       alertsByMachine.set(String(entry.id), {
         groupId: String(entry.groupId),
