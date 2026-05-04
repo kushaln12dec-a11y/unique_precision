@@ -138,7 +138,7 @@ export const OperatorJobsSection: React.FC<Props> = ({
         description: entry.description || "",
         quantityLabel: quantityFrom === quantityTo ? `QTY ${quantityFrom}` : `QTY ${quantityFrom}-${quantityTo}`,
         operatorName: String(log.userName || entry.assignedTo || "").trim(),
-        estimatedTime: formatEstimatedTime(perQuantityHours * quantityCount),
+        estimatedTime: formatEstimatedTime(Number(entry.totalHrs || 0)),
         severity:
           completionAlert?.severity === "danger"
             ? "danger"

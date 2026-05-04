@@ -240,9 +240,7 @@ export const useOperatorLogs = ({
           getOperatorShiftLabel(row.startedAt),
           formatOperatorDuration(Number(row.durationSeconds || (row.metadata as any)?.workedSeconds || 0)),
           (() => {
-            const duration = Number(row.durationSeconds || (row.metadata as any)?.workedSeconds || 0);
-            const estimatedSeconds = Number((row.metadata as any)?.estimatedSecondsPerQuantity || 0);
-            const overtime = Math.max(0, duration - estimatedSeconds);
+            const overtime = Number((row.metadata as any)?.overtimeSeconds || 0);
             return formatOperatorDuration(overtime);
           })(),
           Array.isArray((row.metadata as any)?.quantityNumbers)

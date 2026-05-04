@@ -260,6 +260,22 @@ const findActiveQuantityConflict = async (
   );
 };
 
+const findActiveOperatorLog = async (userName: string, options: { excludeLogId?: string } = {}) => {
+  const normalizedName = userName.trim().toUpperCase();
+  if (!normalizedName) return null;
+
+  return await prisma.employeeLog.findFirst({
+    where: {
+      role: "OPERATOR",
+      activityType: "OPERATOR_PRODUCTION",
+      status: "IN_PROGRESS",
+      userName: normalizedName,
+      ...(options.excludeLogId ? { NOT: { id: options.excludeLogId } } : {}),
+    },
+  });
+};
+
+
 const buildOperatorLogCompletionKey = (log: any): string[] => {
   const jobId = String(log?.jobId || "").trim();
   const quantityNumbers = getQuantityNumbersFromLog(log);
@@ -831,6 +847,14 @@ router.post("/operator/start", async (req, res) => {
           message: `Machine M${normalizedMachineNumber} is already running for ${String(conflict.refNumber || "another job")} (${String(conflict.userName || "operator")}).`,
         });
       }
+    }
+
+    const currentUserName = resolveReqUserName(reqUser);
+    const activeOperatorLog = await findActiveOperatorLog(currentUserName);
+    if (activeOperatorLog) {
+      return res.status(409).json({
+        message: `You are already running Machine M${getMachineNumberFromOperatorLog(activeOperatorLog) || "?"} for Job #${activeOperatorLog.refNumber || "?"}. Please pause or complete that job before starting a new one.`,
+      });
     }
 
     const parsedStartedAt = startedAt ? new Date(startedAt) : new Date();

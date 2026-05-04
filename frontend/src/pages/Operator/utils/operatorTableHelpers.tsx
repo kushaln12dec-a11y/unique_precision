@@ -185,7 +185,7 @@ export const normalizeAssignedOperators = (
 };
 
 export const getGroupExpectedHours = (entries: JobEntry[]): number =>
-  estimatedHoursFromAmount(entries.reduce((sum, entry) => sum + Number(entry.totalHrs || 0) * Number(entry.rate || 0), 0));
+  entries.reduce((sum, entry) => sum + Number(entry.totalHrs || 0), 0);
 
 export const renderOperatorCustomerCell = (
   row: OperatorDisplayRow,

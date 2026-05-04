@@ -5,7 +5,7 @@ import SendToQaModal from "./SendToQaModal";
 import type { OperatorTableRow } from "../types";
 
 type OperatorPageOverlaysProps = {
-  activeTab: "jobs" | "logs";
+  activeTab: "jobs" | "logs" | "logged_jobs";
   viewingJob: OperatorTableRow | null;
   showJobViewModal: boolean;
   setShowJobViewModal: React.Dispatch<React.SetStateAction<boolean>>;
