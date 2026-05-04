@@ -10,7 +10,7 @@ export const useOperatorDashboardActivity = ({
   activeTab,
   operatorGridJobs,
 }: {
-  activeTab: "jobs" | "logs";
+  activeTab: "jobs" | "logs" | "logged_jobs";
   operatorGridJobs: JobEntry[];
 }) => {
   const [activeOperatorRuns, setActiveOperatorRuns] = useState<EmployeeLog[]>([]);
@@ -85,7 +85,7 @@ export const useOperatorDashboardActivity = ({
   useJobSync(() => {
     void refreshActiveRuns(true);
     void refreshOperatorHistory(true);
-  }, activeTab === "jobs");
+  }, activeTab === "jobs" || activeTab === "logged_jobs");
 
   const activeRunsByJobId = useMemo(() => {
     const map = new Map<string, EmployeeLog>();

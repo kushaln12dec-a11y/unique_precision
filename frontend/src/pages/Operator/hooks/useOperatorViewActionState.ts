@@ -124,12 +124,13 @@ export const useOperatorViewActionState = ({ jobs }: Params) => {
   }, [activeOperatorLogIds]);
 
   const amounts = useMemo(() => {
-    if (jobs.length === 0) return { perCut: [], totalWedmAmount: 0, totalSedmAmount: 0 };
+    if (jobs.length === 0) return { perCut: [], totalWedmAmount: 0, totalSedmAmount: 0, totalHrs: 0 };
     const totals = jobs.map((entry) => calculateTotals(entry as CutForm));
     return {
-      perCut: totals.map((t) => ({ wedmAmount: t.wedmAmount, sedmAmount: t.sedmAmount })),
+      perCut: totals.map((t) => ({ wedmAmount: t.wedmAmount, sedmAmount: t.sedmAmount, totalHrs: t.totalHrs })),
       totalWedmAmount: totals.reduce((sum, t) => sum + t.wedmAmount, 0),
       totalSedmAmount: totals.reduce((sum, t) => sum + t.sedmAmount, 0),
+      totalHrs: totals.reduce((sum, t) => sum + t.totalHrs, 0),
     };
   }, [jobs]);
 

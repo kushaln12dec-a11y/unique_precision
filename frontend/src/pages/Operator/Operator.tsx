@@ -33,7 +33,7 @@ const Operator = () => {
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(() => new Set());
   const [operatorGridJobs, setOperatorGridJobs] = useState<JobEntry[]>([]);
   const [isTaskTimerRunning, setIsTaskTimerRunning] = useState(false);
-  const [activeTab, setActiveTab] = useState<"jobs" | "logs">("jobs");
+  const [activeTab, setActiveTab] = useState<"jobs" | "logs" | "logged_jobs">("jobs");
   const [operatorLogSearch, setOperatorLogSearch] = useState("");
   const [operatorLogUser, setOperatorLogUser] = useState("");
   const [operatorLogStatus, setOperatorLogStatus] = useState<"" | "IN_PROGRESS" | "COMPLETED" | "REJECTED">("");

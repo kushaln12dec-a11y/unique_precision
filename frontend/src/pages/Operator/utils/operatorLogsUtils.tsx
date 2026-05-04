@@ -105,6 +105,16 @@ export const buildOperatorLogsColumns = ({
     },
   },
   { key: "shift", label: "Shift", sortable: false, render: (row) => renderOperatorShiftBadge(row.startedAt) },
+  {
+    key: "estimatedSeconds",
+    label: "Expected Time",
+    sortable: false,
+    render: (row) => {
+      const metadata = (row.metadata as any) || {};
+      const estimatedSeconds = Number(metadata.estimatedSeconds || 0);
+      return estimatedSeconds > 0 ? formatOperatorDuration(estimatedSeconds) : "-";
+    },
+  },
   { key: "durationSeconds", label: "Duration", sortable: false, render: (row) => {
     // Use the actual durationSeconds from the log, fallback to metadata workedSeconds
     const duration = Number(row.durationSeconds || (row.metadata as any)?.workedSeconds || 0);
@@ -112,11 +122,8 @@ export const buildOperatorLogsColumns = ({
   }},
   { key: "overtimeSeconds", label: "OT", sortable: false, render: (row) => {
     const metadata = (row.metadata as any) || {};
-    const duration = Number(row.durationSeconds || metadata.workedSeconds || 0);
-    const estimatedSeconds = Number(metadata.estimatedSecondsPerQuantity || 0);
-    // Calculate overtime on the fly: actual duration - estimated time
-    const overtime = Math.max(0, duration - estimatedSeconds);
-    return formatOperatorDuration(overtime);
+    const overtime = Number(metadata.overtimeSeconds || 0);
+    return overtime > 0 ? formatOperatorDuration(overtime) : "-";
   }},
   {
     key: "quantityNumbers",
@@ -254,9 +261,7 @@ export const buildOperatorLogFilter =
           getOperatorShiftLabel(log.startedAt),
           formatOperatorDuration(Number(log.durationSeconds || (log.metadata as any)?.workedSeconds || 0)),
           (() => {
-            const duration = Number(log.durationSeconds || (log.metadata as any)?.workedSeconds || 0);
-            const estimatedSeconds = Number((log.metadata as any)?.estimatedSecondsPerQuantity || 0);
-            const overtime = Math.max(0, duration - estimatedSeconds);
+            const overtime = Number((log.metadata as any)?.overtimeSeconds || 0);
             return formatOperatorDuration(overtime);
           })(),
           Array.isArray((log.metadata as any)?.quantityNumbers)

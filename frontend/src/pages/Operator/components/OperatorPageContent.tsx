@@ -3,12 +3,13 @@ import type { FilterValues } from "../../../components/FilterModal";
 import OperatorJobsSection from "./OperatorJobsSection";
 import OperatorLogsSection from "./OperatorLogsSection";
 import OperatorTabs from "./OperatorTabs";
+import { getGroupQaProgressCounts, getQaProgressCounts, isGroupProductionComplete, isJobProductionComplete } from "../utils/qaProgress";
 import type { EmployeeLog } from "../../../types/employeeLog";
 import type { OperatorCompletionAlert } from "../types";
 
 type OperatorPageContentProps = {
-  activeTab: "jobs" | "logs";
-  setActiveTab: React.Dispatch<React.SetStateAction<"jobs" | "logs">>;
+  activeTab: "jobs" | "logs" | "logged_jobs";
+  setActiveTab: React.Dispatch<React.SetStateAction<"jobs" | "logs" | "logged_jobs">>;
   loadingJobs: boolean;
   operatorGridJobs: JobEntry[];
   filters: FilterValues;
@@ -170,6 +171,54 @@ const OperatorPageContent = (props: OperatorPageContentProps) => {
           activeOperatorRuns={activeOperatorRuns}
           onOpenRunningJob={handleOpenRunningJob}
           completionAlerts={completionAlerts}
+        />
+      ) : activeTab === "logged_jobs" ? (
+        <OperatorJobsSection
+          loadingJobs={loadingJobs}
+          operatorGridJobs={operatorGridJobs}
+          filters={filters}
+          filterFields={filterFields}
+          filterCategories={filterCategories}
+          customerFilter={customerFilter}
+          createdByFilter={createdByFilter}
+          assignedToFilter={assignedToFilter}
+          showFilterModal={showFilterModal}
+          activeFilterCount={activeFilterCount}
+          users={users}
+          operatorUsers={operatorUsers}
+          setShowFilterModal={setShowFilterModal}
+          handleApplyFilters={handleApplyFilters}
+          handleClearFilters={handleClearFilters}
+          handleRemoveFilter={handleRemoveFilter}
+          setCustomerFilter={setCustomerFilter}
+          setDescriptionFilter={setDescriptionFilter}
+          setCreatedByFilter={setCreatedByFilter}
+          setAssignedToFilter={setAssignedToFilter}
+          canUseTaskSwitchTimer={false} // Disable timer in logged jobs
+          canOperateInputs={canOperateInputs}
+          canEditAssignments={false} // Disable assignment in logged jobs
+          handleSaveTaskSwitch={handleSaveTaskSwitch}
+          setIsTaskTimerRunning={setIsTaskTimerRunning}
+          setToast={setToast}
+          handleDownloadCSV={handleDownloadCSV}
+          handleSendSelectedRowsToQa={handleSendSelectedRowsToQa}
+          selectedEntryIds={selectedEntryIds}
+          machineOptionsForDropdown={machineOptionsForDropdown}
+          handleApplyBulkAssignment={handleApplyBulkAssignment}
+          operatorJobColumnDefs={operatorJobColumnDefs}
+          fetchPage={fetchJobsPage}
+          setOperatorGridJobs={setOperatorGridJobs}
+          operatorGridRows={operatorGridRows.filter(row => {
+            if (row.kind === "child") {
+              return isJobProductionComplete(row.entry, activeOperatorRuns.find(log => String(log.jobId) === String(row.entry.id)));
+            }
+            return isGroupProductionComplete(row.tableRow.entries, new Map(activeOperatorRuns.map(log => [String(log.jobId), log])));
+          })}
+          expandedGroups={expandedGroups}
+          createdByRefreshKey={`${createdByRefreshKey}|logged`}
+          activeOperatorRuns={activeOperatorRuns}
+          onOpenRunningJob={handleOpenRunningJob}
+          completionAlerts={[]} // No alerts for logged jobs
         />
       ) : (
         <OperatorLogsSection

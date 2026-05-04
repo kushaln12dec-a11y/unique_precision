@@ -150,6 +150,16 @@ export const isGroupFullySentToQa = (entries: JobEntry[]): boolean => {
   return entries.length > 0 && entries.every((entry) => isJobFullySentToQa(entry));
 };
 
+export const isJobProductionComplete = (job: JobEntry, activeRun?: EmployeeLog | null): boolean => {
+  const qty = Math.max(1, Number(job.qty || 1));
+  const counts = getQaProgressCounts(job, qty, activeRun);
+  return counts.empty === 0 && counts.running === 0;
+};
+
+export const isGroupProductionComplete = (entries: JobEntry[], activeRunsByJobId?: Map<string, EmployeeLog>): boolean => {
+  return entries.length > 0 && entries.every((entry) => isJobProductionComplete(entry, activeRunsByJobId?.get(String(entry.id))));
+};
+
 export const getQaStatusBadges = (counts: QaProgressCounts) => [
   { className: "empty", label: `NOT STARTED ${counts.empty}` },
   { className: "running", label: `RUNNING ${counts.running}` },
