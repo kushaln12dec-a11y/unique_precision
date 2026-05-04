@@ -11,7 +11,7 @@ import { useOperatorViewActions } from "./hooks/useOperatorViewActions";
 import OperatorViewBody from "./components/OperatorViewBody";
 import OperatorViewModals from "./components/OperatorViewModals";
 import { getUserDisplayNameFromToken, getUserRoleFromToken } from "../../utils/auth";
-import { estimatedDurationSecondsFromHours, estimatedHoursFromAmount, MACHINE_OPTIONS, toMachineIndex } from "../../utils/jobFormatting";
+import { estimatedDurationSecondsFromHours, MACHINE_OPTIONS, toMachineIndex } from "../../utils/jobFormatting";
 import { getQuantityElapsedSeconds, parseOperatorDateTime } from "./utils/operatorTimeUtils";
 import { getServerNowMs, refreshServerTimeOffset } from "../../services/serverTime";
 import { useJobSync } from "../../hooks/useJobSync";

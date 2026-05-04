@@ -3,7 +3,7 @@ import type { FilterValues } from "../../../components/FilterModal";
 import OperatorJobsSection from "./OperatorJobsSection";
 import OperatorLogsSection from "./OperatorLogsSection";
 import OperatorTabs from "./OperatorTabs";
-import { getGroupQaProgressCounts, getQaProgressCounts, isGroupProductionComplete, isJobProductionComplete } from "../utils/qaProgress";
+import { isGroupProductionComplete, isJobProductionComplete } from "../utils/qaProgress";
 import type { EmployeeLog } from "../../../types/employeeLog";
 import type { OperatorCompletionAlert } from "../types";
 
