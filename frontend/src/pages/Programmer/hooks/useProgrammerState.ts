@@ -36,7 +36,8 @@ export const useProgrammerState = (
   customerFilter: string,
   descriptionFilter: string,
   createdByFilter: string,
-  criticalFilter: boolean
+  criticalFilter: boolean,
+  searchFilter?: string
 ) => {
   const location = useLocation();
   const [jobs, setJobs] = useState<JobEntry[]>([]);
@@ -61,7 +62,7 @@ export const useProgrammerState = (
     try {
       setLoadingJobs(true);
       const fetchedJobs = await getProgrammerJobs(
-        filters,
+        { ...filters, search: searchFilter },
         customerFilter,
         createdByFilter,
         criticalFilter ? true : undefined,
@@ -94,7 +95,7 @@ export const useProgrammerState = (
     } finally {
       setLoadingJobs(false);
     }
-  }, [createdByFilter, criticalFilter, customerFilter, descriptionFilter, filters]);
+  }, [createdByFilter, criticalFilter, customerFilter, descriptionFilter, filters, searchFilter]);
 
   useEffect(() => {
     void refreshJobs();

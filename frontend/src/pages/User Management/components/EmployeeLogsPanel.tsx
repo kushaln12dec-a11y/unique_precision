@@ -183,22 +183,20 @@ export const EmployeeLogsPanel = () => {
           transformRows={filterVisibleLogs}
           fetchPage={async (offset, limit) => {
             setError("");
-            if (searchQuery.trim()) {
-              const allLogs = await fetchAllPaginatedItems<EmployeeLog>(async (pageOffset, pageLimit) => {
-                const page = await getEmployeeLogsPage({ role: activeRole, status: statusFilter || undefined, offset: pageOffset, limit: pageLimit });
-                return { items: page.items, hasMore: page.hasMore };
-              });
-              return { items: allLogs, hasMore: false };
-            }
-
-            const page = await getEmployeeLogsPage({ role: activeRole, status: statusFilter || undefined, offset, limit });
+            const page = await getEmployeeLogsPage({
+              role: activeRole,
+              status: statusFilter || undefined,
+              search: searchQuery.trim() || undefined,
+              offset,
+              limit,
+            });
             return { items: page.items, hasMore: page.hasMore };
           }}
           emptyMessage="No logs found for the current filters."
           getRowId={(row) => row._id}
           className="employee-logs-table logs-center"
           rowHeight={64}
-          refreshKey={`${activeRole}|${statusFilter}`}
+          refreshKey={`${activeRole}|${statusFilter}|${searchQuery}`}
         />
       )}
     </div>

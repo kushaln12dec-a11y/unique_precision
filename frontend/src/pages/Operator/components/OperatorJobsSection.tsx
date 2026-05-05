@@ -19,7 +19,6 @@ type Props = {
   filters: FilterValues;
   filterFields: any[];
   filterCategories: any[];
-  customerFilter: string;
   createdByFilter: string;
   assignedToFilter: string;
   showFilterModal: boolean;
@@ -30,10 +29,10 @@ type Props = {
   handleApplyFilters: (filters: FilterValues) => void;
   handleClearFilters: () => void;
   handleRemoveFilter: (key: string, type: "inline" | "modal") => void;
-  setCustomerFilter: (value: string) => void;
-  setDescriptionFilter: (value: string) => void;
   setCreatedByFilter: (value: string) => void;
   setAssignedToFilter: (value: string) => void;
+  searchFilter: string;
+  setSearchFilter: (value: string) => void;
   canUseTaskSwitchTimer: boolean;
   canOperateInputs: boolean;
   canEditAssignments: boolean;
@@ -62,7 +61,6 @@ export const OperatorJobsSection: React.FC<Props> = ({
   filters,
   filterFields,
   filterCategories,
-  customerFilter,
   createdByFilter,
   assignedToFilter,
   showFilterModal,
@@ -73,10 +71,10 @@ export const OperatorJobsSection: React.FC<Props> = ({
   handleApplyFilters,
   handleClearFilters,
   handleRemoveFilter,
-  setCustomerFilter,
-  setDescriptionFilter,
   setCreatedByFilter,
   setAssignedToFilter,
+  searchFilter,
+  setSearchFilter,
   canUseTaskSwitchTimer,
   canOperateInputs,
   canEditAssignments,
@@ -203,7 +201,7 @@ export const OperatorJobsSection: React.FC<Props> = ({
         filters={filters}
         filterFields={filterFields}
         filterCategories={filterCategories}
-        jobSearchFilter={customerFilter}
+        jobSearchFilter={searchFilter}
         createdByFilter={createdByFilter}
         assignedToFilter={assignedToFilter}
         showFilterModal={showFilterModal}
@@ -214,10 +212,7 @@ export const OperatorJobsSection: React.FC<Props> = ({
         onApplyFilters={handleApplyFilters}
         onClearFilters={handleClearFilters}
         onRemoveFilter={handleRemoveFilter}
-        onJobSearchFilterChange={(value) => {
-          setCustomerFilter(value);
-          setDescriptionFilter(value);
-        }}
+        onJobSearchFilterChange={setSearchFilter}
         onCreatedByFilterChange={setCreatedByFilter}
         onAssignedToFilterChange={setAssignedToFilter}
         canUseTaskSwitchTimer={canUseTaskSwitchTimer && canOperateInputs}

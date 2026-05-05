@@ -10,6 +10,7 @@ import {
   setOperatorDescriptionFilter,
   setOperatorFilters,
   setOperatorShowFilterModal,
+  setOperatorSearchFilter,
 } from "../../../store/slices/filtersSlice";
 
 export const useOperatorFilters = () => {
@@ -21,6 +22,7 @@ export const useOperatorFilters = () => {
     descriptionFilter,
     createdByFilter,
     assignedToFilter,
+    searchFilter,
   } = useAppSelector((state) => state.filters.operator);
 
   const filterCategories: FilterCategory[] = [
@@ -63,6 +65,7 @@ export const useOperatorFilters = () => {
     dispatch(setOperatorDescriptionFilter(""));
     dispatch(setOperatorCreatedByFilter(""));
     dispatch(setOperatorAssignedToFilter(""));
+    dispatch(setOperatorSearchFilter(""));
   };
 
   const handleClearFilters = () => {
@@ -71,10 +74,9 @@ export const useOperatorFilters = () => {
 
   const handleRemoveFilter = (key: string, type: "inline" | "modal") => {
     if (type === "inline") {
-      if (key === "customer" || key === "description" || key === "search") {
-        dispatch(setOperatorCustomerFilter(""));
-        dispatch(setOperatorDescriptionFilter(""));
-      }
+      if (key === "customer") dispatch(setOperatorCustomerFilter(""));
+      else if (key === "description") dispatch(setOperatorDescriptionFilter(""));
+      else if (key === "search") dispatch(setOperatorSearchFilter(""));
       else if (key === "createdBy") dispatch(setOperatorCreatedByFilter(""));
       else if (key === "assignedTo") dispatch(setOperatorAssignedToFilter(""));
       return;
@@ -98,6 +100,8 @@ export const useOperatorFilters = () => {
     setCreatedByFilter: (value: string) => dispatch(setOperatorCreatedByFilter(value)),
     assignedToFilter,
     setAssignedToFilter: (value: string) => dispatch(setOperatorAssignedToFilter(value)),
+    searchFilter,
+    setSearchFilter: (value: string) => dispatch(setOperatorSearchFilter(value)),
     filterCategories,
     filterFields,
     activeFilterCount,

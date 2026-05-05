@@ -73,13 +73,24 @@ export const getOperatorJobsPage = async (
   return fetchPaginatedJobList(queryString ? `/api/jobs/operator?${queryString}` : "/api/jobs/operator");
 };
 
-export const getQcJobs = async (): Promise<JobEntry[]> => fetchJobList("/api/jobs/qc");
+export const getQcJobs = async (
+  filters?: any,
+  customerFilter?: string,
+  createdByFilter?: string,
+  descriptionFilter?: string
+): Promise<JobEntry[]> => {
+  const queryString = buildQueryParams(filters, customerFilter, createdByFilter, undefined, false, descriptionFilter);
+  return fetchJobList(queryString ? `/api/jobs/qc?${queryString}` : "/api/jobs/qc");
+};
 
-export const getQcJobsPage = async (pagination: PaginationParams = {}): Promise<PaginatedResult<JobEntry>> => {
-  const params = new URLSearchParams();
-  if (pagination.offset !== undefined) params.append("offset", String(Math.max(0, pagination.offset)));
-  if (pagination.limit !== undefined) params.append("limit", String(Math.max(1, pagination.limit)));
-  const queryString = params.toString();
+export const getQcJobsPage = async (
+  filters?: any,
+  customerFilter?: string,
+  createdByFilter?: string,
+  descriptionFilter?: string,
+  pagination: PaginationParams = {}
+): Promise<PaginatedResult<JobEntry>> => {
+  const queryString = buildQueryParams(filters, customerFilter, createdByFilter, undefined, false, descriptionFilter, pagination);
   return fetchPaginatedJobList(queryString ? `/api/jobs/qc?${queryString}` : "/api/jobs/qc");
 };
 

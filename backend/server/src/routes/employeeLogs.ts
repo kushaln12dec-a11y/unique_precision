@@ -1065,15 +1065,20 @@ router.get("/", async (req, res) => {
     }
 
     if (machine) {
-      const machineSearch = { contains: machine, mode: "insensitive" };
-      where.AND = [
-        ...(Array.isArray(where.AND) ? where.AND : []),
-        {
-          OR: [
-            { workSummary: machineSearch },
-          ],
-        },
-      ];
+      const normalizedMachine = normalizeMachineNumber(machine);
+      if (normalizedMachine) {
+        where.AND = [
+          ...(Array.isArray(where.AND) ? where.AND : []),
+          {
+            OR: [
+              { metadata: { path: ["machineNumber"], equals: normalizedMachine } },
+              { metadata: { path: ["machineNumber"], equals: machine } },
+              { workSummary: { contains: `Machine M${normalizedMachine}`, mode: "insensitive" } },
+              { workSummary: { contains: `Machine ${normalizedMachine}`, mode: "insensitive" } },
+            ],
+          },
+        ];
+      }
     }
 
     const { limit, offset } = getPagination(req);

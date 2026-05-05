@@ -21,6 +21,7 @@ type UseProgrammerPageControllerParams = {
   descriptionFilter: string;
   createdByFilter: string;
   criticalFilter: boolean;
+  searchFilter: string;
   loadingJobs: boolean;
   cutsLength: number;
   editGroupError: string | null;
@@ -43,6 +44,7 @@ export const useProgrammerPageController = ({
   descriptionFilter,
   createdByFilter,
   criticalFilter,
+  searchFilter,
   loadingJobs,
   cutsLength,
   editGroupError,
@@ -167,7 +169,7 @@ export const useProgrammerPageController = ({
 
   const jobsFetchPage = useCallback(async (offset: number, limit: number) => {
     const page = await getProgrammerJobsPage(
-      filters,
+      { ...filters, search: searchFilter },
       customerFilter,
       createdByFilter,
       criticalFilter ? true : undefined,
@@ -175,7 +177,7 @@ export const useProgrammerPageController = ({
       { offset, limit }
     );
     return { items: page.items, hasMore: page.hasMore };
-  }, [createdByFilter, criticalFilter, customerFilter, descriptionFilter, filters, filtersKey]);
+  }, [createdByFilter, criticalFilter, customerFilter, descriptionFilter, filters, filtersKey, searchFilter]);
 
   const logsFetchPage = useCallback(async (offset: number, limit: number) => {
     if (logSearch || logUserId) {

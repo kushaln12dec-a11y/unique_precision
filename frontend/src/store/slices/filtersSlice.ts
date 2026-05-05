@@ -8,6 +8,7 @@ type ProgrammerFiltersState = {
   descriptionFilter: string;
   createdByFilter: string;
   criticalFilter: boolean;
+  searchFilter: string;
 };
 
 type OperatorFiltersState = {
@@ -18,6 +19,7 @@ type OperatorFiltersState = {
   createdByFilter: string;
   assignedToFilter: string;
   productionStageFilter: string;
+  searchFilter: string;
 };
 
 type QcFiltersState = {
@@ -25,6 +27,7 @@ type QcFiltersState = {
   descriptionFilter: string;
   createdByFilter: string;
   operatorFilter: string;
+  searchFilter: string;
 };
 
 export type FiltersState = {
@@ -41,6 +44,7 @@ const initialState: FiltersState = {
     descriptionFilter: "",
     createdByFilter: "",
     criticalFilter: false,
+    searchFilter: "",
   },
   operator: {
     filters: {},
@@ -50,12 +54,14 @@ const initialState: FiltersState = {
     createdByFilter: "",
     assignedToFilter: "",
     productionStageFilter: "",
+    searchFilter: "",
   },
   qc: {
     customerFilter: "",
     descriptionFilter: "",
     createdByFilter: "",
     operatorFilter: "",
+    searchFilter: "",
   },
 };
 
@@ -84,6 +90,9 @@ const filtersSlice = createSlice({
     setProgrammerCriticalFilter(state, action: PayloadAction<boolean>) {
       state.programmer.criticalFilter = action.payload;
     },
+    setProgrammerSearchFilter(state, action: PayloadAction<string>) {
+      state.programmer.searchFilter = action.payload;
+    },
     setOperatorFilters(state, action: PayloadAction<FilterValues>) {
       state.operator.filters = action.payload;
     },
@@ -95,6 +104,7 @@ const filtersSlice = createSlice({
       state.operator.assignedToFilter = "";
       state.operator.productionStageFilter = "";
       state.operator.showFilterModal = false;
+      state.operator.searchFilter = "";
     },
     setOperatorShowFilterModal(state, action: PayloadAction<boolean>) {
       state.operator.showFilterModal = action.payload;
@@ -114,6 +124,9 @@ const filtersSlice = createSlice({
     setOperatorProductionStageFilter(state, action: PayloadAction<string>) {
       state.operator.productionStageFilter = action.payload;
     },
+    setOperatorSearchFilter(state, action: PayloadAction<string>) {
+      state.operator.searchFilter = action.payload;
+    },
     setQcCustomerFilter(state, action: PayloadAction<string>) {
       state.qc.customerFilter = action.payload;
     },
@@ -126,6 +139,9 @@ const filtersSlice = createSlice({
     setQcOperatorFilter(state, action: PayloadAction<string>) {
       state.qc.operatorFilter = action.payload;
     },
+    setQcSearchFilter(state, action: PayloadAction<string>) {
+      state.qc.searchFilter = action.payload;
+    },
   },
 });
 
@@ -137,6 +153,7 @@ export const {
   setProgrammerDescriptionFilter,
   setProgrammerCreatedByFilter,
   setProgrammerCriticalFilter,
+  setProgrammerSearchFilter,
   setOperatorFilters,
   clearOperatorFilters,
   setOperatorShowFilterModal,
@@ -145,10 +162,12 @@ export const {
   setOperatorCreatedByFilter,
   setOperatorAssignedToFilter,
   setOperatorProductionStageFilter,
+  setOperatorSearchFilter,
   setQcCustomerFilter,
   setQcDescriptionFilter,
   setQcCreatedByFilter,
   setQcOperatorFilter,
+  setQcSearchFilter,
 } = filtersSlice.actions;
 
 export default filtersSlice.reducer;

@@ -15,7 +15,6 @@ type OperatorPageContentProps = {
   filters: FilterValues;
   filterFields: any[];
   filterCategories: any[];
-  customerFilter: string;
   createdByFilter: string;
   assignedToFilter: string;
   showFilterModal: boolean;
@@ -26,10 +25,10 @@ type OperatorPageContentProps = {
   handleApplyFilters: (filters: FilterValues) => void;
   handleClearFilters: () => void;
   handleRemoveFilter: (key: string, type: "inline" | "modal") => void;
-  setCustomerFilter: (value: string) => void;
-  setDescriptionFilter: (value: string) => void;
   setCreatedByFilter: (value: string) => void;
   setAssignedToFilter: (value: string) => void;
+  searchFilter: string;
+  setSearchFilter: (value: string) => void;
   canUseTaskSwitchTimer: boolean;
   canOperateInputs: boolean;
   canEditAssignments: boolean;
@@ -75,7 +74,6 @@ const OperatorPageContent = (props: OperatorPageContentProps) => {
     filters,
     filterFields,
     filterCategories,
-    customerFilter,
     createdByFilter,
     assignedToFilter,
     showFilterModal,
@@ -86,10 +84,10 @@ const OperatorPageContent = (props: OperatorPageContentProps) => {
     handleApplyFilters,
     handleClearFilters,
     handleRemoveFilter,
-    setCustomerFilter,
-    setDescriptionFilter,
     setCreatedByFilter,
     setAssignedToFilter,
+    searchFilter,
+    setSearchFilter,
     canUseTaskSwitchTimer,
     canOperateInputs,
     canEditAssignments,
@@ -136,7 +134,6 @@ const OperatorPageContent = (props: OperatorPageContentProps) => {
           filters={filters}
           filterFields={filterFields}
           filterCategories={filterCategories}
-          customerFilter={customerFilter}
           createdByFilter={createdByFilter}
           assignedToFilter={assignedToFilter}
           showFilterModal={showFilterModal}
@@ -147,10 +144,10 @@ const OperatorPageContent = (props: OperatorPageContentProps) => {
           handleApplyFilters={handleApplyFilters}
           handleClearFilters={handleClearFilters}
           handleRemoveFilter={handleRemoveFilter}
-          setCustomerFilter={setCustomerFilter}
-          setDescriptionFilter={setDescriptionFilter}
           setCreatedByFilter={setCreatedByFilter}
           setAssignedToFilter={setAssignedToFilter}
+          searchFilter={searchFilter}
+          setSearchFilter={setSearchFilter}
           canUseTaskSwitchTimer={canUseTaskSwitchTimer}
           canOperateInputs={canOperateInputs}
           canEditAssignments={canEditAssignments}
@@ -179,7 +176,6 @@ const OperatorPageContent = (props: OperatorPageContentProps) => {
           filters={filters}
           filterFields={filterFields}
           filterCategories={filterCategories}
-          customerFilter={customerFilter}
           createdByFilter={createdByFilter}
           assignedToFilter={assignedToFilter}
           showFilterModal={showFilterModal}
@@ -190,10 +186,10 @@ const OperatorPageContent = (props: OperatorPageContentProps) => {
           handleApplyFilters={handleApplyFilters}
           handleClearFilters={handleClearFilters}
           handleRemoveFilter={handleRemoveFilter}
-          setCustomerFilter={setCustomerFilter}
-          setDescriptionFilter={setDescriptionFilter}
           setCreatedByFilter={setCreatedByFilter}
           setAssignedToFilter={setAssignedToFilter}
+          searchFilter={searchFilter}
+          setSearchFilter={setSearchFilter}
           canUseTaskSwitchTimer={false} // Disable timer in logged jobs
           canOperateInputs={canOperateInputs}
           canEditAssignments={false} // Disable assignment in logged jobs

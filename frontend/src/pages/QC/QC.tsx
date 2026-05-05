@@ -10,7 +10,7 @@ import type { JobEntry } from "../../types/job";
 import { getQcJobsPage, setQcReportClosedByGroupId, updateQcDecisionByGroupId } from "../../services/jobApi";
 import { generateInspectionReport, type InspectionReportPayload } from "../../services/inspectionReportApi";
 import { useAppDispatch, useAppSelector } from "../../store/hooks";
-import { setQcCustomerFilter, setQcDescriptionFilter, setQcOperatorFilter } from "../../store/slices/filtersSlice";
+import { setQcCustomerFilter, setQcDescriptionFilter, setQcOperatorFilter, setQcSearchFilter } from "../../store/slices/filtersSlice";
 import { matchesSearchQuery } from "../../utils/searchUtils";
 import { getParentRowClassName } from "../Programmer/utils/priorityUtils";
 import QcFilters from "./components/QcFilters";
@@ -26,7 +26,7 @@ import "./components/QcReportTemplateModal.css";
 const QC = () => {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
-  const { customerFilter, descriptionFilter, operatorFilter } = useAppSelector((state) => state.filters.qc);
+  const { customerFilter, descriptionFilter, operatorFilter, searchFilter } = useAppSelector((state) => state.filters.qc);
   const [qcGridJobs, setQcGridJobs] = useState<JobEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [reportCloseCandidate, setReportCloseCandidate] = useState<QcRow | null>(null);
@@ -48,14 +48,20 @@ const QC = () => {
   const loadQcJobs = useCallback(async () => {
     try {
       setLoading(true);
-      const page = await getQcJobsPage({ offset: 0, limit: 100 });
+      const page = await getQcJobsPage(
+        {},
+        customerFilter,
+        undefined,
+        descriptionFilter,
+        { offset: 0, limit: 100 }
+      );
       setQcGridJobs(page.items);
     } catch {
       showToast("Failed to load QC queue.", "error");
     } finally {
       setLoading(false);
     }
-  }, [showToast]);
+  }, [customerFilter, descriptionFilter, showToast]);
 
   useEffect(() => {
     if (!localStorage.getItem("token")) navigate("/login");
@@ -71,7 +77,7 @@ const QC = () => {
 
   const tableData = useMemo(() => buildQcRows(qcGridJobs), [qcGridJobs]);
   const filteredTableData = useMemo(() => {
-    const searchQuery = (customerFilter || descriptionFilter).trim();
+    const searchQuery = (searchFilter || customerFilter || descriptionFilter).trim();
     return tableData.filter((row) => {
       const searchMatch = matchesSearchQuery(getQcRowSearchValues(row), searchQuery);
       const operatorMatch = operatorFilter
@@ -79,7 +85,7 @@ const QC = () => {
         : true;
       return searchMatch && operatorMatch;
     });
-  }, [customerFilter, descriptionFilter, operatorFilter, tableData]);
+  }, [customerFilter, descriptionFilter, operatorFilter, searchFilter, tableData]);
 
   const qcOperatorOptions = useMemo(() => {
     const names = new Set<string>();
@@ -194,6 +200,7 @@ const QC = () => {
     dispatch(setQcCustomerFilter(""));
     dispatch(setQcDescriptionFilter(""));
     dispatch(setQcOperatorFilter(""));
+    dispatch(setQcSearchFilter(""));
   };
 
   const qcColumnDefs = useMemo(
@@ -221,12 +228,11 @@ const QC = () => {
           ) : (
             <>
               <QcFilters
-                searchValue={customerFilter || descriptionFilter}
+                searchValue={searchFilter || customerFilter || descriptionFilter}
                 operatorFilter={operatorFilter}
                 operatorOptions={qcOperatorOptions}
                 onSearchChange={(value) => {
-                  dispatch(setQcCustomerFilter(value));
-                  dispatch(setQcDescriptionFilter(value));
+                  dispatch(setQcSearchFilter(value));
                 }}
                 onOperatorChange={(value) => dispatch(setQcOperatorFilter(value))}
                 onClearAll={handleClearAllFilters}
@@ -234,7 +240,13 @@ const QC = () => {
               <LazyAgGrid
                 columnDefs={qcColumnDefs as any}
                 fetchPage={async (offset, limit) => {
-                  const page = await getQcJobsPage({ offset, limit });
+                  const page = await getQcJobsPage(
+                    {},
+                    customerFilter,
+                    undefined,
+                    descriptionFilter,
+                    { offset, limit }
+                  );
                   return { items: page.items, hasMore: page.hasMore };
                 }}
                 rows={qcGridJobs}

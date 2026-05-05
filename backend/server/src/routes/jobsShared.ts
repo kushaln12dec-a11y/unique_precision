@@ -232,6 +232,17 @@ export const normalizeJobUpdate = async (job: any) => {
 export const buildJobWhere = (req: any) => {
   const where: any = {};
 
+  if (req.query.search) {
+    const searchQuery = String(req.query.search).trim();
+    where.OR = [
+      { customer: { contains: searchQuery, mode: "insensitive" } },
+      { description: { contains: searchQuery, mode: "insensitive" } },
+      { refNumber: { contains: searchQuery, mode: "insensitive" } },
+      { setting: { contains: searchQuery, mode: "insensitive" } },
+      { programRefFile: { contains: searchQuery, mode: "insensitive" } },
+    ];
+  }
+
   if (req.query.customer) {
     where.customer = { contains: String(req.query.customer), mode: "insensitive" };
   }
@@ -239,14 +250,31 @@ export const buildJobWhere = (req: any) => {
     where.description = { contains: String(req.query.description), mode: "insensitive" };
   }
   if (req.query.createdBy) {
-    where.createdBy = String(req.query.createdBy);
+    const createdBy = String(req.query.createdBy).split(",").map(s => s.trim()).filter(Boolean);
+    if (createdBy.length > 0) {
+      where.createdBy = { in: createdBy };
+    }
   }
   if (req.query.assignedTo) {
-    const assignedTo = String(req.query.assignedTo).trim();
-    if (/^unassign(?:ed)?$/i.test(assignedTo)) {
-      where.OR = [{ assignedTo: "Unassign" }, { assignedTo: "Unassigned" }];
-    } else {
-      where.assignedTo = assignedTo;
+    const assignedTo = String(req.query.assignedTo).split(",").map(s => s.trim()).filter(Boolean);
+    if (assignedTo.length > 0) {
+      const isUnassign = assignedTo.some(val => /^unassign(?:ed)?$/i.test(val));
+      if (isUnassign) {
+        where.AND = [
+          ...(Array.isArray(where.AND) ? where.AND : []),
+          {
+            OR: [
+              { assignedTo: { in: assignedTo } },
+              { assignedTo: "Unassign" },
+              { assignedTo: "Unassigned" },
+              { assignedTo: "" },
+              { assignedTo: null },
+            ],
+          },
+        ];
+      } else {
+        where.assignedTo = { in: assignedTo };
+      }
     }
   }
 
