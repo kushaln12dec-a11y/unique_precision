@@ -52,13 +52,13 @@ const Operator = () => {
     showFilterModal,
     setShowFilterModal,
     customerFilter,
-    setCustomerFilter,
     descriptionFilter,
-    setDescriptionFilter,
     createdByFilter,
     setCreatedByFilter,
     assignedToFilter,
     setAssignedToFilter,
+    searchFilter,
+    setSearchFilter,
     filterCategories,
     filterFields,
     activeFilterCount,
@@ -72,7 +72,8 @@ const Operator = () => {
     customerFilter,
     descriptionFilter,
     createdByFilter,
-    assignedToFilter
+    assignedToFilter,
+    searchFilter
   );
 
   const refreshOperatorBoard = useCallback(async () => {
@@ -161,7 +162,7 @@ const Operator = () => {
     operatorHistoryByJobId,
   });
 
-  const jobSearchQuery = String(customerFilter || descriptionFilter || "").trim();
+  const jobSearchQuery = String(searchFilter || "").trim();
   const { filteredGridTableData, operatorGridRows, operatorJobColumnDefs, hasJobSearch } = useOperatorJobGrid({
     tableData,
     expandedGroups,
@@ -195,7 +196,6 @@ const Operator = () => {
           filters={filters}
           filterFields={filterFields}
           filterCategories={filterCategories}
-          customerFilter={customerFilter}
           createdByFilter={createdByFilter}
           assignedToFilter={assignedToFilter}
           showFilterModal={showFilterModal}
@@ -206,10 +206,10 @@ const Operator = () => {
           handleApplyFilters={handleApplyFilters}
           handleClearFilters={handleClearFilters}
           handleRemoveFilter={handleRemoveFilter}
-          setCustomerFilter={setCustomerFilter}
-          setDescriptionFilter={setDescriptionFilter}
           setCreatedByFilter={setCreatedByFilter}
           setAssignedToFilter={setAssignedToFilter}
+          searchFilter={searchFilter}
+          setSearchFilter={setSearchFilter}
           canUseTaskSwitchTimer={canUseTaskSwitchTimer}
           canOperateInputs={canOperateInputs}
           canEditAssignments={canEditAssignments}
@@ -226,7 +226,7 @@ const Operator = () => {
           setOperatorGridJobs={setOperatorGridJobs}
           operatorGridRows={operatorGridRows}
           expandedGroups={expandedGroups}
-          createdByRefreshKey={`${customerFilter}|${descriptionFilter}|${createdByFilter}|${assignedToFilter}|${JSON.stringify(filters)}`}
+          createdByRefreshKey={`${createdByFilter}|${assignedToFilter}|${searchFilter}|${JSON.stringify(filters)}`}
           operatorLogSearch={operatorLogSearch}
           setOperatorLogSearch={setOperatorLogSearch}
           operatorLogUser={operatorLogUser}

@@ -12,9 +12,9 @@ type Props = {
   savingJob: boolean;
   programmerGridJobs: JobEntry[];
   filters: FilterValues;
-  customerFilter: string;
   createdByFilter: string;
   criticalFilter: boolean;
+  searchFilter: string;
   showFilterModal: boolean;
   activeFilterCount: number;
   users: User[];
@@ -27,6 +27,7 @@ type Props = {
     setCustomerDescriptionFilter: (value: string) => void;
     setCreatedByFilter: (value: string) => void;
     setCriticalFilter: (value: boolean) => void;
+    setSearchFilter: (value: string) => void;
   };
   handleDownloadCSV: () => void;
   handleNewJob: () => void;
@@ -42,9 +43,9 @@ export const ProgrammerJobsSection: React.FC<Props> = ({
   savingJob,
   programmerGridJobs,
   filters,
-  customerFilter,
   createdByFilter,
   criticalFilter,
+  searchFilter,
   showFilterModal,
   activeFilterCount,
   users,
@@ -64,7 +65,7 @@ export const ProgrammerJobsSection: React.FC<Props> = ({
     <>
       <ProgrammerFilters
         filters={filters}
-        jobSearchFilter={customerFilter}
+        jobSearchFilter={searchFilter}
         createdByFilter={createdByFilter}
         criticalFilter={criticalFilter}
         showFilterModal={showFilterModal}
@@ -75,7 +76,7 @@ export const ProgrammerJobsSection: React.FC<Props> = ({
         onClearFilters={dispatchers.clearFilters}
         onClearAllFilters={dispatchers.clearAllFilters}
         onRemoveFilter={dispatchers.removeFilter}
-        onJobSearchFilterChange={dispatchers.setCustomerDescriptionFilter}
+        onJobSearchFilterChange={dispatchers.setSearchFilter}
         onCreatedByFilterChange={dispatchers.setCreatedByFilter}
         onCriticalFilterChange={dispatchers.setCriticalFilter}
         onDownloadCSV={handleDownloadCSV}
@@ -102,7 +103,7 @@ export const ProgrammerJobsSection: React.FC<Props> = ({
         className="jobs-table-wrapper"
         rowHeight={38}
         fitColumns={true}
-        refreshKey={`${createdByFilter}|${criticalFilter}|${JSON.stringify(filters)}|${programmerGridRefreshKey}`}
+        refreshKey={`${createdByFilter}|${criticalFilter}|${searchFilter}|${JSON.stringify(filters)}|${programmerGridRefreshKey}`}
       />
     </>
   );

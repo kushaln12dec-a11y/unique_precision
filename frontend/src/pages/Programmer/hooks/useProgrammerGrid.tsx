@@ -99,8 +99,7 @@ type UseProgrammerGridArgs = {
   handleViewEntry: (entry: JobEntry) => Promise<void>;
   selectedJobIds: Set<string>;
   setSelectedJobIds: React.Dispatch<React.SetStateAction<Set<string>>>;
-  customerFilter: string;
-  descriptionFilter: string;
+  searchFilter: string;
   columns: Column<ProgrammerDisplayRow>[];
 };
 
@@ -118,8 +117,7 @@ export const useProgrammerGrid = ({
   handleViewEntry,
   selectedJobIds,
   setSelectedJobIds,
-  customerFilter,
-  descriptionFilter,
+  searchFilter,
   columns,
 }: UseProgrammerGridArgs) => {
   const { tableData } = useJobData({
@@ -137,7 +135,7 @@ export const useProgrammerGrid = ({
     onChildRowSelect,
   });
 
-  const jobSearchQuery = String(customerFilter || descriptionFilter || "").trim();
+  const jobSearchQuery = String(searchFilter || "").trim();
   const hasJobSearch = jobSearchQuery.length > 0;
 
   const filteredProgrammerTableData = useMemo(

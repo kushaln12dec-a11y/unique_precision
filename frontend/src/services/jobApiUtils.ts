@@ -39,6 +39,7 @@ export const buildQueryParams = (
   if (createdByFilter) params.append("createdBy", createdByFilter);
   if (assignedToFilter) params.append("assignedTo", assignedToFilter);
   if (criticalFilter === true) params.append("critical", "true");
+  if ((filters as any)?.search) params.append("search", (filters as any).search);
 
   if (filters) {
     Object.keys(filters).forEach((key) => {

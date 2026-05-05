@@ -137,8 +137,9 @@ export const getOperatorJobs = async (query: JobsQuery) => {
 };
 
 export const getQcJobs = async (query: JobsQuery) => {
+  const where = buildJobWhere({ query });
   const { limit, offset } = getPagination({ query });
-  const { totalGroups, groupIds } = await getPagedGroupIds({}, offset, limit);
+  const { totalGroups, groupIds } = await getPagedGroupIds(where, offset, limit);
 
   const jobs = groupIds.length
     ? await prisma.job.findMany({

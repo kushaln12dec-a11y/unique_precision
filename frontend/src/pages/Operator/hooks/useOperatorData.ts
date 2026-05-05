@@ -18,7 +18,8 @@ export const useOperatorData = (
   customerFilter: string,
   descriptionFilter: string,
   createdByFilter: string,
-  assignedToFilter: string
+  assignedToFilter: string,
+  searchFilter?: string
 ) => {
   const navigate = useNavigate();
   const [jobs, setJobs] = useState<JobEntry[]>([]);
@@ -35,12 +36,11 @@ export const useOperatorData = (
       navigate("/login");
     }
   }, [navigate]);
-
   const refreshJobs = useCallback(async (): Promise<JobEntry[]> => {
     try {
       setLoadingJobs(true);
       const fetchedJobs = await getOperatorJobs(
-        filters,
+        { ...filters, search: searchFilter },
         customerFilter,
         createdByFilter,
         assignedToFilter,
@@ -70,7 +70,7 @@ export const useOperatorData = (
     } finally {
       setLoadingJobs(false);
     }
-  }, [assignedToFilter, createdByFilter, customerFilter, descriptionFilter, filters]);
+  }, [assignedToFilter, createdByFilter, customerFilter, descriptionFilter, filters, searchFilter]);
 
   useEffect(() => {
     void refreshJobs();

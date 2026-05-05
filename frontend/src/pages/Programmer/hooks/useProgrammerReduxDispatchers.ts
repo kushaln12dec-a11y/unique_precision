@@ -6,6 +6,7 @@ import {
   setProgrammerDescriptionFilter,
   setProgrammerFilters,
   setProgrammerShowFilterModal,
+  setProgrammerSearchFilter,
 } from "../../../store/slices/filtersSlice";
 
 type Dispatch = (action: any) => void;
@@ -20,6 +21,7 @@ export const useProgrammerReduxDispatchers = (dispatch: Dispatch, filters: Filte
     dispatch(setProgrammerDescriptionFilter(""));
     dispatch(setProgrammerCreatedByFilter(""));
     dispatch(setProgrammerCriticalFilter(false));
+    dispatch(setProgrammerSearchFilter(""));
     dispatch(setProgrammerShowFilterModal(false));
   },
   removeFilter: (key: string, type: "inline" | "modal") => {
@@ -30,6 +32,7 @@ export const useProgrammerReduxDispatchers = (dispatch: Dispatch, filters: Filte
       }
       else if (key === "description") dispatch(setProgrammerDescriptionFilter(""));
       else if (key === "createdBy") dispatch(setProgrammerCreatedByFilter(""));
+      else if (key === "search") dispatch(setProgrammerSearchFilter(""));
       return;
     }
     const updated = { ...filters };
@@ -42,4 +45,5 @@ export const useProgrammerReduxDispatchers = (dispatch: Dispatch, filters: Filte
   },
   setCreatedByFilter: (value: string) => dispatch(setProgrammerCreatedByFilter(value)),
   setCriticalFilter: (value: boolean) => dispatch(setProgrammerCriticalFilter(value)),
+  setSearchFilter: (value: string) => dispatch(setProgrammerSearchFilter(value)),
 });

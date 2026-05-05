@@ -43,6 +43,7 @@ const Programmer = () => {
     descriptionFilter,
     createdByFilter,
     criticalFilter,
+    searchFilter,
   } = useAppSelector((state) => state.filters.programmer);
 
   const isAdmin = getUserRoleFromToken() === "ADMIN";
@@ -61,7 +62,7 @@ const Programmer = () => {
     refreshJobs,
     handleNewJob: handleNewJobState,
     handleCancel: handleCancelState,
-  } = useProgrammerState(filters, customerFilter, descriptionFilter, createdByFilter, criticalFilter);
+  } = useProgrammerState(filters, customerFilter, descriptionFilter, createdByFilter, criticalFilter, searchFilter);
 
   const {
     users,
@@ -113,6 +114,7 @@ const Programmer = () => {
     descriptionFilter,
     createdByFilter,
     criticalFilter,
+    searchFilter,
     loadingJobs,
     cutsLength: cuts.length,
     editGroupError,
@@ -211,8 +213,7 @@ const Programmer = () => {
     handleViewEntry,
     selectedJobIds,
     setSelectedJobIds,
-    customerFilter,
-    descriptionFilter,
+    searchFilter,
     columns,
   });
 
@@ -268,9 +269,9 @@ const Programmer = () => {
               savingJob={savingJob}
               programmerGridJobs={programmerGridJobs}
               filters={filters}
-              customerFilter={customerFilter}
               createdByFilter={createdByFilter}
               criticalFilter={criticalFilter}
+              searchFilter={searchFilter}
               showFilterModal={showFilterModal}
               activeFilterCount={activeFilterCount}
               users={users}
