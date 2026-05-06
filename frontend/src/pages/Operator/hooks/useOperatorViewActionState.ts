@@ -125,7 +125,21 @@ export const useOperatorViewActionState = ({ jobs }: Params) => {
 
   const amounts = useMemo(() => {
     if (jobs.length === 0) return { perCut: [], totalWedmAmount: 0, totalSedmAmount: 0, totalHrs: 0 };
-    const totals = jobs.map((entry) => calculateTotals(entry as CutForm));
+    
+    const totals = jobs.map((entry) => {
+      // Use saved amounts if they exist (non-zero or non-null)
+      if (entry.wedmAmount || entry.sedmAmount) {
+        return {
+          wedmAmount: Number(entry.wedmAmount || 0),
+          sedmAmount: Number(entry.sedmAmount || 0),
+          totalHrs: Number(entry.totalHrs || 0),
+          totalAmount: Number(entry.totalAmount || 0)
+        };
+      }
+      // Fallback to calculation if not saved
+      return calculateTotals(entry as CutForm);
+    });
+
     return {
       perCut: totals.map((t) => ({ wedmAmount: t.wedmAmount, sedmAmount: t.sedmAmount, totalHrs: t.totalHrs })),
       totalWedmAmount: totals.reduce((sum, t) => sum + t.wedmAmount, 0),

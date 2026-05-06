@@ -569,3 +569,48 @@ export const buildOperatorLogPayload = ({
     },
   };
 };
+export const syncJobOperatorCapture = async (tx: any, log: any) => {
+  if (log.role !== "OPERATOR" || log.activityType !== "OPERATOR_PRODUCTION" || !log.jobId) return;
+
+  const metadata = (log.metadata || {}) as Record<string, any>;
+  const captureData = {
+    jobId: log.jobId,
+    captureMode: metadata.captureMode || (log.quantityCount > 1 ? "RANGE" : "SINGLE"),
+    fromQty: Number(log.quantityFrom || 1),
+    toQty: Number(log.quantityTo || log.quantityFrom || 1),
+    quantityCount: Number(log.quantityCount || 1),
+    startTime: log.startedAt instanceof Date ? log.startedAt.toISOString() : String(log.startedAt || ""),
+    endTime: log.endedAt instanceof Date ? log.endedAt.toISOString() : String(log.endedAt || ""),
+    machineHrs: String(metadata.machineHrs || ""),
+    machineNumber: String(metadata.machineNumber || ""),
+    opsName: String(metadata.opsName || log.userName || ""),
+    idleTime: String(metadata.idleTime || ""),
+    idleTimeDuration: String(metadata.idleTimeDuration || ""),
+    createdAt: new Date().toISOString(),
+    createdBy: log.userName || "SYSTEM",
+    employeeLogId: log.id,
+  };
+
+  if (log.status === "COMPLETED") {
+    // Upsert capture
+    const existing = await tx.jobOperatorCapture.findFirst({
+      where: { employeeLogId: log.id },
+    });
+
+    if (existing) {
+      await tx.jobOperatorCapture.update({
+        where: { id: existing.id },
+        data: captureData,
+      });
+    } else {
+      await tx.jobOperatorCapture.create({
+        data: captureData,
+      });
+    }
+  } else if (log.status === "REJECTED" || log.status === "IN_PROGRESS") {
+    // Remove capture if it exists (e.g. if status was changed back)
+    await tx.jobOperatorCapture.deleteMany({
+      where: { employeeLogId: log.id },
+    });
+  }
+};

@@ -89,6 +89,7 @@ export const OperatorLogsSection: React.FC<Props> = ({
         emptyMessage="No data available."
         getRowId={(row) => row._id}
         className="operator-logs-table logs-center"
+        fitColumns={false}
         rowHeight={68}
         refreshKey={`${operatorLogUser}|${operatorLogStatus}|${operatorLogMachine}`}
       />

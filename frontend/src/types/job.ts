@@ -24,6 +24,8 @@ export type JobEntry = CutForm & {
   groupId: string | number;
   totalHrs: number;
   totalAmount: number;
+  wedmAmount: number;
+  sedmAmount: number;
   createdAt: string;
   createdBy: string;
   updatedAt?: string;

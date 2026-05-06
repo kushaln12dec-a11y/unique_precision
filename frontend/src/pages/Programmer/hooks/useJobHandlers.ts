@@ -92,6 +92,8 @@ export const useJobHandlers = ({
           groupId,
           totalHrs: cutTotals.totalHrs,
           totalAmount: cutTotals.totalAmount,
+          wedmAmount: cutTotals.wedmAmount,
+          sedmAmount: cutTotals.sedmAmount,
           createdBy: String(existingJob?.createdBy || createdBy).trim() || createdBy,
           assignedTo: editingGroupId
             ? jobs.find((job) => String(job.groupId) === editingGroupId)?.assignedTo || "Unassign"

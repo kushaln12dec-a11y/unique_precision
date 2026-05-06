@@ -35,6 +35,8 @@ export const calculateJob = (input: JobCalculationInput) => {
     return {
       totalHrs: providedHours,
       totalAmount: providedAmount,
+      wedmAmount: providedAmount,
+      sedmAmount: 0,
     };
   }
 
@@ -43,5 +45,10 @@ export const calculateJob = (input: JobCalculationInput) => {
   const totalHrs = passAdjustedHours * quantity;
   const totalAmount = totalHrs * rate;
 
-  return { totalHrs, totalAmount };
+  return { 
+    totalHrs, 
+    totalAmount,
+    wedmAmount: totalAmount,
+    sedmAmount: 0
+  };
 };
