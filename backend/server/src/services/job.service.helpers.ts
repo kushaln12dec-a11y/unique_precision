@@ -38,6 +38,8 @@ export const buildCreateJobsTransaction = async (payload: any[] | any) => {
         ...job,
         totalHrs: job?.totalHrs ?? calculated.totalHrs,
         totalAmount: job?.totalAmount ?? calculated.totalAmount,
+        wedmAmount: job?.wedmAmount ?? calculated.wedmAmount,
+        sedmAmount: job?.sedmAmount ?? calculated.sedmAmount,
         createdAt: job?.createdAt ?? new Date(createdAtBase + index * 1000).toISOString(),
         refNumber,
       });

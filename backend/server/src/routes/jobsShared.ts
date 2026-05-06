@@ -38,6 +38,8 @@ export const programmerListSelect = {
   refNumber: true,
   updatedBy: true,
   updatedAt: true,
+  wedmAmount: true,
+  sedmAmount: true,
 } satisfies Prisma.JobSelect;
 
 export const operatorListSelect = {
@@ -157,6 +159,8 @@ export const normalizeJobInput = async (job: any) => {
     pipFinish: Boolean(job.pipFinish),
     totalHrs: toNumber(job.totalHrs) ?? 0,
     totalAmount: toNumber(job.totalAmount) ?? 0,
+    wedmAmount: toNumber(job.wedmAmount) ?? 0,
+    sedmAmount: toNumber(job.sedmAmount) ?? 0,
     createdAt,
     createdBy: job.createdBy ?? "Unknown User",
     assignedTo: job.assignedTo ?? "Unassigned",
@@ -208,6 +212,8 @@ export const normalizeJobUpdate = async (job: any) => {
   if (job.pipFinish !== undefined) data.pipFinish = Boolean(job.pipFinish);
   if (job.totalHrs !== undefined) data.totalHrs = toNumber(job.totalHrs) ?? 0;
   if (job.totalAmount !== undefined) data.totalAmount = toNumber(job.totalAmount) ?? 0;
+  if (job.wedmAmount !== undefined) data.wedmAmount = toNumber(job.wedmAmount) ?? 0;
+  if (job.sedmAmount !== undefined) data.sedmAmount = toNumber(job.sedmAmount) ?? 0;
   if (job.createdAt !== undefined) data.createdAt = parseDisplayDateTime(job.createdAt) ?? new Date();
   if (job.createdBy !== undefined) data.createdBy = job.createdBy ?? "Unknown User";
   if (job.assignedTo !== undefined) data.assignedTo = job.assignedTo ?? "Unassigned";

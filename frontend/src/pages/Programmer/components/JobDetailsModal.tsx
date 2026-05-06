@@ -41,7 +41,19 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({ job, cut, userRole, o
   const showOperatorSpecificLayout = canSeeOperatorFields;
 
   const amounts = useMemo(() => {
-    const totals = displayEntries.map((entry) => calculateTotals(entry as CutForm));
+    const totals = displayEntries.map((entry) => {
+      if (entry.wedmAmount || entry.sedmAmount) {
+        return {
+          wedmAmount: Number(entry.wedmAmount || 0),
+          sedmAmount: Number(entry.sedmAmount || 0),
+        };
+      }
+      const calculated = calculateTotals(entry as CutForm);
+      return {
+        wedmAmount: calculated.wedmAmount,
+        sedmAmount: calculated.sedmAmount,
+      };
+    });
     return {
       perCut: totals.map((item) => ({ wedmAmount: item.wedmAmount, sedmAmount: item.sedmAmount })),
       totalWedmAmount: totals.reduce((sum, item) => sum + item.wedmAmount, 0),
@@ -116,7 +128,7 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({ job, cut, userRole, o
           <div className="job-details-totals">
             <div className="total-row">
               <label>{showOperatorSpecificLayout ? "Estimated Time:" : "Cut Length Hrs:"}</label>
-              <span>{showOperatorSpecificLayout ? formatEstimatedTime(estimatedHoursFromAmount(amounts.totalWedmAmount || 0)) : (displayGroupTotalHrs ? formatDecimalHoursToHHMMhrs(displayGroupTotalHrs) : "00:00hrs")}</span>
+              <span>{showOperatorSpecificLayout ? formatEstimatedTime(displayGroupTotalHrs || 0) : (displayGroupTotalHrs ? formatDecimalHoursToHHMMhrs(displayGroupTotalHrs) : "00:00hrs")}</span>
             </div>
             {canSeeAmounts && <>
               <div className="total-row">

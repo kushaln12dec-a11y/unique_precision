@@ -55,6 +55,8 @@ model Job {
   pipFinish        Boolean  @default(false)
   totalHrs         Decimal? @db.Decimal(12, 2)
   totalAmount      Decimal? @db.Decimal(12, 2)
+  wedmAmount       Decimal? @db.Decimal(12, 2)
+  sedmAmount       Decimal? @db.Decimal(12, 2)
   createdAt        DateTime @default(now())
   createdBy        String
   assignedTo       String?  @default("Unassigned")
@@ -111,6 +113,7 @@ model JobOperatorCapture {
   lastImage       String?
   createdAt       String?
   createdBy       String?
+  employeeLogId   String?  @db.Uuid
 
   job             Job     @relation(fields: [jobId], references: [id], onDelete: Cascade)
 

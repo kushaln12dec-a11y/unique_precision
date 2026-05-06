@@ -5,7 +5,7 @@ import { emitJobsUpdated } from "../lib/socket";
 import { parseOperatorDateTime } from "../utils/dateTime";
 import { toBigInt } from "../utils/bigint";
 import { mapEmployeeLog } from "../utils/prismaMappers";
-import { normalizeOperatorPauseSessions, rebalanceOperatorRevenueForJob } from "./operatorShared";
+import { normalizeOperatorPauseSessions, rebalanceOperatorRevenueForJob, syncJobOperatorCapture } from "./operatorShared";
 
 const router = Router();
 
@@ -685,6 +685,8 @@ router.post("/operator/complete", async (req, res) => {
           await rebalanceOperatorRevenueForJob(tx, relatedJob);
         }
 
+        await syncJobOperatorCapture(tx, nextLog);
+
         return nextLog;
       });
 
@@ -784,6 +786,8 @@ router.post("/operator/complete", async (req, res) => {
           await rebalanceOperatorRevenueForJob(tx, relatedJob);
         }
       }
+
+      await syncJobOperatorCapture(tx, createdLog);
 
       return createdLog;
     });

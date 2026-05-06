@@ -51,6 +51,8 @@ const mapJobCore = (job: any) => {
     sedmHoles: job.sedmHoles !== null && job.sedmHoles !== undefined ? String(job.sedmHoles) : "",
     totalHrs: job.totalHrs !== null && job.totalHrs !== undefined ? Number(job.totalHrs) : 0,
     totalAmount: job.totalAmount !== null && job.totalAmount !== undefined ? Number(job.totalAmount) : 0,
+    wedmAmount: job.wedmAmount !== null && job.wedmAmount !== undefined ? Number(job.wedmAmount) : 0,
+    sedmAmount: job.sedmAmount !== null && job.sedmAmount !== undefined ? Number(job.sedmAmount) : 0,
   };
 };
 

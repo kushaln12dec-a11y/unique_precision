@@ -107,7 +107,7 @@ export const buildOperatorLogsColumns = ({
   { key: "shift", label: "Shift", sortable: false, render: (row) => renderOperatorShiftBadge(row.startedAt) },
   {
     key: "estimatedSeconds",
-    label: "Expected Time",
+    label: "ETA",
     sortable: false,
     render: (row) => {
       const metadata = (row.metadata as any) || {};

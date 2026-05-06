@@ -241,7 +241,7 @@
 .lazy-ag-grid-shell .ag-body-horizontal-scroll,
 .lazy-ag-grid-shell .ag-horizontal-left-spacer,
 .lazy-ag-grid-shell .ag-horizontal-right-spacer {
-  display: none !important;
+  display: block !important;
 }
 
 .lazy-ag-grid-shell.programmer-logs-table .ag-body-viewport,
