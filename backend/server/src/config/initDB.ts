@@ -221,6 +221,18 @@ const schemaStatements: string[] = [
     "key" TEXT NOT NULL UNIQUE,
     "seq" INTEGER NOT NULL DEFAULT 0
   );`,
+  `CREATE TABLE IF NOT EXISTS "SystemErrorLog" (
+    "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    "message" TEXT NOT NULL,
+    "stack" TEXT,
+    "code" TEXT,
+    "method" TEXT,
+    "url" TEXT,
+    "userId" TEXT,
+    "userName" TEXT,
+    "metadata" JSONB,
+    "createdAt" TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  );`,
 
   `DO $$
   BEGIN

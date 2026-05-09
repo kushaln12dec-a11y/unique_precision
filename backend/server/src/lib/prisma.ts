@@ -10,8 +10,8 @@ const createPrismaClient = () => {
   const hasDatabaseUrl = Boolean(process.env.DATABASE_URL);
   const hasDirectUrl = Boolean(process.env.DIRECT_URL);
   const connectionString =
-    process.env.DIRECT_URL ??
     process.env.DATABASE_URL ??
+    process.env.DIRECT_URL ??
     "postgresql://localhost:5432/postgres";
 
   if (!hasDatabaseUrl && !hasDirectUrl) {
@@ -28,6 +28,13 @@ const createPrismaClient = () => {
     log: ["error", "warn"],
   });
 };
+
+// Global BigInt serialization polyfill for JSON.stringify
+if (!(BigInt.prototype as any).toJSON) {
+  (BigInt.prototype as any).toJSON = function () {
+    return this.toString();
+  };
+}
 
 export const prisma =
   globalForPrisma.prisma ?? createPrismaClient();
