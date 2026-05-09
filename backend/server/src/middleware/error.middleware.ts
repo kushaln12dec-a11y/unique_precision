@@ -1,7 +1,6 @@
 import express from "express";
 import { ZodError } from "zod";
 import { isHttpError } from "../lib/httpError";
-import { prisma } from "../lib/prisma";
 
 export const jsonErrorHandler = (
   err: unknown,
@@ -22,10 +21,6 @@ export const errorHandler = (
   res: express.Response,
   _next: express.NextFunction
 ) => {
-  const reqUser = (req as any).user;
-  const userId = reqUser?.userId ? String(reqUser.userId) : null;
-  const userName = reqUser?.email || reqUser?.fullName || null;
-
   if (err instanceof ZodError) {
     return res.status(400).json({
       message: "Validation failed",
@@ -43,28 +38,6 @@ export const errorHandler = (
   // Handle common Prisma errors
   const error = err as any;
   const isPrismaError = error.code?.startsWith("P");
-
-  // Save error to database (fire and forget to keep handler synchronous)
-  const logData = {
-    message: error.message || String(err),
-    stack: error.stack || null,
-    code: error.code || null,
-    method: req.method,
-    url: req.url,
-    userId,
-    userName: userName ? String(userName) : null,
-    metadata: isPrismaError ? { 
-      clientVersion: error.clientVersion,
-      meta: error.meta 
-    } : {},
-  };
-
-  // Using type assertion to bypass temporary generation issues in IDE
-  (prisma as any).systemErrorLog.create({
-    data: logData,
-  }).catch((logError: any) => {
-    console.error("Failed to log error to database:", logError);
-  });
 
   if (isPrismaError) {
     console.error(`[Prisma Error ${error.code}] ${req.method} ${req.url}:`, error.message);

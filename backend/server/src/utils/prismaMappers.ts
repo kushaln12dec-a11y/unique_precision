@@ -38,6 +38,7 @@ const mapJobCore = (job: any) => {
   return {
     ...job,
     _id: job.id,
+    groupId: job.groupId ? String(job.groupId) : "",
     createdAt,
     updatedAt: updatedAt || job.updatedAt || "",
     rate: decimalToString(job.rate),
@@ -98,7 +99,10 @@ export const mapUser = (user: any, options?: { includePassword?: boolean }) => {
 
 export const mapEmployeeLog = (log: any) => {
   if (!log) return log;
-  return toId(log);
+  return {
+    ...toId(log),
+    jobGroupId: log.jobGroupId ? String(log.jobGroupId) : null,
+  };
 };
 
 export const mapJob = (job: any) => {
