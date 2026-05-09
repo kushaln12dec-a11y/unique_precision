@@ -153,6 +153,7 @@ export const normalizeJobInput = async (job: any) => {
     material: job.material ?? "",
     priority: job.priority ?? "Low",
     description: job.description ?? "",
+    remark: job.remark ?? "",
     programRefFile: job.programRefFile ?? "",
     cutImage: cutImageUrl ?? null,
     critical: Boolean(job.critical),
@@ -203,6 +204,7 @@ export const normalizeJobUpdate = async (job: any) => {
   if (job.material !== undefined) data.material = job.material ?? "";
   if (job.priority !== undefined) data.priority = job.priority ?? "Low";
   if (job.description !== undefined) data.description = job.description ?? "";
+  if (job.remark !== undefined) data.remark = job.remark ?? "";
   if (job.programRefFile !== undefined) data.programRefFile = job.programRefFile ?? "";
   if (job.cutImage !== undefined) {
     const cutImage = Array.isArray(job.cutImage) ? (job.cutImage[0] || "") : job.cutImage;
