@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Routes, Route, Navigate } from "react-router-dom";
 import Sidebar from "../../components/Sidebar";
 import Header from "../../components/Header";
 import { getUserRoleFromToken } from "../../utils/auth";
@@ -22,7 +22,8 @@ import { useProgrammerPageController } from "./hooks/useProgrammerPageController
 import { useProgrammerReduxDispatchers } from "./hooks/useProgrammerReduxDispatchers";
 import { useProgrammerNavigation } from "./hooks/useProgrammerNavigation";
 import { useJobSync } from "../../hooks/useJobSync";
-import "./ProgrammerDashboard.css";
+import "../RoleBoard.css";
+import "./Programmer.css";
 
 const ProgrammerDashboardPage = () => {
   const navigate = useNavigate();
@@ -237,72 +238,130 @@ const ProgrammerDashboardPage = () => {
 
   return (
     <div className="programmer-container">
-      <Sidebar currentPath="/programmer" onNavigate={handleProgrammerNavigate} />
+      <Sidebar currentPath={currentPathname} onNavigate={handleProgrammerNavigate} />
       <div className={`programmer-content ${isProgrammerFormRoute ? "programmer-content-scrollable" : ""}`}>
         <Header title="Programmer" onNavigate={handleProgrammerNavigate} />
-        <div
-          key={currentPathname}
-          className={`programmer-panel ${isProgrammerFormRoute ? "programmer-panel-scrollable" : ""}`}
-        >
-          {isProgrammerListRoute && <ProgrammerTabs activeTab={activeTab} setActiveTab={setActiveTab} />}
-
-          <ProgrammerFormSection
-            shouldRenderJobForm={shouldRenderJobForm}
-            loadingEditGroup={loadingEditGroup}
-            cuts={cuts}
-            setCuts={setCuts}
-            handleSaveJob={handleSaveJob}
-            handleCancel={() => handleCancel(navigate)}
-            totals={totals}
-            isAdmin={isAdmin}
-            savingJob={savingJob}
-            refNumber={refNumber}
-            masterConfig={masterConfig}
-            editingGroupId={editingGroupId}
-            shouldRenderEditLoadingState={shouldRenderEditLoadingState}
-            shouldRenderEditErrorState={shouldRenderEditErrorState}
-            editGroupError={editGroupError}
-            onBack={navigateToProgrammerList}
-          />
-
-          {isProgrammerListRoute && activeTab === "jobs" && (
-            <ProgrammerJobsSection
-              savingJob={savingJob}
-              programmerGridJobs={programmerGridJobs}
-              filters={filters}
-              createdByFilter={createdByFilter}
-              criticalFilter={criticalFilter}
-              searchFilter={searchFilter}
-              showFilterModal={showFilterModal}
-              activeFilterCount={activeFilterCount}
-              users={users}
-              dispatchers={dispatchers}
-              handleDownloadCSV={handleDownloadCSV}
-              handleNewJob={() => handleNewJob(navigate)}
-              fetchPage={jobsFetchPage}
-              rows={programmerGridRows}
-              columnDefs={programmerJobColumnDefs}
-              setProgrammerGridJobs={setProgrammerGridJobs}
-              expandedGroups={expandedGroups}
-              programmerGridRefreshKey={programmerGridRefreshKey}
+        <div className={`programmer-panel ${isProgrammerFormRoute ? "programmer-panel-scrollable" : ""}`}>
+          <Routes>
+            <Route
+              path="/"
+              element={
+                <>
+                  <ProgrammerTabs activeTab={activeTab} setActiveTab={setActiveTab} />
+                  {activeTab === "jobs" ? (
+                    <ProgrammerJobsSection
+                      savingJob={savingJob}
+                      programmerGridJobs={programmerGridJobs}
+                      filters={filters}
+                      createdByFilter={createdByFilter}
+                      criticalFilter={criticalFilter}
+                      searchFilter={searchFilter}
+                      showFilterModal={showFilterModal}
+                      activeFilterCount={activeFilterCount}
+                      users={users}
+                      dispatchers={dispatchers}
+                      handleDownloadCSV={handleDownloadCSV}
+                      handleNewJob={() => handleNewJob(navigate)}
+                      fetchPage={jobsFetchPage}
+                      rows={programmerGridRows}
+                      columnDefs={programmerJobColumnDefs}
+                      setProgrammerGridJobs={setProgrammerGridJobs}
+                      expandedGroups={expandedGroups}
+                      programmerGridRefreshKey={programmerGridRefreshKey}
+                    />
+                  ) : (
+                    <ProgrammerLogsSection
+                      logSearch={logSearch}
+                      setLogSearch={setLogSearch}
+                      logStatus={logStatus}
+                      setLogStatus={setLogStatus}
+                      logUserId={logUserId}
+                      setLogUserId={setLogUserId}
+                      programmerUsers={programmerUsers}
+                      handleExportProgrammerLogsCsv={handleExportProgrammerLogsCsv}
+                      programmerLogColumnDefs={programmerLogColumnDefs}
+                      filterProgrammerLogs={filterProgrammerLogs}
+                      fetchPage={logsFetchPage}
+                    />
+                  )}
+                </>
+              }
             />
-          )}
-
-          {isProgrammerListRoute && activeTab === "logs" && (
-            <ProgrammerLogsSection
-              logSearch={logSearch}
-              setLogSearch={setLogSearch}
-              logStatus={logStatus}
-              setLogStatus={setLogStatus}
-              logUserId={logUserId}
-              setLogUserId={setLogUserId}
-              programmerUsers={programmerUsers}
-              handleExportProgrammerLogsCsv={handleExportProgrammerLogsCsv}
-              programmerLogColumnDefs={programmerLogColumnDefs}
-              filterProgrammerLogs={filterProgrammerLogs}
-              fetchPage={logsFetchPage}
+            
+            <Route
+              path="/newjob"
+              element={
+                <ProgrammerFormSection
+                  shouldRenderJobForm={true}
+                  loadingEditGroup={loadingEditGroup}
+                  cuts={cuts}
+                  setCuts={setCuts}
+                  handleSaveJob={handleSaveJob}
+                  handleCancel={() => handleCancel(navigate)}
+                  totals={totals}
+                  isAdmin={isAdmin}
+                  savingJob={savingJob}
+                  refNumber={refNumber}
+                  masterConfig={masterConfig}
+                  editingGroupId={editingGroupId}
+                  shouldRenderEditLoadingState={false}
+                  shouldRenderEditErrorState={false}
+                  editGroupError={null}
+                  onBack={navigateToProgrammerList}
+                />
+              }
             />
-          )}
+
+            <Route
+              path="/edit/:groupId"
+              element={
+                <ProgrammerFormSection
+                  shouldRenderJobForm={shouldRenderJobForm}
+                  loadingEditGroup={loadingEditGroup}
+                  cuts={cuts}
+                  setCuts={setCuts}
+                  handleSaveJob={handleSaveJob}
+                  handleCancel={() => handleCancel(navigate)}
+                  totals={totals}
+                  isAdmin={isAdmin}
+                  savingJob={savingJob}
+                  refNumber={refNumber}
+                  masterConfig={masterConfig}
+                  editingGroupId={editingGroupId}
+                  shouldRenderEditLoadingState={shouldRenderEditLoadingState}
+                  shouldRenderEditErrorState={shouldRenderEditErrorState}
+                  editGroupError={editGroupError}
+                  onBack={navigateToProgrammerList}
+                />
+              }
+            />
+
+            <Route
+              path="/clone/:groupId"
+              element={
+                <ProgrammerFormSection
+                  shouldRenderJobForm={true}
+                  loadingEditGroup={loadingEditGroup}
+                  cuts={cuts}
+                  setCuts={setCuts}
+                  handleSaveJob={handleSaveJob}
+                  handleCancel={() => handleCancel(navigate)}
+                  totals={totals}
+                  isAdmin={isAdmin}
+                  savingJob={savingJob}
+                  refNumber={refNumber}
+                  masterConfig={masterConfig}
+                  editingGroupId={null}
+                  shouldRenderEditLoadingState={false}
+                  shouldRenderEditErrorState={false}
+                  editGroupError={null}
+                  onBack={navigateToProgrammerList}
+                />
+              }
+            />
+
+            <Route path="*" element={<Navigate to="/programmer" replace />} />
+          </Routes>
         </div>
       </div>
 

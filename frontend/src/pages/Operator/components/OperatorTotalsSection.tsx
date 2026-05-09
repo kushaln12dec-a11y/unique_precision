@@ -1,7 +1,7 @@
 import React from "react";
 import { estimatedDurationSecondsFromHours } from "../../../utils/jobFormatting";
 import { formatCompactDurationWords } from "../utils/operatorTimeUtils";
-import "../OperatorDetailView.css";
+import "../OperatorViewPage.css";
 
 type OperatorTotalsSectionProps = {
   groupEstimatedHrs: number;

@@ -20,7 +20,9 @@ import { useOperatorDashboardActivity } from "./hooks/useOperatorDashboardActivi
 import type { JobEntry } from "../../types/job";
 import type { OperatorTableRow } from "./types";
 import { useJobSync } from "../../hooks/useJobSync";
-import "./OperatorDashboard.css";
+import "../RoleBoard.css";
+import "../Programmer/Programmer.css";
+import "./Operator.css";
 
 const OperatorJobListPage = () => {
   const navigate = useNavigate();

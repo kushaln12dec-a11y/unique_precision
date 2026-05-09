@@ -4,7 +4,7 @@ import type { JobEntry } from "../../../types/job";
 import type { CutInputData } from "../types/cutInput";
 import { OperatorInputSection } from "./OperatorInputSection";
 import { estimatedHoursFromAmount, formatEstimatedTime } from "../../../utils/jobFormatting";
-import "../OperatorDetailView.css";
+import "../OperatorViewPage.css";
 
 import type { QuantityProgressStatus } from "../utils/qaProgress";
 import type { OperatorInputField } from "../types/inputFields";

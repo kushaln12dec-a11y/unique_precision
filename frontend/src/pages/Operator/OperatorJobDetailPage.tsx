@@ -21,7 +21,10 @@ import { useOperatorAssignmentSync } from "./hooks/useOperatorAssignmentSync";
 import { getPersistedIdleDuration, getPersistedIdleReason } from "./utils/operatorViewPageHelpers";
 import { getEffectiveSegmentPauseSeconds } from "./utils/operatorInputState";
 import { formatWorkedSecondsAsMachineHrs, getCurrentSegmentWorkedSeconds } from "./utils/operatorTimeUtils";
-import "./OperatorDetailView.css";
+import "../RoleBoard.css";
+import "../Programmer/Programmer.css";
+import "../Programmer/components/JobDetailsModal.css";
+import "./OperatorViewPage.css";
 import "./components/DateTimeInput.css";
 
 const normalizeOperatorName = (value: unknown) => String(value || "").trim().toUpperCase();
@@ -305,7 +308,9 @@ const OperatorJobDetailPage = () => {
   const parentJob = jobs.length > 0 ? jobs[0] : null;
   const totalGroupQuantity = jobs.reduce((sum, job) => sum + Math.max(1, Number(job.qty || 1)), 0);
   const groupTotalAmount = jobs.reduce((sum, job) => sum + (job.totalAmount || 0), 0);
-  const groupEstimatedHrs = amounts.totalHrs || 0;
+  
+  // Synchronize with Programmer screen: Time = WEDM Amount / 625
+  const groupEstimatedHrs = (amounts.totalWedmAmount || 0) / 625;
   const machineOptions = useMemo(() => {
     const options = new Set<string>(MACHINE_OPTIONS.map((machine) => toMachineIndex(machine)).filter(Boolean));
     jobs.forEach((job) => {
