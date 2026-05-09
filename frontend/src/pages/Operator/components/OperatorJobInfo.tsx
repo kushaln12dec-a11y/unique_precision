@@ -2,7 +2,7 @@ import React from "react";
 import { formatJobRefDisplay } from "../../../utils/jobFormatting";
 import type { JobEntry } from "../../../types/job";
 import { formatDate } from "../utils/dateFormat";
-import "../OperatorViewPage.css";
+import "../OperatorDetailView.css";
 
 type OperatorJobInfoProps = {
   parentJob: JobEntry;

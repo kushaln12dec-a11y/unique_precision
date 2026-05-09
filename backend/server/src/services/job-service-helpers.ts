@@ -1,10 +1,10 @@
-import { calculateJob } from "./jobCalculation.service";
+import { calculateJob } from "./job-calculation-service";
 import {
   JOB_REF_REGEX,
   getNextJobRef,
   jobInclude,
   normalizeJobInput,
-} from "../routes/jobsShared";
+} from "../utils/job-utils";
 
 export const groupJobsByGroupId = <T extends { groupId: unknown }>(jobs: T[]) => {
   const jobsByGroupId = new Map<string, T[]>();

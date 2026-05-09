@@ -3,20 +3,20 @@ import path from "path";
 import fs from "fs";
 import cors from "cors";
 import helmet from "helmet";
-import authRoutes from "./routes/auth";
-import userRoutes from "./routes/users";
-import jobRoutes from "./routes/jobs";
-import operatorRoutes from "./routes/operator";
-import idleTimeConfigRoutes from "./routes/idleTimeConfig";
-import employeeLogsRoutes from "./routes/employeeLogs";
-import masterConfigRoutes from "./routes/masterConfig";
-import inspectionReportsRoutes from "./routes/inspectionReports";
-import uploadRoutes from "./routes/upload";
-import dashboardRoutes from "./routes/dashboard";
-import debugRoutes from "./routes/debug";
-import { authMiddleware } from "./middleware/auth";
-import { errorHandler, jsonErrorHandler } from "./middleware/error.middleware";
-import { apiRateLimiter, authRateLimiter } from "./middleware/rateLimit.middleware";
+import authRoutes from "./routes/auth-routes";
+import userRoutes from "./routes/user-routes";
+import jobRoutes from "./routes/job-routes";
+import operatorRoutes from "./routes/operator-routes";
+import idleTimeConfigRoutes from "./routes/idle-time-config-routes";
+import employeeLogsRoutes from "./routes/employee-logs-routes";
+import masterConfigRoutes from "./routes/master-config-routes";
+import inspectionReportsRoutes from "./routes/inspection-reports-routes";
+import uploadRoutes from "./routes/upload-routes";
+import dashboardRoutes from "./routes/dashboard-routes";
+import debugRoutes from "./routes/debug-routes";
+import { authenticate } from "./middleware/auth-middleware";
+import { errorHandler, jsonErrorHandler } from "./middleware/error-middleware";
+import { apiRateLimiter, authRateLimiter } from "./middleware/rate-limit-middleware";
 
 const compression = require("compression");
 const morgan = require("morgan");
@@ -86,7 +86,7 @@ app.use("/api/debug", debugRoutes);
 app.use("/api/upload", uploadRoutes);
 
 // Protected route example
-app.get("/api/protected", authMiddleware, (_req, res) => {
+app.get("/api/protected", authenticate, (_req, res) => {
   res.json({ message: "Protected data" });
 });
 

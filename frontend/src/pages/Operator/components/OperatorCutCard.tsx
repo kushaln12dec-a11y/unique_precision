@@ -1,10 +1,10 @@
-﻿import React from "react";
+import React from "react";
 import ImageUpload from "../../Programmer/components/ImageUpload";
 import type { JobEntry } from "../../../types/job";
 import type { CutInputData } from "../types/cutInput";
 import { OperatorInputSection } from "./OperatorInputSection";
 import { estimatedHoursFromAmount, formatEstimatedTime } from "../../../utils/jobFormatting";
-import "../OperatorViewPage.css";
+import "../OperatorDetailView.css";
 
 import type { QuantityProgressStatus } from "../utils/qaProgress";
 import type { OperatorInputField } from "../types/inputFields";
@@ -99,7 +99,7 @@ export const OperatorCutCard: React.FC<OperatorCutCardProps> = ({
     <div className="operator-cut-card">
       <div className="operator-cut-header" onClick={onToggleExpansion}>
         <h4>Setting {index + 1}</h4>
-        <div className="cut-expand-indicator">{isExpanded ? "▼" : "▶"}</div>
+        <div className="cut-expand-indicator">{isExpanded ? "?" : "?"}</div>
       </div>
 
       {isExpanded && (

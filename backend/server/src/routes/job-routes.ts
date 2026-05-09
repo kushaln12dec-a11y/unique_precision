@@ -1,7 +1,7 @@
 import { Router } from "express";
-import * as jobController from "../controllers/job.controller";
-import { authenticate } from "../middleware/auth.middleware";
-import { authorize } from "../middleware/rbac.middleware";
+import * as jobController from "../controllers/job-controller";
+import { authenticate } from "../middleware/auth-middleware";
+import { authorize } from "../middleware/rbac-middleware";
 
 const router = Router();
 
