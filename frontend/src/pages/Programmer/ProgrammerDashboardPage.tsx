@@ -22,8 +22,9 @@ import { useProgrammerPageController } from "./hooks/useProgrammerPageController
 import { useProgrammerReduxDispatchers } from "./hooks/useProgrammerReduxDispatchers";
 import { useProgrammerNavigation } from "./hooks/useProgrammerNavigation";
 import { useJobSync } from "../../hooks/useJobSync";
+import "./ProgrammerDashboard.css";
 
-const Programmer = () => {
+const ProgrammerDashboardPage = () => {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
 
@@ -327,4 +328,4 @@ const Programmer = () => {
   );
 };
 
-export default Programmer;
+export default ProgrammerDashboardPage;

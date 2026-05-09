@@ -19,11 +19,11 @@ import { createQcColumns } from "./qcColumns";
 import { buildQcRows, formatDateForTemplate, getDrawingNo, getPrimaryOperatorName, getQcRowSearchValues, type QcRow } from "./qcUtils";
 import { useJobSync } from "../../hooks/useJobSync";
 import "../RoleBoard.css";
-import "../Programmer/Programmer.css";
-import "./QC.css";
+import "../Programmer/ProgrammerDashboard.css";
+import "./QualityControlDashboard.css";
 import "./components/QcReportTemplateModal.css";
 
-const QC = () => {
+const QualityControlPage = () => {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const { customerFilter, descriptionFilter, operatorFilter, searchFilter } = useAppSelector((state) => state.filters.qc);
@@ -305,4 +305,4 @@ const QC = () => {
   );
 };
 
-export default QC;
+export default QualityControlPage;

@@ -20,11 +20,9 @@ import { useOperatorDashboardActivity } from "./hooks/useOperatorDashboardActivi
 import type { JobEntry } from "../../types/job";
 import type { OperatorTableRow } from "./types";
 import { useJobSync } from "../../hooks/useJobSync";
-import "../RoleBoard.css";
-import "../Programmer/Programmer.css";
-import "./Operator.css";
+import "./OperatorDashboard.css";
 
-const Operator = () => {
+const OperatorJobListPage = () => {
   const navigate = useNavigate();
   const userRole = (getUserRoleFromToken() || "").toUpperCase();
   const currentUserDisplayName = (getUserDisplayNameFromToken() || "USER").trim().toUpperCase();
@@ -271,4 +269,4 @@ const Operator = () => {
   );
 };
 
-export default Operator;
+export default OperatorJobListPage;

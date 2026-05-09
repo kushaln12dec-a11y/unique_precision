@@ -1,6 +1,6 @@
 import type { Server as HttpServer } from "http";
 import { Server } from "socket.io";
-import { verifyAuthToken, type AuthenticatedUser } from "../middleware/auth.middleware";
+import { verifyAuthToken, type AuthenticatedUser } from "../middleware/auth-middleware";
 import { JOBS_UPDATED_EVENT, type JobsUpdateEvent } from "./jobEvents";
 
 type ClientToServerEvents = {

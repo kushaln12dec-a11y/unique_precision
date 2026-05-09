@@ -5,7 +5,7 @@ import type { OperatorInputField } from "../types/inputFields";
 import OperatorInputRangeControls from "./OperatorInputRangeControls";
 import OperatorQaSelectionStrip from "./OperatorQaSelectionStrip";
 import OperatorQuantityCard from "./OperatorQuantityCard";
-import "../OperatorViewPage.css";
+import "../OperatorDetailView.css";
 
 type OperatorInputSectionProps = {
   cutData: CutInputData;

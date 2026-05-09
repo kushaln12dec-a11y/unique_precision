@@ -5,13 +5,13 @@ import ProtectedRoute from "./components/ProtectedRoute";
 
 const Login = lazy(() => import("./pages/Login page/Login"));
 const SharedDashboard = lazy(() => import("./pages/Dashboard/SharedDashboard"));
-const OperatorDashboard = lazy(() => import("./pages/OperatorDashboard/OperatorDashboard"));
-const Programmer = lazy(() => import("./pages/Programmer/Programmer"));
-const Operator = lazy(() => import("./pages/Operator/Operator"));
-const OperatorViewPage = lazy(() => import("./pages/Operator/OperatorViewPage.tsx"));
-const QC = lazy(() => import("./pages/QC/QC"));
+const OperatorDashboardWrapper = lazy(() => import("./pages/OperatorDashboard/OperatorDashboard"));
+const ProgrammerDashboard = lazy(() => import("./pages/Programmer/ProgrammerDashboardPage"));
+const OperatorJobList = lazy(() => import("./pages/Operator/OperatorJobListPage"));
+const OperatorJobDetail = lazy(() => import("./pages/Operator/OperatorJobDetailPage"));
+const QualityControl = lazy(() => import("./pages/QC/QualityControlPage"));
 const InspectionReportPage = lazy(() => import("./pages/QC/InspectionReportPage"));
-const Inventory = lazy(() => import("./pages/Inventory/Inventory"));
+const InventoryPage = lazy(() => import("./pages/Inventory/InventoryPage"));
 const UserManagement = lazy(() => import("./pages/User Management/UserManagement"));
 const EmployeeLogs = lazy(() => import("./pages/EmployeeLogs/EmployeeLogs"));
 const AdminConsole = lazy(() => import("./pages/AdminConsole/AdminConsole"));
@@ -33,7 +33,7 @@ function AppRoutes() {
         path="/operator-dashboard"
         element={
           <ProtectedRoute>
-            <OperatorDashboard />
+            <OperatorDashboardWrapper />
           </ProtectedRoute>
         }
       />
@@ -41,7 +41,7 @@ function AppRoutes() {
         path="/programmer/*"
         element={
           <ProtectedRoute>
-            <Programmer />
+            <ProgrammerDashboard />
           </ProtectedRoute>
         }
       />
@@ -49,7 +49,7 @@ function AppRoutes() {
         path="/operator"
         element={
           <ProtectedRoute>
-            <Operator />
+            <OperatorJobList />
           </ProtectedRoute>
         }
       />
@@ -57,7 +57,7 @@ function AppRoutes() {
         path="/operator/viewpage"
         element={
           <ProtectedRoute>
-            <OperatorViewPage />
+            <OperatorJobDetail />
           </ProtectedRoute>
         }
       />
@@ -65,7 +65,7 @@ function AppRoutes() {
         path="/qc"
         element={
           <ProtectedRoute>
-            <QC />
+            <QualityControl />
           </ProtectedRoute>
         }
       />
@@ -81,7 +81,7 @@ function AppRoutes() {
         path="/inventory"
         element={
           <ProtectedRoute>
-            <Inventory />
+            <InventoryPage />
           </ProtectedRoute>
         }
       />

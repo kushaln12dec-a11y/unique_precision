@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import * as jobService from "../services/job.service";
+import * as jobService from "../services/job-service";
 import { HttpError } from "../lib/httpError";
 import { createJobsSchema, jobsQuerySchema } from "../validators/job.validator";
 

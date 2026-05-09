@@ -4,7 +4,7 @@ import Sidebar from "../../components/Sidebar";
 import Header from "../../components/Header";
 import "../RoleBoard.css";
 
-const Inventory = () => {
+const InventoryPage = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -28,4 +28,4 @@ const Inventory = () => {
   );
 };
 
-export default Inventory;
+export default InventoryPage;

@@ -21,15 +21,12 @@ import { useOperatorAssignmentSync } from "./hooks/useOperatorAssignmentSync";
 import { getPersistedIdleDuration, getPersistedIdleReason } from "./utils/operatorViewPageHelpers";
 import { getEffectiveSegmentPauseSeconds } from "./utils/operatorInputState";
 import { formatWorkedSecondsAsMachineHrs, getCurrentSegmentWorkedSeconds } from "./utils/operatorTimeUtils";
-import "../RoleBoard.css";
-import "../Programmer/Programmer.css";
-import "../Programmer/components/JobDetailsModal.css";
-import "./OperatorViewPage.css";
+import "./OperatorDetailView.css";
 import "./components/DateTimeInput.css";
 
 const normalizeOperatorName = (value: unknown) => String(value || "").trim().toUpperCase();
 
-const OperatorViewPage = () => {
+const OperatorJobDetailPage = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const groupId = searchParams.get("groupId");
@@ -489,4 +486,4 @@ const OperatorViewPage = () => {
   );
 };
 
-export default OperatorViewPage;
+export default OperatorJobDetailPage;
