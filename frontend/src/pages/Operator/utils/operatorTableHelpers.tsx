@@ -1,7 +1,6 @@
 import ArrowForwardIosSharpIcon from "@mui/icons-material/ArrowForwardIosSharp";
 import type { JobEntry } from "../../../types/job";
 import {
-  formatEstimatedTime,
   estimatedTimeFromAmount,
   MACHINE_OPTIONS,
   toMachineIndex,

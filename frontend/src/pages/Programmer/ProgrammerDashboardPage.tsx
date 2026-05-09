@@ -244,7 +244,7 @@ const ProgrammerDashboardPage = () => {
         <div className={`programmer-panel ${isProgrammerFormRoute ? "programmer-panel-scrollable" : ""}`}>
           <Routes>
             <Route
-              path="/"
+              index
               element={
                 <>
                   <ProgrammerTabs activeTab={activeTab} setActiveTab={setActiveTab} />
@@ -289,7 +289,7 @@ const ProgrammerDashboardPage = () => {
             />
             
             <Route
-              path="/newjob"
+              path="newjob"
               element={
                 <ProgrammerFormSection
                   shouldRenderJobForm={true}
@@ -313,7 +313,7 @@ const ProgrammerDashboardPage = () => {
             />
 
             <Route
-              path="/edit/:groupId"
+              path="edit/:groupId"
               element={
                 <ProgrammerFormSection
                   shouldRenderJobForm={shouldRenderJobForm}
@@ -337,7 +337,7 @@ const ProgrammerDashboardPage = () => {
             />
 
             <Route
-              path="/clone/:groupId"
+              path="clone/:groupId"
               element={
                 <ProgrammerFormSection
                   shouldRenderJobForm={true}
