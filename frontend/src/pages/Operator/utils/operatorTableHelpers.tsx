@@ -2,6 +2,7 @@ import ArrowForwardIosSharpIcon from "@mui/icons-material/ArrowForwardIosSharp";
 import type { JobEntry } from "../../../types/job";
 import {
   formatEstimatedTime,
+  estimatedTimeFromAmount,
   MACHINE_OPTIONS,
   toMachineIndex,
 } from "../../../utils/jobFormatting";
@@ -235,8 +236,8 @@ export const renderOperatorCustomerCell = (
 
 export const renderEstimatedTime = (row: OperatorDisplayRow) => {
   const sourceEntries = row.kind === "parent" ? row.tableRow.entries : [row.entry];
-  const expectedHours = getGroupExpectedHours(sourceEntries);
-  return formatEstimatedTime(expectedHours);
+  const totalAmount = sourceEntries.reduce((sum, entry) => sum + Number(entry.totalAmount || 0), 0);
+  return estimatedTimeFromAmount(totalAmount);
 };
 
 export const renderEstimatedTimeWithLogs = (

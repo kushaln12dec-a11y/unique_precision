@@ -19,7 +19,7 @@ import { createQcColumns } from "./qcColumns";
 import { buildQcRows, formatDateForTemplate, getDrawingNo, getPrimaryOperatorName, getQcRowSearchValues, type QcRow } from "./qcUtils";
 import { useJobSync } from "../../hooks/useJobSync";
 import "../RoleBoard.css";
-import "../Programmer/ProgrammerDashboard.css";
+import "../Programmer/Programmer.css";
 import "./QualityControlDashboard.css";
 import "./components/QcReportTemplateModal.css";
 

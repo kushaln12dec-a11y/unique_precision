@@ -3,7 +3,7 @@ import Modal from "../../../components/Modal";
 import type { CutForm } from "../programmerUtils";
 import SedmEntrySection from "./SedmEntrySection";
 import "../../../components/Modal.css";
-import "../ProgrammerDashboard.css";
+import "../Programmer.css";
 import {
   buildInitialSedmEntries,
   calculateSingleSedmAmount,
