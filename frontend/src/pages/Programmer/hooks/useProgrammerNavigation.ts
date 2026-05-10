@@ -1,5 +1,5 @@
 import { useCallback, type Dispatch, type SetStateAction } from "react";
-import type { NavigateFunction } from "react-router-dom";
+import { useLocation, type NavigateFunction } from "react-router-dom";
 
 type UseProgrammerNavigationParams = {
   isProgrammerFormRoute: boolean;
@@ -11,34 +11,44 @@ type UseProgrammerNavigationParams = {
 
 const buildRefreshState = () => ({ refreshedAt: Date.now() });
 
+const isFormPath = (pathname: string) =>
+  pathname.startsWith("/programmer/newjob") ||
+  pathname.startsWith("/programmer/edit/") ||
+  pathname.startsWith("/programmer/clone/");
+
 export const useProgrammerNavigation = ({
-  isProgrammerFormRoute,
   navigate,
   handleCancelState,
   setSavingJob,
   cancelSave,
 }: UseProgrammerNavigationParams) => {
+  const location = useLocation();
+
   const navigateToProgrammerList = useCallback(() => {
+    cancelSave();
+    setSavingJob(false);
+    handleCancelState();
     navigate("/programmer", {
       replace: true,
       state: buildRefreshState(),
     });
-  }, [navigate]);
+  }, [cancelSave, handleCancelState, navigate, setSavingJob]);
 
   const handleProgrammerNavigate = useCallback((path: string) => {
-    if (isProgrammerFormRoute) {
+    // Read pathname at call time to avoid stale closures
+    const currentlyOnForm = isFormPath(location.pathname);
+
+    if (currentlyOnForm) {
       cancelSave();
       setSavingJob(false);
       handleCancelState();
-      navigate(path, {
-        replace: path === "/programmer",
-        state: buildRefreshState(),
-      });
-      return;
     }
 
-    navigate(path);
-  }, [cancelSave, handleCancelState, isProgrammerFormRoute, navigate, setSavingJob]);
+    navigate(path, {
+      replace: currentlyOnForm && path === "/programmer",
+      state: buildRefreshState(),
+    });
+  }, [cancelSave, handleCancelState, location.pathname, navigate, setSavingJob]);
 
   return {
     handleProgrammerNavigate,
