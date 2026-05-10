@@ -26,6 +26,7 @@ type Props = {
   onInputChange: (cutId: number | string, quantityIndex: number, field: OperatorInputField, value: string | string[]) => void;
   onSaveQuantity?: (cutId: number | string, quantityIndex: number) => void;
   onSaveRange?: (cutId: number | string, sourceQuantityIndex: number, fromQty: number, toQty: number) => void;
+  isAlreadySaved?: boolean;
 };
 
 const OperatorQuantityActions: React.FC<Props> = ({
@@ -53,6 +54,7 @@ const OperatorQuantityActions: React.FC<Props> = ({
   onInputChange,
   onSaveQuantity,
   onSaveRange,
+  isAlreadySaved,
 }) => {
   const canSaveSingleQuantity = canOperateInputs && Boolean(String(qtyEndTime || "").trim());
   const canSaveRange = canOperateInputs && !isRangeMode ? false : Boolean(String(qtyEndTime || "").trim()) && isRangeValid && isRangeApproved;
@@ -67,6 +69,7 @@ const OperatorQuantityActions: React.FC<Props> = ({
           disabled={!canSaveRange}
           onClick={() => {
             if (!canRunAssignedJob) return showRunBlockedToast();
+            if (savedRanges.has(rangeBadgeKey)) return onShowToast?.(`Range ${rangeStartQty}-${rangeEndQty} is already saved.`, "info");
             if (!String(qtyEndTime || "").trim()) return onShowToast?.("Click End Time before saving.", "error");
             if (!isRangeValid) return onShowToast?.(`Enter range between 1 and ${Math.max(rangeEndQty, rangeStartQty)}.`, "error");
             if (!isRangeApproved) return onShowToast?.("Please click Check to accept the range.", "error");
@@ -106,15 +109,16 @@ const OperatorQuantityActions: React.FC<Props> = ({
           )}
           <button
             type="button"
-            className="btn-save-quantity"
+            className={`btn-save-quantity ${isAlreadySaved ? "saved" : ""}`}
             disabled={!canSaveSingleQuantity || !canRunAssignedJob}
             onClick={() => {
               if (!canRunAssignedJob) return showRunBlockedToast();
+              if (isAlreadySaved) return onShowToast?.(`Quantity ${qtyIndex + 1} is already saved.`, "info");
               if (!String(qtyEndTime || "").trim()) return onShowToast?.("Click End Time before saving.", "error");
               onSaveQuantity?.(cutId, qtyIndex);
             }}
           >
-            Save Quantity {qtyIndex + 1}
+            {isAlreadySaved ? "Saved" : `Save Quantity ${qtyIndex + 1}`}
           </button>
         </>
       )}

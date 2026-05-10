@@ -110,7 +110,6 @@ const ProgrammerDashboardPage = () => {
     jobsFetchPage,
     logsFetchPage,
   } = useProgrammerPageController({
-    currentPathname,
     filters,
     customerFilter,
     descriptionFilter,
@@ -242,7 +241,7 @@ const ProgrammerDashboardPage = () => {
       <div className={`programmer-content ${isProgrammerFormRoute ? "programmer-content-scrollable" : ""}`}>
         <Header title="Programmer" onNavigate={handleProgrammerNavigate} />
         <div className={`programmer-panel ${isProgrammerFormRoute ? "programmer-panel-scrollable" : ""}`}>
-          <Routes>
+          <Routes key={currentPathname}>
             <Route
               index
               element={

@@ -295,6 +295,7 @@ export const OperatorQuantityCard: React.FC<OperatorQuantityCardProps> = ({
         onInputChange={onInputChange}
         onSaveQuantity={onSaveQuantity}
         onSaveRange={onSaveRange}
+        isAlreadySaved={["SAVED", "READY_FOR_QA", "SENT_TO_QA"].includes(getStatus(qtyIndex + 1))}
       />
     </div>
   );

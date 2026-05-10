@@ -11,11 +11,11 @@ import type { MasterConfig } from "../../../types/masterConfig";
 import type { EmployeeLog } from "../../../types/employeeLog";
 import type { User } from "../../../types/user";
 import type { JobEntry } from "../../../types/job";
+import { useLocation } from "react-router-dom";
 import { SEARCH_FETCH_PAGE_SIZE } from "./useProgrammerLogs";
 import type { TableRow } from "../utils/jobDataTransform";
 
 type UseProgrammerPageControllerParams = {
-  currentPathname: string;
   filters: FilterValues;
   customerFilter: string;
   descriptionFilter: string;
@@ -38,7 +38,6 @@ type UseProgrammerPageControllerParams = {
 };
 
 export const useProgrammerPageController = ({
-  currentPathname,
   filters,
   customerFilter,
   descriptionFilter,
@@ -53,6 +52,8 @@ export const useProgrammerPageController = ({
   handleCancelState,
   setToast,
 }: UseProgrammerPageControllerParams) => {
+  const location = useLocation();
+  const currentPathname = location.pathname;
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(() => new Set());
   const [users, setUsers] = useState<User[]>([]);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
