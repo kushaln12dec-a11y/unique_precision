@@ -3,7 +3,7 @@ import type { FilterValues } from "../../../components/FilterModal";
 import OperatorJobsSection from "./OperatorJobsSection";
 import OperatorLogsSection from "./OperatorLogsSection";
 import OperatorTabs from "./OperatorTabs";
-import { isGroupProductionComplete, isJobProductionComplete } from "../utils/qaProgress";
+import { isJobProductionComplete } from "../utils/qaProgress";
 import type { EmployeeLog } from "../../../types/employeeLog";
 import type { OperatorCompletionAlert } from "../types";
 
@@ -208,7 +208,10 @@ const OperatorPageContent = (props: OperatorPageContentProps) => {
             if (row.kind === "child") {
               return isJobProductionComplete(row.entry, activeOperatorRuns.find(log => String(log.jobId) === String(row.entry.id)));
             }
-            return isGroupProductionComplete(row.tableRow.entries, new Map(activeOperatorRuns.map(log => [String(log.jobId), log])));
+            // For parents, show if ANY child in that group is complete
+            return row.tableRow.entries.some((entry: JobEntry) => 
+              isJobProductionComplete(entry, activeOperatorRuns.find(log => String(log.jobId) === String(entry.id)))
+            );
           })}
           expandedGroups={expandedGroups}
           createdByRefreshKey={`${createdByRefreshKey}|logged`}

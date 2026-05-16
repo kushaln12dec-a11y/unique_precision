@@ -189,7 +189,7 @@
 .operator-subtabs {
   display: inline-flex;
   gap: 0.4rem;
-  margin-bottom: 0.7rem;
+  margin-bottom: 0.1rem;
 }
 
 .operator-subtab {
@@ -227,6 +227,11 @@
   font-size: 0.64rem;
 }
 
+.roleboard-content .programmer-panel .filter-group {
+  min-width: 110px;
+  gap: 0.15rem;
+}
+
 .operator-logs-table .created-by-badge,
 .operator-logs-table .log-user-initial-badge {
   width: 24px;
@@ -251,6 +256,11 @@
   overflow: visible;
   border-collapse: separate;
   border-spacing: 0;
+}
+
+.roleboard-content .programmer-panel .panel-header {
+  margin-bottom: 0.35rem;
+  gap: 0.4rem;
 }
 
 .operator-logs-table .data-table thead th {

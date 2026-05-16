@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from "react";
-import { useNavigate, Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { useNavigate, Routes, Route, Navigate } from "react-router-dom";
 import Sidebar from "../../components/Sidebar";
 import Header from "../../components/Header";
 import { getUserRoleFromToken } from "../../utils/auth";
@@ -27,7 +27,7 @@ import "./Programmer.css";
 
 const ProgrammerDashboardPage = () => {
   const navigate = useNavigate();
-  const location = useLocation();
+
   const dispatch = useAppDispatch();
 
   const [sortField] = useState<keyof JobEntry | null>(null);

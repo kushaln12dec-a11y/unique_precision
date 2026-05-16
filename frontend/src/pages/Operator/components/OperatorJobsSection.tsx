@@ -191,10 +191,6 @@ export const OperatorJobsSection: React.FC<Props> = ({
     return () => window.clearTimeout(timeoutId);
   }, [completionAlerts, setToast]);
 
-  if (loadingJobs && operatorGridJobs.length === 0) {
-    return <AppLoader message="Loading operator jobs..." />;
-  }
-
   return (
     <>
       <OperatorFilters
@@ -233,39 +229,46 @@ export const OperatorJobsSection: React.FC<Props> = ({
         onOpenRunningJob={onOpenRunningJob}
         onClearAllFilters={handleClearFilters}
       />
-      <LazyAgGrid
-        columnDefs={operatorJobColumnDefs as any}
-        fetchPage={fetchPage}
-        rows={operatorGridJobs}
-        onRowsChange={setOperatorGridJobs}
-        transformRows={() => operatorGridRows}
-        getRowId={(row: OperatorDisplayRow) =>
-          row.kind === "parent" ? `parent__${row.groupId}` : `child__${row.groupId}__${row.entry.id}`
-        }
-        emptyMessage="No data available."
-        getRowClass={(params) => {
-          if (params.data?.kind === "child") {
-            const childFlagClass = getRowClassName([params.data.entry], false, true);
-            const childCounts = getQaProgressCounts(
-              params.data.entry,
-              Math.max(1, Number(params.data.entry.qty || 1)),
-              activeRunsByJobId.get(String(params.data.entry.id))
-            );
-            const childStageClass = getDominantQaStageClass(childCounts);
-            return `${childFlagClass} ${childStageClass}`;
-          }
 
-          const row = params.data.tableRow as OperatorTableRow;
-          const flagClass = getParentRowClassName(row.parent, row.entries, expandedGroups.has(row.groupId));
-          const c = getGroupQaProgressCounts(row.entries, activeRunsByJobId);
-          const stageClass = getDominantQaStageClass(c);
-          return `${flagClass} ${stageClass}`;
-        }}
-        className="jobs-table-wrapper operator-table-no-scroll"
-        rowHeight={42}
-        fitColumns={true}
-        refreshKey={createdByRefreshKey}
-      />
+      {loadingJobs && operatorGridJobs.length === 0 ? (
+        <div style={{ padding: "2rem 0" }}>
+          <AppLoader message="Loading operator jobs..." />
+        </div>
+      ) : (
+        <LazyAgGrid
+          columnDefs={operatorJobColumnDefs as any}
+          fetchPage={fetchPage}
+          rows={operatorGridJobs}
+          onRowsChange={setOperatorGridJobs}
+          transformRows={() => operatorGridRows}
+          getRowId={(row: OperatorDisplayRow) =>
+            row.kind === "parent" ? `parent__${row.groupId}` : `child__${row.groupId}__${row.entry.id}`
+          }
+          emptyMessage="No data available."
+          getRowClass={(params) => {
+            if (params.data?.kind === "child") {
+              const childFlagClass = getRowClassName([params.data.entry], false, true);
+              const childCounts = getQaProgressCounts(
+                params.data.entry,
+                Math.max(1, Number(params.data.entry.qty || 1)),
+                activeRunsByJobId.get(String(params.data.entry.id))
+              );
+              const childStageClass = getDominantQaStageClass(childCounts);
+              return `${childFlagClass} ${childStageClass}`;
+            }
+
+            const row = params.data.tableRow as OperatorTableRow;
+            const flagClass = getParentRowClassName(row.parent, row.entries, expandedGroups.has(row.groupId));
+            const c = getGroupQaProgressCounts(row.entries, activeRunsByJobId);
+            const stageClass = getDominantQaStageClass(c);
+            return `${flagClass} ${stageClass}`;
+          }}
+          className="jobs-table-wrapper operator-table-no-scroll"
+          rowHeight={42}
+          fitColumns={true}
+          refreshKey={createdByRefreshKey}
+        />
+      )}
     </>
   );
 };
