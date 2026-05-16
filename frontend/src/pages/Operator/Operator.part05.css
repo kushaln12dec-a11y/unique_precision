@@ -132,14 +132,18 @@
 .operator-stage-legend-inline {
   display: inline-flex;
   align-items: center;
-  gap: 0.35rem;
-  flex-wrap: nowrap;
+  gap: 0.25rem;
+  flex-wrap: wrap;
   white-space: nowrap;
-  margin-bottom: 0.22rem;
+  margin-top: 0.1rem;
+  margin-bottom: 0.05rem;
   align-self: flex-start;
   margin-left: 0;
   margin-right: 0;
   flex-shrink: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+  max-width: 100%;
 }
 
 /* Single owner/operator dropdown */

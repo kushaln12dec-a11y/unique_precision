@@ -1,4 +1,11 @@
-import { useEffect, useId, useMemo, useRef, useState, type CSSProperties, type FocusEvent } from "react";
+import React, {
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+} from "react";
 import MultiSelectOperatorsMenu from "./MultiSelectOperatorsMenu";
 import "./MultiSelectOperators.css";
 
@@ -17,7 +24,7 @@ type MultiSelectOperatorsProps = {
   selfToggleOnly?: boolean;
 };
 
-export const MultiSelectOperators = ({
+export const MultiSelectOperators = React.memo(({
   selectedOperators,
   availableOperators,
   onChange,
@@ -95,8 +102,14 @@ export const MultiSelectOperators = ({
 
   useEffect(() => {
     const handleOutsideDown = (event: MouseEvent) => {
-      const target = event.target as Node;
-      if (!containerRef.current?.contains(target) && !menuRef.current?.contains(target)) setIsOpen(false);
+      const target = event.target as HTMLElement;
+      const insideContainer = containerRef.current?.contains(target);
+      const insideMenu = menuRef.current?.contains(target) || 
+                         target.closest(".multi-select-dropdown");
+      
+      if (!insideContainer && !insideMenu) {
+        setIsOpen(false);
+      }
     };
     const handleOtherDropdownOpened = (event: Event) => {
       if ((event as CustomEvent<string>).detail !== dropdownId) setIsOpen(false);
@@ -171,12 +184,6 @@ export const MultiSelectOperators = ({
       <div
         ref={containerRef}
         className={`multi-select-operators ${className} ${disabled ? "disabled" : ""} ${isOpen ? "open" : ""} ${compact ? "compact" : ""}`}
-        onBlur={(event: FocusEvent<HTMLDivElement>) => {
-          const nextFocused = event.relatedTarget as Node | null;
-          if (nextFocused && !containerRef.current?.contains(nextFocused) && !menuRef.current?.contains(nextFocused)) {
-            setIsOpen(false);
-          }
-        }}
       >
         <button
           type="button"
@@ -244,4 +251,4 @@ export const MultiSelectOperators = ({
       />
     </>
   );
-};
+});

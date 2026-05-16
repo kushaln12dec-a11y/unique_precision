@@ -221,13 +221,13 @@
 }
 
 .roleboard-content .programmer-panel .panel-header {
-  margin-bottom: 0.5rem;
-  gap: 0.5rem;
+  margin-bottom: 0.35rem;
+  gap: 0.4rem;
 }
 
 .roleboard-content .programmer-panel .filter-group {
-  min-width: 120px;
-  gap: 0.25rem;
+  min-width: 110px;
+  gap: 0.15rem;
 }
 
 .roleboard-content .programmer-panel .inline-filters {
@@ -240,10 +240,11 @@
 
 .roleboard-content .programmer-panel .panel-header-actions {
   display: flex;
-  flex-direction: column;
-  align-items: flex-end;
+  flex-direction: row;
+  align-items: center;
   justify-content: flex-end;
   gap: 0.5rem;
+  flex-wrap: wrap;
 }
 
 .operator-filters-top-row {
@@ -268,7 +269,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 0.75rem;
+  gap: 0.4rem;
   flex-wrap: wrap;
 }
 

@@ -2,7 +2,6 @@ import ConfirmDeleteModal from "../../../components/ConfirmDeleteModal";
 import Modal from "../../../components/Modal";
 import type { JobEntry } from "../../../types/job";
 import type { Dispatch, SetStateAction } from "react";
-import { getCurrentISTDateTime } from "../../../utils/dateTime";
 import { decimalHoursToHHMMSS } from "../utils/machineHrsCalculation";
 import type { CutInputData, QuantityInputData } from "../types/cutInput";
 import { formatCompactDurationWords, getQuantityElapsedSeconds } from "../utils/operatorTimeUtils";
@@ -168,50 +167,74 @@ const OperatorViewModals = ({
         isOpen={Boolean(pendingEndTimeCapture)}
         onClose={handleCancelEndTimeCapture}
         title="Confirm End Time"
-        size="medium"
+        size="small"
       >
         {pendingEndTimeCapture && pendingEndTimeQty ? (
           <div className="operator-endtime-confirm">
-            <p>Review the final machine hours and operator breakdown before locking this quantity.</p>
-            <div className="user-details">
-              <p><strong>Setting:</strong> {pendingEndTimeSetting}</p>
-              <p><strong>Quantity:</strong> {String(pendingEndTimeCapture.quantityIndex + 1)}</p>
-              <p><strong>Job Ref:</strong> {String(pendingEndTimeJob?.refNumber || "-")}</p>
-              <p><strong>Start Time:</strong> {String(pendingEndTimeQty.startTime || "-")}</p>
-              <p><strong>End Time:</strong> {String(pendingEndTimeQty.endTime || getCurrentISTDateTime(pendingEndTimeCapture.timestampMs))}</p>
-              <p><strong>Captured At:</strong> {getCurrentISTDateTime(pendingEndTimeCapture.timestampMs)}</p>
-              <p><strong>Idle Time:</strong> {pendingEndTimeIdleDuration || "-"}</p>
-              <p><strong>Machine Hrs:</strong> {machineHoursLabel}</p>
-              <p><strong>Total Worked:</strong> {formatWorkedDuration(pendingEndTimeWorkedSeconds)}</p>
-              <p><strong>Worked By:</strong> {pendingEndTimeBreakdown.length > 0 ? pendingEndTimeBreakdown.map((entry) => entry.name).join(", ") : "-"}</p>
-            </div>
-            {pendingEndTimeBreakdown.length > 0 ? (
-              <div className="user-details">
-                <p><strong>Operator Breakdown</strong></p>
-                {pendingEndTimeBreakdown.map((entry) => (
-                  <p key={entry.name}>
-                    <strong>{entry.name}:</strong> {formatWorkedDuration(entry.durationSeconds)}
-                  </p>
-                ))}
+            <div className="operator-endtime-summary-card">
+              <div className="summary-main-row">
+                <div className="summary-item">
+                  <span className="summary-label">JOB REF</span>
+                  <span className="summary-value highlight">{String(pendingEndTimeJob?.refNumber || "-")}</span>
+                </div>
+                <div className="summary-item">
+                  <span className="summary-label">SETTING</span>
+                  <span className="summary-value">{pendingEndTimeSetting}</span>
+                </div>
+                <div className="summary-item">
+                  <span className="summary-label">QTY</span>
+                  <span className="summary-value">{String(pendingEndTimeCapture.quantityIndex + 1)}</span>
+                </div>
               </div>
-            ) : null}
-            <div className="confirm-delete-footer">
-              <button type="button" className="btn-secondary" onClick={handleCancelEndTimeCapture}>
+              
+              <div className="summary-details-grid">
+                <div className="summary-item">
+                  <span className="summary-label">MACHINE HOURS</span>
+                  <span className="summary-value">{machineHoursLabel}</span>
+                </div>
+                <div className="summary-item">
+                  <span className="summary-label">TOTAL DURATION</span>
+                  <span className="summary-value">{formatWorkedDuration(pendingEndTimeWorkedSeconds)}</span>
+                </div>
+                {pendingEndTimeIdleDuration && (
+                  <div className="summary-item">
+                    <span className="summary-label">IDLE TIME</span>
+                    <span className="summary-value">{pendingEndTimeIdleDuration}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {pendingEndTimeBreakdown.length > 0 && (
+              <div className="operator-breakdown-section">
+                <h4 className="breakdown-title">Operator Breakdown</h4>
+                <div className="breakdown-list">
+                  {pendingEndTimeBreakdown.map((entry) => (
+                    <div key={entry.name} className="breakdown-item">
+                      <span className="operator-name">{entry.name}</span>
+                      <span className="operator-duration">{formatWorkedDuration(entry.durationSeconds)}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="confirm-modal-footer-simple">
+              <button type="button" className="btn-secondary-simple" onClick={handleCancelEndTimeCapture}>
                 Cancel
               </button>
               <button
                 type="button"
-                className="btn-primary"
+                className="btn-primary-simple"
                 onClick={async () => {
-                  const success = await handleConfirmEndTimeCapture(
+                  await handleConfirmEndTimeCapture(
                     pendingEndTimeCapture.cutId,
                     pendingEndTimeCapture.quantityIndex,
                     pendingEndTimeCapture.timestampMs
                   );
-                  if (!success) return;
                 }}
               >
-                Confirm End Time
+                Confirm & Lock
               </button>
             </div>
           </div>

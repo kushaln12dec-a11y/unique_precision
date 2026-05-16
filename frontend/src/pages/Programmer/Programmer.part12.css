@@ -4,8 +4,44 @@
   }
 
   .cut-section-body {
-    grid-template-columns: minmax(0, 1fr);
+    grid-template-columns: 1fr;
     gap: 0.85rem;
+  }
+
+  .cut-section-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.85rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.15);
+  }
+
+  .cut-section-header-right {
+    width: 100%;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+
+  .header-checkbox {
+    font-size: 0.78rem;
+    padding: 0.25rem 0.5rem;
+    background: rgba(148, 163, 184, 0.1);
+    border-radius: 6px;
+    flex: 1 1 auto;
+    justify-content: center;
+    min-width: 90px;
+  }
+
+  .priority-dropdown.compact {
+    flex: 1 1 100%;
+    margin-top: 0.25rem;
+  }
+
+  .priority-trigger {
+    width: 100% !important;
+    justify-content: space-between;
+    padding: 0.5rem 0.75rem !important;
   }
 
   .cut-section {
@@ -263,14 +299,35 @@
 
 @media (max-width: 640px) {
   .cut-section-body {
-    grid-template-columns: minmax(0, 1fr);
+    grid-template-columns: 1fr;
     gap: 0.75rem;
   }
 
-  .cut-section-body > .job-form-image-container {
-    justify-self: start;
-    width: min(170px, 48vw);
-    max-width: 170px;
+  .cut-section-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .cut-section-header-right {
+    width: 100%;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.65rem;
+  }
+
+  .header-checkbox {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.45rem;
+    background: rgba(148, 163, 184, 0.1);
+    border-radius: 6px;
+    flex: 1 1 auto;
+    justify-content: center;
+    min-width: 85px;
+  }
+
+  .priority-dropdown.compact {
+    flex: 1 1 100%;
   }
 
   .cut-section-grid {

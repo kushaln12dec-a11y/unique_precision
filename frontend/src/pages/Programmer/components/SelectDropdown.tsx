@@ -1,11 +1,10 @@
-import {
+import React, {
   useEffect,
   useId,
   useMemo,
   useRef,
   useState,
   type CSSProperties,
-  type FocusEvent,
 } from "react";
 import { createPortal } from "react-dom";
 import "./SelectDropdown.css";
@@ -26,7 +25,7 @@ type SelectDropdownProps = {
   menuMinWidth?: number;
 };
 
-const SelectDropdown: React.FC<SelectDropdownProps> = ({
+const SelectDropdown: React.FC<SelectDropdownProps> = React.memo(({
   value,
   options,
   onChange,
@@ -87,9 +86,15 @@ const SelectDropdown: React.FC<SelectDropdownProps> = ({
 
   useEffect(() => {
     const handleOutsideDown = (event: MouseEvent) => {
-      const target = event.target as Node;
+      const target = event.target as HTMLElement;
+      
+      // Check if the click was inside the trigger/wrapper
       const insideTrigger = wrapperRef.current?.contains(target);
-      const insideMenu = menuRef.current?.contains(target);
+      
+      // Check if the click was inside the menu (via ref or class name fallback)
+      const insideMenu = menuRef.current?.contains(target) || 
+                         target.closest(".option-dropdown-menu");
+      
       if (!insideTrigger && !insideMenu) {
         setIsOpen(false);
       }
@@ -130,18 +135,6 @@ const SelectDropdown: React.FC<SelectDropdownProps> = ({
     setIsOpen(false);
   };
 
-  const handleWrapperBlur = (event: FocusEvent<HTMLDivElement>) => {
-    const nextFocused = event.relatedTarget as Node | null;
-    if (!nextFocused) {
-      return;
-    }
-    const insideTrigger = wrapperRef.current?.contains(nextFocused);
-    const insideMenu = menuRef.current?.contains(nextFocused);
-    if (!insideTrigger && !insideMenu) {
-      setIsOpen(false);
-    }
-  };
-
   const menu = isOpen && !disabled
     ? createPortal(
         <div className="option-dropdown-menu" style={menuStyle} ref={menuRef}>
@@ -168,7 +161,6 @@ const SelectDropdown: React.FC<SelectDropdownProps> = ({
       <div
         className={`option-dropdown-wrapper align-${align} ${isOpen ? "open" : ""} ${className}`.trim()}
         ref={wrapperRef}
-        onBlur={handleWrapperBlur}
       >
         <button
           type="button"
@@ -228,6 +220,6 @@ const SelectDropdown: React.FC<SelectDropdownProps> = ({
       {menu}
     </>
   );
-};
+});
 
 export default SelectDropdown;
