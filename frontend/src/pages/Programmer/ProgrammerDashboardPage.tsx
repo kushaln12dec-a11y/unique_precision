@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from "react";
-import { useNavigate, Routes, Route, Navigate } from "react-router-dom";
+import { useNavigate, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import Sidebar from "../../components/Sidebar";
 import Header from "../../components/Header";
 import { getUserRoleFromToken } from "../../utils/auth";
@@ -27,6 +27,7 @@ import "./Programmer.css";
 
 const ProgrammerDashboardPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const dispatch = useAppDispatch();
 
   const [sortField] = useState<keyof JobEntry | null>(null);
@@ -241,7 +242,7 @@ const ProgrammerDashboardPage = () => {
       <div className={`programmer-content ${isProgrammerFormRoute ? "programmer-content-scrollable" : ""}`}>
         <Header title="Programmer" onNavigate={handleProgrammerNavigate} />
         <div className={`programmer-panel ${isProgrammerFormRoute ? "programmer-panel-scrollable" : ""}`}>
-          <Routes key={currentPathname}>
+          <Routes>
             <Route
               index
               element={
@@ -359,7 +360,7 @@ const ProgrammerDashboardPage = () => {
               }
             />
 
-            <Route path="*" element={<Navigate to="/programmer" replace />} />
+            <Route path="*" element={<Navigate to="/programmer" replace={false} />} />
           </Routes>
         </div>
       </div>

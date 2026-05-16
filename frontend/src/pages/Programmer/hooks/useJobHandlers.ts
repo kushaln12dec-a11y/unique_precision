@@ -36,17 +36,21 @@ export const useJobHandlers = ({
   const saveCancelledRef = useRef(false);
 
   const finishSaveAndReturnToProgrammerTable = useCallback((message: string) => {
-    setSavingJob(false);
-    handleCancelState();
-
     if (saveCancelledRef.current) {
+      setSavingJob(false);
       return;
     }
 
-    navigate("/programmer", {
-      replace: true,
-      state: { refreshedAt: Date.now() },
-    });
+    // Then clean up states
+    setSavingJob(false);
+    handleCancelState();
+
+    // Navigate in next tick to avoid race conditions with state cleanup
+    setTimeout(() => {
+      navigate("/programmer", {
+        state: { refreshedAt: Date.now() },
+      });
+    }, 0);
 
     setToast({ message, variant: "success", visible: true });
     window.setTimeout(() => setToast({ message: "", variant: "success", visible: false }), 3000);

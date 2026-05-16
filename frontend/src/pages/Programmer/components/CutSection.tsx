@@ -74,6 +74,16 @@ export const CutSection: React.FC<CutSectionProps & { customerOptions: CustomerR
     return map;
   }, [customerOptions]);
 
+  const customerNameOptions = React.useMemo(
+    () => customerOptions.map((item) => item.customer),
+    [customerOptions]
+  );
+
+  const materialNameOptions = React.useMemo(
+    () => materialOptions.map((item: any) => item.value || item),
+    [materialOptions]
+  );
+
   React.useEffect(() => {
     if (!isFirstCut) return;
     const selected = String(cut.customer || "").trim().toUpperCase();
@@ -106,7 +116,7 @@ export const CutSection: React.FC<CutSectionProps & { customerOptions: CustomerR
         <ImageUpload images={Array.isArray(cut.cutImage) ? cut.cutImage : cut.cutImage ? [cut.cutImage] : []} label={`Cut ${index + 1}`} onImageChange={onImageChange} onRemove={onRemoveImage} readOnly={false} />
         <div className={`cut-section-grid ${isAdmin ? "" : "cut-section-grid-non-admin"}`.trim()}>
           <FormInput label="Customer" className="grid-customer" required error={fieldErrors.customer}>
-            <CustomerAutocomplete value={cut.customer} onChange={onCutChange("customer")} disabled={!isFirstCut} required options={customerOptions.map((item) => item.customer)} />
+            <CustomerAutocomplete value={cut.customer} onChange={onCutChange("customer")} disabled={!isFirstCut} required options={customerNameOptions} />
           </FormInput>
           {isAdmin && (
             <FormInput label="Rate (Rs./hr)" className="grid-rate" required error={fieldErrors.rate}>
@@ -114,7 +124,7 @@ export const CutSection: React.FC<CutSectionProps & { customerOptions: CustomerR
             </FormInput>
           )}
           <FormInput label="Material" className="grid-material">
-            <MaterialAutocomplete value={cut.material || ""} onChange={onCutChange("material")} options={materialOptions} />
+            <MaterialAutocomplete value={cut.material || ""} onChange={onCutChange("material")} options={materialNameOptions} />
           </FormInput>
           <FormInput label="Program Ref File Name" className="grid-program-ref">
             <input type="text" value={(cut as any).programRefFile || ""} onChange={(e) => onCutChange("programRefFile" as keyof CutForm)(e.target.value.toUpperCase())} placeholder="e.g. UPC001_V1" />

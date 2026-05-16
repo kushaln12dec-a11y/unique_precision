@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 
 interface CustomerAutocompleteProps {
   value: string;
@@ -25,7 +25,9 @@ const CustomerAutocomplete: React.FC<CustomerAutocompleteProps> = ({
   required = false,
   error,
 }) => {
-  const sourceOptions = options && options.length > 0 ? options : CUSTOMER_OPTIONS;
+  const sourceOptions = useMemo(() => {
+    return options && options.length > 0 ? options : CUSTOMER_OPTIONS;
+  }, [options]);
   const [inputValue, setInputValue] = useState(value);
   const [isOpen, setIsOpen] = useState(false);
   const [filteredOptions, setFilteredOptions] = useState(sourceOptions);
