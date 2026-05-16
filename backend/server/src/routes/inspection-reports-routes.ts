@@ -98,7 +98,7 @@ router.post("/generate", async (req, res) => {
     const page = await browser.newPage();
 
     await page.setViewport({ width: 1100, height: 1400 });
-    await page.setContent(html, { waitUntil: "networkidle0" });
+    await page.setContent(html, { waitUntil: "load" });
 
     const pdfBytes = await page.pdf({
       format: "A4",
