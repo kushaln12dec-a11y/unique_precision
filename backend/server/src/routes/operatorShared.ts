@@ -201,16 +201,18 @@ export const rebalanceOperatorRevenueForJob = async (
     qty?: number | null;
     totalHrs?: unknown;
     rate?: unknown;
+    totalAmount?: unknown;
+    wedmAmount?: unknown;
+    sedmAmount?: unknown;
   }
 ) => {
   const jobId = String(job.id || "").trim();
   if (!jobId) return;
 
   const totalQuantity = Math.max(1, Number(job.qty || 1));
-  const perQuantityRevenue =
-    Math.max(0, Number(job.totalHrs || 0)) * Math.max(0, Number(job.rate || 0)) / totalQuantity;
-  // Use the job's actual estimated hours directly, not revenue-based calculation
-  const estimatedHoursPerQuantity = Math.max(0, Number(job.totalHrs || 0)) / totalQuantity;
+  const jobTotalAmount = Number(job.totalAmount ?? (Number(job.totalHrs || 0) * Number(job.rate || 0)));
+  const perQuantityRevenue = jobTotalAmount / totalQuantity;
+  const estimatedHoursPerQuantity = perQuantityRevenue / 625;
   const estimatedSecondsPerQuantity = estimatedDurationSecondsFromHours(estimatedHoursPerQuantity);
 
   const logs = await tx.employeeLog.findMany({
@@ -505,11 +507,10 @@ export const buildOperatorLogPayload = ({
   const durationSeconds = Math.max(0, Math.floor((parsedEnd.getTime() - parsedStart.getTime()) / 1000));
   // Use the job's actual worked hours, not the machineHrs parameter which might be wrong
   const workedSeconds = durationSeconds;
-  const jobWedmAmount = Math.max(0, Number((refreshedJob as any).totalHrs || 0) * Number((refreshedJob as any).rate || 0));
-  const totalQuantity = Math.max(1, Number((refreshedJob as any).qty || quantityCount || 1));
-  const perQuantityRevenue = jobWedmAmount / totalQuantity;
-  // Use the job's actual estimated hours directly, not revenue-based calculation
-  const estimatedHoursPerQuantity = Math.max(0, Number((refreshedJob as any).totalHrs || 0)) / totalQuantity;
+  const jobTotalAmount = Number(refreshedJob.totalAmount ?? (Number(refreshedJob.totalHrs || 0) * Number(refreshedJob.rate || 0)));
+  const totalQuantity = Math.max(1, Number(refreshedJob.qty || quantityCount || 1));
+  const perQuantityRevenue = jobTotalAmount / totalQuantity;
+  const estimatedHoursPerQuantity = perQuantityRevenue / 625;
   const estimatedSecondsPerQuantity = estimatedDurationSecondsFromHours(estimatedHoursPerQuantity);
   const estimatedSeconds = estimatedSecondsPerQuantity * Math.max(1, quantityCount);
   const overtimeSeconds = Math.max(0, workedSeconds - estimatedSeconds);
@@ -562,7 +563,7 @@ export const buildOperatorLogPayload = ({
         estimatedSecondsPerQuantity,
         overtimeSeconds,
         workedToEstimatedRatio,
-        wedmAmount: jobWedmAmount,
+        wedmAmount: jobTotalAmount,
         perQuantityRevenue,
         revenue: 0,
       },

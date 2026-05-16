@@ -2,7 +2,7 @@ import React from "react";
 import LazyAgGrid from "../../../components/LazyAgGrid";
 import AppLoader from "../../../components/AppLoader";
 import { OperatorFilters } from "./OperatorFilters";
-import { formatEstimatedTime } from "../../../utils/jobFormatting";
+import { estimatedTimeFromAmount } from "../../../utils/jobFormatting";
 import { getDominantQaStageClass, getGroupQaProgressCounts, getQaProgressCounts } from "../utils/qaProgress";
 import { getParentRowClassName, getRowClassName } from "../../Programmer/utils/priorityUtils";
 import type { FilterValues } from "../../../components/FilterModal";
@@ -134,7 +134,7 @@ export const OperatorJobsSection: React.FC<Props> = ({
         description: entry.description || "",
         quantityLabel: quantityFrom === quantityTo ? `QTY ${quantityFrom}` : `QTY ${quantityFrom}-${quantityTo}`,
         operatorName: String(log.userName || entry.assignedTo || "").trim(),
-        estimatedTime: formatEstimatedTime(Number(entry.totalHrs || 0)),
+        estimatedTime: estimatedTimeFromAmount(Number(entry.totalAmount || 0)),
         severity:
           completionAlert?.severity === "danger"
             ? "danger"

@@ -26,7 +26,9 @@ export const buildOperatorCompletionAlerts = (
       const quantityFrom = Math.max(1, Number(log.quantityFrom || 1));
       const quantityTo = Math.max(quantityFrom, Number(log.quantityTo || quantityFrom));
       const quantityCount = Math.max(1, quantityTo - quantityFrom + 1);
-      const perQuantityHours = Number(entry.totalHrs || 0) / Math.max(1, Number(entry.qty || 1));
+      const jobTotalAmount = Number(entry.totalHrs || 0) * Number(entry.rate || 0);
+      const perQuantityAmount = jobTotalAmount / Math.max(1, Number(entry.qty || 1));
+      const perQuantityHours = perQuantityAmount / 625;
       const estimatedSeconds =
         Number(metadata.estimatedSeconds || 0) > 0
           ? Number(metadata.estimatedSeconds || 0)
