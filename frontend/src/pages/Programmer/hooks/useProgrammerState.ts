@@ -40,6 +40,7 @@ export const useProgrammerState = (
   searchFilter?: string
 ) => {
   const location = useLocation();
+  const filtersKey = JSON.stringify(filters || {});
   const [jobs, setJobs] = useState<JobEntry[]>([]);
   const [loadingJobs, setLoadingJobs] = useState(true);
   const [loadingEditGroup, setLoadingEditGroup] = useState(false);
@@ -95,7 +96,7 @@ export const useProgrammerState = (
     } finally {
       setLoadingJobs(false);
     }
-  }, [createdByFilter, criticalFilter, customerFilter, descriptionFilter, filters, searchFilter]);
+  }, [createdByFilter, criticalFilter, customerFilter, descriptionFilter, filtersKey, searchFilter]);
 
   useEffect(() => {
     void refreshJobs();

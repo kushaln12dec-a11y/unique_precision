@@ -2,7 +2,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0.22rem 0.9rem;
+  padding: 0.37rem 0.9rem;
   background: var(--header-backdrop);
   border-bottom: 1px solid var(--color-border);
   margin-bottom: 0.7rem;
@@ -596,11 +596,13 @@
 }
 
 @keyframes header-notification-pulse {
+
   0%,
   100% {
     transform: scale(0.9);
     opacity: 0.75;
   }
+
   50% {
     transform: scale(1.12);
     opacity: 1;

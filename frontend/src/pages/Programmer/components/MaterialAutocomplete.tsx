@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 
 interface MaterialAutocompleteProps {
   value: string;
@@ -24,7 +24,9 @@ const MaterialAutocomplete: React.FC<MaterialAutocompleteProps> = ({
   required = false,
   error,
 }) => {
-  const sourceOptions = options && options.length > 0 ? options : MATERIAL_OPTIONS;
+  const sourceOptions = useMemo(() => {
+    return options && options.length > 0 ? options : MATERIAL_OPTIONS;
+  }, [options]);
   const [inputValue, setInputValue] = useState(value);
   const [isOpen, setIsOpen] = useState(false);
   const [filteredOptions, setFilteredOptions] = useState(sourceOptions);

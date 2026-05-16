@@ -108,7 +108,7 @@ function LazyAgGrid<T extends object>({
     if (!fitColumns) return;
     window.requestAnimationFrame(() => {
       const api = gridApiRef.current;
-      if (!api) return;
+      if (!api || api.isDestroyed()) return;
       try {
         api.sizeColumnsToFit();
       } catch {
@@ -146,11 +146,11 @@ function LazyAgGrid<T extends object>({
 
   const syncOverlay = () => {
     const api = gridApiRef.current;
-    if (!api) return;
+    if (!api || api.isDestroyed()) return;
     if (loadingRef.current) {
       return;
     }
-    if (!loadingRef.current && sourceRows.length === 0) {
+    if (sourceRows.length === 0) {
       api.showNoRowsOverlay();
       return;
     }

@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 
 interface PassAutocompleteProps {
   value: string;
@@ -20,9 +20,11 @@ const PassAutocomplete: React.FC<PassAutocompleteProps> = ({
   error,
 }) => {
   const sourceOptions = options && options.length > 0 ? options : DEFAULT_PASS_OPTIONS;
-  const normalizedOptions = Array.from(
-    new Set(sourceOptions.map((option) => String(option || "").trim()).filter(Boolean))
-  );
+  const normalizedOptions = useMemo(() => {
+    return Array.from(
+      new Set(sourceOptions.map((option) => String(option || "").trim()).filter(Boolean))
+    );
+  }, [sourceOptions]);
   const [inputValue, setInputValue] = useState(value);
   const [isOpen, setIsOpen] = useState(false);
   const [filteredOptions, setFilteredOptions] = useState(normalizedOptions);

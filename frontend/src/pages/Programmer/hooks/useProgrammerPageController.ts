@@ -178,7 +178,7 @@ export const useProgrammerPageController = ({
       { offset, limit }
     );
     return { items: page.items, hasMore: page.hasMore };
-  }, [createdByFilter, criticalFilter, customerFilter, descriptionFilter, filters, filtersKey, searchFilter]);
+  }, [createdByFilter, criticalFilter, customerFilter, descriptionFilter, filtersKey, searchFilter]);
 
   const logsFetchPage = useCallback(async (offset: number, limit: number) => {
     if (logSearch || logUserId) {
