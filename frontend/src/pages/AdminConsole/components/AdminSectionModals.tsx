@@ -184,7 +184,12 @@ const AdminSectionModals = (props: Props) => {
                 <div className="admin-customer-card-top">
                   <div className="admin-customer-card-title">
                     <span className="admin-customer-card-index">Customer {index + 1}</span>
-                    <strong>{item.customer || "New Customer"}</strong>
+                    <div className="admin-customer-card-title-row">
+                      <strong>{item.customer || "New Customer"}</strong>
+                      {selectedSedmCustomerIndex === index && (
+                        <span className="admin-selected-badge">Currently Configuring</span>
+                      )}
+                    </div>
                   </div>
                   <button type="button" className="admin-remove-btn" disabled={readOnly} onClick={() => removeCustomerRow(index)}>
                     Remove
@@ -208,8 +213,14 @@ const AdminSectionModals = (props: Props) => {
                   {SEDM_SLAB_GROUPS.slice(0, 3).map((group) => (
                     <div className="admin-customer-sedm-chip" key={`${group.key}-${index}`}>
                       <strong>{group.title}</strong>
-                      <span>Min {String(item[group.minField] || "").trim() || "-"}</span>
-                      <span>&gt;20 {String(item[group.perField] || "").trim() || "-"}</span>
+                      <span>
+                        <span className="admin-sedm-label">Min Rate:</span>{" "}
+                        <span className="admin-sedm-value">{String(item[group.minField] || "").trim() || "-"}</span>
+                      </span>
+                      <span>
+                        <span className="admin-sedm-label">&gt;20mm:</span>{" "}
+                        <span className="admin-sedm-value">{String(item[group.perField] || "").trim() || "-"}</span>
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -224,8 +235,10 @@ const AdminSectionModals = (props: Props) => {
 
           <aside className="admin-customer-sedm-panel">
             <div className="admin-customer-sedm-panel-header">
-              <div>
-                <span className="admin-customer-card-index">SEDM Configurator</span>
+              <div className="admin-sedm-config-title">
+                <span className="admin-customer-card-index">
+                  <span className="admin-active-dot" /> SEDM Configurator
+                </span>
                 <strong>{selectedSedmCustomer?.customer || "Select a customer"}</strong>
               </div>
               <span className="admin-customer-sedm-panel-note">
@@ -238,7 +251,7 @@ const AdminSectionModals = (props: Props) => {
                   <div className="admin-customer-sedm-field" key={`${group.key}-${selectedSedmCustomerIndex}`}>
                     <span>{group.title}</span>
                     <label>
-                      Min
+                      Min Rate (Base)
                       <input
                         type="number"
                         value={selectedSedmCustomer[group.minField]}
@@ -248,7 +261,7 @@ const AdminSectionModals = (props: Props) => {
                       />
                     </label>
                     <label>
-                      &gt;20/mm
+                      Rate per mm (&gt;20mm)
                       <input
                         type="number"
                         value={selectedSedmCustomer[group.perField]}
@@ -266,7 +279,7 @@ const AdminSectionModals = (props: Props) => {
           </aside>
         </div>
         <p className="admin-help">
-          Use uppercase customer codes like `UPC001`. Every SEDM slab here is editable per customer, so Admin can tune Min and Greater than 20mm rates at any time.
+          Use uppercase customer codes like `UPC001`. Every SEDM slab here is editable per customer, so Admin can tune Min Rate and Greater than 20mm rates at any time.
         </p>
         <div className="admin-modal-actions">
           <button type="button" className="admin-add-btn admin-modal-secondary" disabled={readOnly} onClick={addCustomerRow}>
