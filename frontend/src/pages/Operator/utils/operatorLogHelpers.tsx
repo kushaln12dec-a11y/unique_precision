@@ -5,22 +5,22 @@ import { formatJobRefDisplay } from "../../../utils/jobFormatting";
 export const OPERATOR_LOG_SEARCH_FETCH_PAGE_SIZE = 100;
 
 const OPERATOR_LOG_COLUMN_WIDTHS: Record<string, number> = {
-  userName: 88,
-  machineNumber: 62,
-  workItemTitle: 98,
-  jobDescription: 132,
-  workSummary: 126,
-  startedAt: 116,
-  endedAt: 116,
-  shift: 62,
+  userName: 64,
+  machineNumber: 52,
+  workItemTitle: 88,
+  jobDescription: 90,
+  workSummary: 90,
+  startedAt: 88,
+  endedAt: 88,
+  shift: 58,
   durationSeconds: 74,
-  estimatedSeconds: 92,
+  estimatedSeconds: 80,
   overtimeSeconds: 74,
-  quantityNumbers: 92,
-  idleTime: 72,
-  remark: 72,
-  revenue: 120,
-  status: 96,
+  quantityNumbers: 70,
+  idleTime: 68,
+  remark: 68,
+  revenue: 100,
+  status: 90,
 };
 
 export const getOperatorLogColumnWidth = (columnKey: string) => OPERATOR_LOG_COLUMN_WIDTHS[columnKey] ?? 84;

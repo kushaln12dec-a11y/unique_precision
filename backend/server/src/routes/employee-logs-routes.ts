@@ -627,6 +627,9 @@ router.post("/operator/complete", async (req, res) => {
               qty: true,
               totalHrs: true,
               rate: true,
+              totalAmount: true,
+              wedmAmount: true,
+              sedmAmount: true,
               refNumber: true,
               customer: true,
               description: true,
@@ -726,7 +729,7 @@ router.post("/operator/complete", async (req, res) => {
     const groupJobs = resolvedGroupId
       ? await prisma.job.findMany({
           where: { groupId: resolvedGroupId },
-          select: { totalHrs: true, rate: true },
+          select: { totalHrs: true, rate: true, totalAmount: true, wedmAmount: true, sedmAmount: true },
         })
       : [];
     const groupWedmAmount = groupJobs.reduce(
@@ -736,7 +739,7 @@ router.post("/operator/complete", async (req, res) => {
     const currentJobRevenue = resolvedJobId
       ? await prisma.job.findUnique({
           where: { id: resolvedJobId },
-          select: { totalHrs: true, rate: true },
+          select: { totalHrs: true, rate: true, totalAmount: true, wedmAmount: true, sedmAmount: true },
         }).then((job) => Number(job?.totalHrs || 0) * Number(job?.rate || 0))
       : 0;
 
@@ -780,7 +783,7 @@ router.post("/operator/complete", async (req, res) => {
       if (resolvedJobId) {
         const relatedJob = await tx.job.findUnique({
           where: { id: resolvedJobId },
-          select: { id: true, qty: true, totalHrs: true, rate: true },
+          select: { id: true, qty: true, totalHrs: true, rate: true, totalAmount: true, wedmAmount: true, sedmAmount: true },
         });
         if (relatedJob) {
           await rebalanceOperatorRevenueForJob(tx, relatedJob);
@@ -1131,14 +1134,14 @@ router.get("/", async (req, res) => {
     const [groupJobs, scopedOperatorLogs, operatorJobsById] = await prisma.$transaction([
       prisma.job.findMany({
         where: operatorGroupIdsAsBigInt.length > 0 ? { groupId: { in: operatorGroupIdsAsBigInt } } : { id: { in: [] } },
-        select: { id: true, groupId: true, totalHrs: true, rate: true },
+        select: { id: true, groupId: true, totalHrs: true, rate: true, totalAmount: true, wedmAmount: true, sedmAmount: true },
       }),
       prisma.employeeLog.findMany({
         where: scopedOperatorLogWhere,
       }),
       prisma.job.findMany({
         where: { id: { in: operatorJobIds } },
-        select: { id: true, totalHrs: true, rate: true, qty: true },
+        select: { id: true, totalHrs: true, rate: true, qty: true, totalAmount: true, wedmAmount: true, sedmAmount: true },
       }),
     ]);
 

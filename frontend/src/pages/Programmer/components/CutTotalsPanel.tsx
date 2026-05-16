@@ -87,7 +87,7 @@ export const CutTotalsPanel: React.FC<Props> = ({
                 ))
               : <p>SEDM Cost = 0.00</p>)}
           {isAdmin && <p>{`Total Amount = WEDM(${cutTotals.wedmAmount.toFixed(2)}) + SEDM(${cutTotals.sedmAmount.toFixed(2)}) = ${cutTotals.totalAmount.toFixed(2)}`}</p>}
-          <p>{`Estimated Time = WEDM / 625 = ${cutTotals.wedmAmount.toFixed(2)} / 625 = ${formatEstimatedTime(cutTotals.estimatedTime)}`}</p>
+          <p>{`Estimated Time = Total Amount / 625 = ${cutTotals.totalAmount.toFixed(2)} / 625 = ${formatEstimatedTime(cutTotals.estimatedTime)}`}</p>
         </div>
       </div>
     </>

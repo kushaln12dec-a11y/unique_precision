@@ -309,8 +309,8 @@ const OperatorJobDetailPage = () => {
   const totalGroupQuantity = jobs.reduce((sum, job) => sum + Math.max(1, Number(job.qty || 1)), 0);
   const groupTotalAmount = jobs.reduce((sum, job) => sum + (job.totalAmount || 0), 0);
   
-  // Synchronize with Programmer screen: Time = WEDM Amount / 625
-  const groupEstimatedHrs = (amounts.totalWedmAmount || 0) / 625;
+  // Synchronize with Programmer screen: Time = Total Amount / 625
+  const groupEstimatedHrs = (groupTotalAmount || 0) / 625;
   const machineOptions = useMemo(() => {
     const options = new Set<string>(MACHINE_OPTIONS.map((machine) => toMachineIndex(machine)).filter(Boolean));
     jobs.forEach((job) => {

@@ -160,7 +160,7 @@ export const calculateTotals = (form: CutForm, config: CalculationConfig = {}): 
     totalAmount,
     wedmAmount,
     sedmAmount,
-    estimatedTime: estimatedHoursFromAmount(wedmAmount),
+    estimatedTime: estimatedHoursFromAmount(totalAmount),
     wedmBreakdown: {
       rows,
       subtotalBeforeExtras,
