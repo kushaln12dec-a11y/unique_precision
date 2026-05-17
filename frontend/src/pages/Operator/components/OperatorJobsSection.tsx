@@ -267,6 +267,7 @@ export const OperatorJobsSection: React.FC<Props> = ({
           rowHeight={42}
           fitColumns={true}
           refreshKey={createdByRefreshKey}
+          refreshCellsKey={activeOperatorRuns.length}
         />
       )}
     </>

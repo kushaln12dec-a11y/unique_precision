@@ -38,6 +38,7 @@ type LazyAgGridProps<T> = {
   fullWidthCellRenderer?: (params: any) => React.ReactNode;
   getRowHeight?: (params: { data: any }) => number | undefined;
   fitColumns?: boolean;
+  refreshCellsKey?: string | number;
 };
 
 function LazyAgGrid<T extends object>({
@@ -57,6 +58,7 @@ function LazyAgGrid<T extends object>({
   fullWidthCellRenderer,
   getRowHeight,
   fitColumns = true,
+  refreshCellsKey,
 }: LazyAgGridProps<T>) {
   const [internalRows, setInternalRows] = useState<T[]>([]);
   const [loading, setLoading] = useState(false);
@@ -212,6 +214,12 @@ function LazyAgGrid<T extends object>({
     loadingRef.current = false;
     void loadPage(true);
   }, [pageSize, refreshKey]);
+
+  useEffect(() => {
+    const api = gridApiRef.current;
+    if (!api || api.isDestroyed() || !refreshCellsKey) return;
+    api.refreshCells({ force: true });
+  }, [refreshCellsKey]);
 
   useEffect(() => {
     syncOverlay();

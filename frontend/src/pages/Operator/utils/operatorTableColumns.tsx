@@ -16,26 +16,7 @@ import {
   renderOperatorCustomerCell,
 } from "./operatorTableHelpers";
 
-export const buildBaseOperatorColumns = ({
-  toggleGroup,
-  operatorNameLookup,
-  canAssign,
-  operatorUsers,
-  handleAssignChange,
-  machineDropdownOptions,
-  handleMachineNumberChange,
-  handleChildMachineNumberChange,
-  isAdmin,
-  handleViewEntry,
-  handleViewJob,
-  handleImageInput,
-  handleSubmit,
-  handleOpenQaModal,
-  isImageInputDisabled,
-  canOperateInputs,
-  activeRunsByJobId,
-  operatorHistoryByJobId,
-}: {
+export const buildBaseOperatorColumns = (props: {
   toggleGroup: (groupId: string) => void;
   operatorNameLookup: Map<string, string>;
   canAssign: boolean;
@@ -52,8 +33,8 @@ export const buildBaseOperatorColumns = ({
   handleOpenQaModal: (entries: any[]) => void;
   isImageInputDisabled: boolean;
   canOperateInputs: boolean;
-  activeRunsByJobId: Map<string, any>;
-  operatorHistoryByJobId: Map<string, string[]>;
+  getActiveRuns: () => Map<string, any>;
+  getOperatorHistory: () => Map<string, string[]>;
 }): Column<OperatorDisplayRow>[] => [
   {
     key: "customer",
@@ -62,7 +43,7 @@ export const buildBaseOperatorColumns = ({
     sortKey: "customer",
     className: "customer-cell",
     headerClassName: "customer-header",
-    render: (row) => renderOperatorCustomerCell(row, toggleGroup, activeRunsByJobId),
+    render: (row) => renderOperatorCustomerCell(row, props.toggleGroup, props.getActiveRuns()),
   },
   {
     key: "programRef",
@@ -90,13 +71,15 @@ export const buildBaseOperatorColumns = ({
     sortable: false,
     className: "operator-assigned-cell",
     render: (row) => {
-      const assignedOperators = normalizeAssignedOperators(row.entry.assignedTo || "", operatorNameLookup);
+      const activeRunsByJobId = props.getActiveRuns();
+      const operatorHistoryByJobId = props.getOperatorHistory();
+      const assignedOperators = normalizeAssignedOperators(row.entry.assignedTo || "", props.operatorNameLookup);
       const activeOperatorName = String(activeRunsByJobId.get(String(row.entry.id))?.userName || "").trim().toUpperCase();
       const operatorHistory = Array.from(
         new Set(
           [
             ...getOperatorHistoryNames(row.entry),
-            ...((operatorHistoryByJobId.get(String(row.entry.id)) || []).map((name) => String(name || "").trim().toUpperCase())),
+            ...((operatorHistoryByJobId.get(String(row.entry.id)) || []).map((name: string) => String(name || "").trim().toUpperCase())),
             ...(activeOperatorName ? [activeOperatorName.toUpperCase()] : []),
           ].filter(Boolean)
         )
@@ -106,16 +89,17 @@ export const buildBaseOperatorColumns = ({
         assignedOperators.join(", ") ||
         (activeOperatorName ? activeOperatorName.toUpperCase() : "") ||
         latestWorkedByName ||
-        "Unassign";
-      const shouldAllowTableAssignment = canAssign;
+        "-";
+
+      const shouldAllowTableAssignment = props.canAssign;
 
       return shouldAllowTableAssignment ? (
         <div className="operator-assigned-cell-stack" title={operatorHistory.length ? `Worked By: ${operatorHistory.join(", ")}` : undefined}>
           <MultiSelectOperators
             className="operator-assigned-dropdown"
             selectedOperators={assignedOperators}
-            availableOperators={operatorUsers}
-            onChange={(nextValue) => handleAssignChange(row.entry.id, nextValue)}
+            availableOperators={props.operatorUsers}
+            onChange={(nextValue) => props.handleAssignChange(row.entry.id, nextValue)}
             placeholder="Unassign"
             compact={assignedOperators.length > 1}
             showUnassign={true}
@@ -147,14 +131,14 @@ export const buildBaseOperatorColumns = ({
     sortable: false,
     className: "operator-machine-cell",
     render: (row) =>
-      canAssign ? (
+      props.canAssign ? (
         <SelectDropdown
           className="operator-machine-dropdown-wrapper"
-          value={machineDropdownOptions.includes(getOperatorMachineNumber(row.entry)) ? getOperatorMachineNumber(row.entry) : ""}
-          onChange={(nextValue) => row.kind === "parent" ? handleMachineNumberChange(row.groupId, nextValue) : handleChildMachineNumberChange(row.entry.id, nextValue)}
+          value={props.machineDropdownOptions.includes(getOperatorMachineNumber(row.entry)) ? getOperatorMachineNumber(row.entry) : ""}
+          onChange={(nextValue) => row.kind === "parent" ? props.handleMachineNumberChange(row.groupId, nextValue) : props.handleChildMachineNumberChange(row.entry.id, nextValue)}
           options={[
             { label: "Unassign", value: "" },
-            ...machineDropdownOptions.map((machine) => ({ label: formatMachineLabel(machine), value: machine })),
+            ...props.machineDropdownOptions.map((machine) => ({ label: formatMachineLabel(machine), value: machine })),
           ]}
           placeholder="Select"
           align="left"
@@ -164,8 +148,8 @@ export const buildBaseOperatorColumns = ({
         <div className="assigned-operators-readonly">{formatMachineLabel(getOperatorMachineNumber(row.entry)) || "-"}</div>
       ),
   },
-  { key: "estimatedTime", label: <>Estimated<br />Time</>, sortable: false, render: (row) => renderEstimatedTimeWithLogs(row, activeRunsByJobId) },
-  ...(isAdmin ? [{ key: "totalAmount", label: "Amount (Rs.)", sortable: false, sortKey: "totalAmount", className: "operator-amount-cell", headerClassName: "operator-amount-header", render: (row: OperatorDisplayRow) => row.kind === "parent" ? row.tableRow.groupTotalAmount ? `Rs. ${Math.round(row.tableRow.groupTotalAmount)}` : "-" : row.entry.totalAmount ? `Rs. ${Math.round(row.entry.totalAmount)}` : "-" } as Column<OperatorDisplayRow>] : []),
+  { key: "estimatedTime", label: <>Estimated<br />Time</>, sortable: false, render: (row) => renderEstimatedTimeWithLogs(row, props.getActiveRuns()) },
+  ...(props.isAdmin ? [{ key: "totalAmount", label: "Amount (Rs.)", sortable: false, sortKey: "totalAmount", className: "operator-amount-cell", headerClassName: "operator-amount-header", render: (row: OperatorDisplayRow) => row.kind === "parent" ? row.tableRow.groupTotalAmount ? `Rs. ${Math.round(row.tableRow.groupTotalAmount)}` : "-" : row.entry.totalAmount ? `Rs. ${Math.round(row.entry.totalAmount)}` : "-" } as Column<OperatorDisplayRow>] : []),
   {
     key: "productionStage",
     label: "Status",
@@ -173,6 +157,7 @@ export const buildBaseOperatorColumns = ({
     className: "status-cell",
     headerClassName: "status-header",
     render: (row) => {
+      const activeRunsByJobId = props.getActiveRuns();
       const counts = row.kind === "parent"
         ? getGroupQaProgressCounts(row.tableRow.entries, activeRunsByJobId)
         : getQaProgressCounts(row.entry, Math.max(1, Number(row.entry.qty || 1)), activeRunsByJobId.get(String(row.entry.id)));
@@ -188,19 +173,20 @@ export const buildBaseOperatorColumns = ({
     className: "action-cell",
     headerClassName: "action-header",
     render: (row) => {
+      const activeRunsByJobId = props.getActiveRuns();
       const isChild = row.kind === "child";
       const targetEntries = isChild ? [row.entry] : row.tableRow.entries;
       const canSendToQa = targetEntries.some((entry) => getDispatchableQuantityNumbers(entry, activeRunsByJobId.get(String(entry.id))).length > 0);
       return (
         <ActionButtons
-          onView={() => (isChild ? handleViewEntry(row.entry) : handleViewJob(row.tableRow))}
-          onImage={isChild ? () => handleImageInput(row.groupId, row.entry.id) : !row.hasChildren ? () => handleSubmit(row.groupId) : undefined}
-          onSubmit={canOperateInputs ? () => handleOpenQaModal(targetEntries) : undefined}
+          onView={() => (isChild ? props.handleViewEntry(row.entry) : props.handleViewJob(row.tableRow))}
+          onImage={isChild ? () => props.handleImageInput(row.groupId, row.entry.id) : !row.hasChildren ? () => props.handleSubmit(row.groupId) : undefined}
+          onSubmit={props.canOperateInputs ? () => props.handleOpenQaModal(targetEntries) : undefined}
           viewLabel={`View ${row.entry.customer || "entry"}`}
           imageLabel={`Open ${row.entry.customer || "entry"}`}
           submitLabel="Send to QC"
           isOperator={true}
-          disableImageButton={isImageInputDisabled || !canOperateInputs}
+          disableImageButton={props.isImageInputDisabled || !props.canOperateInputs}
           disableSubmitButton={!canSendToQa}
         />
       );

@@ -35,6 +35,7 @@ const QualityControlPage = () => {
     row: QcRow;
     action: "OPEN" | "DOWNLOAD";
   } | null>(null);
+  const [qcTab, setQcTab] = useState<"QUEUE" | "LOGGED">("QUEUE");
   const [toast, setToast] = useState<{ message: string; variant: "success" | "error" | "info"; visible: boolean }>({
     message: "",
     variant: "info",
@@ -75,7 +76,7 @@ const QualityControlPage = () => {
     void loadQcJobs();
   });
 
-  const tableData = useMemo(() => buildQcRows(qcGridJobs), [qcGridJobs]);
+  const tableData = useMemo(() => buildQcRows(qcGridJobs, qcTab === "LOGGED"), [qcGridJobs, qcTab]);
   const filteredTableData = useMemo(() => {
     const searchQuery = (searchFilter || customerFilter || descriptionFilter).trim();
     return tableData.filter((row) => {
@@ -222,7 +223,15 @@ const QualityControlPage = () => {
       <div className="roleboard-content">
         <Header title="QC" />
         <div className="roleboard-body qc-table-panel">
-          <h3>QC Queue</h3>
+          <div className="dashboard-tabs">
+            <button className={`dashboard-tab ${qcTab === "QUEUE" ? "active" : ""}`} onClick={() => setQcTab("QUEUE")}>
+              QC Queue
+            </button>
+            <button className={`dashboard-tab ${qcTab === "LOGGED" ? "active" : ""}`} onClick={() => setQcTab("LOGGED")}>
+              Logged QC
+            </button>
+          </div>
+          <h3 style={{ marginTop: "1rem" }}>{qcTab === "QUEUE" ? "QC Queue" : "Logged QC Reports"}</h3>
           {loading && qcGridJobs.length === 0 ? (
             <AppLoader message="Loading QC queue..." />
           ) : (
