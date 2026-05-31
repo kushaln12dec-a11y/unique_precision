@@ -55,7 +55,7 @@ export const getQcRowSearchValues = (row: QcRow) => {
   ];
 };
 
-export const buildQcRows = (qcGridJobs: JobEntry[]) => {
+export const buildQcRows = (qcGridJobs: JobEntry[], showLogged: boolean = false) => {
   const groups = new Map<string, JobEntry[]>();
 
   qcGridJobs.forEach((job) => {
@@ -66,17 +66,30 @@ export const buildQcRows = (qcGridJobs: JobEntry[]) => {
 
   return Array.from(groups.entries())
     .flatMap(([groupId, entries]) => {
-      if (entries.length === 0 || entries.every((item) => Boolean((item as any).qcReportClosed))) return [];
+      if (entries.length === 0) return [];
+      
+      const isGroupClosed = entries.every((item) => Boolean((item as any).qcReportClosed));
+      if (!showLogged && isGroupClosed) return [];
+      
       const parent = entries[0];
 
       return entries.flatMap((entry) => {
         const qaStates = getQuantityQaStates(entry);
         const totalQty = Math.max(1, Number(entry.qty || 1));
-        const sentQuantities = Array.from({ length: totalQty }, (_, index) => index + 1).filter(
-          (quantityNumber) => qaStates[String(quantityNumber)] === "SENT_TO_QA"
+        
+        const targetQuantities = Array.from({ length: totalQty }, (_, index) => index + 1).filter(
+          (quantityNumber) => {
+            const state = qaStates[String(quantityNumber)];
+            if (showLogged) {
+              // Show if decision is made or group is explicitly closed
+              return entry.qcDecision === "APPROVED" || entry.qcDecision === "REJECTED" || entry.qcReportClosed;
+            }
+            // Show only pending in Queue tab
+            return state === "SENT_TO_QA" && !entry.qcReportClosed;
+          }
         );
 
-        const quantityRanges = sentQuantities.reduce<Array<{ from: number; to: number }>>((acc, qty) => {
+        const quantityRanges = targetQuantities.reduce<Array<{ from: number; to: number }>>((acc, qty) => {
           const lastRange = acc[acc.length - 1];
           if (!lastRange || qty > lastRange.to + 1) {
             acc.push({ from: qty, to: qty });
@@ -98,7 +111,7 @@ export const buildQcRows = (qcGridJobs: JobEntry[]) => {
               : `Consolidated report (${quantityCount} quantities)`;
 
           return {
-            qcItemId: `${String(entry.id)}:${range.from}-${range.to}`,
+            qcItemId: `${String(entry.id)}:${range.from}-${range.to}:${showLogged ? 'logged' : 'queue'}`,
             quantityLabel: label,
             reportScopeLabel,
             quantityFrom: range.from,

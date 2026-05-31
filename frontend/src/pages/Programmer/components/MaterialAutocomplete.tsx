@@ -143,8 +143,8 @@ const MaterialAutocomplete: React.FC<MaterialAutocompleteProps> = ({
             <div
               key={option}
               className={`customer-autocomplete-option ${
-                option === value || highlightedIndex === filteredOptions.indexOf(option) ? "selected" : ""
-              }`}
+                option === value ? "active" : ""
+              } ${highlightedIndex === filteredOptions.indexOf(option) ? "selected" : ""}`}
               onClick={() => handleOptionSelect(option)}
               onMouseDown={(e) => e.preventDefault()}
             >

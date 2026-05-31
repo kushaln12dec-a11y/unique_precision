@@ -80,6 +80,18 @@
   color: #ffffff;
 }
 
+.customer-autocomplete-option.active {
+  background-color: #eff6ff;
+  color: #1e40af;
+  font-weight: 500;
+  border: 1px solid #bfdbfe;
+}
+
+.customer-autocomplete-option.active.selected {
+  background-color: #1d4ed8;
+  color: #ffffff;
+}
+
 .customer-autocomplete-option.selected:hover {
   background-color: #1d4ed8;
 }

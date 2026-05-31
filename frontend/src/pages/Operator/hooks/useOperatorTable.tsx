@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useRef } from "react";
 import type { JobEntry } from "../../../types/job";
 import type { Column } from "../../../components/DataTable";
 import type { OperatorTableRow } from "../types";
@@ -73,6 +73,11 @@ export const useOperatorTable = ({
     return lookup;
   }, [operatorUsers]);
 
+  const activeRunsRef = useRef(activeRunsByJobId);
+  const operatorHistoryRef = useRef(operatorHistoryByJobId);
+  activeRunsRef.current = activeRunsByJobId;
+  operatorHistoryRef.current = operatorHistoryByJobId;
+
   return useMemo<Column<OperatorDisplayRow>[]>(
     () => buildBaseOperatorColumns({
       toggleGroup,
@@ -91,8 +96,8 @@ export const useOperatorTable = ({
       handleOpenQaModal,
       isImageInputDisabled,
       canOperateInputs,
-      activeRunsByJobId,
-      operatorHistoryByJobId,
+      getActiveRuns: () => activeRunsRef.current,
+      getOperatorHistory: () => operatorHistoryRef.current,
     }),
     [
       canAssign,
@@ -109,8 +114,6 @@ export const useOperatorTable = ({
       handleOpenQaModal,
       isAdmin,
       isImageInputDisabled,
-      activeRunsByJobId,
-      operatorHistoryByJobId,
       operatorNameLookup,
       toggleGroup,
     ]
