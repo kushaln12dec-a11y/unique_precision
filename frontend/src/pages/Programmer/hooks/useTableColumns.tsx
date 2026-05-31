@@ -173,7 +173,10 @@ export const useTableColumns = ({
         sortable: false,
         sortKey: "totalHrs",
         render: (row) => {
-          const totalHrs = Number(row.entry.totalHrs || 0);
+          const totalHrs =
+            row.kind === "parent"
+              ? Number(row.tableRow.groupTotalHrs || 0)
+              : Number(row.entry.totalHrs || 0);
           return totalHrs ? totalHrs.toFixed(2) : "-";
         },
       },
