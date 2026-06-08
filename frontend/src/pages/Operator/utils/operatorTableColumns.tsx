@@ -16,6 +16,27 @@ import {
   renderOperatorCustomerCell,
 } from "./operatorTableHelpers";
 
+// Helper to join values from child rows for a parent row; returns fallback if no values
+const getParentJoinedValues = (
+  row: OperatorDisplayRow,
+  getValue: (entry: any) => unknown,
+  fallback = ""
+): string => {
+  // If not a parent with children, return its own value or fallback
+  if (row.kind !== "parent" || !row.hasChildren) {
+    const direct = String(getValue(row.entry) || "").trim();
+    return direct || fallback;
+  }
+  // Aggregate unique non‑empty values from all child entries
+  const values = Array.from(
+    new Set(
+      row.tableRow.entries
+        .map((entry) => String(getValue(entry) || "").trim())
+        .filter(Boolean)
+    )
+  );
+  return values.length > 0 ? values.join(", ") : fallback;
+};
 export const buildBaseOperatorColumns = (props: {
   toggleGroup: (groupId: string) => void;
   operatorNameLookup: Map<string, string>;
@@ -58,13 +79,13 @@ export const buildBaseOperatorColumns = (props: {
     },
   },
   { key: "programRefFileName", label: <>Program Ref<br />File Name</>, sortable: false, render: (row) => <MarqueeCopyText text={String((row.entry as any).programRefFile || (row.entry as any).programRefFileName || "-")} /> },
-  { key: "description", label: "Description", sortable: false, sortKey: "description", render: (row) => <MarqueeCopyText text={row.entry.description || "-"} /> },
-  { key: "cut", label: "Cut (mm)", sortable: false, sortKey: "cut", render: (row) => Math.round(Number(row.entry.cut || 0)) },
-  { key: "thickness", label: "TH (MM)", sortable: false, sortKey: "thickness", render: (row) => getThicknessDisplayValue(row.entry.thickness) },
-  { key: "passLevel", label: "Pass", sortable: false, sortKey: "passLevel", render: (row) => row.entry.passLevel },
-  { key: "setting", label: "Setting", sortable: false, sortKey: "setting", render: (row) => row.entry.setting },
-  { key: "qty", label: "Qty", sortable: false, sortKey: "qty", render: (row) => Number(row.entry.qty || 0).toString() },
-  { key: "sedm", label: "SEDM", sortable: false, render: (row) => <span className={`sedm-badge ${toYN(row.entry.sedm) === "Y" ? "yes" : toYN(row.entry.sedm) === "N" ? "no" : ""}`}>{toYN(row.entry.sedm)}</span> },
+  { key: "description", label: "Description", sortable: false, sortKey: "description", render: (row) => <MarqueeCopyText text={getParentJoinedValues(row, (entry) => entry.description || "", "")} /> },
+  { key: "cut", label: "Cut (mm)", sortable: false, sortKey: "cut", render: (row) => row.kind === "parent" && row.hasChildren ? "" : Math.round(Number(row.entry.cut || 0)) },
+  { key: "thickness", label: "TH (MM)", sortable: false, sortKey: "thickness", render: (row) => row.kind === "parent" && row.hasChildren ? "" : getThicknessDisplayValue(row.entry.thickness) },
+  { key: "passLevel", label: "Pass", sortable: false, sortKey: "passLevel", render: (row) => row.kind === "parent" && row.hasChildren ? "" : row.entry.passLevel },
+  { key: "setting", label: "Setting", sortable: false, sortKey: "setting", render: (row) => row.kind === "parent" && row.hasChildren ? "" : row.entry.setting },
+  { key: "qty", label: "Qty", sortable: false, sortKey: "qty", render: (row) => row.kind === "parent" && row.hasChildren ? "" : Number(row.entry.qty || 0).toString() },
+  { key: "sedm", label: "SEDM", sortable: false, render: (row) => row.kind === "parent" && row.hasChildren ? "" : <span className={`sedm-badge ${toYN(row.entry.sedm) === "Y" ? "yes" : toYN(row.entry.sedm) === "N" ? "no" : ""}`}>{toYN(row.entry.sedm)}</span> },
   {
     key: "assignedTo",
     label: "Operator",
@@ -91,7 +112,15 @@ export const buildBaseOperatorColumns = (props: {
         latestWorkedByName ||
         "-";
 
-      const shouldAllowTableAssignment = props.canAssign;
+      const isGroupedParent = row.kind === "parent" && row.hasChildren;
+      const shouldAllowTableAssignment = props.canAssign && !isGroupedParent;
+      const readonlyAssignedValue = isGroupedParent ? "" : displayAssignedValue;
+
+      // For parent rows, display aggregated operator names with animation (MarqueeCopyText)
+      if (isGroupedParent) {
+        const aggregated = getParentJoinedValues(row, (entry) => entry.assignedTo || "", "Unassign");
+        return <MarqueeCopyText text={aggregated} className="operator-assigned-text" />;
+      }
 
       return shouldAllowTableAssignment ? (
         <div className="operator-assigned-cell-stack" title={operatorHistory.length ? `Worked By: ${operatorHistory.join(", ")}` : undefined}>
@@ -107,9 +136,9 @@ export const buildBaseOperatorColumns = (props: {
           />
         </div>
       ) : (
-        <div className="assigned-operators-readonly" title={operatorHistory.length ? `Worked By: ${operatorHistory.join(", ")}` : undefined}>
-          {displayAssignedValue}
-          {operatorHistory.length > 1 && (
+        <div className="assigned-operators-readonly" title={isGroupedParent ? undefined : operatorHistory.length ? `Worked By: ${operatorHistory.join(", ")}` : undefined}>
+          {readonlyAssignedValue}
+          {!isGroupedParent && operatorHistory.length > 1 && (
             <button
               className="operator-history-toggle"
               onClick={(e) => {
@@ -130,23 +159,37 @@ export const buildBaseOperatorColumns = (props: {
     label: <>Machine<br />Assign</>,
     sortable: false,
     className: "operator-machine-cell",
-    render: (row) =>
-      props.canAssign ? (
-        <SelectDropdown
-          className="operator-machine-dropdown-wrapper"
-          value={props.machineDropdownOptions.includes(getOperatorMachineNumber(row.entry)) ? getOperatorMachineNumber(row.entry) : ""}
-          onChange={(nextValue) => row.kind === "parent" ? props.handleMachineNumberChange(row.groupId, nextValue) : props.handleChildMachineNumberChange(row.entry.id, nextValue)}
-          options={[
-            { label: "Unassign", value: "" },
-            ...props.machineDropdownOptions.map((machine) => ({ label: formatMachineLabel(machine), value: machine })),
-          ]}
-          placeholder="Select"
-          align="left"
-          menuMinWidth={96}
-        />
-      ) : (
-        <div className="assigned-operators-readonly">{formatMachineLabel(getOperatorMachineNumber(row.entry)) || "-"}</div>
-      ),
+    render: (row) => {
+      const isGroupedParent = row.kind === "parent" && row.hasChildren;
+      const machineNumber = isGroupedParent ? "" : getOperatorMachineNumber(row.entry);
+      
+      if (isGroupedParent) {
+        const aggregated = getParentJoinedValues(row, (entry) => formatMachineLabel(getOperatorMachineNumber(entry)), "Unassign");
+        return <MarqueeCopyText text={aggregated} className="operator-machine-text" />;
+      }
+
+      if (props.canAssign) {
+        return (
+          <SelectDropdown
+            className="operator-machine-dropdown-wrapper"
+            value={props.machineDropdownOptions.includes(machineNumber) ? machineNumber : ""}
+            onChange={(nextValue) => row.kind === "parent" ? props.handleMachineNumberChange(row.groupId, nextValue) : props.handleChildMachineNumberChange(row.entry.id, nextValue)}
+            options={[
+              { label: "Unassign", value: "" },
+              ...props.machineDropdownOptions.map((machine) => ({ label: formatMachineLabel(machine), value: machine })),
+            ]}
+            placeholder="Select"
+            align="left"
+            menuMinWidth={96}
+          />
+        );
+      }
+      return (
+        <div className="assigned-operators-readonly">
+          {formatMachineLabel(machineNumber) || "Unassign"}
+        </div>
+      );
+    },
   },
   { key: "estimatedTime", label: <>Estimated<br />Time</>, sortable: false, render: (row) => renderEstimatedTimeWithLogs(row, props.getActiveRuns()) },
   ...(props.isAdmin ? [{ key: "totalAmount", label: "Amount (Rs.)", sortable: false, sortKey: "totalAmount", className: "operator-amount-cell", headerClassName: "operator-amount-header", render: (row: OperatorDisplayRow) => row.kind === "parent" ? row.tableRow.groupTotalAmount ? `Rs. ${Math.round(row.tableRow.groupTotalAmount)}` : "-" : row.entry.totalAmount ? `Rs. ${Math.round(row.entry.totalAmount)}` : "-" } as Column<OperatorDisplayRow>] : []),

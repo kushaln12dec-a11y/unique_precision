@@ -224,12 +224,8 @@ const QualityControlPage = () => {
         <Header title="QC" />
         <div className="roleboard-body qc-table-panel">
           <div className="dashboard-tabs">
-            <button className={`dashboard-tab ${qcTab === "QUEUE" ? "active" : ""}`} onClick={() => setQcTab("QUEUE")}>
-              QC Queue
-            </button>
-            <button className={`dashboard-tab ${qcTab === "LOGGED" ? "active" : ""}`} onClick={() => setQcTab("LOGGED")}>
-              Logged QC
-            </button>
+        <button type="button" className={`dashboard-tab ${qcTab === "QUEUE" ? "active" : ""}`} onClick={() => setQcTab("QUEUE")}>QC Queue</button>
+        <button type="button" className={`dashboard-tab ${qcTab === "LOGGED" ? "active" : ""}`} onClick={() => setQcTab("LOGGED")}>QC Logged</button>
           </div>
           <h3 style={{ marginTop: "1rem" }}>{qcTab === "QUEUE" ? "QC Queue" : "Logged QC Reports"}</h3>
           {loading && qcGridJobs.length === 0 ? (

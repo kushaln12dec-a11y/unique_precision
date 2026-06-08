@@ -118,8 +118,8 @@ export const useTableColumns = ({
         sortable: false,
         sortKey: "description",
         render: (row) => {
-          const full = row.entry.description || "-";
-          return <MarqueeCopyText text={full} />;
+          const full = row.kind === "parent" && row.hasChildren ? "" : (row.entry.description || "");
+          return <MarqueeCopyText text={full || ""} />;
         },
       },
       {
@@ -127,41 +127,44 @@ export const useTableColumns = ({
         label: "Cut (mm)",
         sortable: false,
         sortKey: "cut",
-        render: (row) => Math.round(Number(row.entry.cut || 0)),
+        render: (row) => row.kind === "parent" && row.hasChildren ? "" : Math.round(Number(row.entry.cut || 0)),
       },
       {
         key: "thickness",
         label: "TH (MM)",
         sortable: false,
         sortKey: "thickness",
-        render: (row) => getThicknessDisplayValue(row.entry.thickness),
+        render: (row) => row.kind === "parent" && row.hasChildren ? "" : getThicknessDisplayValue(row.entry.thickness),
       },
       {
         key: "passLevel",
         label: "Pass",
         sortable: false,
         sortKey: "passLevel",
-        render: (row) => row.entry.passLevel,
+        render: (row) => row.kind === "parent" && row.hasChildren ? "" : row.entry.passLevel,
       },
       {
         key: "setting",
         label: "Setting",
         sortable: false,
         sortKey: "setting",
-        render: (row) => row.entry.setting,
+        render: (row) => row.kind === "parent" && row.hasChildren ? "" : row.entry.setting,
       },
       {
         key: "qty",
         label: "Qty",
         sortable: false,
         sortKey: "qty",
-        render: (row) => Number(row.entry.qty || 0).toString(),
+        render: (row) => row.kind === "parent" && row.hasChildren ? "" : Number(row.entry.qty || 0).toString(),
       },
       {
         key: "sedm",
         label: "SEDM",
         sortable: false,
         render: (row) => {
+          if (row.kind === "parent" && row.hasChildren) {
+            return "";
+          }
           const sedm = toYN(row.entry.sedm);
           const sedmClass = sedm === "Y" ? "sedm-badge yes" : sedm === "N" ? "sedm-badge no" : "sedm-badge";
           return <span className={sedmClass}>{sedm}</span>;
