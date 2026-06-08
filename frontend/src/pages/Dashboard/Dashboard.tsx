@@ -85,8 +85,8 @@ const Dashboard = ({ mode = "shared" }: DashboardProps) => {
         <div className="dashboard-page-shell">
           <section className="dashboard-command-bar">
             <div>
-              <span className="dashboard-section-eyebrow">Neon Operations Board</span>
-              <h1>{userRole === "ADMIN" ? "Universal Control Dashboard" : `${activeView} Dashboard`}</h1>
+              <span className="dashboard-section-eyebrow">Operations Board</span>
+              <h1>{userRole === "ADMIN" ? "Universal Control Dashboard" : `${activeView.charAt(0).toUpperCase() + activeView.slice(1).toLowerCase()} Dashboard`}</h1>
               <p>
                 Switch perspectives, filter the live factory pulse, and monitor revenue, throughput, and QC pressure from one surface.
               </p>

@@ -15,40 +15,23 @@ type ThemeContextValue = {
   toggleTheme: () => void;
 };
 
-const STORAGE_KEY = "up-theme";
-
 const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
 
-const getPreferredTheme = (): ThemeMode => {
-  if (typeof window === "undefined") {
-    return "light";
-  }
-
-  const savedTheme = window.localStorage.getItem(STORAGE_KEY);
-  if (savedTheme === "light" || savedTheme === "dark") {
-    return savedTheme;
-  }
-
-  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-};
-
 export const ThemeProvider = ({ children }: { children: ReactNode }) => {
-  const [theme, setThemeState] = useState<ThemeMode>(() => getPreferredTheme());
+  const [, setThemeState] = useState<ThemeMode>("light");
 
   useEffect(() => {
-    document.documentElement.dataset.theme = theme;
-    document.body.dataset.theme = theme;
-    window.localStorage.setItem(STORAGE_KEY, theme);
-  }, [theme]);
+    document.documentElement.dataset.theme = "light";
+    document.body.dataset.theme = "light";
+  }, []);
 
   const value = useMemo<ThemeContextValue>(
     () => ({
-      theme,
-      setTheme: setThemeState,
-      toggleTheme: () =>
-        setThemeState((currentTheme) => (currentTheme === "light" ? "dark" : "light")),
+      theme: "light",
+      setTheme: setThemeState, // No-op visually now
+      toggleTheme: () => {}, // No-op
     }),
-    [theme],
+    [],
   );
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;

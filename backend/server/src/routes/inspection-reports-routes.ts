@@ -12,6 +12,13 @@ router.use(authMiddleware);
 
 const CHROME_PATH_CANDIDATES = [
   process.env.PUPPETEER_EXECUTABLE_PATH,
+  // Linux paths (Railway, Render, Docker)
+  "/usr/bin/google-chrome-stable",
+  "/usr/bin/google-chrome",
+  "/usr/bin/chromium-browser",
+  "/usr/bin/chromium",
+  "/snap/bin/chromium",
+  // Windows paths
   "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
   "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe",
   process.env.LOCALAPPDATA ? `${process.env.LOCALAPPDATA}\\Google\\Chrome\\Application\\chrome.exe` : null,
@@ -23,26 +30,47 @@ let browserPromise: Promise<Browser> | null = null;
 
 const requireQcRole = (role?: string) => role === "QC" || role === "ADMIN";
 
-const resolveBrowserPath = async (): Promise<string> => {
+const resolveBrowserPath = async (): Promise<string | undefined> => {
+  // First try to use puppeteer's bundled browser (works when `puppeteer` package is installed)
+  try {
+    // @ts-ignore — puppeteer may not be installed; this is a runtime fallback
+    const puppeteerFull = await import("puppeteer");
+    const bundledPath = (puppeteerFull as any).executablePath?.() ?? (puppeteerFull.default as any).executablePath?.();
+    if (bundledPath) {
+      const fsPromises = await import("fs/promises");
+      await fsPromises.access(bundledPath);
+      console.log("[PDF] Using puppeteer bundled browser:", bundledPath);
+      return bundledPath;
+    }
+  } catch {
+    // Bundled browser not available, fall through to candidates
+  }
+
+  // Fall back to system-installed browsers
   for (const candidate of CHROME_PATH_CANDIDATES) {
     try {
       await import("fs/promises").then((fs) => fs.access(candidate));
+      console.log("[PDF] Using system browser:", candidate);
       return candidate;
     } catch {
       // continue
     }
   }
-  throw new Error("No Chromium-compatible browser found. Set PUPPETEER_EXECUTABLE_PATH.");
+
+  return undefined;
 };
 
 const getBrowser = async (): Promise<Browser> => {
   if (!browserPromise) {
     browserPromise = (async () => {
       const executablePath = await resolveBrowserPath();
+      if (!executablePath) {
+        throw new Error("No Chromium-compatible browser found. Set PUPPETEER_EXECUTABLE_PATH.");
+      }
       return puppeteer.launch({
         executablePath,
         headless: true,
-        args: ["--no-sandbox", "--disable-setuid-sandbox", "--font-render-hinting=none"],
+        args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage", "--font-render-hinting=none"],
       });
     })();
   }

@@ -42,10 +42,11 @@ const RevenueChart = ({ title, data }: RevenueChartProps) => {
             <Tooltip
               formatter={(value: number) => value.toLocaleString("en-IN", { maximumFractionDigits: 0 })}
               contentStyle={{
-                background: "rgba(9, 12, 26, 0.94)",
-                border: "1px solid rgba(125, 211, 252, 0.22)",
+                background: "rgba(255, 255, 255, 0.95)",
+                border: "1px solid rgba(148, 163, 184, 0.3)",
                 borderRadius: "16px",
-                color: "#f8fafc",
+                color: "#0f172a",
+                boxShadow: "0 8px 24px rgba(15, 23, 42, 0.1)",
               }}
             />
             <Legend />

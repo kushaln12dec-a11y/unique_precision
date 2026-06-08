@@ -1,13 +1,12 @@
 import { useCallback, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
-import DarkModeRoundedIcon from "@mui/icons-material/DarkModeRounded";
-import LightModeRoundedIcon from "@mui/icons-material/LightModeRounded";
+
 import NotificationsActiveRoundedIcon from "@mui/icons-material/NotificationsActiveRounded";
 import RadioButtonCheckedRoundedIcon from "@mui/icons-material/RadioButtonCheckedRounded";
 import Modal from "./Modal";
 import { getUserDesignationFromToken, getUserDisplayNameFromToken, getUserEmpIdFromToken } from "../utils/auth";
-import { useTheme } from "../theme/ThemeProvider";
+
 import { resolveHeaderBreadcrumbs, type BreadcrumbItem } from "./headerBreadcrumbs";
 import { useHeaderNotifications } from "./useHeaderNotifications";
 import "./Header.css";
@@ -21,7 +20,7 @@ interface HeaderProps {
 const Header = ({ title, onNavigate, breadcrumbsOverride }: HeaderProps) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { theme, toggleTheme } = useTheme();
+
   const displayName = getUserDisplayNameFromToken();
   const empId = getUserEmpIdFromToken();
   const designation = getUserDesignationFromToken();
@@ -103,20 +102,7 @@ const Header = ({ title, onNavigate, breadcrumbsOverride }: HeaderProps) => {
             </span>
             <span>Alerts</span>
           </button>
-          <button
-            type="button"
-            className="theme-toggle-button"
-            onClick={toggleTheme}
-            aria-label={`Switch to ${theme === "light" ? "dark" : "light"} mode`}
-            title={`Switch to ${theme === "light" ? "dark" : "light"} mode`}
-          >
-            {theme === "light" ? (
-              <DarkModeRoundedIcon fontSize="small" />
-            ) : (
-              <LightModeRoundedIcon fontSize="small" />
-            )}
-            <span>{theme === "light" ? "Dark" : "Light"} Mode</span>
-          </button>
+
           {(displayName || empId) && (
             <div className="user-pill" title={displayName || empId || undefined}>
               <span className="user-label">Logged in as</span>

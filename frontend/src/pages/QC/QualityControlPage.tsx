@@ -20,6 +20,7 @@ import { buildQcRows, formatDateForTemplate, getDrawingNo, getPrimaryOperatorNam
 import { useJobSync } from "../../hooks/useJobSync";
 import "../RoleBoard.css";
 import "../Programmer/Programmer.css";
+import "../Operator/Operator.part07.css";
 import "./QualityControlDashboard.css";
 import "./components/QcReportTemplateModal.css";
 
@@ -223,13 +224,9 @@ const QualityControlPage = () => {
       <div className="roleboard-content">
         <Header title="QC" />
         <div className="roleboard-body qc-table-panel">
-          <div className="dashboard-tabs">
-            <button className={`dashboard-tab ${qcTab === "QUEUE" ? "active" : ""}`} onClick={() => setQcTab("QUEUE")}>
-              QC Queue
-            </button>
-            <button className={`dashboard-tab ${qcTab === "LOGGED" ? "active" : ""}`} onClick={() => setQcTab("LOGGED")}>
-              Logged QC
-            </button>
+          <div className="operator-subtabs">
+            <button type="button" className={`operator-subtab ${qcTab === "QUEUE" ? "active" : ""}`} onClick={() => setQcTab("QUEUE")}>QC Queue</button>
+            <button type="button" className={`operator-subtab ${qcTab === "LOGGED" ? "active" : ""}`} onClick={() => setQcTab("LOGGED")}>QC Logged</button>
           </div>
           <h3 style={{ marginTop: "1rem" }}>{qcTab === "QUEUE" ? "QC Queue" : "Logged QC Reports"}</h3>
           {loading && qcGridJobs.length === 0 ? (

@@ -61,8 +61,11 @@ let cachedLogoDataUri: string | null = null;
 const resolveLogoPath = (): string | null => {
   const candidates = [
     path.resolve(process.cwd(), "../frontend/public/output-onlinepngtools.svg"),
+    path.resolve(process.cwd(), "../frontend/dist/output-onlinepngtools.svg"),
     path.resolve(process.cwd(), "frontend/public/output-onlinepngtools.svg"),
+    path.resolve(process.cwd(), "frontend/dist/output-onlinepngtools.svg"),
     path.resolve(process.cwd(), "public/output-onlinepngtools.svg"),
+    path.resolve(process.cwd(), "dist/output-onlinepngtools.svg"),
   ];
   for (const candidate of candidates) {
     if (fs.existsSync(candidate)) return candidate;
