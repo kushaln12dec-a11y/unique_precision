@@ -236,6 +236,7 @@ export const useOperatorPersistenceActions = ({
       }
 
       await updateOperatorJob(String(cutId), {
+        startTime: String(qtyData.startTime || ""),
         endTime: options.endTime,
         machineHrs: options.machineHrs,
         idleTime: "",

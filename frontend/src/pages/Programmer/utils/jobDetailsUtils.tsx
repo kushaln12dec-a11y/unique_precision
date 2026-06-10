@@ -61,10 +61,8 @@ export const buildCutDetailPairs = ({
     { label: "Priority", value: cutItem.priority || "-" },
     { label: "Remark", value: (cutItem as any).remark || "-" },
     {
-      label: showOperatorSpecificLayout ? "Estimated Time" : "Cut Length Hrs",
-      value: showOperatorSpecificLayout
-        ? formatEstimatedTime(estimatedHoursFromAmount(amounts.wedmAmount || 0))
-        : cutItem.totalHrs ? Number(cutItem.totalHrs).toFixed(2) : "-",
+      label: "Cut Length Hrs",
+      value: cutItem.totalHrs ? Number(cutItem.totalHrs).toFixed(2) : "-",
     },
   ];
 
