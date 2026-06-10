@@ -128,7 +128,7 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({ job, cut, userRole, o
           <div className="job-details-totals">
             <div className="total-row">
               <label>{showOperatorSpecificLayout ? "Estimated Time:" : "Cut Length Hrs:"}</label>
-              <span>{showOperatorSpecificLayout ? formatEstimatedTime(displayGroupTotalHrs || 0) : (displayGroupTotalHrs ? formatDecimalHoursToHHMMhrs(displayGroupTotalHrs) : "00:00hrs")}</span>
+              <span>{showOperatorSpecificLayout ? formatEstimatedTime(displayGroupTotalHrs || 0) : (displayGroupTotalHrs ? Number(displayGroupTotalHrs).toFixed(2) : "-")}</span>
             </div>
             {canSeeAmounts && <>
               <div className="total-row">

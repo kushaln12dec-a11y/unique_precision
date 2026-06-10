@@ -64,7 +64,7 @@ export const buildCutDetailPairs = ({
       label: showOperatorSpecificLayout ? "Estimated Time" : "Cut Length Hrs",
       value: showOperatorSpecificLayout
         ? formatEstimatedTime(estimatedHoursFromAmount(amounts.wedmAmount || 0))
-        : cutItem.totalHrs ? formatDecimalHoursToHHMMhrs(cutItem.totalHrs) : "00:00hrs",
+        : cutItem.totalHrs ? Number(cutItem.totalHrs).toFixed(2) : "-",
     },
   ];
 
