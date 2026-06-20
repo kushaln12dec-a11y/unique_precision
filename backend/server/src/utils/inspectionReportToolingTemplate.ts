@@ -131,7 +131,7 @@ export const buildToolingSpareInspectionReportHtml = (payload: ToolingSpareInspe
     @page { size: A4 landscape; margin: 10mm; }
     * { box-sizing: border-box; }
     body { margin: 0; font-family: "Segoe UI", Arial, sans-serif; color: #111827; }
-    .sheet { width: 100%; border: 1px solid #1f2937; }
+    .sheet { width: 100%; border: 1px solid #1f2937; display: flex; flex-direction: column; min-height: 710px; }
     .sheet-header {
       display: flex;
       align-items: center;
@@ -154,6 +154,7 @@ export const buildToolingSpareInspectionReportHtml = (payload: ToolingSpareInspe
       text-transform: uppercase;
     }
     table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+    .report-table { flex: 1; }
     td, th { border: 1px solid #1f2937; padding: 5px; vertical-align: middle; }
     .meta-table td { min-height: 36px; }
     .meta-date { font-size: 18px; text-align: center; font-weight: 700; letter-spacing: 0.25px; }

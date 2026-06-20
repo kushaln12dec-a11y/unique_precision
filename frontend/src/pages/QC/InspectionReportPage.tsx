@@ -249,6 +249,7 @@ const InspectionReportPage = () => {
                 onClearRow={(index) => setRows((prev) => prev.map((row, rowIndex) => (rowIndex === index ? createEmptyRow() : row)))}
                 onRemoveRow={(index) => setRows((prev) => (prev.length <= 1 ? prev : prev.filter((_, rowIndex) => rowIndex !== index)))}
                 maxRows={MAX_ROWS}
+                templateVariant={templateVariant}
               />
 
               <div className="qc-report-decision">

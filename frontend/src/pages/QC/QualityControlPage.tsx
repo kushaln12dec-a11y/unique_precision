@@ -158,9 +158,7 @@ const QualityControlPage = () => {
     URL.revokeObjectURL(url);
   };
 
-  const handleTemplateSelection = async (variant: "DEFAULT" | "TOOLING_SPARE") => {
-    if (!templateSelection) return;
-    const { row, action } = templateSelection;
+  const processTemplateSelection = async (row: QcRow, action: "OPEN" | "DOWNLOAD", variant: "DEFAULT" | "TOOLING_SPARE") => {
     const payload = buildReportPayload(row, variant);
     try {
       if (action === "OPEN") {
@@ -184,12 +182,29 @@ const QualityControlPage = () => {
     }
   };
 
+  const handleTemplateSelection = async (variant: "DEFAULT" | "TOOLING_SPARE") => {
+    if (!templateSelection) return;
+    await processTemplateSelection(templateSelection.row, templateSelection.action, variant);
+  };
+
   const columns = useMemo(
     () =>
       createQcColumns({
         updateDecision,
-        onOpenReport: (row) => setTemplateSelection({ row, action: "OPEN" }),
-        onDownloadReport: (row) => setTemplateSelection({ row, action: "DOWNLOAD" }),
+        onOpenReport: (row) => {
+          if (row.quantityCount && row.quantityCount > 1) {
+            void processTemplateSelection(row, "OPEN", "TOOLING_SPARE");
+          } else {
+            setTemplateSelection({ row, action: "OPEN" });
+          }
+        },
+        onDownloadReport: (row) => {
+          if (row.quantityCount && row.quantityCount > 1) {
+            void processTemplateSelection(row, "DOWNLOAD", "TOOLING_SPARE");
+          } else {
+            setTemplateSelection({ row, action: "DOWNLOAD" });
+          }
+        },
         openClosePrompt: (row) => {
           setReportCloseCandidate(row);
           setIsCloseConfirmOpen(true);

@@ -185,6 +185,8 @@ export const buildInspectionReportHtml = (payload: GenerateInspectionReportPaylo
       border: 1.6px solid #3c55b4;
       padding: 24px 8px 8px;
       color: #2848a7;
+      display: flex;
+      flex-direction: column;
     }
     .title-badge {
       position: absolute;
@@ -324,6 +326,7 @@ export const buildInspectionReportHtml = (payload: GenerateInspectionReportPaylo
     .report-table {
       margin-top: 4px;
       width: 100%;
+      flex: 1;
       border-collapse: collapse;
       table-layout: fixed;
       color: #2c49a6;
