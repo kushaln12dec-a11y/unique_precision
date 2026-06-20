@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import type { JobEntry } from "../../../types/job";
-import { formatDecimalHoursToHHMMhrs, formatDisplayDateTime } from "../../../utils/date";
-import { estimatedHoursFromAmount, formatEstimatedTime, formatJobRefDisplay } from "../../../utils/jobFormatting";
+import { formatDisplayDateTime } from "../../../utils/date";
+import { formatJobRefDisplay } from "../../../utils/jobFormatting";
 import { formatMachineLabel } from "../../../utils/jobFormatting";
 import { getQaProgressCounts } from "../../Operator/utils/qaProgress";
 import { getThicknessDisplayValue } from "../programmerUtils";

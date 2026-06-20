@@ -2,8 +2,6 @@ import React, { useMemo, useState } from "react";
 import { useLocation } from "react-router-dom";
 import type { JobEntry } from "../../../types/job";
 import { calculateTotals, type CutForm } from "../programmerUtils";
-import { formatDecimalHoursToHHMMhrs } from "../../../utils/date";
-import { formatEstimatedTime } from "../../../utils/jobFormatting";
 import JobDetailsCutCard from "./JobDetailsCutCard";
 import { buildCutDetailPairs, buildJobInfoPairs, toRows } from "../utils/jobDetailsUtils";
 import "./JobDetailsModal.css";
