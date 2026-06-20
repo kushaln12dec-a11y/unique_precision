@@ -15,7 +15,7 @@ export const OperatorTabs: React.FC<Props> = ({ activeTab, setActiveTab }) => {
         Logs
       </button>
       <button type="button" className={`operator-subtab ${activeTab === "logged_jobs" ? "active" : ""}`} onClick={() => setActiveTab("logged_jobs")}>
-        Logged Jobs
+        Closed Jobs
       </button>
     </div>
   );
