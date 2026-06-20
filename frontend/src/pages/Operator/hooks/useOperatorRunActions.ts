@@ -134,6 +134,8 @@ export const useOperatorRunActions = ({
         setActiveOperatorLogIds((prev) => new Map(prev).set(key, startedLog._id));
       }
 
+      showAndHideToast(setActionToast, "Start time captured successfully!", "success", 3000);
+
       setCutInputs((prev) => {
         const currentCut = prev.get(cutId);
         const currentQty = currentCut?.quantities?.[quantityIndex];

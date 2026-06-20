@@ -149,10 +149,7 @@ export const OperatorQuantityCard: React.FC<OperatorQuantityCardProps> = ({
                   return;
                 }
                 if (!qtyData.startTime && !qtyData.endTime) {
-                  onInputChange(cutId, qtyIndex, "startTime", getCurrentISTDateTime(timestampMs));
-                  onInputChange(cutId, qtyIndex, "startTimeEpochMs", String(timestampMs));
                   onStartTimeCaptured?.(cutId, qtyIndex, timestampMs);
-                  onShowToast?.("Start time captured successfully!", "success");
                 } else {
                   onShowToast?.("Start time can only be set once!", "error");
                 }

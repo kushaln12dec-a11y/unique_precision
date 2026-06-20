@@ -253,12 +253,36 @@ export const useOperatorViewData = (groupId: string | null, cutIdParam: string |
     const syncJobsOnly = async () => {
       try {
         invalidateEmployeeLogsCache(/employee-logs/);
-        const fetchedJobs = await getOperatorJobsByGroupId(groupId);
+        const [fetchedJobs, operatorLogs] = await Promise.all([
+          getOperatorJobsByGroupId(groupId),
+          getEmployeeLogs({ role: "OPERATOR", jobGroupId: groupId, limit: 2000 }).catch(() => [])
+        ]);
+
+        const logsByJobId = new Map<string, Array<any>>();
+        operatorLogs.forEach((log) => {
+          const jobId = String(log.jobId || "").trim();
+          if (!jobId) return;
+          if (!logsByJobId.has(jobId)) logsByJobId.set(jobId, []);
+          logsByJobId.get(jobId)!.push(log);
+        });
+
         const filteredJobs = cutIdParam
           ? fetchedJobs.filter((job) => String(job.id) === String(cutIdParam))
           : fetchedJobs;
+          
         setJobs(filteredJobs);
-        setCutInputs((prev) => mergeJobAssignmentsIntoInputs(prev, filteredJobs));
+        setCutInputs((prev) => {
+          const next = new Map(prev);
+          filteredJobs.forEach((job) => {
+            const currentCut = next.get(job.id);
+            if (!currentCut?.quantities?.length) return;
+            const updatedQuantities = currentCut.quantities.map((qty, index) => 
+              hydrateQuantityFromLogs(qty, index + 1, job, logsByJobId.get(String(job.id)) || [])
+            );
+            next.set(job.id, { ...currentCut, quantities: updatedQuantities });
+          });
+          return mergeJobAssignmentsIntoInputs(next, filteredJobs);
+        });
       } catch {
         // Background sync should not block operator flow.
       }
