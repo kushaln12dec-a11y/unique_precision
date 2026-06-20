@@ -10,6 +10,7 @@ type Props = {
   onClearRow: (index: number) => void;
   onRemoveRow: (index: number) => void;
   maxRows: number;
+  templateVariant?: "DEFAULT" | "TOOLING_SPARE";
 };
 
 const InspectionReportMeasurements = ({
@@ -20,6 +21,7 @@ const InspectionReportMeasurements = ({
   onClearRow,
   onRemoveRow,
   maxRows,
+  templateVariant = "DEFAULT",
 }: Props) => (
   <>
     <div className="qc-report-table-title-row">
@@ -35,8 +37,8 @@ const InspectionReportMeasurements = ({
             <th>Sl</th>
             <th>Actual Dimension</th>
             <th>Tolerance</th>
-            <th>Measuring Dimension</th>
-            <th>Deviation</th>
+            <th>{templateVariant === "TOOLING_SPARE" ? "Quantity 1 Result" : "Measuring Dimension"}</th>
+            <th>{templateVariant === "TOOLING_SPARE" ? "Quantity 2 Result" : "Deviation"}</th>
             <th>HM</th>
             <th>SG</th>
             <th>PG</th>
