@@ -151,8 +151,8 @@ export const mergeJobAssignmentsIntoInputs = (
 
       return {
         ...qty,
-        machineNumber: sharedMachine || String(qty.machineNumber || "").trim(),
-        opsName: assignedOperators,
+        machineNumber: String(qty.machineNumber || "").trim() || sharedMachine,
+        opsName: qty.opsName && qty.opsName.length > 0 ? qty.opsName : assignedOperators,
       };
     });
 

@@ -226,9 +226,9 @@ const QualityControlPage = () => {
         <div className="roleboard-body qc-table-panel">
           <div className="operator-subtabs">
             <button type="button" className={`operator-subtab ${qcTab === "QUEUE" ? "active" : ""}`} onClick={() => setQcTab("QUEUE")}>QC Queue</button>
-            <button type="button" className={`operator-subtab ${qcTab === "LOGGED" ? "active" : ""}`} onClick={() => setQcTab("LOGGED")}>QC Logged</button>
+            <button type="button" className={`operator-subtab ${qcTab === "LOGGED" ? "active" : ""}`} onClick={() => setQcTab("LOGGED")}>Closed QC</button>
           </div>
-          <h3 style={{ marginTop: "1rem" }}>{qcTab === "QUEUE" ? "QC Queue" : "Logged QC Reports"}</h3>
+          <h3 style={{ marginTop: "1rem" }}>{qcTab === "QUEUE" ? "QC Queue" : "Closed QC Reports"}</h3>
           {loading && qcGridJobs.length === 0 ? (
             <AppLoader message="Loading QC queue..." />
           ) : (

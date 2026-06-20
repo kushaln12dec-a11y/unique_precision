@@ -126,10 +126,24 @@ export const OperatorQuantityCard: React.FC<OperatorQuantityCardProps> = ({
             </label>
             <DateTimeInput
               value={qtyData.startTime}
-              onChange={(value) => { if (!qtyData.startTime && !qtyData.endTime) onInputChange(cutId, qtyIndex, "startTime", value); }}
+              onChange={(value) => {
+                const hasMachine = Boolean(String(qtyData.machineNumber || "").trim());
+                const hasOperator = Array.isArray(qtyData.opsName) && qtyData.opsName.length > 0;
+                if (!hasMachine || !hasOperator) {
+                  onShowToast?.("Please select Machine and Operator Name before starting.", "error");
+                  return;
+                }
+                if (!qtyData.startTime && !qtyData.endTime) onInputChange(cutId, qtyIndex, "startTime", value);
+              }}
               applyCapturedValue={false}
               onTimeCapture={(timestampMs) => {
                 if (!canOperateInputs) return;
+                const hasMachine = Boolean(String(qtyData.machineNumber || "").trim());
+                const hasOperator = Array.isArray(qtyData.opsName) && qtyData.opsName.length > 0;
+                if (!hasMachine || !hasOperator) {
+                  onShowToast?.("Please select Machine and Operator Name before starting.", "error");
+                  return;
+                }
                 if (!canRunAssignedJob) {
                   blockRunAction();
                   return;
