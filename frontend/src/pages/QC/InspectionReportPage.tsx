@@ -28,6 +28,7 @@ const InspectionReportPage = () => {
   const [loading, setLoading] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [rows, setRows] = useState<InspectionReportRowPayload[]>([createEmptyRow()]);
+  const [linkQuantities, setLinkQuantities] = useState(false);
   const [customerId, setCustomerId] = useState("");
   const [date, setDate] = useState(getTodayIsoDate());
   const [drawingName, setDrawingName] = useState("");
@@ -153,7 +154,15 @@ const InspectionReportPage = () => {
   }, [refreshPreview]);
 
   const updateRowText = (index: number, key: keyof Omit<InspectionReportRowPayload, "instruments">, value: string) => {
-    setRows((prev) => prev.map((row, rowIndex) => (rowIndex === index ? { ...row, [key]: value } : row)));
+    setRows((prev) => prev.map((row, rowIndex) => {
+      if (rowIndex !== index) return row;
+      const updated = { ...row, [key]: value };
+      if (templateVariant === "TOOLING_SPARE" && linkQuantities) {
+        if (key === "measuringDimension") updated.deviation = value;
+        if (key === "deviation") updated.measuringDimension = value;
+      }
+      return updated;
+    }));
   };
 
   const toggleInstrument = (index: number, key: keyof InstrumentSelection) => {
@@ -250,6 +259,8 @@ const InspectionReportPage = () => {
                 onRemoveRow={(index) => setRows((prev) => (prev.length <= 1 ? prev : prev.filter((_, rowIndex) => rowIndex !== index)))}
                 maxRows={MAX_ROWS}
                 templateVariant={templateVariant}
+                linkQuantities={linkQuantities}
+                onToggleLinkQuantities={() => setLinkQuantities((prev) => !prev)}
               />
 
               <div className="qc-report-decision">
