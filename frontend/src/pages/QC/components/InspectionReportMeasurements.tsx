@@ -11,6 +11,8 @@ type Props = {
   onRemoveRow: (index: number) => void;
   maxRows: number;
   templateVariant?: "DEFAULT" | "TOOLING_SPARE";
+  linkQuantities?: boolean;
+  onToggleLinkQuantities?: () => void;
 };
 
 const InspectionReportMeasurements = ({
@@ -22,10 +24,20 @@ const InspectionReportMeasurements = ({
   onRemoveRow,
   maxRows,
   templateVariant = "DEFAULT",
+  linkQuantities,
+  onToggleLinkQuantities,
 }: Props) => (
   <>
     <div className="qc-report-table-title-row">
-      <h3>Measurement Inputs (Max 30 Rows)</h3>
+      <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+        <h3>Measurement Inputs (Max 30 Rows)</h3>
+        {templateVariant === "TOOLING_SPARE" && (
+          <label style={{ display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.85rem", cursor: "pointer", fontWeight: 600 }}>
+            <input type="checkbox" checked={linkQuantities} onChange={onToggleLinkQuantities} />
+            Link Quantity 1 & 2 Results
+          </label>
+        )}
+      </div>
       <button type="button" className="qc-report-add-row-btn" onClick={onAddRow} disabled={rows.length >= maxRows}>
         Add Row
       </button>

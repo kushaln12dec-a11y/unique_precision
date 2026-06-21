@@ -15,7 +15,7 @@ import { getQaStageLabel } from "../utils/qaProgress";
 import { estimatedDurationSecondsFromHours, formatMachineLabel } from "../../../utils/jobFormatting";
 import type { OperatorQuantityCardProps } from "../types/operatorQuantityCard";
 import { getOperatorQuantityHistory } from "../utils/operatorQuantityHistory";
-import { getCurrentISTDateTime } from "../../../utils/dateTime";
+
 export const OperatorQuantityCard: React.FC<OperatorQuantityCardProps> = ({
   qtyData,
   qtyIndex,

@@ -1,5 +1,5 @@
 import { Router } from "express";
-import puppeteer, { type Browser } from "puppeteer-core";
+import puppeteer, { type Browser } from "puppeteer";
 import { authMiddleware } from "../middleware/auth";
 import {
   buildInspectionReportHtml,
