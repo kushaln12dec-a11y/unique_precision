@@ -34,18 +34,29 @@ export const parseOperatorDateTime = (value?: string): Date | null => {
   return Number.isNaN(date.getTime()) ? null : date;
 };
 
+export const formatOperatorDateTime = (date: Date): string => {
+  const d = new Date(date.getTime() + IST_OFFSET_MS);
+  const day = d.getUTCDate().toString().padStart(2, "0");
+  const month = (d.getUTCMonth() + 1).toString().padStart(2, "0");
+  const year = d.getUTCFullYear();
+  const hours = d.getUTCHours().toString().padStart(2, "0");
+  const minutes = d.getUTCMinutes().toString().padStart(2, "0");
+  const seconds = d.getUTCSeconds().toString().padStart(2, "0");
+  return `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
+};
+
 export const parseDisplayDateTime = (value?: string): Date | null => {
   if (!value || typeof value !== "string") return null;
   const trimmed = value.trim();
   if (!trimmed) return null;
 
-  // Try native parsing first (handles ISO strings)
-  const native = new Date(trimmed);
-  if (!Number.isNaN(native.getTime())) return native;
-
-  // Try legacy DD/MM/YYYY HH:MM
+  // Try legacy DD/MM/YYYY HH:MM first to avoid native Date wrongly parsing it as MM/DD/YYYY
   const legacy = parseOperatorDateTime(trimmed);
   if (legacy) return legacy;
+
+  // Try native parsing (handles ISO strings)
+  const native = new Date(trimmed);
+  if (!Number.isNaN(native.getTime())) return native;
 
   // Format: "DD MMM YYYY HH:MM" or "DD MMM YYYY HH:MMam/pm" or "DD MMM YYYY"
   const parts = trimmed.split(" ");

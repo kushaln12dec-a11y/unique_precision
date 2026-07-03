@@ -150,7 +150,7 @@ export const useOperatorViewData = (groupId: string | null, cutIdParam: string |
                   pauseTimeOffsetSeconds: 0,
                   machineHrs,
                   machineNumber: capture.machineNumber || "",
-                  opsName: opsNameArray,
+                  opsName: [...opsNameArray],
                   operatorHistory: collectOperatorHistoryForQuantity(idx + 1, logsByJobId.get(String(jobId)) || []),
                   operatorHistoryDetails: collectOperatorHistoryDetailsForQuantity(idx + 1, logsByJobId.get(String(jobId)) || []),
                   idleTime,
@@ -203,7 +203,7 @@ export const useOperatorViewData = (groupId: string | null, cutIdParam: string |
               pauseTimeOffsetSeconds: 0,
               machineHrs,
               machineNumber: existing.machineNumber || "",
-              opsName: opsNameArray,
+              opsName: [...opsNameArray],
               operatorHistory: collectOperatorHistoryForQuantity(1, logsByJobId.get(String(jobId)) || []),
               operatorHistoryDetails: collectOperatorHistoryDetailsForQuantity(1, logsByJobId.get(String(jobId)) || []),
               idleTime,
@@ -218,6 +218,14 @@ export const useOperatorViewData = (groupId: string | null, cutIdParam: string |
               pauseSessions: [],
               currentPauseReason: "",
             };
+
+            for (let idx = 1; idx < quantity; idx += 1) {
+              quantities[idx] = {
+                ...quantities[idx],
+                machineNumber: existing.machineNumber || "",
+                opsName: [...opsNameArray],
+              };
+            }
           }
           
           initialInputs.set(jobId, {
@@ -229,8 +237,37 @@ export const useOperatorViewData = (groupId: string | null, cutIdParam: string |
         
       setJobs(filteredJobs);
       setCutInputs((prev) => {
-        const preferredInputs = initialInputs.size > 0 ? initialInputs : prev;
-        return mergeJobAssignmentsIntoInputs(preferredInputs, filteredJobs);
+        if (initialInputs.size === 0) return mergeJobAssignmentsIntoInputs(prev, filteredJobs);
+        
+        const next = new Map(initialInputs);
+        prev.forEach((prevCut, cutId) => {
+          const nextCut = next.get(cutId);
+          if (nextCut && nextCut.quantities) {
+            const mergedQuantities = nextCut.quantities.map((qty, i) => {
+              const prevQty = prevCut.quantities[i];
+              if (!prevQty) return qty;
+              
+              const isLocked = Boolean(String(qty.endTime || "").trim());
+              if (isLocked) return qty;
+              
+              const hasStartTime = Boolean(String(qty.startTime || "").trim());
+              const prevHasStartTime = Boolean(String(prevQty.startTime || "").trim());
+              
+              return {
+                ...qty,
+                machineNumber: prevQty.machineNumber || qty.machineNumber,
+                opsName: prevQty.opsName?.length > 0 ? prevQty.opsName : qty.opsName,
+                startTime: hasStartTime ? qty.startTime : prevQty.startTime,
+                startTimeEpochMs: hasStartTime ? qty.startTimeEpochMs : prevQty.startTimeEpochMs,
+                isPaused: hasStartTime ? qty.isPaused : prevQty.isPaused,
+                pauseStartTime: hasStartTime ? qty.pauseStartTime : prevQty.pauseStartTime,
+              };
+            });
+            next.set(cutId, { ...nextCut, quantities: mergedQuantities });
+          }
+        });
+        
+        return mergeJobAssignmentsIntoInputs(next, filteredJobs);
       });
       if (filteredJobs.length > 0) {
         setExpandedCuts((prev) => (prev.size > 0 ? prev : new Set([filteredJobs[0].id])));

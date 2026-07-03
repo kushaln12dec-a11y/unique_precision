@@ -1,5 +1,5 @@
 import { Prisma } from "@prisma/client";
-import { formatDbDateTime } from "../utils/dateTime";
+import { formatDbDateTime, formatOperatorDateTime } from "../utils/dateTime";
 import { toBigInt } from "../utils/bigint";
 
 export const operatorJobInclude: Prisma.JobInclude = {
@@ -580,8 +580,8 @@ export const syncJobOperatorCapture = async (tx: any, log: any) => {
     fromQty: Number(log.quantityFrom || 1),
     toQty: Number(log.quantityTo || log.quantityFrom || 1),
     quantityCount: Number(log.quantityCount || 1),
-    startTime: log.startedAt instanceof Date ? log.startedAt.toISOString() : String(log.startedAt || ""),
-    endTime: log.endedAt instanceof Date ? log.endedAt.toISOString() : String(log.endedAt || ""),
+    startTime: log.startedAt instanceof Date ? formatOperatorDateTime(log.startedAt) : String(log.startedAt || ""),
+    endTime: log.endedAt instanceof Date ? formatOperatorDateTime(log.endedAt) : String(log.endedAt || ""),
     machineHrs: String(metadata.machineHrs || ""),
     machineNumber: String(metadata.machineNumber || ""),
     opsName: String(metadata.opsName || log.userName || ""),

@@ -143,16 +143,12 @@ export const mergeJobAssignmentsIntoInputs = (
     const currentCut = nextInputs.get(job.id);
     if (!currentCut?.quantities?.length) return;
 
-    const assignedOperators = parseAssignedOperators((job as any).assignedTo || "");
-    const sharedMachine = String((job as any).machineNumber || "").trim();
     const mergedQuantities = currentCut.quantities.map((qty) => {
       const hasLockedCapture = Boolean(String(qty.endTime || "").trim());
       if (hasLockedCapture) return qty;
 
       return {
         ...qty,
-        machineNumber: String(qty.machineNumber || "").trim() || sharedMachine,
-        opsName: qty.opsName && qty.opsName.length > 0 ? qty.opsName : assignedOperators,
       };
     });
 
@@ -282,8 +278,6 @@ export const hydrateQuantityFromLogs = (
 ): QuantityInputData => {
   const workedDurationSeconds = Math.max(0, Math.round(getWorkedDurationSecondsForQuantity(quantityNumber, logsForJob)));
   const activeLog = getLatestActiveLogForQuantity(quantityNumber, logsForJob);
-  const sharedMachine = String((job as any).machineNumber || "").trim();
-  const assignedOperators = parseAssignedOperators((job as any).assignedTo || "");
   const activeLogStartMs = activeLog?.startedAt ? new Date(String(activeLog.startedAt)).getTime() : null;
   const activeOps = parseOpsNames((activeLog?.metadata as any)?.opsName || "");
   const activeMachine = String((activeLog?.metadata as any)?.machineNumber || "").trim();
@@ -304,8 +298,8 @@ export const hydrateQuantityFromLogs = (
       startTimeEpochMs: activeLogStartMs,
       endTime: "",
       endTimeEpochMs: null,
-      machineNumber: activeMachine || quantity.machineNumber || sharedMachine,
-      opsName: activeOps.length > 0 ? activeOps : quantity.opsName.length > 0 ? quantity.opsName : assignedOperators,
+      machineNumber: activeMachine || quantity.machineNumber,
+      opsName: activeOps.length > 0 ? activeOps : quantity.opsName,
       workedDurationSeconds,
       pauseTimeOffsetSeconds: persistedPauseSeconds,
       operatorHistory: collectOperatorHistoryForQuantity(quantityNumber, logsForJob),
@@ -327,8 +321,8 @@ export const hydrateQuantityFromLogs = (
 
   return {
     ...quantity,
-    machineNumber: String(quantity.machineNumber || "").trim() || sharedMachine,
-    opsName: quantity.opsName.length > 0 ? quantity.opsName : assignedOperators,
+    machineNumber: quantity.machineNumber,
+    opsName: quantity.opsName,
     workedDurationSeconds,
     pauseTimeOffsetSeconds: isPaused && pauseMarker === "Shift Over" ? persistedPauseSeconds : 0,
     operatorHistory: collectOperatorHistoryForQuantity(quantityNumber, logsForJob),

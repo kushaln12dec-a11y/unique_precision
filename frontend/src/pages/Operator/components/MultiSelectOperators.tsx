@@ -94,7 +94,7 @@ export const MultiSelectOperators = React.memo(({
     if (
       incomingSnapshot !== normalizedSnapshot ||
       normalizedSelectedOperators.length !== selectedOperators.length ||
-      normalizedSelectedOperators.some((op, idx) => op !== selectedOperators[idx])
+      normalizedSelectedOperators.some((op, idx) => normalizeOperatorName(op) !== normalizeOperatorName(selectedOperators[idx]))
     ) {
       onChange(normalizedSelectedOperators);
     }

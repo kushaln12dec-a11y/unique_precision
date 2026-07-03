@@ -743,6 +743,15 @@ router.post("/operator/complete", async (req, res) => {
         }).then((job) => Number(job?.totalHrs || 0) * Number(job?.rate || 0))
       : 0;
 
+    const resolvedFromQtyForCreate = Number(fromQty || 0);
+    const resolvedToQtyForCreate = Number(toQty || 0);
+    const createQuantityNumbers = resolvedFromQtyForCreate >= 1 && resolvedToQtyForCreate >= resolvedFromQtyForCreate
+      ? Array.from(
+          { length: resolvedToQtyForCreate - resolvedFromQtyForCreate + 1 },
+          (_, idx) => resolvedFromQtyForCreate + idx
+        )
+      : [];
+
     const log = await prisma.$transaction(async (tx) => {
       const createdLog = await tx.employeeLog.create({
         data: {
@@ -776,6 +785,7 @@ router.post("/operator/complete", async (req, res) => {
             workedSeconds,
             wedmAmount: groupWedmAmount,
             revenue: currentJobRevenue > 0 ? currentJobRevenue : undefined,
+            ...(createQuantityNumbers.length > 0 ? { quantityNumbers: createQuantityNumbers } : {}),
           },
         },
       });
@@ -907,6 +917,11 @@ router.post("/operator/start", async (req, res) => {
         }
       }
 
+      const startQuantityNumbers = Array.from(
+        { length: Math.max(1, resolvedToQty - resolvedFromQty + 1) },
+        (_, idx) => resolvedFromQty + idx
+      );
+
       return tx.employeeLog.create({
         data: {
           role: "OPERATOR",
@@ -932,6 +947,7 @@ router.post("/operator/start", async (req, res) => {
           metadata: {
             machineNumber: normalizedMachineNumber,
             opsName: String(opsName || resolveReqUserName(reqUser) || ""),
+            quantityNumbers: startQuantityNumbers,
           },
         },
       });
