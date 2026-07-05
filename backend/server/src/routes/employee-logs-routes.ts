@@ -434,14 +434,14 @@ router.post("/programmer/complete", async (req, res) => {
 
     const matchingLog = logId
       ? await prisma.employeeLog.findFirst({
-          where: {
-            id: logId,
-            role: "PROGRAMMER",
-            activityType: "PROGRAMMER_JOB_CREATION",
-            status: "IN_PROGRESS",
-            ...withUserId(userId),
-          },
-        })
+        where: {
+          id: logId,
+          role: "PROGRAMMER",
+          activityType: "PROGRAMMER_JOB_CREATION",
+          status: "IN_PROGRESS",
+          ...withUserId(userId),
+        },
+      })
       : null;
 
     const latestInProgressLog = matchingLog
@@ -497,12 +497,12 @@ router.post("/programmer/complete", async (req, res) => {
 
     const completedLog = existingLog
       ? await prisma.employeeLog.update({
-          where: { id: existingLog.id },
-          data: completeData,
-        })
+        where: { id: existingLog.id },
+        data: completeData,
+      })
       : await prisma.employeeLog.create({
-          data: completeData,
-        });
+        data: completeData,
+      });
 
     res.json(mapEmployeeLog(completedLog));
   } catch (error: any) {
@@ -519,14 +519,14 @@ router.post("/programmer/reject", async (req, res) => {
 
     let log = logId
       ? await prisma.employeeLog.findFirst({
-          where: {
-            id: logId,
-            role: "PROGRAMMER",
-            activityType: "PROGRAMMER_JOB_CREATION",
-            status: "IN_PROGRESS",
-            ...withUserId(userId),
-          },
-        })
+        where: {
+          id: logId,
+          role: "PROGRAMMER",
+          activityType: "PROGRAMMER_JOB_CREATION",
+          status: "IN_PROGRESS",
+          ...withUserId(userId),
+        },
+      })
       : null;
 
     if (!log) {
@@ -601,13 +601,13 @@ router.post("/operator/complete", async (req, res) => {
     const normalizedStatus = String(status || "COMPLETED").toUpperCase() === "REJECTED" ? "REJECTED" : "COMPLETED";
     const existingLog = logId
       ? await prisma.employeeLog.findFirst({
-          where: {
-            id: String(logId),
-            role: "OPERATOR",
-            activityType: "OPERATOR_PRODUCTION",
-            status: "IN_PROGRESS",
-          },
-        })
+        where: {
+          id: String(logId),
+          role: "OPERATOR",
+          activityType: "OPERATOR_PRODUCTION",
+          status: "IN_PROGRESS",
+        },
+      })
       : null;
 
     if (existingLog) {
@@ -620,23 +620,23 @@ router.post("/operator/complete", async (req, res) => {
       const resolvedExistingJobId = String(existingLog.jobId || "").trim();
       const relatedJob = resolvedExistingJobId
         ? await prisma.job.findUnique({
-            where: { id: resolvedExistingJobId },
-            select: {
-              id: true,
-              groupId: true,
-              qty: true,
-              totalHrs: true,
-              rate: true,
-              totalAmount: true,
-              wedmAmount: true,
-              sedmAmount: true,
-              refNumber: true,
-              customer: true,
-              description: true,
-              setting: true,
-              assignedTo: true,
-            },
-          })
+          where: { id: resolvedExistingJobId },
+          select: {
+            id: true,
+            groupId: true,
+            qty: true,
+            totalHrs: true,
+            rate: true,
+            totalAmount: true,
+            wedmAmount: true,
+            sedmAmount: true,
+            refNumber: true,
+            customer: true,
+            description: true,
+            setting: true,
+            assignedTo: true,
+          },
+        })
         : null;
 
       if (relatedJob && !isUserAssignedToJob(reqUser, relatedJob.assignedTo)) {
@@ -728,9 +728,9 @@ router.post("/operator/complete", async (req, res) => {
     }
     const groupJobs = resolvedGroupId
       ? await prisma.job.findMany({
-          where: { groupId: resolvedGroupId },
-          select: { totalHrs: true, rate: true, totalAmount: true, wedmAmount: true, sedmAmount: true },
-        })
+        where: { groupId: resolvedGroupId },
+        select: { totalHrs: true, rate: true, totalAmount: true, wedmAmount: true, sedmAmount: true },
+      })
       : [];
     const groupWedmAmount = groupJobs.reduce(
       (sum, job) => sum + (Number(job.totalHrs || 0) * Number(job.rate || 0)),
@@ -738,18 +738,18 @@ router.post("/operator/complete", async (req, res) => {
     );
     const currentJobRevenue = resolvedJobId
       ? await prisma.job.findUnique({
-          where: { id: resolvedJobId },
-          select: { totalHrs: true, rate: true, totalAmount: true, wedmAmount: true, sedmAmount: true },
-        }).then((job) => Number(job?.totalHrs || 0) * Number(job?.rate || 0))
+        where: { id: resolvedJobId },
+        select: { totalHrs: true, rate: true, totalAmount: true, wedmAmount: true, sedmAmount: true },
+      }).then((job) => Number(job?.totalHrs || 0) * Number(job?.rate || 0))
       : 0;
 
     const resolvedFromQtyForCreate = Number(fromQty || 0);
     const resolvedToQtyForCreate = Number(toQty || 0);
     const createQuantityNumbers = resolvedFromQtyForCreate >= 1 && resolvedToQtyForCreate >= resolvedFromQtyForCreate
       ? Array.from(
-          { length: resolvedToQtyForCreate - resolvedFromQtyForCreate + 1 },
-          (_, idx) => resolvedFromQtyForCreate + idx
-        )
+        { length: resolvedToQtyForCreate - resolvedFromQtyForCreate + 1 },
+        (_, idx) => resolvedFromQtyForCreate + idx
+      )
       : [];
 
     const log = await prisma.$transaction(async (tx) => {
@@ -868,7 +868,7 @@ router.post("/operator/start", async (req, res) => {
 
     const currentUserName = resolveReqUserName(reqUser);
     const activeOperatorLog = await findActiveOperatorLog(currentUserName);
-    if (activeOperatorLog) {
+    if (activeOperatorLog && getMachineNumberFromOperatorLog(activeOperatorLog) === normalizedMachineNumber) {
       return res.status(409).json({
         message: `You are already running Machine M${getMachineNumberFromOperatorLog(activeOperatorLog) || "?"} for Job #${activeOperatorLog.refNumber || "?"}. Please pause or complete that job before starting a new one.`,
       });
@@ -878,15 +878,15 @@ router.post("/operator/start", async (req, res) => {
     const safeStartedAt = Number.isNaN(parsedStartedAt.getTime()) ? new Date() : parsedStartedAt;
     const openShiftOverLogs = resolvedJobId
       ? await prisma.employeeLog.findMany({
-          where: {
-            jobId: resolvedJobId,
-            role: "OPERATOR",
-            activityType: "OPERATOR_PRODUCTION",
-            status: "REJECTED",
-          },
-          orderBy: [{ endedAt: "desc" }, { createdAt: "desc" }],
-          take: 25,
-        })
+        where: {
+          jobId: resolvedJobId,
+          role: "OPERATOR",
+          activityType: "OPERATOR_PRODUCTION",
+          status: "REJECTED",
+        },
+        orderBy: [{ endedAt: "desc" }, { createdAt: "desc" }],
+        take: 25,
+      })
       : [];
 
     const log = await prisma.$transaction(async (tx) => {
@@ -1121,7 +1121,7 @@ router.get("/", async (req, res) => {
         mappedLogs
           .filter((log: any) => String(log.role || "").toUpperCase() === "OPERATOR" && log.jobGroupId !== null && log.jobGroupId !== undefined)
           .map((log: any) => String(log.jobGroupId))
-        .filter(Boolean)
+          .filter(Boolean)
       )
     );
     const operatorJobIds = Array.from(
