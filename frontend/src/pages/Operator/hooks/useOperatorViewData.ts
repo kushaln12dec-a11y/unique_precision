@@ -251,7 +251,6 @@ export const useOperatorViewData = (groupId: string | null, cutIdParam: string |
               if (isLocked) return qty;
               
               const hasStartTime = Boolean(String(qty.startTime || "").trim());
-              const prevHasStartTime = Boolean(String(prevQty.startTime || "").trim());
               
               return {
                 ...qty,
