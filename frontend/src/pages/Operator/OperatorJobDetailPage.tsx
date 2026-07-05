@@ -101,6 +101,8 @@ const OperatorJobDetailPage = () => {
   } = useOperatorViewActions({ jobs, cutInputs, setCutInputs, setValidationErrors, currentUserDisplayName, isAdmin });
   const allowedOperatorUsers = useMemo(() => operatorUsers, [operatorUsers]);
 
+
+
   useOperatorAssignmentSync({
     allowedOperatorUsers,
     canEditAssignments,
