@@ -15,104 +15,113 @@ const InventoryPage = lazy(() => import("./pages/Inventory/InventoryPage"));
 const UserManagement = lazy(() => import("./pages/User Management/UserManagement"));
 const EmployeeLogs = lazy(() => import("./pages/EmployeeLogs/EmployeeLogs"));
 const AdminConsole = lazy(() => import("./pages/AdminConsole/AdminConsole"));
+const BilledJobs = lazy(() => import("./pages/BilledJobs/BilledJobsPage"));
 
 function AppRoutes() {
   return (
     <Suspense fallback={<AppLoader message="Loading page..." />}>
       <Routes>
-      <Route path="/login" element={<Login />} />
-      <Route
-        path="/dashboard"
-        element={
-          <ProtectedRoute>
-            <SharedDashboard />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/operator-dashboard"
-        element={
-          <ProtectedRoute>
-            <OperatorDashboardWrapper />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/programmer/*"
-        element={
-          <ProtectedRoute>
-            <ProgrammerDashboard />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/operator"
-        element={
-          <ProtectedRoute>
-            <OperatorJobList />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/operator/viewpage"
-        element={
-          <ProtectedRoute>
-            <OperatorJobDetail />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/qc"
-        element={
-          <ProtectedRoute>
-            <QualityControl />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/qc/inspection-report"
-        element={
-          <ProtectedRoute>
-            <InspectionReportPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/inventory"
-        element={
-          <ProtectedRoute>
-            <InventoryPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/users"
-        element={
-          <ProtectedRoute>
-            <UserManagement />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/jobLogs"
-        element={
-          <ProtectedRoute>
-            <EmployeeLogs />
-          </ProtectedRoute>
-        }
-      />
-      <Route path="/job-logs" element={<Navigate to="/jobLogs" replace />} />
-      <Route path="/employee-logs" element={<Navigate to="/jobLogs" replace />} />
-      <Route
-        path="/admin-console"
-        element={
-          <ProtectedRoute>
-            <AdminConsole />
-          </ProtectedRoute>
-        }
-      />
-      <Route path="/" element={<Navigate to="/dashboard" replace />} />
-      <Route path="*" element={<Navigate to="/dashboard" replace />} />
+        <Route path="/login" element={<Login />} />
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute>
+              <SharedDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/operator-dashboard"
+          element={
+            <ProtectedRoute>
+              <OperatorDashboardWrapper />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/programmer/*"
+          element={
+            <ProtectedRoute>
+              <ProgrammerDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/operator"
+          element={
+            <ProtectedRoute>
+              <OperatorJobList />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/operator/viewpage"
+          element={
+            <ProtectedRoute>
+              <OperatorJobDetail />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/qc"
+          element={
+            <ProtectedRoute>
+              <QualityControl />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/qc/inspection-report"
+          element={
+            <ProtectedRoute>
+              <InspectionReportPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/inventory"
+          element={
+            <ProtectedRoute>
+              <InventoryPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/users"
+          element={
+            <ProtectedRoute>
+              <UserManagement />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/jobLogs"
+          element={
+            <ProtectedRoute>
+              <EmployeeLogs />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/billed-jobs"
+          element={
+            <ProtectedRoute>
+              <BilledJobs />
+            </ProtectedRoute>
+          }
+        />
+        <Route path="/job-logs" element={<Navigate to="/jobLogs" replace />} />
+        <Route path="/employee-logs" element={<Navigate to="/jobLogs" replace />} />
+        <Route
+          path="/admin-console"
+          element={
+            <ProtectedRoute>
+              <AdminConsole />
+            </ProtectedRoute>
+          }
+        />
+        <Route path="/" element={<Navigate to="/dashboard" replace />} />
+        <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
     </Suspense>
   );

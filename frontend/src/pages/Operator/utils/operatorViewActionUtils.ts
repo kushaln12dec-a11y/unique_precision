@@ -3,16 +3,22 @@ import type { JobEntry } from "../../../types/job";
 import { getQuantityProgressStatuses, type QuantityProgressStatus } from "./qaProgress";
 import { getOperatorOptions } from "./operatorUserOptions";
 
-type ToastState = { message: string; variant: "success" | "error" | "info"; visible: boolean };
+type ToastState = {
+  message: string;
+  variant: "success" | "error" | "info";
+  visible: boolean;
+  actionLink?: { label: string; href: string };
+};
 
 export const showAndHideToast = (
   setter: React.Dispatch<React.SetStateAction<ToastState>>,
   message: string,
   variant: ToastState["variant"],
-  delay = 2500
+  delay = 2500,
+  actionLink?: { label: string; href: string }
 ) => {
-  setter({ message, variant, visible: true });
-  window.setTimeout(() => setter((prev) => ({ ...prev, visible: false })), delay);
+  setter({ message, variant, visible: true, actionLink });
+  window.setTimeout(() => setter((prev) => ({ ...prev, visible: false, actionLink: undefined })), delay);
 };
 
 export const loadOperatorUsers = async () => {

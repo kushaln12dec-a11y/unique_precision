@@ -39,7 +39,7 @@ export const getProgrammerJobs = async (
 };
 
 export const getProgrammerJobsPage = async (
-  filters?: any,
+  filters: any,
   customerFilter?: string,
   createdByFilter?: string,
   criticalFilter?: boolean,

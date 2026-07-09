@@ -306,6 +306,13 @@ export const buildJobWhere = (req: any) => {
   if (req.query.critical !== undefined) where.critical = req.query.critical === "true";
   if (req.query.pipFinish !== undefined) where.pipFinish = req.query.pipFinish === "true";
   if (req.query.sedm) where.sedm = String(req.query.sedm);
+  if (req.query.isBilled) {
+    if (req.query.isBilled === "true") {
+      where.qcReportClosed = true;
+    } else if (req.query.isBilled === "false") {
+      where.qcReportClosed = false;
+    }
+  }
 
   if (req.query.createdAt_min || req.query.createdAt_max) {
     const range: any = {};

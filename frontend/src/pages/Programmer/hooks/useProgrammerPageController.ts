@@ -35,6 +35,8 @@ type UseProgrammerPageControllerParams = {
       visible: boolean;
     }>
   >;
+  forceTab?: "jobs" | "logs";
+  isBilled?: boolean;
 };
 
 export const useProgrammerPageController = ({
@@ -51,6 +53,8 @@ export const useProgrammerPageController = ({
   handleNewJobState,
   handleCancelState,
   setToast,
+  forceTab,
+  isBilled,
 }: UseProgrammerPageControllerParams) => {
   const location = useLocation();
   const currentPathname = location.pathname;
@@ -65,7 +69,7 @@ export const useProgrammerPageController = ({
   const [programmerGridJobs, setProgrammerGridJobs] = useState<JobEntry[]>([]);
   const [programmerGridRefreshKey, setProgrammerGridRefreshKey] = useState(0);
   const [masterConfig, setMasterConfig] = useState<MasterConfig | null>(null);
-  const [activeTab, setActiveTab] = useState<"jobs" | "logs">("jobs");
+  const [activeTab, setActiveTab] = useState<"jobs" | "logs">(forceTab || "jobs");
   const [logSearch, setLogSearch] = useState("");
   const [logStatus, setLogStatus] = useState<"" | "IN_PROGRESS" | "COMPLETED" | "REJECTED">("");
   const [logUserId, setLogUserId] = useState("");
@@ -170,7 +174,7 @@ export const useProgrammerPageController = ({
 
   const jobsFetchPage = useCallback(async (offset: number, limit: number) => {
     const page = await getProgrammerJobsPage(
-      { ...filters, search: searchFilter },
+      { ...filters, search: searchFilter, isBilled },
       customerFilter,
       createdByFilter,
       criticalFilter ? true : undefined,
@@ -178,7 +182,7 @@ export const useProgrammerPageController = ({
       { offset, limit }
     );
     return { items: page.items, hasMore: page.hasMore };
-  }, [createdByFilter, criticalFilter, customerFilter, descriptionFilter, filtersKey, searchFilter]);
+  }, [createdByFilter, criticalFilter, customerFilter, descriptionFilter, filtersKey, searchFilter, isBilled]);
 
   const logsFetchPage = useCallback(async (offset: number, limit: number) => {
     if (logSearch || logUserId) {

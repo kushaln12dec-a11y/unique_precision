@@ -24,7 +24,7 @@ import "../Operator/Operator.part07.css";
 import "./QualityControlDashboard.css";
 import "./components/QcReportTemplateModal.css";
 
-const QualityControlPage = () => {
+const QualityControlPage = ({ forceTab, hideLayout }: { forceTab?: "QUEUE" | "LOGGED"; hideLayout?: boolean }) => {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const { customerFilter, descriptionFilter, operatorFilter, searchFilter } = useAppSelector((state) => state.filters.qc);
@@ -36,7 +36,7 @@ const QualityControlPage = () => {
     row: QcRow;
     action: "OPEN" | "DOWNLOAD";
   } | null>(null);
-  const [qcTab, setQcTab] = useState<"QUEUE" | "LOGGED">("QUEUE");
+  const [qcTab] = useState<"QUEUE" | "LOGGED">(forceTab || "QUEUE");
   const [toast, setToast] = useState<{ message: string; variant: "success" | "error" | "info"; visible: boolean }>({
     message: "",
     variant: "info",
@@ -234,16 +234,12 @@ const QualityControlPage = () => {
   );
 
   return (
-    <div className="roleboard-container">
-      <Sidebar currentPath="/qc" onNavigate={(path) => navigate(path)} />
-      <div className="roleboard-content">
-        <Header title="QC" />
+    <div className={hideLayout ? "standalone-page-wrapper" : "roleboard-container"}>
+      {!hideLayout && <Sidebar currentPath="/qc" onNavigate={(path) => navigate(path)} />}
+      <div className={hideLayout ? "" : "roleboard-content"}>
+        {!hideLayout && <Header title="QC" />}
         <div className="roleboard-body qc-table-panel">
-          <div className="operator-subtabs">
-            <button type="button" className={`operator-subtab ${qcTab === "QUEUE" ? "active" : ""}`} onClick={() => setQcTab("QUEUE")}>QC Queue</button>
-            <button type="button" className={`operator-subtab ${qcTab === "LOGGED" ? "active" : ""}`} onClick={() => setQcTab("LOGGED")}>Closed QC</button>
-          </div>
-          <h3 style={{ marginTop: "1rem" }}>{qcTab === "QUEUE" ? "QC Queue" : "Closed QC Reports"}</h3>
+          {!hideLayout && <h3 style={{ marginTop: "1rem" }}>{qcTab === "QUEUE" ? "QC Queue" : "Closed QC Reports"}</h3>}
           {loading && qcGridJobs.length === 0 ? (
             <AppLoader message="Loading QC queue..." />
           ) : (

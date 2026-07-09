@@ -4,7 +4,7 @@ import type { JobEntry } from "../../../types/job";
 import type { Dispatch, SetStateAction } from "react";
 import { decimalHoursToHHMMSS } from "../utils/machineHrsCalculation";
 import type { CutInputData, QuantityInputData } from "../types/cutInput";
-import { formatCompactDurationWords, getQuantityElapsedSeconds } from "../utils/operatorTimeUtils";
+import { formatCompactDurationWords, getQuantityElapsedSeconds, getCurrentSegmentWorkedSeconds } from "../utils/operatorTimeUtils";
 import { getPersistedIdleDuration } from "../utils/operatorViewPageHelpers";
 
 type PendingDispatch = { cutId: number | string; quantityNumbers: number[] } | null;
@@ -35,12 +35,12 @@ const buildOperatorBreakdown = (qtyData: QuantityInputData, timestampMs: number)
   });
 
   const previousWorkedSeconds = Math.max(0, Math.round(Number(qtyData.workedDurationSeconds || 0)));
-  
+
   // Use the preserved current segment worked seconds if available, otherwise calculate
   const currentSegmentSeconds = qtyData.currentSegmentWorkedSeconds !== undefined
     ? Math.max(0, qtyData.currentSegmentWorkedSeconds)
-    : Math.max(0, getQuantityElapsedSeconds(qtyData, timestampMs) - previousWorkedSeconds);
-    
+    : Math.max(0, getCurrentSegmentWorkedSeconds(qtyData, timestampMs));
+
   const currentOperators = Array.from(
     new Set((qtyData.opsName || []).map((name) => normalizeOperatorName(name)).filter(Boolean))
   );
@@ -106,8 +106,8 @@ const OperatorViewModals = ({
   const pendingEndTimeWorkedSeconds =
     pendingEndTimeCapture && pendingEndTimeQty
       ? (pendingEndTimeQty.currentSegmentWorkedSeconds !== undefined
-          ? pendingEndTimeQty.currentSegmentWorkedSeconds + Math.max(0, Number(pendingEndTimeQty.workedDurationSeconds || 0))
-          : getQuantityElapsedSeconds(pendingEndTimeQty, pendingEndTimeQty.endTimeEpochMs || pendingEndTimeCapture.timestampMs))
+        ? pendingEndTimeQty.currentSegmentWorkedSeconds + Math.max(0, Number(pendingEndTimeQty.workedDurationSeconds || 0))
+        : getQuantityElapsedSeconds(pendingEndTimeQty, pendingEndTimeQty.endTimeEpochMs || pendingEndTimeCapture.timestampMs))
       : 0;
   const pendingEndTimeIdleDuration = pendingEndTimeQty
     ? getPersistedIdleDuration(Number(pendingEndTimeQty.totalPauseTime || 0), pendingEndTimeQty.idleTimeDuration)
@@ -186,7 +186,7 @@ const OperatorViewModals = ({
                   <span className="summary-value">{String(pendingEndTimeCapture.quantityIndex + 1)}</span>
                 </div>
               </div>
-              
+
               <div className="summary-details-grid">
                 <div className="summary-item">
                   <span className="summary-label">MACHINE HOURS</span>

@@ -167,11 +167,11 @@ const OperatorJobDetailPage = () => {
     const displayValue = getCurrentISTDateTime(timestampMs);
     const persistedIdleDuration = getPersistedIdleDuration(Number(qtyData.totalPauseTime || 0), qtyData.idleTimeDuration);
     const segmentPauseSeconds = getEffectiveSegmentPauseSeconds(qtyData);
-    
+
     // Calculate worked seconds for the current segment
     const currentSegmentWorkedSeconds = getCurrentSegmentWorkedSeconds(qtyData, timestampMs);
     const logMachineHrs = formatWorkedSecondsAsMachineHrs(currentSegmentWorkedSeconds);
-    
+
     const machineHrs = calculateMachineHrs(
       String(qtyData.startTime || ""),
       displayValue,
@@ -252,15 +252,15 @@ const OperatorJobDetailPage = () => {
     const persistedIdleDuration = getPersistedIdleDuration(Number(qtyData.totalPauseTime || 0), qtyData.idleTimeDuration);
     const persistedIdleReason = getPersistedIdleReason(qtyData.pauseSessions || [], qtyData.idleTime);
     const segmentPauseSeconds = getEffectiveSegmentPauseSeconds(qtyData);
-    
+
     // Use the preserved values if available, otherwise calculate
-    const logWorkedSeconds = qtyData.currentSegmentWorkedSeconds !== undefined 
-      ? qtyData.currentSegmentWorkedSeconds 
+    const logWorkedSeconds = qtyData.currentSegmentWorkedSeconds !== undefined
+      ? qtyData.currentSegmentWorkedSeconds
       : getCurrentSegmentWorkedSeconds(qtyData, timestampMs);
-    const logMachineHrs = qtyData.logMachineHrs !== undefined 
-      ? qtyData.logMachineHrs 
+    const logMachineHrs = qtyData.logMachineHrs !== undefined
+      ? qtyData.logMachineHrs
       : formatWorkedSecondsAsMachineHrs(logWorkedSeconds);
-    
+
     const machineHrs = calculateMachineHrs(
       String(qtyData.startTime || ""),
       displayValue,
@@ -310,7 +310,7 @@ const OperatorJobDetailPage = () => {
   const parentJob = jobs.length > 0 ? jobs[0] : null;
   const totalGroupQuantity = jobs.reduce((sum, job) => sum + Math.max(1, Number(job.qty || 1)), 0);
   const groupTotalAmount = jobs.reduce((sum, job) => sum + (job.totalAmount || 0), 0);
-  
+
   // Synchronize with Programmer screen: Time = Total Amount / 625
   const groupEstimatedHrs = (groupTotalAmount || 0) / 625;
   const machineOptions = useMemo(() => {
@@ -333,11 +333,11 @@ const OperatorJobDetailPage = () => {
         (cut.quantities || []).some((quantity) => {
           const hasStart = Boolean(
             (quantity.startTimeEpochMs && Number.isFinite(Number(quantity.startTimeEpochMs))) ||
-              parseOperatorDateTime(quantity.startTime)
+            parseOperatorDateTime(quantity.startTime)
           );
           const hasEnd = Boolean(
             (quantity.endTimeEpochMs && Number.isFinite(Number(quantity.endTimeEpochMs))) ||
-              parseOperatorDateTime(quantity.endTime)
+            parseOperatorDateTime(quantity.endTime)
           );
           return hasStart && !hasEnd;
         })
@@ -346,9 +346,9 @@ const OperatorJobDetailPage = () => {
   );
 
   useEffect(() => {
-    void refreshServerTimeOffset(true).catch(() => {});
+    void refreshServerTimeOffset(true).catch(() => { });
     const syncTimerId = window.setInterval(() => {
-      void refreshServerTimeOffset().catch(() => {});
+      void refreshServerTimeOffset().catch(() => { });
     }, 15000);
     return () => window.clearInterval(syncTimerId);
   }, []);
@@ -468,12 +468,14 @@ const OperatorJobDetailPage = () => {
         message={saveToast.message}
         visible={saveToast.visible}
         variant={saveToast.variant}
+        actionLink={saveToast.actionLink}
         onClose={() => setSaveToast((prev) => ({ ...prev, visible: false }))}
       />
       <Toast
         message={actionToast.message}
         visible={actionToast.visible}
         variant={actionToast.variant}
+        actionLink={actionToast.actionLink}
         onClose={() => setActionToast((prev) => ({ ...prev, visible: false }))}
       />
       <OperatorViewModals

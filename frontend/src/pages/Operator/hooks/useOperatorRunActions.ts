@@ -168,7 +168,12 @@ export const useOperatorRunActions = ({
     } catch (error) {
       console.error("Failed to start operator production log", error);
       const message = error instanceof Error ? error.message : "Failed to start operator run.";
-      showAndHideToast(setActionToast, message, "error", 3500);
+      const conflictJobId = (error as any)?.conflictJobId;
+      const conflictJobGroupId = (error as any)?.conflictJobGroupId;
+      const actionLink = (conflictJobId && conflictJobGroupId)
+        ? { label: "View Job →", href: `/operator/viewpage?groupId=${conflictJobGroupId}&cutId=${conflictJobId}` }
+        : undefined;
+      showAndHideToast(setActionToast, message, "error", 6000, actionLink);
     }
   }, [activeOperatorLogIds, cutInputs, ensureCurrentUserAssigned, jobs, setActionToast, setActiveOperatorLogIds, setCutInputs]);
 
@@ -312,7 +317,12 @@ export const useOperatorRunActions = ({
       }
       console.error("Failed to process operator action", error);
       const message = error instanceof Error && error.message ? error.message : `Failed to ${action === "resume" ? "resume" : "shift over"} quantity.`;
-      showAndHideToast(setActionToast, message, "error", 3500);
+      const conflictJobId = (error as any)?.conflictJobId;
+      const conflictJobGroupId = (error as any)?.conflictJobGroupId;
+      const actionLink = (conflictJobId && conflictJobGroupId)
+        ? { label: "View Job →", href: `/operator/viewpage?groupId=${conflictJobGroupId}&cutId=${conflictJobId}` }
+        : undefined;
+      showAndHideToast(setActionToast, message, "error", 6000, actionLink);
       return false;
     }
   }, [activeOperatorLogIds, currentUserDisplayName, cutInputs, ensureCurrentUserAssigned, jobs, resolveActiveOperatorLogId, setActionToast, setActiveOperatorLogIds, setCutInputs]);

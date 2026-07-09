@@ -17,8 +17,8 @@ type OperatorPageOverlaysProps = {
   setIsSendToQaModalOpen: React.Dispatch<React.SetStateAction<boolean>>;
   setSendToQaTargets: React.Dispatch<React.SetStateAction<any[]>>;
   handleConfirmSendToQa: (payload: Array<{ jobId: string; quantityNumbers: number[] }>) => void | Promise<void>;
-  toast: { message: string; variant: "success" | "error" | "info"; visible: boolean };
-  setToast: React.Dispatch<React.SetStateAction<{ message: string; variant: "success" | "error" | "info"; visible: boolean }>>;
+  toast: { message: string; variant: "success" | "error" | "info"; visible: boolean; actionLink?: { label: string; href: string } };
+  setToast: React.Dispatch<React.SetStateAction<{ message: string; variant: "success" | "error" | "info"; visible: boolean; actionLink?: { label: string; href: string } }>>;
   selectedEntryIds: Set<string | number>;
   handleDeleteSelectedRows: () => void | Promise<void>;
   setSelectedEntryIds: React.Dispatch<React.SetStateAction<Set<string | number>>>;
@@ -67,7 +67,13 @@ const OperatorPageOverlays = ({
       }}
       onConfirm={handleConfirmSendToQa}
     />
-    <Toast message={toast.message} visible={toast.visible} variant={toast.variant} onClose={() => setToast((prev) => ({ ...prev, visible: false }))} />
+    <Toast
+      message={toast.message}
+      visible={toast.visible}
+      variant={toast.variant}
+      actionLink={toast.actionLink}
+      onClose={() => setToast((prev) => ({ ...prev, visible: false }))}
+    />
     {activeTab === "jobs" && (
       <MassDeleteButton
         selectedCount={selectedEntryIds.size}

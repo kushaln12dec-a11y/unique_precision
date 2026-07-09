@@ -85,4 +85,5 @@ export const jobsQuerySchema = z.object({
   totalHrs_max: z.coerce.number().optional(),
   totalAmount_min: z.coerce.number().optional(),
   totalAmount_max: z.coerce.number().optional(),
+  isBilled: z.enum(["true", "false"]).optional(),
 });
