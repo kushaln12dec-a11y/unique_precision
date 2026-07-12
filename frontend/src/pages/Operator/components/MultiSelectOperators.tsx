@@ -45,17 +45,23 @@ export const MultiSelectOperators = React.memo(({
 
   const canonicalOperatorNames = useMemo(() => {
     const lookup = new Map<string, string>();
+    selectedOperators.forEach((operator) => {
+      const normalizedName = String(operator || "").trim();
+      const key = normalizeOperatorName(normalizedName);
+      if (!normalizedName || !key || lookup.has(key)) return;
+      lookup.set(key, normalizedName);
+    });
     availableOperators.forEach((operator) => {
       const normalizedName = String(operator.name || "").trim();
       const key = normalizeOperatorName(normalizedName);
-      if (!normalizedName || !key || lookup.has(key)) return;
+      if (!normalizedName || !key) return;
       lookup.set(key, normalizedName);
     });
     if (assignToSelfName && normalizedSelfName) {
       lookup.set(normalizedSelfName, assignToSelfName.trim());
     }
     return lookup;
-  }, [availableOperators, assignToSelfName, normalizedSelfName]);
+  }, [availableOperators, assignToSelfName, normalizedSelfName, selectedOperators]);
 
   const normalizedSelectedOperators = useMemo(() => {
     const unique = new Set<string>();

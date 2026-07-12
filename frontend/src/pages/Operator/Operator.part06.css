@@ -744,7 +744,7 @@
 .operator-machine-dropdown-wrapper {
   width: 100%;
   min-width: 0;
-  max-width: 78px;
+  max-width: 82px;
   box-sizing: border-box;
 }
 
@@ -834,7 +834,14 @@
 .lazy-ag-grid-shell.operator-table-no-scroll .ag-cell.operator-assigned-cell .ag-cell-value {
   height: 100%;
   align-items: center;
-  overflow: visible;
+  overflow: hidden;
+}
+
+.lazy-ag-grid-shell.operator-table-no-scroll .ag-cell.operator-machine-cell,
+.lazy-ag-grid-shell.operator-table-no-scroll .ag-cell.operator-machine-cell .ag-cell-value {
+  height: 100%;
+  align-items: center;
+  overflow: hidden;
 }
 
 .operator-assigned-cell-stack {

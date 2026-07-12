@@ -2,7 +2,6 @@ import type { Column } from "../../../components/DataTable";
 import ActionButtons from "../../Programmer/components/ActionButtons";
 import CreatedByBadge from "../../../components/CreatedByBadge";
 import MarqueeCopyText from "../../../components/MarqueeCopyText";
-import SelectDropdown from "../../Programmer/components/SelectDropdown";
 import { MultiSelectOperators } from "../components/MultiSelectOperators";
 import type { OperatorDisplayRow } from "../hooks/useOperatorTable";
 import { formatJobRefDisplay, formatMachineLabel, toYN } from "../../../utils/jobFormatting";
@@ -10,6 +9,7 @@ import { getDispatchableQuantityNumbers, getGroupQaProgressCounts, getQaProgress
 import { getThicknessDisplayValue } from "../../Programmer/programmerUtils";
 import {
   getOperatorMachineNumber,
+  getOperatorMachineNumbers,
   getOperatorHistoryNames,
   normalizeAssignedOperators,
   renderEstimatedTimeWithLogs,
@@ -169,18 +169,22 @@ export const buildBaseOperatorColumns = (props: {
       }
 
       if (props.canAssign) {
+        const selectedMachines = getOperatorMachineNumbers(row.entry);
+        const machineSelectOptions = props.machineDropdownOptions.map((machine) => ({ id: machine, name: machine }));
         return (
-          <SelectDropdown
-            className="operator-machine-dropdown-wrapper"
-            value={props.machineDropdownOptions.includes(machineNumber) ? machineNumber : ""}
-            onChange={(nextValue) => row.kind === "parent" ? props.handleMachineNumberChange(row.groupId, nextValue) : props.handleChildMachineNumberChange(row.entry.id, nextValue)}
-            options={[
-              { label: "Unassign", value: "" },
-              ...props.machineDropdownOptions.map((machine) => ({ label: formatMachineLabel(machine), value: machine })),
-            ]}
+          <MultiSelectOperators
+            className="operator-assigned-dropdown operator-machine-dropdown-wrapper"
+            selectedOperators={selectedMachines}
+            availableOperators={machineSelectOptions}
+            onChange={(nextValue) =>
+              row.kind === "parent"
+                ? props.handleMachineNumberChange(row.groupId, nextValue.join(", "))
+                : props.handleChildMachineNumberChange(row.entry.id, nextValue.join(", "))
+            }
             placeholder="Select"
-            align="left"
-            menuMinWidth={96}
+            compact={selectedMachines.length > 1}
+            showUnassign={true}
+            selfToggleOnly={false}
           />
         );
       }

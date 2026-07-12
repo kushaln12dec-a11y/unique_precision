@@ -60,6 +60,7 @@ const OperatorJobDetailPage = () => {
 
   const {
     jobs,
+    setJobs,
     loadingJobs,
     idleTimeConfigs,
     cutInputs,
@@ -109,6 +110,7 @@ const OperatorJobDetailPage = () => {
     cutInputs,
     currentUserDisplayName,
     jobs,
+    setJobs,
     setCutInputs,
     userRole,
   });

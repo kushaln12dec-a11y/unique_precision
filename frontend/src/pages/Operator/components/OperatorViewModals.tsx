@@ -34,8 +34,6 @@ const buildOperatorBreakdown = (qtyData: QuantityInputData, timestampMs: number)
     addDuration(entry?.name, Number(entry?.durationSeconds || 0));
   });
 
-  const previousWorkedSeconds = Math.max(0, Math.round(Number(qtyData.workedDurationSeconds || 0)));
-
   // Use the preserved current segment worked seconds if available, otherwise calculate
   const currentSegmentSeconds = qtyData.currentSegmentWorkedSeconds !== undefined
     ? Math.max(0, qtyData.currentSegmentWorkedSeconds)
