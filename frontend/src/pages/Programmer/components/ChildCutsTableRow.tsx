@@ -1,11 +1,11 @@
 import ActionButtons from "./ActionButtons";
 import type { JobEntry } from "../../../types/job";
 import { getQaProgressCounts } from "../../Operator/utils/qaProgress";
-import { estimatedTimeFromAmount, formatMachineLabel, toYN } from "../../../utils/jobFormatting";
+import { estimatedTimeFromAmount, formatMachineLabel, toMachineIndex, toYN } from "../../../utils/jobFormatting";
 import { getThicknessDisplayValue } from "../programmerUtils";
 import MarqueeCopyText from "../../../components/MarqueeCopyText";
 import { buildStatusBadges, getParentSerialPrefix, isUnassignedValue, renderBadgeTicker, toAlphabetSuffix } from "../utils/childCutsTableUtils";
-import SelectDropdown from "./SelectDropdown";
+import { MultiSelectOperators } from "../../Operator/components/MultiSelectOperators";
 
 type ChildCutsTableRowProps = {
   entry: JobEntry;
@@ -23,7 +23,7 @@ type ChildCutsTableRowProps = {
   getMachineNumber: (entry: JobEntry) => string;
   operatorUsers: Array<{ id: number | string; name: string }>;
   onRowSelect: (selected: boolean) => void;
-  onAssignChange?: (jobId: number | string, value: string) => void;
+  onAssignChange?: (jobId: number | string, value: string | string[]) => void;
   onMachineNumberChange?: (jobId: number | string, value: string) => void;
   onView: () => void;
   onEdit?: () => void;
@@ -75,6 +75,15 @@ const ChildCutsTableRow = ({
         ),
       ]
     : [];
+  const selectedMachines = [
+    ...new Set(
+      String((entry as any).machineNumber || "")
+        .split(",")
+        .map((machine) => toMachineIndex(machine.trim()))
+        .filter(Boolean)
+    ),
+  ];
+  const machineSelectOptions = machineDropdownOptions.map((machine) => ({ id: machine, name: machine }));
 
   return (
     <tr key={rowKey} className={`${rowClassName} child-row`.trim()}>
@@ -101,16 +110,15 @@ const ChildCutsTableRow = ({
         <td className="assigned-col">
           {canAssign && onAssignChange && operatorUsers.length > 0 ? (
             <div onClick={(e) => e.stopPropagation()}>
-              <SelectDropdown
-                value={assignedOperators[0] || "Unassign"}
-                onChange={(nextValue) => onAssignChange(entry.id, String(nextValue || "Unassign"))}
-                options={[
-                  { label: "UNASSIGN", value: "Unassign" },
-                  ...operatorUsers.map((user) => ({ label: String(user.name || "").toUpperCase(), value: user.name })),
-                ]}
+              <MultiSelectOperators
+                selectedOperators={assignedOperators}
+                availableOperators={operatorUsers.map((user) => ({ id: user.id, name: user.name }))}
+                onChange={(nextValue) => onAssignChange(entry.id, nextValue)}
                 className="operator-assigned-dropdown"
                 placeholder="Unassign"
-                align="left"
+                compact={assignedOperators.length > 1}
+                showUnassign={true}
+                selfToggleOnly={false}
               />
             </div>
           ) : (
@@ -128,9 +136,22 @@ const ChildCutsTableRow = ({
       )}
       {isOperator && (
         <td className="mach-col">
-          <select className="operator-machine-input" value={machineDropdownOptions.includes(getMachineNumber(entry)) ? getMachineNumber(entry) : ""} onClick={(e) => e.stopPropagation()} onChange={(event) => onMachineNumberChange?.(entry.id, event.target.value)}>
-            {machineDropdownOptions.map((machine) => <option key={machine} value={machine}>{formatMachineLabel(machine)}</option>)}
-          </select>
+          {canAssign && onMachineNumberChange ? (
+            <div onClick={(e) => e.stopPropagation()}>
+              <MultiSelectOperators
+                selectedOperators={selectedMachines.length > 0 ? selectedMachines : (getMachineNumber(entry) ? [getMachineNumber(entry)] : [])}
+                availableOperators={machineSelectOptions}
+                onChange={(nextValue) => onMachineNumberChange(entry.id, nextValue.join(", "))}
+                className="operator-assigned-dropdown operator-machine-dropdown-wrapper"
+                placeholder="Select"
+                compact={selectedMachines.length > 1}
+                showUnassign={true}
+                selfToggleOnly={false}
+              />
+            </div>
+          ) : (
+            <span>{selectedMachines.length > 0 ? selectedMachines.map(formatMachineLabel).join(", ") : formatMachineLabel(getMachineNumber(entry))}</span>
+          )}
         </td>
       )}
       {!isOperator && <td className="total-hrs-col">{Number(entry.totalHrs || 0) ? Number(entry.totalHrs).toFixed(2) : "-"}</td>}

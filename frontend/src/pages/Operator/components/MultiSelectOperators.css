@@ -289,6 +289,17 @@
   border-radius: 14px;
 }
 
+.multi-select-operators.operator-assigned-dropdown.operator-machine-dropdown-wrapper {
+  width: 100%;
+  min-width: 0;
+  max-width: 82px;
+  padding: 0.08rem 0.28rem;
+}
+
+.multi-select-operators.operator-assigned-dropdown.operator-machine-dropdown-wrapper .multi-select-trigger {
+  min-width: 0;
+}
+
 .multi-select-operators.operator-assigned-dropdown .selected-text,
 .multi-select-operators.operator-assigned-dropdown .compact-display,
 .multi-select-operators.operator-assigned-dropdown .placeholder {

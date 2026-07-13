@@ -8,7 +8,7 @@ import ProgrammerPageOverlays from "./components/ProgrammerPageOverlays";
 import ProgrammerJobsSection from "./components/ProgrammerJobsSection";
 import ProgrammerLogsSection from "./components/ProgrammerLogsSection";
 import ProgrammerFormSection from "./components/ProgrammerFormSection";
-import ProgrammerTabs from "./components/ProgrammerTabs";
+
 import { calculateTotals } from "./programmerUtils";
 import type { JobEntry } from "../../types/job";
 import { useJobHandlers } from "./hooks/useJobHandlers";
@@ -25,7 +25,7 @@ import { useJobSync } from "../../hooks/useJobSync";
 import "../RoleBoard.css";
 import "./Programmer.css";
 
-const ProgrammerDashboardPage = () => {
+const ProgrammerDashboardPage = ({ forceTab, hideLayout, mode }: { forceTab?: "jobs" | "logs"; hideLayout?: boolean; mode?: "billed" | "standard" }) => {
   const navigate = useNavigate();
 
   const dispatch = useAppDispatch();
@@ -86,7 +86,6 @@ const ProgrammerDashboardPage = () => {
     programmerGridRefreshKey,
     masterConfig,
     activeTab,
-    setActiveTab,
     logSearch,
     setLogSearch,
     logStatus,
@@ -124,6 +123,8 @@ const ProgrammerDashboardPage = () => {
     handleNewJobState,
     handleCancelState,
     setToast,
+    forceTab,
+    isBilled: mode === "billed",
   });
 
   const refreshProgrammerDashboard = useCallback(() => {
@@ -237,17 +238,16 @@ const ProgrammerDashboardPage = () => {
   });
 
   return (
-    <div className="programmer-container">
-      <Sidebar currentPath={currentPathname} onNavigate={handleProgrammerNavigate} />
-      <div className={`programmer-content ${isProgrammerFormRoute ? "programmer-content-scrollable" : ""}`}>
-        <Header title="Programmer" onNavigate={handleProgrammerNavigate} />
+    <div className={hideLayout ? "standalone-page-wrapper" : "programmer-container"}>
+      {!hideLayout && <Sidebar currentPath={currentPathname} onNavigate={handleProgrammerNavigate} />}
+      <div className={`${hideLayout ? "" : "programmer-content"} ${isProgrammerFormRoute ? "programmer-content-scrollable" : ""}`}>
+        {!hideLayout && <Header title="Programmer" onNavigate={handleProgrammerNavigate} />}
         <div className={`programmer-panel ${isProgrammerFormRoute ? "programmer-panel-scrollable" : ""}`}>
           <Routes>
             <Route
               index
               element={
                 <>
-                  <ProgrammerTabs activeTab={activeTab} setActiveTab={setActiveTab} />
                   {activeTab === "jobs" ? (
                     <ProgrammerJobsSection
                       savingJob={savingJob}
@@ -287,7 +287,7 @@ const ProgrammerDashboardPage = () => {
                 </>
               }
             />
-            
+
             <Route
               path="newjob"
               element={

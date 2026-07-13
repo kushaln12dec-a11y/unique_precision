@@ -14,12 +14,37 @@ export const getOperatorMachineDropdownOptions = (machineOptions: string[]) => {
   return normalized.length > 0 ? normalized : [...MACHINE_OPTIONS];
 };
 
+export const parseOperatorMachineNumbers = (value: unknown): string[] =>
+  Array.from(
+    new Map(
+      String(value || "")
+        .split(",")
+        .map((entry) => toMachineIndex(entry.trim()))
+        .filter(Boolean)
+        .map((machine) => [machine.toLowerCase(), machine] as const)
+    ).values()
+  );
+
 export const getOperatorMachineNumber = (job: JobEntry): string => {
-  const direct = String((job as any).machineNumber || "").trim();
-  if (direct) return toMachineIndex(direct);
+  const direct = parseOperatorMachineNumbers((job as any).machineNumber);
+  if (direct.length > 0) return direct[0];
   const captures = Array.isArray(job.operatorCaptures) ? job.operatorCaptures : [];
   const latest = captures[captures.length - 1];
   return toMachineIndex(String(latest?.machineNumber || "").trim());
+};
+
+export const getOperatorMachineNumbers = (job: JobEntry): string[] => {
+  const direct = parseOperatorMachineNumbers((job as any).machineNumber);
+  if (direct.length > 0) return direct;
+
+  const captures = Array.isArray(job.operatorCaptures) ? job.operatorCaptures : [];
+  return Array.from(
+    new Map(
+      captures
+        .flatMap((capture) => parseOperatorMachineNumbers(capture?.machineNumber))
+        .map((machine) => [machine.toLowerCase(), machine] as const)
+    ).values()
+  );
 };
 
 export const hasOperatorJobStarted = (entry: JobEntry, activeRunsByJobId?: Map<string, EmployeeLog>): boolean => {

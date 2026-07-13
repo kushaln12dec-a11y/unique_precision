@@ -7,7 +7,8 @@ import type { CutInputData, QuantityInputData } from "../types/cutInput";
 import { createEmptyQuantityInputData } from "../types/cutInput";
 import { calculateMachineHrs } from "../utils/machineHrsCalculation";
 import { parseDurationToSeconds } from "../utils/operatorTimeUtils";
-import { saveOperatorInputsToLocalStorage } from "../utils/operatorViewStorage";
+import { loadOperatorInputsFromLocalStorage, saveOperatorInputsToLocalStorage } from "../utils/operatorViewStorage";
+import { toMachineIndex } from "../../../utils/jobFormatting";
 import {
   collectOperatorHistoryDetailsForQuantity,
   collectOperatorHistoryForQuantity,
@@ -19,6 +20,11 @@ import {
 
 export const useOperatorViewData = (groupId: string | null, cutIdParam: string | null) => {
   const normalizeOperatorName = (value: unknown) => String(value || "").trim().toUpperCase();
+  const getMachineNumberArray = (value: unknown) =>
+    String(value || "")
+      .split(",")
+      .map((machine) => toMachineIndex(machine.trim()))
+      .filter(Boolean);
   const [jobs, setJobs] = useState<JobEntry[]>([]);
   const [loadingJobs, setLoadingJobs] = useState(true);
   const [idleTimeConfigs, setIdleTimeConfigs] = useState<Map<string, number>>(new Map());
@@ -106,16 +112,20 @@ export const useOperatorViewData = (groupId: string | null, cutIdParam: string |
           
           // Otherwise, initialize from job data
           const quantity = Math.max(1, Number(job.qty || 1));
+          const isMultiQuantityJob = quantity > 1;
 
           const quantities: QuantityInputData[] = Array.from({ length: quantity }, () => createEmptyQuantityInputData());
           const captures = Array.isArray(existing.operatorCaptures) ? existing.operatorCaptures : [];
+          const tableMachineNumbers = getMachineNumberArray(existing.machineNumber || "");
+          const captureFallbackOpsNameArray = isMultiQuantityJob ? [] : assignedToArray;
+          const captureFallbackMachineNumber = isMultiQuantityJob ? "" : (tableMachineNumbers[0] || "");
 
           if (captures.length > 0) {
             captures.forEach((capture: any) => {
               const fromQty = Math.max(1, Number(capture.fromQty || 1));
               const toQty = Math.min(quantity, Math.max(fromQty, Number(capture.toQty || fromQty)));
               const captureOps = getOpsNameArray(capture.opsName || "");
-              const opsNameArray = captureOps.length > 0 ? captureOps : assignedToArray;
+              const opsNameArray = captureOps.length > 0 ? captureOps : captureFallbackOpsNameArray;
               const startTime = capture.startTime || "";
               const endTime = capture.endTime || "";
               let idleTime = capture.idleTime || "";
@@ -167,14 +177,23 @@ export const useOperatorViewData = (groupId: string | null, cutIdParam: string |
                 };
               }
             });
+
+            for (let idx = 0; idx < quantity; idx += 1) {
+              if ((quantities[idx]?.opsName || []).length > 0) continue;
+              quantities[idx] = {
+                ...quantities[idx],
+                machineNumber: captureFallbackMachineNumber,
+                opsName: [...captureFallbackOpsNameArray],
+              };
+            }
           } else {
             const opsName = existing.opsName || "";
             const baseOps = getOpsNameArray(opsName);
-            const opsNameArray = baseOps.length > 0 ? baseOps : assignedToArray;
-            const startTime = existing.startTime || "";
-            const endTime = existing.endTime || "";
-            let idleTime = existing.idleTime || "";
-            let idleTimeDuration = existing.idleTimeDuration || "";
+            const opsNameArray = assignedToArray.length > 0 ? assignedToArray : baseOps;
+            const startTime = isMultiQuantityJob ? "" : (existing.startTime || "");
+            const endTime = isMultiQuantityJob ? "" : (existing.endTime || "");
+            let idleTime = isMultiQuantityJob ? "" : (existing.idleTime || "");
+            let idleTimeDuration = isMultiQuantityJob ? "" : (existing.idleTimeDuration || "");
 
             if (idleTime === "Vertical Dial") {
               if (idleTimeConfigs.has("Vertical Dial")) {
@@ -202,7 +221,7 @@ export const useOperatorViewData = (groupId: string | null, cutIdParam: string |
               workedDurationSeconds: Math.max(0, Math.round(getWorkedDurationSecondsForQuantity(1, logsByJobId.get(String(jobId)) || []))),
               pauseTimeOffsetSeconds: 0,
               machineHrs,
-              machineNumber: existing.machineNumber || "",
+              machineNumber: tableMachineNumbers[0] || "",
               opsName: [...opsNameArray],
               operatorHistory: collectOperatorHistoryForQuantity(1, logsByJobId.get(String(jobId)) || []),
               operatorHistoryDetails: collectOperatorHistoryDetailsForQuantity(1, logsByJobId.get(String(jobId)) || []),
@@ -222,8 +241,8 @@ export const useOperatorViewData = (groupId: string | null, cutIdParam: string |
             for (let idx = 1; idx < quantity; idx += 1) {
               quantities[idx] = {
                 ...quantities[idx],
-                machineNumber: existing.machineNumber || "",
-                opsName: [...opsNameArray],
+                machineNumber: tableMachineNumbers[idx] || "",
+                opsName: [],
               };
             }
           }
@@ -235,12 +254,16 @@ export const useOperatorViewData = (groupId: string | null, cutIdParam: string |
           });
         });
         
+      const storedInputs = loadOperatorInputsFromLocalStorage(groupId);
+
       setJobs(filteredJobs);
       setCutInputs((prev) => {
         if (initialInputs.size === 0) return mergeJobAssignmentsIntoInputs(prev, filteredJobs);
         
         const next = new Map(initialInputs);
-        prev.forEach((prevCut, cutId) => {
+        const mergeDraftInputs = (draftInputs: Map<number | string, CutInputData> | null) => {
+          if (!draftInputs) return;
+          draftInputs.forEach((prevCut, cutId) => {
           const nextCut = next.get(cutId);
           if (nextCut && nextCut.quantities) {
             const mergedQuantities = nextCut.quantities.map((qty, i) => {
@@ -264,7 +287,11 @@ export const useOperatorViewData = (groupId: string | null, cutIdParam: string |
             });
             next.set(cutId, { ...nextCut, quantities: mergedQuantities });
           }
-        });
+          });
+        };
+
+        mergeDraftInputs(storedInputs);
+        mergeDraftInputs(prev);
         
         return mergeJobAssignmentsIntoInputs(next, filteredJobs);
       });
@@ -354,6 +381,7 @@ export const useOperatorViewData = (groupId: string | null, cutIdParam: string |
 
   return {
     jobs,
+    setJobs,
     loadingJobs,
     idleTimeConfigs,
     cutInputs,

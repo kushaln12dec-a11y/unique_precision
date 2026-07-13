@@ -180,6 +180,7 @@ const findActiveMachineConflict = async (
       endedAt: true,
       metadata: true,
       startedAt: true,
+      jobGroupId: true,
     },
   });
 
@@ -862,6 +863,8 @@ router.post("/operator/start", async (req, res) => {
       if (conflict) {
         return res.status(409).json({
           message: `Machine M${normalizedMachineNumber} is already running for ${String(conflict.refNumber || "another job")} (${String(conflict.userName || "operator")}).`,
+          conflictJobId: conflict.jobId || null,
+          conflictJobGroupId: conflict.jobGroupId ? String(conflict.jobGroupId) : null,
         });
       }
     }

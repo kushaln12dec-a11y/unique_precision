@@ -7,7 +7,6 @@ import DownloadIcon from "@mui/icons-material/Download";
 import PrecisionManufacturingRoundedIcon from "@mui/icons-material/PrecisionManufacturingRounded";
 import RadioButtonCheckedRoundedIcon from "@mui/icons-material/RadioButtonCheckedRounded";
 import { OperatorTaskTimer } from "./OperatorTaskTimer";
-import SelectDropdown, { type SelectOption } from "../../Programmer/components/SelectDropdown";
 import { MultiSelectOperators } from "./MultiSelectOperators";
 import type { FilterField, FilterCategory, FilterValues } from "../../../components/FilterModal";
 import { formatMachineLabel, getDisplayName } from "../../../utils/jobFormatting";
@@ -32,7 +31,6 @@ type OperatorFiltersProps = {
   onAssignedToFilterChange: (value: string) => void;
   canUseTaskSwitchTimer: boolean;
   canOperateInputs: boolean;
-  canEditAssignments: boolean;
   onSaveTaskSwitch: (payload: {
     idleTime: string;
     remark: string;
@@ -45,8 +43,6 @@ type OperatorFiltersProps = {
   onDownloadCSV: () => void;
   onSendSelectedRowsToQa: () => void;
   selectedRowsCount: number;
-  machineOptions: string[];
-  onApplyBulkAssignment: (payload: { operators: string[]; machineNumber: string }) => void;
   runningMachineAlerts: Array<{
     groupId: string;
     cutId?: string;
@@ -84,21 +80,16 @@ export const OperatorFilters: React.FC<OperatorFiltersProps> = ({
   onAssignedToFilterChange,
   canUseTaskSwitchTimer,
   canOperateInputs,
-  canEditAssignments,
   onSaveTaskSwitch,
   onShowToast,
   onTimerRunningChange,
   onDownloadCSV,
   onSendSelectedRowsToQa,
   selectedRowsCount,
-  machineOptions,
-  onApplyBulkAssignment,
   runningMachineAlerts,
   onOpenRunningJob,
   onClearAllFilters,
 }) => {
-  const [bulkOperator, setBulkOperator] = React.useState("");
-  const [bulkMachineNumber, setBulkMachineNumber] = React.useState("");
   const [showRunningJobsModal, setShowRunningJobsModal] = React.useState(false);
 
   const selectedCreatedByUsers = useMemo(
@@ -132,31 +123,6 @@ export const OperatorFilters: React.FC<OperatorFiltersProps> = ({
       name: getDisplayName(user.firstName, user.lastName, user.email, String(user._id)),
     }));
     return [{ id: "__unassign__", name: "UNASSIGN" }, ...items];
-  }, [operatorUsers, users]);
-
-  const bulkMachineOptions = useMemo<SelectOption[]>(
-    () => [
-      { label: "Any Machine", value: "" },
-      ...machineOptions.map((machine) => ({ label: machine, value: machine })),
-    ],
-    [machineOptions]
-  );
-
-  const bulkOperatorOptions = useMemo<SelectOption[]>(() => {
-    const source = operatorUsers.length > 0 ? operatorUsers : users;
-    const seen = new Set<string>();
-    const options: SelectOption[] = [
-      { label: "Keep Operator", value: "" },
-      { label: "Unassign", value: "Unassign" },
-    ];
-    source.forEach((user) => {
-      const displayName = getDisplayName(user.firstName, user.lastName, user.email, String(user._id));
-      const key = displayName.toLowerCase();
-      if (!displayName || seen.has(key)) return;
-      seen.add(key);
-      options.push({ label: displayName, value: displayName });
-    });
-    return options;
   }, [operatorUsers, users]);
 
   const hasInlineFilters = Boolean(jobSearchFilter || createdByFilter || assignedToFilter);
@@ -222,35 +188,6 @@ export const OperatorFilters: React.FC<OperatorFiltersProps> = ({
             </div>
           )}
           <div className="operator-actions-row">
-            {canEditAssignments && selectedRowsCount > 0 && (
-              <div className="operator-bulk-assign-group operator-bulk-assign-banner">
-                <span className="operator-bulk-selected-pill">{selectedRowsCount} selected</span>
-                <SelectDropdown
-                  value={bulkOperator}
-                  onChange={setBulkOperator}
-                  options={bulkOperatorOptions}
-                  placeholder="Keep Operator"
-                  align="left"
-                  className="operator-bulk-operators"
-                />
-                <SelectDropdown
-                  value={bulkMachineNumber}
-                  onChange={setBulkMachineNumber}
-                  options={bulkMachineOptions}
-                  placeholder="Any Machine"
-                  align="left"
-                  className="operator-bulk-machine"
-                />
-                <button
-                  className="operator-bulk-apply-btn"
-                  onClick={() => onApplyBulkAssignment({ operators: bulkOperator ? [bulkOperator] : [], machineNumber: bulkMachineNumber })}
-                  disabled={!bulkOperator && !bulkMachineNumber}
-                  title="Apply selected operators/machine to selected rows"
-                >
-                  Apply Selected
-                </button>
-              </div>
-            )}
             <button
               type="button"
               className="btn-download-csv operator-running-info-btn"

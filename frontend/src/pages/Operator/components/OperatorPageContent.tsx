@@ -38,8 +38,6 @@ type OperatorPageContentProps = {
   handleDownloadCSV: () => void;
   handleSendSelectedRowsToQa: () => void | Promise<void>;
   selectedEntryIds: Set<string | number>;
-  machineOptionsForDropdown: string[];
-  handleApplyBulkAssignment: (payload: { operators: string[]; machineNumber: string }) => Promise<void>;
   operatorJobColumnDefs: any[];
   fetchJobsPage: (offset: number, limit: number) => Promise<{ items: JobEntry[]; hasMore: boolean }>;
   setOperatorGridJobs: React.Dispatch<React.SetStateAction<JobEntry[]>>;
@@ -94,12 +92,10 @@ const OperatorPageContent = (props: OperatorPageContentProps) => {
     handleSaveTaskSwitch,
     setIsTaskTimerRunning,
     setToast,
-    handleDownloadCSV,
-    handleSendSelectedRowsToQa,
-    selectedEntryIds,
-    machineOptionsForDropdown,
-    handleApplyBulkAssignment,
-    operatorJobColumnDefs,
+  handleDownloadCSV,
+  handleSendSelectedRowsToQa,
+  selectedEntryIds,
+  operatorJobColumnDefs,
     fetchJobsPage,
     setOperatorGridJobs,
     operatorGridRows,
@@ -157,8 +153,6 @@ const OperatorPageContent = (props: OperatorPageContentProps) => {
           handleDownloadCSV={handleDownloadCSV}
           handleSendSelectedRowsToQa={handleSendSelectedRowsToQa}
           selectedEntryIds={selectedEntryIds}
-          machineOptionsForDropdown={machineOptionsForDropdown}
-          handleApplyBulkAssignment={handleApplyBulkAssignment}
           operatorJobColumnDefs={operatorJobColumnDefs}
           fetchPage={fetchJobsPage}
           setOperatorGridJobs={setOperatorGridJobs}
@@ -199,8 +193,6 @@ const OperatorPageContent = (props: OperatorPageContentProps) => {
           handleDownloadCSV={handleDownloadCSV}
           handleSendSelectedRowsToQa={handleSendSelectedRowsToQa}
           selectedEntryIds={selectedEntryIds}
-          machineOptionsForDropdown={machineOptionsForDropdown}
-          handleApplyBulkAssignment={handleApplyBulkAssignment}
           operatorJobColumnDefs={operatorJobColumnDefs}
           fetchPage={fetchJobsPage}
           setOperatorGridJobs={setOperatorGridJobs}

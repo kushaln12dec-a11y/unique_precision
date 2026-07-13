@@ -2,12 +2,14 @@ import React from "react";
 
 type MassDeleteButtonProps = {
   selectedCount: number;
+  onAssign?: () => void;
   onDelete: () => void;
   onClear: () => void;
 };
 
 export const MassDeleteButton: React.FC<MassDeleteButtonProps> = ({
   selectedCount,
+  onAssign,
   onDelete,
   onClear,
 }) => {
@@ -26,8 +28,24 @@ export const MassDeleteButton: React.FC<MassDeleteButtonProps> = ({
       alignItems: "center",
       gap: "1rem",
       zIndex: 1000
-    }}>
+      }}>
       <span>{selectedCount} job(s) selected</span>
+      {onAssign ? (
+        <button
+          onClick={onAssign}
+          style={{
+            background: "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)",
+            color: "#ffffff",
+            border: "none",
+            padding: "0.5rem 1rem",
+            borderRadius: "6px",
+            cursor: "pointer",
+            fontWeight: 600
+          }}
+        >
+          Assign Selected
+        </button>
+      ) : null}
       <button 
         className="btn-danger"
         onClick={onDelete}

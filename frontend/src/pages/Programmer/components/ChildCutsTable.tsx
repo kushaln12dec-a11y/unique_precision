@@ -16,7 +16,7 @@ type ChildCutsTableProps = {
   onEdit?: (groupId: string) => void;
   onDelete?: (groupId: string, customer: string) => void;
   onImage?: (groupId: string, cutId?: string | number) => void;
-  onAssignChange?: (jobId: number | string, value: string) => void;
+  onAssignChange?: (jobId: number | string, value: string | string[]) => void;
   onMachineNumberChange?: (jobId: number | string, value: string) => void;
   operatorUsers?: Array<{ id: number | string; name: string }>;
   isOperator?: boolean;

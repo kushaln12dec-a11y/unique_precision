@@ -1,0 +1,62 @@
+.billed-jobs-content {
+    background-color: var(--color-background);
+    min-height: 100vh;
+    padding: 2rem;
+}
+
+.billed-jobs-panel {
+    background: var(--color-surface);
+    border-radius: 12px;
+    box-shadow: var(--card-shadow);
+    padding: 1.5rem;
+    margin-top: 1.5rem;
+}
+
+.billed-tabs {
+    margin-bottom: 1.5rem;
+    border-bottom: 2px solid var(--color-border);
+    padding-bottom: 1rem;
+}
+
+.billed-content-area {
+    min-height: 50vh;
+}
+
+/* 
+  When components are wrapped in .standalone-page-wrapper,
+  they assume they don't have the normal flex layout bounding them.
+  We hide their raw tabs so we only see our master tabs.
+*/
+.standalone-page-wrapper .operator-subtabs {
+    display: none !important;
+}
+
+.standalone-page-wrapper .programmer-tabs {
+    display: none !important;
+}
+
+.standalone-page-wrapper .programmer-content,
+.standalone-page-wrapper .roleboard-content {
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    flex: 1 1 auto !important;
+}
+
+.standalone-page-wrapper .programmer-panel {
+    padding: 0 !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+    background: transparent !important;
+    height: 100% !important;
+}
+
+/* Ensure empty subcontainers in QC/Operator don't create blank space */
+.standalone-page-wrapper .operator-subtabs {
+    display: none !important;
+}
+
+.standalone-page-wrapper h3 {
+    display: none !important;
+}

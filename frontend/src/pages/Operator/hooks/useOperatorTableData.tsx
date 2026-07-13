@@ -28,7 +28,7 @@ export const useOperatorTableData = (
   expandedGroups: Set<string>,
   toggleGroup: (groupId: string) => void,
   handleImageInput: (groupId: string, cutId?: string | number) => void,
-  handleAssignChange: (jobId: number | string, value: string) => void,
+  handleAssignChange: (jobId: number | string, value: string | string[]) => void,
   handleChildMachineNumberChange: (jobId: number | string, machineNumber: string) => void,
   operatorUsers: Array<{ id: string | number; name: string }>,
   machineOptions: string[],

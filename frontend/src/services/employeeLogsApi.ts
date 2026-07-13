@@ -233,8 +233,11 @@ export const startOperatorProductionLog = async (payload: {
   });
 
   if (!res.ok) {
-    const error = await res.json().catch(() => ({ message: "Failed to start operator production log" }));
-    throw new Error(error.message || "Failed to start operator production log");
+    const errorBody = await res.json().catch(() => ({ message: "Failed to start operator production log" }));
+    const err = new Error(errorBody.message || "Failed to start operator production log") as Error & { conflictJobId?: string; conflictJobGroupId?: string };
+    if (errorBody.conflictJobId) err.conflictJobId = String(errorBody.conflictJobId);
+    if (errorBody.conflictJobGroupId) err.conflictJobGroupId = String(errorBody.conflictJobGroupId);
+    throw err;
   }
 
   invalidateEmployeeLogsCache(/employee-logs/);

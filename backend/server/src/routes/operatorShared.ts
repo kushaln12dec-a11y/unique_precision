@@ -146,8 +146,8 @@ export const getQuantityNumbersFromLog = (log: {
   const metadata = (log.metadata || {}) as Record<string, any>;
   const fromMeta = Array.isArray(metadata.quantityNumbers)
     ? metadata.quantityNumbers
-        .map((qty) => Number(qty))
-        .filter((qty) => Number.isInteger(qty) && qty >= 1)
+      .map((qty) => Number(qty))
+      .filter((qty) => Number.isInteger(qty) && qty >= 1)
     : [];
   if (fromMeta.length > 0) return fromMeta;
 
@@ -305,23 +305,35 @@ export const rebalanceOperatorRevenueForJob = async (
       };
     });
 
-    const totalWorkedSeconds = normalizedEntries.reduce((sum, entry) => sum + Math.max(0, entry.workedSeconds), 0);
-    const fallbackShare = normalizedEntries.length > 0 ? 1 / normalizedEntries.length : 0;
+    // Calculate capped ETA shares sequentially
+    let passRemainingEstimatedSeconds = Math.max(0, estimatedSecondsPerQuantity);
+    const entryCappedShares = normalizedEntries.map((entry) => {
+      const safeWorkedSeconds = Math.max(0, entry.workedSeconds);
+      const cappedShare = Math.max(0, Math.min(safeWorkedSeconds, passRemainingEstimatedSeconds));
+      passRemainingEstimatedSeconds = Math.max(0, passRemainingEstimatedSeconds - cappedShare);
+      return { ...entry, cappedShare, safeWorkedSeconds };
+    });
+
+    const totalCappedShare = entryCappedShares.reduce((sum, e) => sum + e.cappedShare, 0);
+    const fallbackCappedShare = entryCappedShares.length > 0 ? 1 / entryCappedShares.length : 0;
+
     let remainingRevenue = Math.max(0, Number(perQuantityRevenue.toFixed(2)));
     let remainingEstimatedSeconds = Math.max(0, estimatedSecondsPerQuantity);
 
-    normalizedEntries.forEach((entry, index) => {
+    entryCappedShares.forEach((entry, index) => {
       const currentRevenueByQuantity = revenueByLogId.get(entry.logId) || {};
-      const safeWorkedSeconds = Math.max(0, entry.workedSeconds);
-      const workShare = totalWorkedSeconds > 0 ? safeWorkedSeconds / totalWorkedSeconds : fallbackShare;
-      const isLastEntry = index === normalizedEntries.length - 1;
+      const shareRatio = totalCappedShare > 0 ? entry.cappedShare / totalCappedShare : fallbackCappedShare;
+
+      const isLastEntry = index === entryCappedShares.length - 1;
       const allocatedRevenue = isLastEntry
         ? Math.max(0, Number(remainingRevenue.toFixed(2)))
-        : Math.max(0, Number((perQuantityRevenue * workShare).toFixed(2)));
+        : Math.max(0, Number((perQuantityRevenue * shareRatio).toFixed(2)));
+
       const estimatedSecondsShare = isLastEntry
         ? Math.max(0, remainingEstimatedSeconds)
-        : Math.max(0, estimatedSecondsPerQuantity * workShare);
-      const overtimeSeconds = Math.max(0, safeWorkedSeconds - estimatedSecondsShare);
+        : Math.max(0, estimatedSecondsPerQuantity * shareRatio);
+
+      const overtimeSeconds = Math.max(0, entry.safeWorkedSeconds - estimatedSecondsShare);
 
       remainingRevenue = Math.max(0, Number((remainingRevenue - allocatedRevenue).toFixed(4)));
       remainingEstimatedSeconds = Math.max(0, remainingEstimatedSeconds - estimatedSecondsShare);
@@ -331,10 +343,10 @@ export const rebalanceOperatorRevenueForJob = async (
       estimatedSecondsByLogId.set(entry.logId, (estimatedSecondsByLogId.get(entry.logId) || 0) + estimatedSecondsShare);
       creditedWorkedSecondsByLogId.set(
         entry.logId,
-        (creditedWorkedSecondsByLogId.get(entry.logId) || 0) + safeWorkedSeconds
+        (creditedWorkedSecondsByLogId.get(entry.logId) || 0) + entry.safeWorkedSeconds
       );
       overtimeSecondsByLogId.set(entry.logId, (overtimeSecondsByLogId.get(entry.logId) || 0) + overtimeSeconds);
-      actualWorkedSecondsByLogId.set(entry.logId, (actualWorkedSecondsByLogId.get(entry.logId) || 0) + safeWorkedSeconds);
+      actualWorkedSecondsByLogId.set(entry.logId, (actualWorkedSecondsByLogId.get(entry.logId) || 0) + entry.safeWorkedSeconds);
     });
   });
 
@@ -520,8 +532,8 @@ export const buildOperatorLogPayload = ({
   const settingNumber = (() => {
     const foundIndex = Array.isArray(refreshedJob.operatorCaptures)
       ? refreshedJob.operatorCaptures.findIndex(
-          (entry: any) => entry.fromQty === captureEntry.fromQty && entry.toQty === captureEntry.toQty
-        )
+        (entry: any) => entry.fromQty === captureEntry.fromQty && entry.toQty === captureEntry.toQty
+      )
       : -1;
     return foundIndex >= 0 ? foundIndex + 1 : toNumber((refreshedJob as any).setting) || null;
   })();

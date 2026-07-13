@@ -9,6 +9,7 @@ import GroupsIcon from '@mui/icons-material/Groups';
 import SettingsSuggestIcon from '@mui/icons-material/SettingsSuggest';
 import LogoutIcon from '@mui/icons-material/Logout';
 import MenuOpenRoundedIcon from '@mui/icons-material/MenuOpenRounded';
+import ReceiptLongIcon from '@mui/icons-material/ReceiptLong';
 import { useLocation, useNavigate } from 'react-router-dom';
 import type { SidebarProps } from '../types/sidebar';
 import { getUserRoleFromToken } from '../utils/auth';
@@ -36,15 +37,16 @@ const Sidebar = ({ onNavigate, className = "" }: SidebarProps) => {
     { icon: InventoryIcon, label: 'Inventory', path: '/inventory' },
     { icon: PeopleIcon, label: 'User Management', path: '/users' },
     { icon: GroupsIcon, label: 'Job Logs', path: '/jobLogs' },
+    { icon: ReceiptLongIcon, label: 'Billed Jobs', path: '/billed-jobs' },
   ];
   const filteredMenuItems =
     role && role !== 'ADMIN' && role !== 'ACCOUNTANT'
       ? menuItems.filter(
-          (item) =>
-            item.path === dashboardPath ||
-            item.label === 'Dashboard' ||
-            item.label.toUpperCase() === role,
-        )
+        (item) =>
+          item.path === dashboardPath ||
+          item.label === 'Dashboard' ||
+          item.label.toUpperCase() === role,
+      )
       : menuItems;
 
   useEffect(() => {
@@ -98,66 +100,66 @@ const Sidebar = ({ onNavigate, className = "" }: SidebarProps) => {
   return (
     <>
       <div className={`sidebar ${isTabletOpen ? 'expanded tablet-open' : 'collapsed'} ${className}`.trim()}>
-      <div className="sidebar-header">
-        <button
-          type="button"
-          className="sidebar-logo"
-          onClick={handleTabletToggle}
-          aria-label={isTabletViewport ? (isTabletOpen ? "Close navigation" : "Open navigation") : undefined}
-          title={undefined}
-        >
-          <img
-            src="/output-onlinepngtools.svg"
-            alt="Unique Precision"
-            className="logo-collapsed"
-          />
-          <div className="logo-expanded">
+        <div className="sidebar-header">
+          <button
+            type="button"
+            className="sidebar-logo"
+            onClick={handleTabletToggle}
+            aria-label={isTabletViewport ? (isTabletOpen ? "Close navigation" : "Open navigation") : undefined}
+            title={undefined}
+          >
             <img
               src="/output-onlinepngtools.svg"
               alt="Unique Precision"
-              className="logo-expanded-image"
+              className="logo-collapsed"
             />
-            <span className="sidebar-company-name" aria-label="Unique Precision">
-              <span className="sidebar-company-name-line">Unique</span>
-              <span className="sidebar-company-name-line">Precision</span>
+            <div className="logo-expanded">
+              <img
+                src="/output-onlinepngtools.svg"
+                alt="Unique Precision"
+                className="logo-expanded-image"
+              />
+              <span className="sidebar-company-name" aria-label="Unique Precision">
+                <span className="sidebar-company-name-line">Unique</span>
+                <span className="sidebar-company-name-line">Precision</span>
+              </span>
+            </div>
+            <span className="sidebar-toggle-icon" aria-hidden="true">
+              <MenuOpenRoundedIcon />
             </span>
-          </div>
-          <span className="sidebar-toggle-icon" aria-hidden="true">
-            <MenuOpenRoundedIcon />
-          </span>
-        </button>
-      </div>
+          </button>
+        </div>
 
-      <nav className="sidebar-nav">
-        {filteredMenuItems.map((item, index) => {
-          const Icon = item.icon;
-          const isActive = isPathActive(item.path);
-          return (
-            <button
-              type="button"
-              key={index}
-              className={`nav-item ${isActive ? 'active' : ''}`}
-              onClick={() => handleNavigate(item.path)}
-              title={item.label}
-            >
-              <Icon className="nav-icon" />
-              <span className="nav-label">{item.label}</span>
-            </button>
-          );
-        })}
-      </nav>
+        <nav className="sidebar-nav">
+          {filteredMenuItems.map((item, index) => {
+            const Icon = item.icon;
+            const isActive = isPathActive(item.path);
+            return (
+              <button
+                type="button"
+                key={index}
+                className={`nav-item ${isActive ? 'active' : ''}`}
+                onClick={() => handleNavigate(item.path)}
+                title={item.label}
+              >
+                <Icon className="nav-icon" />
+                <span className="nav-label">{item.label}</span>
+              </button>
+            );
+          })}
+        </nav>
 
-      <div className="sidebar-footer">
-        <button
-          type="button"
-          className="nav-item logout-item"
-          onClick={handleLogout}
-          title="Logout"
-        >
-          <LogoutIcon className="nav-icon" />
-          <span className="nav-label">Logout</span>
-        </button>
-      </div>
+        <div className="sidebar-footer">
+          <button
+            type="button"
+            className="nav-item logout-item"
+            onClick={handleLogout}
+            title="Logout"
+          >
+            <LogoutIcon className="nav-icon" />
+            <span className="nav-label">Logout</span>
+          </button>
+        </div>
       </div>
       {isTabletOpen ? <button type="button" className="sidebar-tablet-backdrop" aria-label="Close navigation" onClick={() => setIsTabletOpen(false)} /> : null}
     </>

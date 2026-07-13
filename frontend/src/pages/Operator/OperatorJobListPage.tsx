@@ -24,7 +24,7 @@ import "../RoleBoard.css";
 import "../Programmer/Programmer.css";
 import "./Operator.css";
 
-const OperatorJobListPage = () => {
+const OperatorJobListPage = ({ forceTab, hideLayout }: { forceTab?: "jobs" | "logs" | "logged_jobs", hideLayout?: boolean }) => {
   const navigate = useNavigate();
   const userRole = (getUserRoleFromToken() || "").toUpperCase();
   const currentUserDisplayName = (getUserDisplayNameFromToken() || "USER").trim().toUpperCase();
@@ -33,12 +33,12 @@ const OperatorJobListPage = () => {
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(() => new Set());
   const [operatorGridJobs, setOperatorGridJobs] = useState<JobEntry[]>([]);
   const [isTaskTimerRunning, setIsTaskTimerRunning] = useState(false);
-  const [activeTab, setActiveTab] = useState<"jobs" | "logs" | "logged_jobs">("jobs");
+  const [activeTab, setActiveTab] = useState<"jobs" | "logs" | "logged_jobs">(forceTab || "jobs");
   const [operatorLogSearch, setOperatorLogSearch] = useState("");
   const [operatorLogUser, setOperatorLogUser] = useState("");
   const [operatorLogStatus, setOperatorLogStatus] = useState<"" | "IN_PROGRESS" | "COMPLETED" | "REJECTED">("");
   const [operatorLogMachine, setOperatorLogMachine] = useState("");
-  const [toast, setToast] = useState<{ message: string; variant: "success" | "error" | "info"; visible: boolean }>({
+  const [toast, setToast] = useState<{ message: string; variant: "success" | "error" | "info"; visible: boolean; actionLink?: { label: string; href: string } }>({
     message: "",
     variant: "info",
     visible: false,
@@ -118,12 +118,17 @@ const OperatorJobListPage = () => {
     isSendToQaModalOpen,
     setIsSendToQaModalOpen,
     isSendingToQa,
+    isBulkAssignmentModalOpen,
+    bulkAssignmentJobs,
+    isApplyingBulkAssignment,
     handleChildRowSelect,
     openSendToQaModal,
     handleSendSelectedRowsToQa,
     handleConfirmSendToQa,
     handleDeleteSelectedRows,
-    handleApplyBulkAssignment,
+    handleOpenBulkAssignmentModal,
+    handleCloseBulkAssignmentModal,
+    handleConfirmBulkAssignment,
     handleSaveTaskSwitch,
   } = useOperatorActions({
     operatorGridJobs,
@@ -184,10 +189,13 @@ const OperatorJobListPage = () => {
   const { handleDownloadCSV, jobsFetchPage } = useOperatorJobBoard({ assignedToFilter, createdByFilter, customerFilter, descriptionFilter, filters, hasJobSearch, filteredGridTableData, isAdmin });
 
   return (
-    <div className="roleboard-container">
-      <Sidebar currentPath="/operator" onNavigate={(path) => navigate(path)} />
-      <div className="roleboard-content">
-        <Header title="Operator" />
+    <div className={hideLayout ? "standalone-page-wrapper" : "roleboard-container"}>
+      {!hideLayout && <Sidebar currentPath="/operator" onNavigate={(path) => navigate(path)} />}
+      <div className={hideLayout ? "" : "roleboard-content"}>
+        {!hideLayout && <Header title="Operator" />}
+        <div style={{ display: hideLayout ? "none" : "block" }}>
+          {/* We use CSS to hide the tabs row inside OperatorPageContent when hideLayout is true, but we could also pass hideTabs */}
+        </div>
         <OperatorPageContent
           activeTab={activeTab}
           setActiveTab={setActiveTab}
@@ -219,8 +227,6 @@ const OperatorJobListPage = () => {
           handleDownloadCSV={handleDownloadCSV}
           handleSendSelectedRowsToQa={handleSendSelectedRowsToQa}
           selectedEntryIds={selectedEntryIds}
-          machineOptionsForDropdown={machineOptionsForDropdown}
-          handleApplyBulkAssignment={handleApplyBulkAssignment}
           operatorJobColumnDefs={operatorJobColumnDefs}
           fetchJobsPage={jobsFetchPage}
           setOperatorGridJobs={setOperatorGridJobs}
@@ -256,9 +262,17 @@ const OperatorJobListPage = () => {
           isSendToQaModalOpen={isSendToQaModalOpen}
           sendToQaTargets={sendToQaTargets}
           isSendingToQa={isSendingToQa}
+          isBulkAssignmentModalOpen={isBulkAssignmentModalOpen}
+          bulkAssignmentJobs={bulkAssignmentJobs}
+          isApplyingBulkAssignment={isApplyingBulkAssignment}
           setIsSendToQaModalOpen={setIsSendToQaModalOpen}
           setSendToQaTargets={setSendToQaTargets}
           handleConfirmSendToQa={handleConfirmSendToQa}
+          handleCloseBulkAssignmentModal={handleCloseBulkAssignmentModal}
+          handleOpenBulkAssignmentModal={handleOpenBulkAssignmentModal}
+          handleConfirmBulkAssignment={handleConfirmBulkAssignment}
+          operatorUsers={operatorOptionUsers}
+          machineOptions={machineOptionsForDropdown}
           toast={toast}
           setToast={setToast}
           selectedEntryIds={selectedEntryIds}
