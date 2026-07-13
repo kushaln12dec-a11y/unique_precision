@@ -35,15 +35,12 @@ type Props = {
   setSearchFilter: (value: string) => void;
   canUseTaskSwitchTimer: boolean;
   canOperateInputs: boolean;
-  canEditAssignments: boolean;
   handleSaveTaskSwitch: (payload: { idleTime: string; remark: string; startedAt: string; endedAt: string; durationSeconds: number }) => Promise<void>;
   setIsTaskTimerRunning: (running: boolean) => void;
   setToast: React.Dispatch<React.SetStateAction<{ message: string; variant: "success" | "error" | "info"; visible: boolean }>>;
   handleDownloadCSV: () => void;
   handleSendSelectedRowsToQa: () => void;
   selectedEntryIds: Set<string | number>;
-  machineOptionsForDropdown: string[];
-  handleApplyBulkAssignment: (payload: { operators: string[]; machineNumber: string }) => void;
   operatorJobColumnDefs: any[];
   fetchPage: (offset: number, limit: number) => Promise<{ items: JobEntry[]; hasMore: boolean }>;
   setOperatorGridJobs: React.Dispatch<React.SetStateAction<JobEntry[]>>;
@@ -77,15 +74,12 @@ export const OperatorJobsSection: React.FC<Props> = ({
   setSearchFilter,
   canUseTaskSwitchTimer,
   canOperateInputs,
-  canEditAssignments,
   handleSaveTaskSwitch,
   setIsTaskTimerRunning,
   setToast,
   handleDownloadCSV,
   handleSendSelectedRowsToQa,
   selectedEntryIds,
-  machineOptionsForDropdown,
-  handleApplyBulkAssignment,
   operatorJobColumnDefs,
   fetchPage,
   setOperatorGridJobs,
@@ -213,7 +207,6 @@ export const OperatorJobsSection: React.FC<Props> = ({
         onAssignedToFilterChange={setAssignedToFilter}
         canUseTaskSwitchTimer={canUseTaskSwitchTimer && canOperateInputs}
         canOperateInputs={canOperateInputs}
-        canEditAssignments={canEditAssignments}
         onSaveTaskSwitch={handleSaveTaskSwitch}
         onTimerRunningChange={setIsTaskTimerRunning}
         onShowToast={(message, variant = "info") => {
@@ -223,8 +216,6 @@ export const OperatorJobsSection: React.FC<Props> = ({
         onDownloadCSV={handleDownloadCSV}
         onSendSelectedRowsToQa={canOperateInputs ? handleSendSelectedRowsToQa : () => undefined}
         selectedRowsCount={selectedEntryIds.size}
-        machineOptions={machineOptionsForDropdown}
-        onApplyBulkAssignment={canEditAssignments ? handleApplyBulkAssignment : () => undefined}
         runningMachineAlerts={runningMachineAlerts}
         onOpenRunningJob={onOpenRunningJob}
         onClearAllFilters={handleClearFilters}

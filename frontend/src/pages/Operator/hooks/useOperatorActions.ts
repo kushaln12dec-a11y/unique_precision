@@ -1,11 +1,14 @@
 import { useCallback, useState } from "react";
 import { createOperatorTaskSwitchLog } from "../../../services/employeeLogsApi";
+import { captureOperatorInput, updateOperatorJob } from "../../../services/operatorApi";
 import { deleteJob } from "../../../services/jobApi";
-import { updateOperatorJob, updateOperatorQaStatus } from "../../../services/operatorApi";
+import { updateOperatorQaStatus } from "../../../services/operatorApi";
 import { getDispatchableQuantityNumbers, getQuantityProgressStatuses } from "../utils/qaProgress";
+import { buildStableOperatorList } from "../utils/operatorViewPageHelpers";
 import type { JobEntry } from "../../../types/job";
 import type { SendToQaModalTarget } from "../components/SendToQaModal";
 import type { OperatorTableRow } from "../types";
+import { useEffect, useRef } from "react";
 
 type ToastSetter = React.Dispatch<
   React.SetStateAction<{ message: string; variant: "success" | "error" | "info"; visible: boolean }>
@@ -17,6 +20,14 @@ type Params = {
   setOperatorGridJobs: React.Dispatch<React.SetStateAction<JobEntry[]>>;
   tableDataRef: React.MutableRefObject<OperatorTableRow[]>;
   setToast: ToastSetter;
+};
+
+type BulkAssignmentPayloadItem = {
+  jobId: string;
+  fromQty: number;
+  toQty: number;
+  operators: string[];
+  machineNumbers: string[];
 };
 
 const showTimedToast = (setToast: ToastSetter, message: string, variant: "success" | "error" | "info") => {
@@ -63,11 +74,38 @@ export const useOperatorActions = ({ operatorGridJobs, setJobs, setOperatorGridJ
   const [sendToQaTargets, setSendToQaTargets] = useState<SendToQaModalTarget[]>([]);
   const [isSendToQaModalOpen, setIsSendToQaModalOpen] = useState(false);
   const [isSendingToQa, setIsSendingToQa] = useState(false);
+  const [bulkAssignmentJobs, setBulkAssignmentJobs] = useState<JobEntry[]>([]);
+  const [isBulkAssignmentModalOpen, setIsBulkAssignmentModalOpen] = useState(false);
+  const [isApplyingBulkAssignment, setIsApplyingBulkAssignment] = useState(false);
+  const lastBulkSelectionSignatureRef = useRef("");
 
   const updateJobsInState = useCallback((updater: (job: JobEntry) => JobEntry) => {
     setJobs((prev) => prev.map(updater));
     setOperatorGridJobs((prev) => prev.map(updater));
   }, [setJobs, setOperatorGridJobs]);
+
+  const buildSelectedBulkJobs = useCallback(() => {
+    if (selectedEntryIds.size === 0) return [];
+    const selectedKeySet = new Set(Array.from(selectedEntryIds, (id) => String(id)));
+    return tableDataRef.current
+      .flatMap((row) => row.entries)
+      .filter((entry) => selectedKeySet.has(String(entry.id)));
+  }, [selectedEntryIds, tableDataRef]);
+
+  const handleOpenBulkAssignmentModal = useCallback(() => {
+    const targetEntries = buildSelectedBulkJobs();
+    if (targetEntries.length === 0) {
+      showTimedToast(setToast, "Select at least one row first.", "error");
+      return;
+    }
+    setBulkAssignmentJobs(targetEntries);
+    setIsBulkAssignmentModalOpen(true);
+  }, [buildSelectedBulkJobs, setToast]);
+
+  const handleCloseBulkAssignmentModal = useCallback(() => {
+    setIsBulkAssignmentModalOpen(false);
+    setBulkAssignmentJobs([]);
+  }, []);
 
   const handleChildRowSelect = useCallback((groupId: string, rowKey: string | number, selected: boolean) => {
     const normalizedKey = String(rowKey);
@@ -156,40 +194,81 @@ export const useOperatorActions = ({ operatorGridJobs, setJobs, setOperatorGridJ
     }
   }, [selectedEntryIds, setJobs, setOperatorGridJobs, setToast]);
 
-  const handleApplyBulkAssignment = useCallback(async (payload: { operators: string[]; machineNumber: string }) => {
-    if (selectedEntryIds.size === 0) {
-      showTimedToast(setToast, "Select at least one row first.", "error");
+  const handleConfirmBulkAssignment = useCallback(async (payload: BulkAssignmentPayloadItem[]) => {
+    if (payload.length === 0) {
+      showTimedToast(setToast, "Configure at least one job before applying.", "error");
       return;
     }
-    const operators = [...new Set(payload.operators.map((name) => name.trim().toUpperCase()).filter(Boolean))];
-    const selectedOperator = operators[0] || "";
-    const machineNumber = String(payload.machineNumber || "").trim();
-    if (!selectedOperator && !machineNumber) {
-      showTimedToast(setToast, "Choose operator or machine to apply.", "error");
-      return;
-    }
-    const selectedIdSet = new Set(Array.from(selectedEntryIds, (id) => String(id)));
-    const targetEntries = tableDataRef.current.flatMap((row) => row.entries).filter((entry) => selectedIdSet.has(String(entry.id)));
-    if (targetEntries.length === 0) {
-      showTimedToast(setToast, "No valid selected rows found.", "error");
-      return;
-    }
-    const assignedToValue = selectedOperator || null;
+
+    setIsApplyingBulkAssignment(true);
     try {
-      await Promise.all(targetEntries.map((entry) => {
-        const updatePayload: Record<string, string> = {};
-        if (assignedToValue !== null) updatePayload.assignedTo = assignedToValue;
-        if (machineNumber) updatePayload.machineNumber = machineNumber;
-        return updateOperatorJob(String(entry.id), updatePayload);
-      }));
-      updateJobsInState((job) => !selectedIdSet.has(String(job.id))
-        ? job
-        : { ...job, ...(assignedToValue !== null ? { assignedTo: assignedToValue } : {}), ...(machineNumber ? { machineNumber } : {}) });
-      showTimedToast(setToast, `Updated ${targetEntries.length} selected row(s).`, "success");
+      const updatedJobs: JobEntry[] = [];
+
+      for (const item of payload) {
+        const selectedOperators = buildStableOperatorList(item.operators);
+        const selectedMachineNumbers = Array.from(
+          new Map(
+            item.machineNumbers
+              .map((machine) => String(machine || "").trim())
+              .filter(Boolean)
+              .map((machine) => [machine.toLowerCase(), machine] as const)
+          ).values()
+        ).sort((left, right) => left.localeCompare(right, undefined, { numeric: true }));
+
+        const joinedOperators = selectedOperators.join(", ");
+        const joinedMachineNumbers = selectedMachineNumbers.join(", ");
+        const capturePayload = {
+          startTime: "",
+          endTime: "",
+          machineHrs: "",
+          machineNumber: joinedMachineNumbers,
+          opsName: joinedOperators,
+          idleTime: "",
+          idleTimeDuration: "",
+          lastImage: null,
+          quantityIndex: Math.max(0, Number(item.fromQty || 1) - 1),
+          captureMode: item.fromQty === item.toQty ? ("SINGLE" as const) : ("RANGE" as const),
+          fromQty: item.fromQty,
+          toQty: item.toQty,
+        };
+
+        await captureOperatorInput(item.jobId, capturePayload);
+        const updatedJob = await updateOperatorJob(item.jobId, {
+          assignedTo: joinedOperators || "Unassign",
+          machineNumber: joinedMachineNumbers,
+          opsName: joinedOperators,
+        });
+        updatedJobs.push(updatedJob);
+      }
+
+      if (updatedJobs.length > 0) {
+        const updatedJobMap = new Map(updatedJobs.map((job) => [String(job.id), job] as const));
+        setJobs((prev) => prev.map((job) => updatedJobMap.get(String(job.id)) || job));
+        setOperatorGridJobs((prev) => prev.map((job) => updatedJobMap.get(String(job.id)) || job));
+      }
+
+      setSelectedEntryIds(new Set());
+      setSelectedJobIds(new Set());
+      setBulkAssignmentJobs([]);
+      setIsBulkAssignmentModalOpen(false);
+      showTimedToast(setToast, `Updated ${payload.length} selected row(s).`, "success");
     } catch {
-      showTimedToast(setToast, "Failed to update selected rows.", "error");
+      showTimedToast(setToast, "Failed to apply bulk assignment.", "error");
+    } finally {
+      setIsApplyingBulkAssignment(false);
     }
-  }, [selectedEntryIds, setToast, tableDataRef, updateJobsInState]);
+  }, [setJobs, setOperatorGridJobs, setSelectedEntryIds, setSelectedJobIds, setToast]);
+
+  useEffect(() => {
+    const signature = Array.from(selectedEntryIds, (id) => String(id)).sort().join("|");
+    if (selectedEntryIds.size < 2) {
+      lastBulkSelectionSignatureRef.current = "";
+      return;
+    }
+    if (signature === lastBulkSelectionSignatureRef.current) return;
+    lastBulkSelectionSignatureRef.current = signature;
+    handleOpenBulkAssignmentModal();
+  }, [handleOpenBulkAssignmentModal, selectedEntryIds]);
 
   const handleSaveTaskSwitch = useCallback(async (payload: { idleTime: string; remark: string; startedAt: string; endedAt: string; durationSeconds: number }) => {
     await createOperatorTaskSwitchLog(payload);
@@ -210,7 +289,14 @@ export const useOperatorActions = ({ operatorGridJobs, setJobs, setOperatorGridJ
     handleSendSelectedRowsToQa,
     handleConfirmSendToQa,
     handleDeleteSelectedRows,
-    handleApplyBulkAssignment,
+    handleOpenBulkAssignmentModal,
+    handleCloseBulkAssignmentModal,
+    handleConfirmBulkAssignment,
+    isBulkAssignmentModalOpen,
+    setIsBulkAssignmentModalOpen,
+    bulkAssignmentJobs,
+    setBulkAssignmentJobs,
+    isApplyingBulkAssignment,
     handleSaveTaskSwitch,
     showTimedToast,
   };

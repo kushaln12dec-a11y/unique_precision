@@ -118,12 +118,17 @@ const OperatorJobListPage = ({ forceTab, hideLayout }: { forceTab?: "jobs" | "lo
     isSendToQaModalOpen,
     setIsSendToQaModalOpen,
     isSendingToQa,
+    isBulkAssignmentModalOpen,
+    bulkAssignmentJobs,
+    isApplyingBulkAssignment,
     handleChildRowSelect,
     openSendToQaModal,
     handleSendSelectedRowsToQa,
     handleConfirmSendToQa,
     handleDeleteSelectedRows,
-    handleApplyBulkAssignment,
+    handleOpenBulkAssignmentModal,
+    handleCloseBulkAssignmentModal,
+    handleConfirmBulkAssignment,
     handleSaveTaskSwitch,
   } = useOperatorActions({
     operatorGridJobs,
@@ -222,8 +227,6 @@ const OperatorJobListPage = ({ forceTab, hideLayout }: { forceTab?: "jobs" | "lo
           handleDownloadCSV={handleDownloadCSV}
           handleSendSelectedRowsToQa={handleSendSelectedRowsToQa}
           selectedEntryIds={selectedEntryIds}
-          machineOptionsForDropdown={machineOptionsForDropdown}
-          handleApplyBulkAssignment={handleApplyBulkAssignment}
           operatorJobColumnDefs={operatorJobColumnDefs}
           fetchJobsPage={jobsFetchPage}
           setOperatorGridJobs={setOperatorGridJobs}
@@ -259,9 +262,17 @@ const OperatorJobListPage = ({ forceTab, hideLayout }: { forceTab?: "jobs" | "lo
           isSendToQaModalOpen={isSendToQaModalOpen}
           sendToQaTargets={sendToQaTargets}
           isSendingToQa={isSendingToQa}
+          isBulkAssignmentModalOpen={isBulkAssignmentModalOpen}
+          bulkAssignmentJobs={bulkAssignmentJobs}
+          isApplyingBulkAssignment={isApplyingBulkAssignment}
           setIsSendToQaModalOpen={setIsSendToQaModalOpen}
           setSendToQaTargets={setSendToQaTargets}
           handleConfirmSendToQa={handleConfirmSendToQa}
+          handleCloseBulkAssignmentModal={handleCloseBulkAssignmentModal}
+          handleOpenBulkAssignmentModal={handleOpenBulkAssignmentModal}
+          handleConfirmBulkAssignment={handleConfirmBulkAssignment}
+          operatorUsers={operatorOptionUsers}
+          machineOptions={machineOptionsForDropdown}
           toast={toast}
           setToast={setToast}
           selectedEntryIds={selectedEntryIds}

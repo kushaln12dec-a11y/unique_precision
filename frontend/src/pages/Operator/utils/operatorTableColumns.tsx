@@ -4,7 +4,7 @@ import CreatedByBadge from "../../../components/CreatedByBadge";
 import MarqueeCopyText from "../../../components/MarqueeCopyText";
 import { MultiSelectOperators } from "../components/MultiSelectOperators";
 import type { OperatorDisplayRow } from "../hooks/useOperatorTable";
-import { formatJobRefDisplay, formatMachineLabel, toYN } from "../../../utils/jobFormatting";
+import { formatJobRefDisplay, formatMachineLabel, toMachineIndex, toYN } from "../../../utils/jobFormatting";
 import { getDispatchableQuantityNumbers, getGroupQaProgressCounts, getQaProgressCounts, getQaStatusBadges } from "./qaProgress";
 import { getThicknessDisplayValue } from "../../Programmer/programmerUtils";
 import {
@@ -169,8 +169,8 @@ export const buildBaseOperatorColumns = (props: {
       }
 
       if (props.canAssign) {
-        const selectedMachines = getOperatorMachineNumbers(row.entry);
-        const machineSelectOptions = props.machineDropdownOptions.map((machine) => ({ id: machine, name: machine }));
+        const selectedMachines = getOperatorMachineNumbers(row.entry).map((machine) => formatMachineLabel(machine)).filter(Boolean);
+        const machineSelectOptions = props.machineDropdownOptions.map((machine) => ({ id: machine, name: formatMachineLabel(machine) }));
         return (
           <MultiSelectOperators
             className="operator-assigned-dropdown operator-machine-dropdown-wrapper"
@@ -178,8 +178,8 @@ export const buildBaseOperatorColumns = (props: {
             availableOperators={machineSelectOptions}
             onChange={(nextValue) =>
               row.kind === "parent"
-                ? props.handleMachineNumberChange(row.groupId, nextValue.join(", "))
-                : props.handleChildMachineNumberChange(row.entry.id, nextValue.join(", "))
+                ? props.handleMachineNumberChange(row.groupId, nextValue.map((machine) => toMachineIndex(machine)).filter(Boolean).join(", "))
+                : props.handleChildMachineNumberChange(row.entry.id, nextValue.map((machine) => toMachineIndex(machine)).filter(Boolean).join(", "))
             }
             placeholder="Select"
             compact={selectedMachines.length > 1}
