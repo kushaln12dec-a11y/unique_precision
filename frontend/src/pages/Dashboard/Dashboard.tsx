@@ -47,13 +47,17 @@ const Dashboard = ({ mode = "shared" }: DashboardProps) => {
   const programmerData = useProgrammerMetrics(data);
   const qcData = useQcMetrics(data);
   const userRole = String(getUserRoleFromToken() || "").toUpperCase();
+  const visibleAllowedViews: DashboardRoleView[] =
+    userRole === "PROGRAMMER" && !allowedViews.includes("OPERATOR")
+      ? [...allowedViews, "OPERATOR" as DashboardRoleView]
+      : allowedViews;
 
   useEffect(() => {
     if (!data?.meta) return;
-    if (!data.meta.allowedViews.includes(activeView)) {
-      dispatch(setDashboardActiveView(data.meta.allowedViews[0]));
+    if (!visibleAllowedViews.includes(activeView)) {
+      dispatch(setDashboardActiveView(visibleAllowedViews[0]));
     }
-  }, [activeView, data?.meta, dispatch]);
+  }, [activeView, dispatch, data?.meta, visibleAllowedViews]);
 
   const renderDashboard = () => {
     if (!data) return null;
@@ -111,10 +115,10 @@ const Dashboard = ({ mode = "shared" }: DashboardProps) => {
             </div>
           </section>
 
-          {allowedViews.length > 1 ? (
+          {visibleAllowedViews.length > 1 ? (
             <RoleViewSwitcher
               activeView={activeView}
-              allowedViews={allowedViews}
+              allowedViews={visibleAllowedViews}
               onChange={(view) => dispatch(setDashboardActiveView(view))}
             />
           ) : null}

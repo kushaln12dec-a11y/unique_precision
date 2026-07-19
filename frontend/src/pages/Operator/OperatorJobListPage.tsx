@@ -220,7 +220,6 @@ const OperatorJobListPage = ({ forceTab, hideLayout }: { forceTab?: "jobs" | "lo
           setSearchFilter={setSearchFilter}
           canUseTaskSwitchTimer={canUseTaskSwitchTimer}
           canOperateInputs={canOperateInputs}
-          canEditAssignments={canEditAssignments}
           handleSaveTaskSwitch={handleSaveTaskSwitch}
           setIsTaskTimerRunning={setIsTaskTimerRunning}
           setToast={setToast}

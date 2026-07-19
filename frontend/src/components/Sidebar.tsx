@@ -41,12 +41,12 @@ const Sidebar = ({ onNavigate, className = "" }: SidebarProps) => {
   ];
   const filteredMenuItems =
     role && role !== 'ADMIN' && role !== 'ACCOUNTANT'
-      ? menuItems.filter(
-        (item) =>
-          item.path === dashboardPath ||
-          item.label === 'Dashboard' ||
-          item.label.toUpperCase() === role,
-      )
+      ? menuItems.filter((item) => {
+        if (item.path === dashboardPath || item.label === 'Dashboard') return true;
+        if (item.label.toUpperCase() === role) return true;
+        if (role === 'PROGRAMMER' && item.label === 'Operator') return true;
+        return false;
+      })
       : menuItems;
 
   useEffect(() => {

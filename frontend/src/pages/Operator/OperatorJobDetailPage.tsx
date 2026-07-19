@@ -36,7 +36,7 @@ const OperatorJobDetailPage = () => {
   const cutIdParam = searchParams.get("cutId");
   const userRole = (getUserRoleFromToken() || "").toUpperCase();
   const isAdmin = userRole === "ADMIN";
-  const canOperateInputs = userRole === "ADMIN" || userRole === "OPERATOR";
+  const canOperateInputs = userRole === "ADMIN" || userRole === "PROGRAMMER" || userRole === "OPERATOR";
   const canEditAssignments = userRole === "ADMIN" || userRole === "PROGRAMMER" || userRole === "OPERATOR";
   const currentUserDisplayName = normalizeOperatorName(getUserDisplayNameFromToken() || "");
 
