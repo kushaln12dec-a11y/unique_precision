@@ -85,6 +85,8 @@ const BulkAssignmentModal = ({
     [machineOptions]
   );
 
+  const getDisplayJobRef = (job: JobEntry) => String(job.refNumber || "").trim() || "-";
+
   const payload = useMemo<BulkAssignmentPayloadItem[]>(() => {
     return jobs.map((job) => {
       const draft = drafts[String(job.id)];
@@ -123,6 +125,7 @@ const BulkAssignmentModal = ({
         <div className="bulk-assignment-list">
           {jobs.map((job) => {
             const totalQty = Math.max(1, Number(job.qty || 1));
+            const jobRef = getDisplayJobRef(job);
             const draft = drafts[String(job.id)] || {
               fromQty: "1",
               toQty: String(totalQty),
@@ -139,7 +142,7 @@ const BulkAssignmentModal = ({
                 <div className="bulk-assignment-card-head">
                   <div>
                     <div className="bulk-assignment-card-title-row">
-                      <span className="bulk-assignment-job-ref">{String(job.refNumber || job.id || "-")}</span>
+                      <span className="bulk-assignment-job-ref">Job Ref #{jobRef}</span>
                       <span className="bulk-assignment-qty-pill">Qty {totalQty}</span>
                     </div>
                     <p>
@@ -148,8 +151,8 @@ const BulkAssignmentModal = ({
                     </p>
                   </div>
                   <div className="bulk-assignment-card-meta">
-                    <span>Job #{String(job.id)}</span>
-                    <strong>{formatMachineLabel(getDefaultMachineNumbers(job)[0] || "") || "-"}</strong>
+                    <span>Selected job</span>
+                    <strong>{jobRef}</strong>
                   </div>
                 </div>
 
