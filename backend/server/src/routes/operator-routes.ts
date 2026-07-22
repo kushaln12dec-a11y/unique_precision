@@ -246,6 +246,13 @@ const buildLogFragmentsWithoutQuantity = (log: any, quantityNumber: number) => {
   });
 };
 
+const formatJobQuantityLabel = (job: any, fromQty: number, toQty: number) => {
+  const refNumber = String(job?.refNumber || job?.jobRef || job?.id || "").trim();
+  const jobLabel = refNumber ? `Job #${refNumber}` : "Selected job";
+  const quantityLabel = fromQty === toQty ? `Qty ${fromQty}` : `Qty ${fromQty}-${toQty}`;
+  return `${jobLabel}, ${quantityLabel}`;
+};
+
 const getRequestedOperatorNames = (value: unknown): string[] =>
   String(value || "")
     .split(",")
@@ -499,7 +506,9 @@ router.post("/jobs/:id/capture-input", async (req, res) => {
     }
 
     if (hasCaptureRangeOverlap(job.operatorCaptures || [], resolvedFromQty, resolvedToQty)) {
-      return res.status(409).json({ message: `Selected quantity/range already has captured data and cannot be replaced.` });
+      return res.status(409).json({
+        message: `${formatJobQuantityLabel(job, resolvedFromQty, resolvedToQty)} already has captured data and cannot be replaced.`,
+      });
     }
 
     const quantityConflict = await findActiveQuantityConflict(

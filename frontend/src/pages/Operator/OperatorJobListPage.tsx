@@ -19,6 +19,7 @@ import { useOperatorTableData } from "./hooks/useOperatorTableData.tsx";
 import { useOperatorDashboardActivity } from "./hooks/useOperatorDashboardActivity";
 import type { JobEntry } from "../../types/job";
 import type { OperatorTableRow } from "./types";
+import type { BulkAssignmentPayloadItem } from "./components/BulkAssignmentModal";
 import { useJobSync } from "../../hooks/useJobSync";
 import "../RoleBoard.css";
 import "../Programmer/Programmer.css";
@@ -269,7 +270,7 @@ const OperatorJobListPage = ({ forceTab, hideLayout }: { forceTab?: "jobs" | "lo
           handleConfirmSendToQa={handleConfirmSendToQa}
           handleCloseBulkAssignmentModal={handleCloseBulkAssignmentModal}
           handleOpenBulkAssignmentModal={handleOpenBulkAssignmentModal}
-          handleConfirmBulkAssignment={handleConfirmBulkAssignment}
+          handleConfirmBulkAssignment={handleConfirmBulkAssignment as (payload: BulkAssignmentPayloadItem[]) => void | Promise<void>}
           operatorUsers={operatorOptionUsers}
           machineOptions={machineOptionsForDropdown}
           toast={toast}

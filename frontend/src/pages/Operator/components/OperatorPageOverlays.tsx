@@ -2,7 +2,7 @@ import Toast from "../../../components/Toast";
 import JobDetailsModal from "../../Programmer/components/JobDetailsModal";
 import { MassDeleteButton } from "../../Programmer/components/MassDeleteButton";
 import SendToQaModal from "./SendToQaModal";
-import BulkAssignmentModal from "./BulkAssignmentModal";
+import BulkAssignmentModal, { type BulkAssignmentPayloadItem } from "./BulkAssignmentModal";
 import type { OperatorTableRow } from "../types";
 import type { JobEntry } from "../../../types/job";
 
@@ -24,13 +24,7 @@ type OperatorPageOverlaysProps = {
   handleConfirmSendToQa: (payload: Array<{ jobId: string; quantityNumbers: number[] }>) => void | Promise<void>;
   handleCloseBulkAssignmentModal: () => void;
   handleOpenBulkAssignmentModal: () => void;
-  handleConfirmBulkAssignment: (payload: Array<{
-    jobId: string;
-    fromQty: number;
-    toQty: number;
-    operators: string[];
-    machineNumbers: string[];
-  }>) => void | Promise<void>;
+  handleConfirmBulkAssignment: (payload: BulkAssignmentPayloadItem[]) => void | Promise<void>;
   operatorUsers: Array<{ id: string | number; name: string }>;
   machineOptions: string[];
   toast: { message: string; variant: "success" | "error" | "info"; visible: boolean; actionLink?: { label: string; href: string } };

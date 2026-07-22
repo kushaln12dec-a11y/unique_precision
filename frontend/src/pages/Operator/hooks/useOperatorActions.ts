@@ -5,6 +5,7 @@ import { deleteJob } from "../../../services/jobApi";
 import { updateOperatorQaStatus } from "../../../services/operatorApi";
 import { getDispatchableQuantityNumbers, getQuantityProgressStatuses } from "../utils/qaProgress";
 import { buildStableOperatorList } from "../utils/operatorViewPageHelpers";
+import { formatJobRefDisplay } from "../../../utils/jobFormatting";
 import type { JobEntry } from "../../../types/job";
 import type { SendToQaModalTarget } from "../components/SendToQaModal";
 import type { OperatorTableRow } from "../types";
@@ -27,7 +28,14 @@ type BulkAssignmentPayloadItem = {
   fromQty: number;
   toQty: number;
   operators: string[];
-  machineNumbers: string[];
+  machineNumber: string;
+};
+
+const formatBulkAssignmentQuantityLabel = (job: JobEntry | undefined, fromQty: number, toQty: number) => {
+  const refNumber = formatJobRefDisplay(job?.refNumber || job?.id || "", false);
+  const jobLabel = refNumber ? `Job #${refNumber}` : `Job ${String(job?.id || "").trim() || "Unknown"}`;
+  const quantityLabel = fromQty === toQty ? `Qty ${fromQty}` : `Qty ${fromQty}-${toQty}`;
+  return `${jobLabel}, ${quantityLabel}`;
 };
 
 const showTimedToast = (setToast: ToastSetter, message: string, variant: "success" | "error" | "info") => {
@@ -203,42 +211,61 @@ export const useOperatorActions = ({ operatorGridJobs, setJobs, setOperatorGridJ
     setIsApplyingBulkAssignment(true);
     try {
       const updatedJobs: JobEntry[] = [];
+      const payloadByJobId = new Map<string, BulkAssignmentPayloadItem[]>();
+      const jobLookup = new Map(operatorGridJobs.map((job) => [String(job.id), job] as const));
+      payload.forEach((item) => {
+        const key = String(item.jobId);
+        if (!payloadByJobId.has(key)) payloadByJobId.set(key, []);
+        payloadByJobId.get(key)!.push(item);
+      });
 
-      for (const item of payload) {
-        const selectedOperators = buildStableOperatorList(item.operators);
-        const selectedMachineNumbers = Array.from(
+      for (const [jobId, jobItems] of payloadByJobId.entries()) {
+        const orderedItems = [...jobItems].sort((left, right) => left.fromQty - right.fromQty);
+        const job = jobLookup.get(jobId);
+        const uniqueOperators = buildStableOperatorList(orderedItems.flatMap((item) => item.operators));
+        const uniqueMachineNumbers = Array.from(
           new Map(
-            item.machineNumbers
-              .map((machine) => String(machine || "").trim())
+            orderedItems
+              .map((item) => String(item.machineNumber || "").trim())
               .filter(Boolean)
               .map((machine) => [machine.toLowerCase(), machine] as const)
           ).values()
         ).sort((left, right) => left.localeCompare(right, undefined, { numeric: true }));
 
-        const joinedOperators = selectedOperators.join(", ");
-        const joinedMachineNumbers = selectedMachineNumbers.join(", ");
-        const capturePayload = {
-          startTime: "",
-          endTime: "",
-          machineHrs: "",
-          machineNumber: joinedMachineNumbers,
-          opsName: joinedOperators,
-          idleTime: "",
-          idleTimeDuration: "",
-          lastImage: null,
-          quantityIndex: Math.max(0, Number(item.fromQty || 1) - 1),
-          captureMode: item.fromQty === item.toQty ? ("SINGLE" as const) : ("RANGE" as const),
-          fromQty: item.fromQty,
-          toQty: item.toQty,
-        };
+        for (const item of orderedItems) {
+          const selectedOperators = buildStableOperatorList(item.operators);
+          try {
+            await captureOperatorInput(jobId, {
+              startTime: "",
+              endTime: "",
+              machineHrs: "",
+              machineNumber: String(item.machineNumber || "").trim(),
+              opsName: selectedOperators.join(", "),
+              idleTime: "",
+              idleTimeDuration: "",
+              lastImage: null,
+              quantityIndex: Math.max(0, Number(item.fromQty || 1) - 1),
+              captureMode: "SINGLE",
+              fromQty: item.fromQty,
+              toQty: item.toQty,
+            });
+          } catch (error: any) {
+            const backendMessage = String(error?.message || "Failed to apply bulk assignment.");
+            throw new Error(`${formatBulkAssignmentQuantityLabel(job, item.fromQty, item.toQty)} - ${backendMessage}`);
+          }
+        }
 
-        await captureOperatorInput(item.jobId, capturePayload);
-        const updatedJob = await updateOperatorJob(item.jobId, {
-          assignedTo: joinedOperators || "Unassign",
-          machineNumber: joinedMachineNumbers,
-          opsName: joinedOperators,
-        });
-        updatedJobs.push(updatedJob);
+        try {
+          const updatedJob = await updateOperatorJob(jobId, {
+            assignedTo: uniqueOperators.join(", ") || "Unassign",
+            machineNumber: uniqueMachineNumbers.join(", "),
+            opsName: uniqueOperators.join(", "),
+          });
+          updatedJobs.push(updatedJob);
+        } catch (error: any) {
+          const backendMessage = String(error?.message || "Failed to update assigned operators.");
+          throw new Error(`${formatBulkAssignmentQuantityLabel(job, orderedItems[0]?.fromQty || 1, orderedItems[orderedItems.length - 1]?.toQty || orderedItems[0]?.fromQty || 1)} - ${backendMessage}`);
+        }
       }
 
       if (updatedJobs.length > 0) {
@@ -252,8 +279,8 @@ export const useOperatorActions = ({ operatorGridJobs, setJobs, setOperatorGridJ
       setBulkAssignmentJobs([]);
       setIsBulkAssignmentModalOpen(false);
       showTimedToast(setToast, `Updated ${payload.length} selected row(s).`, "success");
-    } catch {
-      showTimedToast(setToast, "Failed to apply bulk assignment.", "error");
+    } catch (error: any) {
+      showTimedToast(setToast, String(error?.message || "Failed to apply bulk assignment."), "error");
     } finally {
       setIsApplyingBulkAssignment(false);
     }

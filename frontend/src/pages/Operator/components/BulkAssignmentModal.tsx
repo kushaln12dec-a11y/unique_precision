@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import Modal from "../../../components/Modal";
 import type { JobEntry } from "../../../types/job";
-import { formatMachineLabel, toMachineIndex } from "../../../utils/jobFormatting";
+import { formatJobRefDisplay, formatMachineLabel, toMachineIndex } from "../../../utils/jobFormatting";
+import SelectDropdown from "../../Programmer/components/SelectDropdown";
 import { MultiSelectOperators } from "./MultiSelectOperators";
 import { parseAssignedOperators } from "../utils/operatorViewPageHelpers";
 import "./BulkAssignmentModal.css";
@@ -11,14 +12,13 @@ type BulkAssignmentPayloadItem = {
   fromQty: number;
   toQty: number;
   operators: string[];
-  machineNumbers: string[];
+  machineNumber: string;
 };
 
-type DraftState = {
-  fromQty: string;
-  toQty: string;
+type DraftRowState = {
+  quantityNumber: number;
   operators: string[];
-  machineNumbers: string[];
+  machineNumber: string;
 };
 
 type BulkAssignmentModalProps = {
@@ -31,28 +31,58 @@ type BulkAssignmentModalProps = {
   onConfirm: (payload: BulkAssignmentPayloadItem[]) => void | Promise<void>;
 };
 
-const getDefaultOperators = (job: JobEntry) => {
-  const source = Array.isArray(job.opsName) ? job.opsName : parseAssignedOperators(job.assignedTo || job.opsName || "");
-  return Array.from(
-    new Map(
-      source
-        .map((value) => String(value || "").trim().toUpperCase())
-        .filter(Boolean)
-        .map((value) => [value.toLowerCase(), value] as const)
-    ).values()
-  );
-};
+const normalizeOperatorName = (value: unknown) => String(value || "").trim().toUpperCase();
 
-const getDefaultMachineNumbers = (job: JobEntry) =>
+const dedupeStable = (values: string[]) =>
   Array.from(
     new Map(
-      String(job.machineNumber || "")
-        .split(",")
-        .map((value) => toMachineIndex(value.trim()))
+      values
+        .map((value) => normalizeOperatorName(value))
         .filter(Boolean)
         .map((value) => [value.toLowerCase(), value] as const)
     ).values()
+  ).sort((left, right) => left.localeCompare(right));
+
+const parseMachineNumbers = (value: unknown) =>
+  dedupeStable(
+    String(value || "")
+      .split(",")
+      .map((entry) => toMachineIndex(entry.trim()))
+      .filter(Boolean)
   );
+
+const getCaptureRangeForQuantity = (captures: any[], quantityNumber: number) =>
+  captures.find((capture) => {
+    const fromQty = Math.max(1, Number(capture?.fromQty || 1));
+    const toQty = Math.max(fromQty, Number(capture?.toQty || fromQty));
+    return quantityNumber >= fromQty && quantityNumber <= toQty;
+  });
+
+const getDefaultOperators = (job: JobEntry, quantityNumber: number) => {
+  const captures = Array.isArray(job.operatorCaptures) ? job.operatorCaptures : [];
+  const capture = getCaptureRangeForQuantity(captures, quantityNumber);
+  const source = capture?.opsName || job.opsName || job.assignedTo || "";
+  return dedupeStable(Array.isArray(source) ? source : parseAssignedOperators(source));
+};
+
+const getDefaultMachineNumber = (job: JobEntry, quantityNumber: number) => {
+  const captures = Array.isArray(job.operatorCaptures) ? job.operatorCaptures : [];
+  const capture = getCaptureRangeForQuantity(captures, quantityNumber);
+  const source = capture?.machineNumber || job.machineNumber || "";
+  return parseMachineNumbers(source)[0] || "";
+};
+
+const buildInitialDraftRows = (job: JobEntry): DraftRowState[] => {
+  const totalQty = Math.max(1, Number(job.qty || 1));
+  return Array.from({ length: totalQty }, (_, index) => {
+    const quantityNumber = index + 1;
+    return {
+      quantityNumber,
+      operators: getDefaultOperators(job, quantityNumber),
+      machineNumber: getDefaultMachineNumber(job, quantityNumber),
+    };
+  });
+};
 
 const BulkAssignmentModal = ({
   isOpen,
@@ -63,19 +93,13 @@ const BulkAssignmentModal = ({
   onClose,
   onConfirm,
 }: BulkAssignmentModalProps) => {
-  const [drafts, setDrafts] = useState<Record<string, DraftState>>({});
+  const [drafts, setDrafts] = useState<Record<string, DraftRowState[]>>({});
 
   useEffect(() => {
     if (!isOpen) return;
-    const nextDrafts: Record<string, DraftState> = {};
+    const nextDrafts: Record<string, DraftRowState[]> = {};
     jobs.forEach((job) => {
-      const totalQty = Math.max(1, Number(job.qty || 1));
-      nextDrafts[String(job.id)] = {
-        fromQty: "1",
-        toQty: String(totalQty),
-        operators: getDefaultOperators(job),
-        machineNumbers: getDefaultMachineNumbers(job),
-      };
+      nextDrafts[String(job.id)] = buildInitialDraftRows(job);
     });
     setDrafts(nextDrafts);
   }, [isOpen, jobs]);
@@ -85,65 +109,60 @@ const BulkAssignmentModal = ({
     [machineOptions]
   );
 
-  const getDisplayJobRef = (job: JobEntry) => String(job.refNumber || "").trim() || "-";
+  const payload = useMemo<BulkAssignmentPayloadItem[]>(
+    () =>
+      jobs.flatMap((job) =>
+          (drafts[String(job.id)] || []).map((row) => ({
+          jobId: String(job.id),
+          fromQty: row.quantityNumber,
+          toQty: row.quantityNumber,
+          operators: row.operators,
+          machineNumber: row.machineNumber,
+        }))
+      ),
+    [drafts, jobs]
+  );
 
-  const payload = useMemo<BulkAssignmentPayloadItem[]>(() => {
-    return jobs.map((job) => {
-      const draft = drafts[String(job.id)];
-      const totalQty = Math.max(1, Number(job.qty || 1));
-      const fromQty = Math.min(totalQty, Math.max(1, Number(draft?.fromQty || 1)));
-      const toQty = Math.min(totalQty, Math.max(fromQty, Number(draft?.toQty || totalQty)));
-      return {
-        jobId: String(job.id),
-        fromQty,
-        toQty,
-        operators: draft?.operators || [],
-        machineNumbers: draft?.machineNumbers || [],
-      };
-    });
-  }, [drafts, jobs]);
+  const totalSelectedQuantities = payload.length;
+  const completeRows = payload.filter((row) => row.operators.length > 0 && Boolean(String(row.machineNumber || "").trim()));
+  const hasCompleteAssignments = completeRows.length === totalSelectedQuantities && totalSelectedQuantities > 0;
 
-  const hasAnyAssignment = payload.some((item) => item.operators.length > 0 || item.machineNumbers.length > 0);
+  const updateRow = (jobId: string, quantityNumber: number, updater: (row: DraftRowState) => DraftRowState) => {
+    setDrafts((prev) => ({
+      ...prev,
+      [jobId]: (prev[jobId] || []).map((row) => (row.quantityNumber === quantityNumber ? updater(row) : row)),
+    }));
+  };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Bulk Assign Selected Jobs" size="large" className="bulk-assignment-modal">
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Bulk Assign Selected Jobs"
+      size="medium"
+      className="bulk-assignment-modal"
+    >
       <div className="bulk-assignment-shell">
         <div className="bulk-assignment-hero">
-          <div>
-            <p className="bulk-assignment-eyebrow">Assign operators, machines, and quantity ranges</p>
-            <h4>Set who works on which quantity, job by job</h4>
-            <p className="bulk-assignment-copy">
-              Each selected job gets its own quantity range and can carry multiple operators and machine numbers.
-            </p>
-          </div>
           <div className="bulk-assignment-summary">
-            <span>{jobs.length} job(s)</span>
-            <strong>{payload.reduce((sum, item) => sum + Math.max(0, item.toQty - item.fromQty + 1), 0)} qty selected</strong>
+            <span>{jobs.length} job(s) selected</span>
+            <strong>{totalSelectedQuantities} qty rows</strong>
           </div>
         </div>
 
         <div className="bulk-assignment-list">
           {jobs.map((job) => {
+            const rows = drafts[String(job.id)] || buildInitialDraftRows(job);
+            const jobRef = formatJobRefDisplay(job.refNumber || job.id);
             const totalQty = Math.max(1, Number(job.qty || 1));
-            const jobRef = getDisplayJobRef(job);
-            const draft = drafts[String(job.id)] || {
-              fromQty: "1",
-              toQty: String(totalQty),
-              operators: [],
-              machineNumbers: [],
-            };
-            const fromQty = Math.min(totalQty, Math.max(1, Number(draft.fromQty || 1)));
-            const toQty = Math.min(totalQty, Math.max(fromQty, Number(draft.toQty || totalQty)));
-            const operatorSelected = draft.operators;
-            const machineSelected = draft.machineNumbers;
 
             return (
               <section key={String(job.id)} className="bulk-assignment-card">
                 <div className="bulk-assignment-card-head">
                   <div>
                     <div className="bulk-assignment-card-title-row">
-                      <span className="bulk-assignment-job-ref">Job Ref #{jobRef}</span>
-                      <span className="bulk-assignment-qty-pill">Qty {totalQty}</span>
+                      <span className="bulk-assignment-job-ref">Job Ref {jobRef || "-"}</span>
+                      <span className="bulk-assignment-qty-pill">{totalQty} qty</span>
                     </div>
                     <p>
                       {job.customer || "Unnamed Job"}{" "}
@@ -152,113 +171,89 @@ const BulkAssignmentModal = ({
                   </div>
                   <div className="bulk-assignment-card-meta">
                     <span>Selected job</span>
-                    <strong>{jobRef}</strong>
+                    <strong>{jobRef || "-"}</strong>
                   </div>
                 </div>
 
-                <div className="bulk-assignment-grid">
-                  <label>
-                    <span>From Qty</span>
-                    <select
-                      value={draft.fromQty}
-                      onChange={(event) =>
-                        setDrafts((prev) => ({
-                          ...prev,
-                          [String(job.id)]: {
-                            ...prev[String(job.id)],
-                            fromQty: event.target.value,
-                            toQty: Number(event.target.value) > Number(prev[String(job.id)]?.toQty || totalQty)
-                              ? event.target.value
-                              : prev[String(job.id)]?.toQty || String(totalQty),
-                          },
-                        }))
-                      }
-                    >
-                      {Array.from({ length: totalQty }, (_, index) => index + 1).map((qty) => (
-                        <option key={`${job.id}-from-${qty}`} value={qty}>
-                          Q{qty}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
+                <div className="bulk-assignment-quantity-list">
+                  {rows.map((row) => {
+                    const quantityLabel = `Q${row.quantityNumber}`;
+                    return (
+                      <div key={`${job.id}-${row.quantityNumber}`} className="bulk-assignment-quantity-card">
+                        <div className="bulk-assignment-quantity-head">
+                          <div className="bulk-assignment-quantity-title">
+                            <span className="bulk-assignment-quantity-pill">{quantityLabel}</span>
+                            <span className="bulk-assignment-quantity-caption">Assign one machine and operator set</span>
+                          </div>
+                          <button
+                            type="button"
+                            className="bulk-assignment-clear-row"
+                              onClick={() =>
+                              updateRow(String(job.id), row.quantityNumber, (current) => ({
+                                ...current,
+                                operators: [],
+                                machineNumber: "",
+                              }))
+                            }
+                            disabled={isSubmitting}
+                          >
+                            Clear
+                          </button>
+                        </div>
 
-                  <label>
-                    <span>To Qty</span>
-                    <select
-                      value={draft.toQty}
-                      onChange={(event) =>
-                        setDrafts((prev) => ({
-                          ...prev,
-                          [String(job.id)]: {
-                            ...prev[String(job.id)],
-                            toQty: event.target.value,
-                          },
-                        }))
-                      }
-                    >
-                      {Array.from({ length: totalQty }, (_, index) => index + 1)
-                        .filter((qty) => qty >= fromQty)
-                        .map((qty) => (
-                          <option key={`${job.id}-to-${qty}`} value={qty}>
-                            Q{qty}
-                          </option>
-                        ))}
-                    </select>
-                  </label>
+                        <div className="bulk-assignment-grid">
+                          <div className="bulk-assignment-select">
+                            <span>Operators</span>
+                            <MultiSelectOperators
+                              selectedOperators={row.operators}
+                              availableOperators={operatorUsers}
+                              onChange={(nextValue) =>
+                                updateRow(String(job.id), row.quantityNumber, (current) => ({
+                                  ...current,
+                                  operators: nextValue,
+                                }))
+                              }
+                              placeholder="Select operators"
+                              className="operator-assigned-dropdown bulk-assignment-multi"
+                              compact={row.operators.length > 1}
+                              showUnassign={true}
+                              selfToggleOnly={false}
+                            />
+                          </div>
 
-                  <div className="bulk-assignment-select">
-                    <span>Operators</span>
-                    <MultiSelectOperators
-                      selectedOperators={operatorSelected}
-                      availableOperators={operatorUsers}
-                      onChange={(nextValue) =>
-                        setDrafts((prev) => ({
-                          ...prev,
-                          [String(job.id)]: {
-                            ...prev[String(job.id)],
-                            operators: nextValue,
-                          },
-                        }))
-                      }
-                      placeholder="Select operators"
-                      className="operator-assigned-dropdown bulk-assignment-multi"
-                      compact={operatorSelected.length > 1}
-                      showUnassign={true}
-                      selfToggleOnly={false}
-                    />
-                  </div>
+                          <div className="bulk-assignment-select">
+                            <span>Machine</span>
+                            <div className="bulk-assignment-machine-panel">
+                              <SelectDropdown
+                                value={String(row.machineNumber || "").trim()}
+                                onChange={(nextValue) =>
+                                  updateRow(String(job.id), row.quantityNumber, (current) => ({
+                                    ...current,
+                                    machineNumber: toMachineIndex(nextValue),
+                                  }))
+                                }
+                                options={machineSelectOptions.map((machine) => ({ label: machine.name, value: machine.id }))}
+                                placeholder="Select machine"
+                                align="left"
+                                className="bulk-assignment-machine-select"
+                                menuMinWidth={160}
+                                disabled={isSubmitting}
+                              />
+                              <p className="bulk-assignment-machine-note">Only one machine can be assigned to a quantity.</p>
+                            </div>
+                          </div>
+                        </div>
 
-                  <div className="bulk-assignment-select">
-                    <span>Machines</span>
-                    <MultiSelectOperators
-                      selectedOperators={machineSelected.map((machine) => formatMachineLabel(machine))}
-                      availableOperators={machineSelectOptions}
-                      onChange={(nextValue) =>
-                        setDrafts((prev) => ({
-                          ...prev,
-                          [String(job.id)]: {
-                            ...prev[String(job.id)],
-                            machineNumbers: nextValue.map((machine) => toMachineIndex(machine)).filter(Boolean),
-                          },
-                        }))
-                      }
-                      placeholder="Select machines"
-                      className="operator-assigned-dropdown bulk-assignment-multi bulk-assignment-machine"
-                      compact={machineSelected.length > 1}
-                      showUnassign={true}
-                      selfToggleOnly={false}
-                    />
-                  </div>
-                </div>
-
-                <div className="bulk-assignment-footer">
-                  <span>
-                    Will assign {fromQty === toQty ? `Q${fromQty}` : `Q${fromQty}-Q${toQty}`}
-                  </span>
-                  <strong>
-                    {operatorSelected.length > 0 ? operatorSelected.join(", ") : "No operators selected"}{" "}
-                    {machineSelected.length > 0 ? `| ${machineSelected.map((machine) => formatMachineLabel(machine)).join(", ")}` : ""}
-                  </strong>
+                        <div className="bulk-assignment-footer">
+                          <span>{quantityLabel}</span>
+                          <strong>
+                            {row.operators.length > 0 ? row.operators.join(", ") : "No operators selected"}
+                            {row.machineNumber ? ` | ${formatMachineLabel(row.machineNumber)}` : ""}
+                          </strong>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </section>
             );
@@ -272,7 +267,7 @@ const BulkAssignmentModal = ({
           <button
             type="button"
             className="bulk-assignment-primary"
-            disabled={!hasAnyAssignment || isSubmitting}
+            disabled={!hasCompleteAssignments || isSubmitting}
             onClick={() => void onConfirm(payload)}
           >
             {isSubmitting ? "Applying..." : "Apply Selected Jobs"}
