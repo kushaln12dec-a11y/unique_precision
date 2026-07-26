@@ -32,9 +32,9 @@ export const useOperatorPageConfig = (
     currentUserDisplayName: String(currentUserDisplayName || "").trim().toUpperCase() || "USER",
     isAdmin: userRole === "ADMIN",
     canEditAssignments: userRole === "ADMIN" || userRole === "PROGRAMMER" || userRole === "OPERATOR",
-    canOperateInputs: userRole === "ADMIN" || userRole === "OPERATOR",
+    canOperateInputs: userRole === "ADMIN" || userRole === "PROGRAMMER" || userRole === "OPERATOR",
     isAccountant: userRole === "ACCOUNTANT",
-    canUseTaskSwitchTimer: userRole === "ADMIN" || userRole === "OPERATOR",
+    canUseTaskSwitchTimer: userRole === "ADMIN" || userRole === "PROGRAMMER" || userRole === "OPERATOR",
     operatorOptionUsers,
     machineOptionsForDropdown,
   };

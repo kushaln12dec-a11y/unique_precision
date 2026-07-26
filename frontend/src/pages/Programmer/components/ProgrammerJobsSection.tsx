@@ -30,7 +30,7 @@ type Props = {
     setSearchFilter: (value: string) => void;
   };
   handleDownloadCSV: () => void;
-  handleNewJob: () => void;
+  handleNewJob?: () => void;
   fetchPage: (offset: number, limit: number) => Promise<{ items: JobEntry[]; hasMore: boolean }>;
   rows: ProgrammerDisplayRow[];
   columnDefs: any[];

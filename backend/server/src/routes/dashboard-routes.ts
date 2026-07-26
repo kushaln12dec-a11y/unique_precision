@@ -908,7 +908,10 @@ router.get("/summary", async (req, res) => {
       meta: {
         generatedAt: new Date().toISOString(),
         activeView,
-        allowedViews: reqRole === "ADMIN" || reqRole === "ACCOUNTANT" ? ["ADMIN", "OPERATOR", "PROGRAMMER", "QC"] : [activeView],
+        allowedViews:
+          reqRole === "ADMIN" || reqRole === "ACCOUNTANT" || reqRole === "PROGRAMMER"
+            ? ["ADMIN", "OPERATOR", "PROGRAMMER", "QC"]
+            : [activeView],
         dateRange: {
           preset: dateRange.preset,
           label: dateRange.label,

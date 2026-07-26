@@ -31,7 +31,6 @@ type OperatorPageContentProps = {
   setSearchFilter: (value: string) => void;
   canUseTaskSwitchTimer: boolean;
   canOperateInputs: boolean;
-  canEditAssignments: boolean;
   handleSaveTaskSwitch: (payload: any) => Promise<void>;
   setIsTaskTimerRunning: React.Dispatch<React.SetStateAction<boolean>>;
   setToast: React.Dispatch<React.SetStateAction<{ message: string; variant: "success" | "error" | "info"; visible: boolean }>>;
@@ -88,7 +87,6 @@ const OperatorPageContent = (props: OperatorPageContentProps) => {
     setSearchFilter,
     canUseTaskSwitchTimer,
     canOperateInputs,
-    canEditAssignments,
     handleSaveTaskSwitch,
     setIsTaskTimerRunning,
     setToast,
@@ -146,7 +144,6 @@ const OperatorPageContent = (props: OperatorPageContentProps) => {
           setSearchFilter={setSearchFilter}
           canUseTaskSwitchTimer={canUseTaskSwitchTimer}
           canOperateInputs={canOperateInputs}
-          canEditAssignments={canEditAssignments}
           handleSaveTaskSwitch={handleSaveTaskSwitch}
           setIsTaskTimerRunning={setIsTaskTimerRunning}
           setToast={setToast}
@@ -186,7 +183,6 @@ const OperatorPageContent = (props: OperatorPageContentProps) => {
           setSearchFilter={setSearchFilter}
           canUseTaskSwitchTimer={false} // Disable timer in logged jobs
           canOperateInputs={canOperateInputs}
-          canEditAssignments={false} // Disable assignment in logged jobs
           handleSaveTaskSwitch={handleSaveTaskSwitch}
           setIsTaskTimerRunning={setIsTaskTimerRunning}
           setToast={setToast}

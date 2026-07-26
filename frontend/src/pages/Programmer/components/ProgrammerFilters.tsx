@@ -24,7 +24,7 @@ type ProgrammerFiltersProps = {
   onCreatedByFilterChange: (value: string) => void;
   onCriticalFilterChange: (checked: boolean) => void;
   onDownloadCSV: () => void;
-  onNewJob: () => void;
+  onNewJob?: () => void;
 };
 
 export const ProgrammerFilters: React.FC<ProgrammerFiltersProps> = ({
@@ -108,9 +108,11 @@ export const ProgrammerFilters: React.FC<ProgrammerFiltersProps> = ({
             onClick={() => onShowFilterModal(true)}
             activeFilterCount={activeFilterCount}
           />
-          <button className="btn-new-job" onClick={onNewJob}>
-            Add New Job
-          </button>
+          {onNewJob && (
+            <button className="btn-new-job" onClick={onNewJob}>
+              Add New Job
+            </button>
+          )}
         </div>
       </div>
       <FilterModal

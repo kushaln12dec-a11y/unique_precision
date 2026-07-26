@@ -153,7 +153,13 @@ export const useOperatorPersistenceActions = ({
       });
     } catch (error: any) {
       console.error("Failed to save range", error);
-      showAndHideToast(setSaveToast, error?.message?.includes("overlaps") ? "Selected quantity/range already has captured data. Once captured, it cannot be replaced." : "Failed to save range. Please try again.", "error", 3000);
+      const backendMessage = String(error?.message || "");
+      showAndHideToast(
+        setSaveToast,
+        backendMessage || "Failed to save range. Please try again.",
+        "error",
+        3000
+      );
     }
   }, [activeOperatorLogIds, cutInputs, jobs, resolveActiveOperatorLogId, setActiveOperatorLogIds, setQaStatusesByCut, setSaveToast, setSavedRanges, setValidationErrors]);
 

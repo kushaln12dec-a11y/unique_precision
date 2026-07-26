@@ -237,6 +237,8 @@ const ProgrammerDashboardPage = ({ forceTab, hideLayout, mode }: { forceTab?: "j
     cancelSave,
   });
 
+  const shouldShowNewJobButton = mode !== "billed";
+
   return (
     <div className={hideLayout ? "standalone-page-wrapper" : "programmer-container"}>
       {!hideLayout && <Sidebar currentPath={currentPathname} onNavigate={handleProgrammerNavigate} />}
@@ -261,7 +263,7 @@ const ProgrammerDashboardPage = ({ forceTab, hideLayout, mode }: { forceTab?: "j
                       users={users}
                       dispatchers={dispatchers}
                       handleDownloadCSV={handleDownloadCSV}
-                      handleNewJob={() => handleNewJob(navigate)}
+                      handleNewJob={shouldShowNewJobButton ? () => handleNewJob(navigate) : undefined}
                       fetchPage={jobsFetchPage}
                       rows={programmerGridRows}
                       columnDefs={programmerJobColumnDefs}
