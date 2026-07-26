@@ -23,6 +23,7 @@ type UseOperatorTableProps = {
   canOperateInputs: boolean;
   operatorUsers: Array<{ id: string | number; name: string }>;
   machineOptions: string[];
+  isBilled?: boolean;
   handleAssignChange: (jobId: number | string, value: string | string[]) => void;
   handleMachineNumberChange: (groupId: string, machineNumber: string) => void;
   handleChildMachineNumberChange: (jobId: number | string, machineNumber: string) => void;
@@ -56,6 +57,7 @@ export const useOperatorTable = ({
   toggleGroup,
   activeRunsByJobId,
   operatorHistoryByJobId,
+  isBilled,
 }: UseOperatorTableProps): Column<OperatorDisplayRow>[] => {
   const machineDropdownOptions = useMemo(() => getOperatorMachineDropdownOptions(machineOptions), [machineOptions]);
 
@@ -96,6 +98,7 @@ export const useOperatorTable = ({
       handleOpenQaModal,
       isImageInputDisabled,
       canOperateInputs,
+      isBilled,
       getActiveRuns: () => activeRunsRef.current,
       getOperatorHistory: () => operatorHistoryRef.current,
     }),
@@ -114,6 +117,7 @@ export const useOperatorTable = ({
       handleOpenQaModal,
       isAdmin,
       isImageInputDisabled,
+      isBilled,
       operatorNameLookup,
       toggleGroup,
     ]

@@ -25,7 +25,19 @@ import "../RoleBoard.css";
 import "../Programmer/Programmer.css";
 import "./Operator.css";
 
-const OperatorJobListPage = ({ forceTab, hideLayout }: { forceTab?: "jobs" | "logs" | "logged_jobs", hideLayout?: boolean }) => {
+const OperatorJobListPage = ({
+  forceTab,
+  hideLayout,
+  pageTitle = "Operator",
+  currentPath = "/operator",
+  isBilled = false,
+}: {
+  forceTab?: "jobs" | "logs" | "logged_jobs";
+  hideLayout?: boolean;
+  pageTitle?: string;
+  currentPath?: string;
+  isBilled?: boolean;
+}) => {
   const navigate = useNavigate();
   const userRole = (getUserRoleFromToken() || "").toUpperCase();
   const currentUserDisplayName = (getUserDisplayNameFromToken() || "USER").trim().toUpperCase();
@@ -166,6 +178,7 @@ const OperatorJobListPage = ({ forceTab, hideLayout }: { forceTab?: "jobs" | "lo
     toggleGroup,
     activeRunsByJobId,
     operatorHistoryByJobId,
+    isBilled,
   });
 
   const jobSearchQuery = String(searchFilter || "").trim();
@@ -191,9 +204,9 @@ const OperatorJobListPage = ({ forceTab, hideLayout }: { forceTab?: "jobs" | "lo
 
   return (
     <div className={hideLayout ? "standalone-page-wrapper" : "roleboard-container"}>
-      {!hideLayout && <Sidebar currentPath="/operator" onNavigate={(path) => navigate(path)} />}
+      {!hideLayout && <Sidebar currentPath={currentPath} onNavigate={(path) => navigate(path)} />}
       <div className={hideLayout ? "" : "roleboard-content"}>
-        {!hideLayout && <Header title="Operator" />}
+        {!hideLayout && <Header title={pageTitle} />}
         <div style={{ display: hideLayout ? "none" : "block" }}>
           {/* We use CSS to hide the tabs row inside OperatorPageContent when hideLayout is true, but we could also pass hideTabs */}
         </div>

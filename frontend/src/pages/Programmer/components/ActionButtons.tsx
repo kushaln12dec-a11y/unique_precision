@@ -23,6 +23,7 @@ type ActionButtonsProps = {
   isOperator?: boolean;
   disableImageButton?: boolean;
   disableSubmitButton?: boolean;
+  hideOperatorImageButton?: boolean;
 };
 
 const ActionButtons: React.FC<ActionButtonsProps> = ({
@@ -42,6 +43,7 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({
   isOperator = false,
   disableImageButton = false,
   disableSubmitButton = false,
+  hideOperatorImageButton = false,
 }) => {
   const isAdmin = getUserRoleFromToken() === "ADMIN";
   const isProgrammer = getUserRoleFromToken() === "PROGRAMMER";
@@ -88,7 +90,7 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({
           <ContentCopyIcon fontSize="small" />
         </button>
       )}
-      {isOperator && onImage && (
+      {isOperator && onImage && !hideOperatorImageButton && (
         <button
           type="button"
           className="action-icon-button"

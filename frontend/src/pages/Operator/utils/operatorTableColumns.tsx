@@ -54,6 +54,7 @@ export const buildBaseOperatorColumns = (props: {
   handleOpenQaModal: (entries: any[]) => void;
   isImageInputDisabled: boolean;
   canOperateInputs: boolean;
+  isBilled?: boolean;
   getActiveRuns: () => Map<string, any>;
   getOperatorHistory: () => Map<string, string[]>;
 }): Column<OperatorDisplayRow>[] => [
@@ -234,6 +235,7 @@ export const buildBaseOperatorColumns = (props: {
           submitLabel="Send to QC"
           isOperator={true}
           disableImageButton={props.isImageInputDisabled || !props.canOperateInputs}
+          hideOperatorImageButton={props.isBilled}
           disableSubmitButton={!canSendToQa}
         />
       );
