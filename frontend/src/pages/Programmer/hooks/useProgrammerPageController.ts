@@ -54,7 +54,8 @@ export const useProgrammerPageController = ({
   handleCancelState,
   setToast,
   forceTab,
-  isBilled,
+  // isBilled controls UI only (e.g. hiding new job button); it does not filter fetch results
+  isBilled: _isBilled,
 }: UseProgrammerPageControllerParams) => {
   const location = useLocation();
   const currentPathname = location.pathname;
@@ -174,7 +175,7 @@ export const useProgrammerPageController = ({
 
   const jobsFetchPage = useCallback(async (offset: number, limit: number) => {
     const page = await getProgrammerJobsPage(
-      { ...filters, search: searchFilter, isBilled },
+      { ...filters, search: searchFilter },
       customerFilter,
       createdByFilter,
       criticalFilter ? true : undefined,
@@ -182,7 +183,7 @@ export const useProgrammerPageController = ({
       { offset, limit }
     );
     return { items: page.items, hasMore: page.hasMore };
-  }, [createdByFilter, criticalFilter, customerFilter, descriptionFilter, filtersKey, searchFilter, isBilled]);
+  }, [createdByFilter, criticalFilter, customerFilter, descriptionFilter, filtersKey, searchFilter]);
 
   const logsFetchPage = useCallback(async (offset: number, limit: number) => {
     if (logSearch || logUserId) {

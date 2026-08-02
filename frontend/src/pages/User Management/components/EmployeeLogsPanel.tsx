@@ -100,32 +100,35 @@ export const EmployeeLogsPanel = () => {
     const rows = filteredLogs.map((row) =>
       activeRole === "OPERATOR"
         ? [
-            `${String(row.userName || "Unknown User")} (${formatRoleLabel((row.metadata as any)?.userRole || row.role)})`,
-            normalizeJobReference(row.refNumber || row.workItemTitle),
-            String(row.jobDescription || "-"),
-            String(row.workSummary || "-"),
-            String((row.metadata as any)?.idleTime || "-"),
-            formatEmployeeIdleWindow(row),
-            String((row.metadata as any)?.remark || "-"),
-            ...(isAdmin ? [getRevenueLabel(row)] : []),
-            `${getDisplayDateTimeParts(row.startedAt).date} ${getDisplayDateTimeParts(row.startedAt).time}`.trim(),
-            `${getDisplayDateTimeParts(row.endedAt || null).date} ${getDisplayDateTimeParts(row.endedAt || null).time}`.trim(),
-            formatDuration(getWorkedSecondsForLog(row)),
-            formatLogStatus(row.status),
-          ]
+          `${String(row.userName || "Unknown User")} (${formatRoleLabel((row.metadata as any)?.userRole || row.role)})`,
+          normalizeJobReference(row.refNumber || row.workItemTitle),
+          String(row.jobDescription || "-"),
+          String(row.workSummary || "-"),
+          String((row.metadata as any)?.idleTime || "-"),
+          formatEmployeeIdleWindow(row),
+          String((row.metadata as any)?.remark || "-"),
+          ...(isAdmin ? [getRevenueLabel(row)] : []),
+          `${getDisplayDateTimeParts(row.startedAt).date} ${getDisplayDateTimeParts(row.startedAt).time}`.trim(),
+          `${getDisplayDateTimeParts(row.endedAt || null).date} ${getDisplayDateTimeParts(row.endedAt || null).time}`.trim(),
+          formatDuration(getWorkedSecondsForLog(row)),
+          formatLogStatus(row.status),
+        ]
         : [
-            `${String(row.userName || "Unknown User")} (${formatRoleLabel((row.metadata as any)?.userRole || row.role)})`,
-            normalizeJobReference(row.refNumber),
-            String(row.jobDescription || "-"),
-            String(getQuantityLabel(row) || "-"),
-            `${getDisplayDateTimeParts(row.startedAt).date} ${getDisplayDateTimeParts(row.startedAt).time}`.trim(),
-            `${getDisplayDateTimeParts(row.endedAt || null).date} ${getDisplayDateTimeParts(row.endedAt || null).time}`.trim(),
-            formatDuration(row.durationSeconds),
-            formatLogStatus(row.status),
-          ]
+          `${String(row.userName || "Unknown User")} (${formatRoleLabel((row.metadata as any)?.userRole || row.role)})`,
+          normalizeJobReference(row.refNumber),
+          String(row.jobDescription || "-"),
+          String(getQuantityLabel(row) || "-"),
+          `${getDisplayDateTimeParts(row.startedAt).date} ${getDisplayDateTimeParts(row.startedAt).time}`.trim(),
+          `${getDisplayDateTimeParts(row.endedAt || null).date} ${getDisplayDateTimeParts(row.endedAt || null).time}`.trim(),
+          formatDuration(row.durationSeconds),
+          formatLogStatus(row.status),
+        ]
     );
 
-    const csvContent = [headers.join(","), ...rows.map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(","))].join("\n");
+    const csvContent = "\uFEFF" + [
+      headers.map((h) => `"${String(h).replace(/"/g, '""')}"`).join(","),
+      ...rows.map((row) => row.map((cell) => `"${String(cell ?? "").replace(/"/g, '""')}"`).join(",")),
+    ].join("\r\n");
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const link = document.createElement("a");
     const url = URL.createObjectURL(blob);

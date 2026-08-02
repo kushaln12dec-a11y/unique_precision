@@ -67,21 +67,21 @@ export const buildQcRows = (qcGridJobs: JobEntry[], showLogged: boolean = false)
   return Array.from(groups.entries())
     .flatMap(([groupId, entries]) => {
       if (entries.length === 0) return [];
-      
+
       const isGroupClosed = entries.every((item) => Boolean((item as any).qcReportClosed));
       if (!showLogged && isGroupClosed) return [];
-      
+
       const parent = entries[0];
 
       return entries.flatMap((entry) => {
         const qaStates = getQuantityQaStates(entry);
         const totalQty = Math.max(1, Number(entry.qty || 1));
-        
+
         const targetQuantities = Array.from({ length: totalQty }, (_, index) => index + 1).filter(
           (quantityNumber) => {
             const state = qaStates[String(quantityNumber)];
             if (showLogged) {
-              return entry.qcDecision === "APPROVED" || entry.qcDecision === "REJECTED";
+              return entry.qcDecision === "APPROVED" || entry.qcDecision === "REJECTED" || Boolean((entry as any).qcReportClosed);
             }
             // Show only pending in Queue tab
             return state === "SENT_TO_QA" && !entry.qcReportClosed;
