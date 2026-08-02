@@ -10,6 +10,7 @@ type QcColumnArgs = {
   onOpenReport: (row: QcRow) => void;
   onDownloadReport: (row: QcRow) => void;
   openClosePrompt: (row: QcRow) => void;
+  showLogged?: boolean;
 };
 
 export const createQcColumns = ({
@@ -17,6 +18,7 @@ export const createQcColumns = ({
   onOpenReport,
   onDownloadReport,
   openClosePrompt,
+  showLogged = false,
 }: QcColumnArgs) => [
   { key: "customer", label: "Customer", render: (row: QcRow) => <div className="qc-customer-cell"><span className="qc-customer-name">{row.entry.customer || row.parent.customer || "-"}</span></div> },
   { key: "description", label: "Description", render: (row: QcRow) => <MarqueeCopyText text={row.entry.description || row.parent.description || "-"} /> },
@@ -47,12 +49,23 @@ export const createQcColumns = ({
     label: "Decision",
     headerClassName: "qc-decision-col",
     className: "qc-decision-cell",
-    render: (row: QcRow) => (
-      <div className="qc-decision-actions">
-        <button type="button" className="qc-approve-btn" onClick={() => void updateDecision(row.groupId, "APPROVED", "Approved")}>Approve</button>
-        <button type="button" className="qc-reject-btn" onClick={() => void updateDecision(row.groupId, "REJECTED", "Rejected")}>Reject</button>
-      </div>
-    ),
+    render: (row: QcRow) => {
+      const decision = String(row.entry.qcDecision || row.parent.qcDecision || "PENDING").toUpperCase();
+      if (showLogged) {
+        return (
+          <span className={`qc-decision-badge ${decision === "APPROVED" ? "approved" : "rejected"}`}>
+            {decision === "APPROVED" ? "Approved" : "Rejected"}
+          </span>
+        );
+      }
+
+      return (
+        <div className="qc-decision-actions">
+          <button type="button" className="qc-approve-btn" onClick={() => void updateDecision(row.groupId, "APPROVED", "Approved")}>Approve</button>
+          <button type="button" className="qc-reject-btn" onClick={() => void updateDecision(row.groupId, "REJECTED", "Rejected")}>Reject</button>
+        </div>
+      );
+    },
   },
   {
     key: "inspectionReport",

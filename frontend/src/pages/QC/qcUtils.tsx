@@ -81,8 +81,7 @@ export const buildQcRows = (qcGridJobs: JobEntry[], showLogged: boolean = false)
           (quantityNumber) => {
             const state = qaStates[String(quantityNumber)];
             if (showLogged) {
-              // Show if decision is made or group is explicitly closed
-              return entry.qcDecision === "APPROVED" || entry.qcDecision === "REJECTED" || entry.qcReportClosed;
+              return entry.qcDecision === "APPROVED" || entry.qcDecision === "REJECTED";
             }
             // Show only pending in Queue tab
             return state === "SENT_TO_QA" && !entry.qcReportClosed;

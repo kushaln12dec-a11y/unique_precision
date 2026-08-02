@@ -38,14 +38,45 @@ const getParentJoinedValues = (
   return values.length > 0 ? values.join(", ") : fallback;
 };
 
-const getLoggedOperatorNames = (entry: any): string[] =>
+const splitOperatorNames = (value: unknown): string[] =>
+  String(value || "")
+    .split(",")
+    .map((name) => name.trim().toUpperCase())
+    .filter(Boolean);
+
+const getLoggedOperatorNames = (entry: any): string[] => {
+  const names = (Array.isArray(entry.operatorCaptures) ? entry.operatorCaptures : [])
+    .flatMap((capture: any) => splitOperatorNames(capture?.opsName || capture?.createdBy))
+    .filter((name: string) => name !== "UNASSIGN" && name !== "UNASSIGNED");
+
+  const fallbackNames = splitOperatorNames(entry.opsName).filter((name) => name !== "UNASSIGN" && name !== "UNASSIGNED");
+  return Array.from(new Set([...names, ...fallbackNames]));
+};
+
+const getBilledOperatorNames = (entry: any, operatorHistoryByJobId: Map<string, string[]>): string[] =>
   Array.from(
     new Set(
-      (Array.isArray(entry.operatorCaptures) ? entry.operatorCaptures : [])
-        .map((capture: any) => String(capture?.opsName || "").trim().toUpperCase())
-        .filter(Boolean)
+      [
+        ...getLoggedOperatorNames(entry),
+        ...((operatorHistoryByJobId.get(String(entry.id)) || []).map((name: string) => String(name || "").trim().toUpperCase())),
+      ].filter(Boolean)
     )
   );
+
+const getParentBilledOperatorNames = (row: OperatorDisplayRow, operatorHistoryByJobId: Map<string, string[]>): string[] =>
+  Array.from(
+    new Set(
+      row.tableRow.entries.flatMap((entry) => getBilledOperatorNames(entry, operatorHistoryByJobId))
+    )
+  );
+
+const renderBilledOperatorNames = (names: string[]) => (
+  <MarqueeCopyText
+    text={names.length > 0 ? names.join(", ") : "-"}
+    className="billed-operator-names"
+    showCopyButton={false}
+  />
+);
 
 const getLoggedMachineNumbers = (entry: any): string[] =>
   Array.from(
@@ -138,15 +169,15 @@ export const buildBaseOperatorColumns = (props: {
 
       // For parent rows, display aggregated operator names with animation (MarqueeCopyText)
       if (isGroupedParent) {
-        const aggregated = props.isBilled
-          ? getParentJoinedValues(row, (entry) => getLoggedOperatorNames(entry).join(", "), "-")
-          : getParentJoinedValues(row, (entry) => entry.assignedTo || "", "Unassign");
+        if (props.isBilled) {
+          return renderBilledOperatorNames(getParentBilledOperatorNames(row, operatorHistoryByJobId));
+        }
+        const aggregated = getParentJoinedValues(row, (entry) => entry.assignedTo || "", "Unassign");
         return <MarqueeCopyText text={aggregated} className="operator-assigned-text" />;
       }
 
       if (props.isBilled) {
-        const loggedOperators = getLoggedOperatorNames(row.entry);
-        return <div className="assigned-operators-readonly">{loggedOperators.join(", ") || "-"}</div>;
+        return renderBilledOperatorNames(getBilledOperatorNames(row.entry, operatorHistoryByJobId));
       }
 
       return shouldAllowTableAssignment ? (
