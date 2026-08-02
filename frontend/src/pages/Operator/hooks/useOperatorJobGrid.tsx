@@ -111,6 +111,7 @@ type Params = {
   setSelectedJobIds: React.Dispatch<React.SetStateAction<Set<string>>>;
   setSelectedEntryIds: React.Dispatch<React.SetStateAction<Set<string | number>>>;
   handleChildRowSelect: (groupId: string, rowKey: string | number, selected: boolean) => void;
+  isBilled?: boolean;
 };
 
 export const useOperatorJobGrid = ({
@@ -125,6 +126,7 @@ export const useOperatorJobGrid = ({
   setSelectedJobIds,
   setSelectedEntryIds,
   handleChildRowSelect,
+  isBilled = false,
 }: Params) => {
   const filteredGridTableData = useMemo(
     () => tableData.filter((row) => matchesSearchQuery(getOperatorRowSearchValues(row, isAdmin), jobSearchQuery)),
@@ -166,83 +168,87 @@ export const useOperatorJobGrid = ({
 
   const operatorJobColumnDefs = useMemo(
     () => [
-      {
-        headerName: "",
-        field: "__select__",
-        width: 34,
-        minWidth: 34,
-        maxWidth: 34,
-        sortable: false,
-        resizable: false,
-        suppressSizeToFit: true,
-        suppressMovable: true,
-        headerComponent: () => (
-          <input
-            type="checkbox"
-            checked={filteredTableData.length > 0 && filteredTableData.every((row) => selectedJobIds.has(row.groupId))}
-            onChange={(event) => {
-              const checked = event.target.checked;
-              const nextGroupIds = checked ? new Set(filteredTableData.map((row) => row.groupId)) : new Set<string>();
-              const nextEntryIds = checked
-                ? new Set(
-                    filteredTableData.flatMap((row) =>
-                      row.entries
-                        .map((entry) => (entry.id === undefined || entry.id === null ? null : String(entry.id)))
-                        .filter((id): id is string => Boolean(id))
-                    )
-                  )
-                : new Set<string>();
-              setSelectedJobIds(nextGroupIds);
-              setSelectedEntryIds(nextEntryIds);
-            }}
-          />
-        ),
-        cellRenderer: (params: any) => {
-          if (params.data?.kind === "child") {
-            const entryId = params.data.entry?.id;
-            if (entryId === undefined || entryId === null) return null;
-            const key = String(entryId);
-            return (
-              <input
-                type="checkbox"
-                checked={selectedEntryIds.has(key)}
-                onChange={(event) => handleChildRowSelect(String(params.data.groupId), key, event.target.checked)}
-                onClick={(event) => event.stopPropagation()}
-              />
-            );
-          }
+      ...(!isBilled
+        ? [
+            {
+              headerName: "",
+              field: "__select__",
+              width: 34,
+              minWidth: 34,
+              maxWidth: 34,
+              sortable: false,
+              resizable: false,
+              suppressSizeToFit: true,
+              suppressMovable: true,
+              headerComponent: () => (
+                <input
+                  type="checkbox"
+                  checked={filteredTableData.length > 0 && filteredTableData.every((row) => selectedJobIds.has(row.groupId))}
+                  onChange={(event) => {
+                    const checked = event.target.checked;
+                    const nextGroupIds = checked ? new Set(filteredTableData.map((row) => row.groupId)) : new Set<string>();
+                    const nextEntryIds = checked
+                      ? new Set(
+                          filteredTableData.flatMap((row) =>
+                            row.entries
+                              .map((entry) => (entry.id === undefined || entry.id === null ? null : String(entry.id)))
+                              .filter((id): id is string => Boolean(id))
+                          )
+                        )
+                      : new Set<string>();
+                    setSelectedJobIds(nextGroupIds);
+                    setSelectedEntryIds(nextEntryIds);
+                  }}
+                />
+              ),
+              cellRenderer: (params: any) => {
+                if (params.data?.kind === "child") {
+                  const entryId = params.data.entry?.id;
+                  if (entryId === undefined || entryId === null) return null;
+                  const key = String(entryId);
+                  return (
+                    <input
+                      type="checkbox"
+                      checked={selectedEntryIds.has(key)}
+                      onChange={(event) => handleChildRowSelect(String(params.data.groupId), key, event.target.checked)}
+                      onClick={(event) => event.stopPropagation()}
+                    />
+                  );
+                }
 
-          if (params.data?.kind !== "parent") return null;
-          const groupId = String(params.data.groupId);
-          return (
-            <input
-              type="checkbox"
-              checked={selectedJobIds.has(groupId)}
-              onChange={(event) => {
-                const selected = event.target.checked;
-                const row = params.data.tableRow as OperatorTableRow;
-                setSelectedEntryIds((prev) => {
-                  const next = new Set(prev);
-                  row.entries.forEach((entry) => {
-                    if (entry.id === undefined || entry.id === null) return;
-                    const key = String(entry.id);
-                    if (selected) next.add(key);
-                    else next.delete(key);
-                  });
-                  return next;
-                });
-                setSelectedJobIds((prev) => {
-                  const next = new Set(prev);
-                  if (selected) next.add(groupId);
-                  else next.delete(groupId);
-                  return next;
-                });
-              }}
-              onClick={(event) => event.stopPropagation()}
-            />
-          );
-        },
-      },
+                if (params.data?.kind !== "parent") return null;
+                const groupId = String(params.data.groupId);
+                return (
+                  <input
+                    type="checkbox"
+                    checked={selectedJobIds.has(groupId)}
+                    onChange={(event) => {
+                      const selected = event.target.checked;
+                      const row = params.data.tableRow as OperatorTableRow;
+                      setSelectedEntryIds((prev) => {
+                        const next = new Set(prev);
+                        row.entries.forEach((entry) => {
+                          if (entry.id === undefined || entry.id === null) return;
+                          const key = String(entry.id);
+                          if (selected) next.add(key);
+                          else next.delete(key);
+                        });
+                        return next;
+                      });
+                      setSelectedJobIds((prev) => {
+                        const next = new Set(prev);
+                        if (selected) next.add(groupId);
+                        else next.delete(groupId);
+                        return next;
+                      });
+                    }}
+                    onClick={(event) => event.stopPropagation()}
+                  />
+                );
+              },
+            },
+          ]
+        : []),
       ...columns.map((column) => {
         const baseWidth = getOperatorGridColumnWidth(column.key);
         return {
@@ -260,7 +266,7 @@ export const useOperatorJobGrid = ({
         };
       }),
     ],
-    [columns, filteredTableData, handleChildRowSelect, selectedEntryIds, selectedJobIds, setSelectedEntryIds, setSelectedJobIds]
+    [columns, filteredTableData, handleChildRowSelect, isBilled, selectedEntryIds, selectedJobIds, setSelectedEntryIds, setSelectedJobIds]
   );
 
   return {

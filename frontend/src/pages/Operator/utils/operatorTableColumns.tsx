@@ -37,6 +37,25 @@ const getParentJoinedValues = (
   );
   return values.length > 0 ? values.join(", ") : fallback;
 };
+
+const getLoggedOperatorNames = (entry: any): string[] =>
+  Array.from(
+    new Set(
+      (Array.isArray(entry.operatorCaptures) ? entry.operatorCaptures : [])
+        .map((capture: any) => String(capture?.opsName || "").trim().toUpperCase())
+        .filter(Boolean)
+    )
+  );
+
+const getLoggedMachineNumbers = (entry: any): string[] =>
+  Array.from(
+    new Set(
+      (Array.isArray(entry.operatorCaptures) ? entry.operatorCaptures : [])
+        .map((capture: any) => formatMachineLabel(String(capture?.machineNumber || "").trim()))
+        .filter(Boolean)
+    )
+  );
+
 export const buildBaseOperatorColumns = (props: {
   toggleGroup: (groupId: string) => void;
   operatorNameLookup: Map<string, string>;
@@ -119,8 +138,15 @@ export const buildBaseOperatorColumns = (props: {
 
       // For parent rows, display aggregated operator names with animation (MarqueeCopyText)
       if (isGroupedParent) {
-        const aggregated = getParentJoinedValues(row, (entry) => entry.assignedTo || "", "Unassign");
+        const aggregated = props.isBilled
+          ? getParentJoinedValues(row, (entry) => getLoggedOperatorNames(entry).join(", "), "-")
+          : getParentJoinedValues(row, (entry) => entry.assignedTo || "", "Unassign");
         return <MarqueeCopyText text={aggregated} className="operator-assigned-text" />;
+      }
+
+      if (props.isBilled) {
+        const loggedOperators = getLoggedOperatorNames(row.entry);
+        return <div className="assigned-operators-readonly">{loggedOperators.join(", ") || "-"}</div>;
       }
 
       return shouldAllowTableAssignment ? (
@@ -165,8 +191,15 @@ export const buildBaseOperatorColumns = (props: {
       const machineNumber = isGroupedParent ? "" : getOperatorMachineNumber(row.entry);
       
       if (isGroupedParent) {
-        const aggregated = getParentJoinedValues(row, (entry) => formatMachineLabel(getOperatorMachineNumber(entry)), "Unassign");
+        const aggregated = props.isBilled
+          ? getParentJoinedValues(row, (entry) => getLoggedMachineNumbers(entry).join(", "), "-")
+          : getParentJoinedValues(row, (entry) => formatMachineLabel(getOperatorMachineNumber(entry)), "Unassign");
         return <MarqueeCopyText text={aggregated} className="operator-machine-text" />;
+      }
+
+      if (props.isBilled) {
+        const loggedMachines = getLoggedMachineNumbers(row.entry);
+        return <div className="assigned-operators-readonly">{loggedMachines.join(", ") || "-"}</div>;
       }
 
       if (props.canAssign) {
@@ -205,6 +238,10 @@ export const buildBaseOperatorColumns = (props: {
     className: "status-cell",
     headerClassName: "status-header",
     render: (row) => {
+      if (props.isBilled) {
+        return <span className="qa-mini saved">LOGGED</span>;
+      }
+
       const activeRunsByJobId = props.getActiveRuns();
       const counts = row.kind === "parent"
         ? getGroupQaProgressCounts(row.tableRow.entries, activeRunsByJobId)
@@ -228,8 +265,8 @@ export const buildBaseOperatorColumns = (props: {
       return (
         <ActionButtons
           onView={() => (isChild ? props.handleViewEntry(row.entry) : props.handleViewJob(row.tableRow))}
-          onImage={isChild ? () => props.handleImageInput(row.groupId, row.entry.id) : !row.hasChildren ? () => props.handleSubmit(row.groupId) : undefined}
-          onSubmit={props.canOperateInputs ? () => props.handleOpenQaModal(targetEntries) : undefined}
+          onImage={props.isBilled ? undefined : isChild ? () => props.handleImageInput(row.groupId, row.entry.id) : !row.hasChildren ? () => props.handleSubmit(row.groupId) : undefined}
+          onSubmit={!props.isBilled && props.canOperateInputs ? () => props.handleOpenQaModal(targetEntries) : undefined}
           viewLabel={`View ${row.entry.customer || "entry"}`}
           imageLabel={`Open ${row.entry.customer || "entry"}`}
           submitLabel="Send to QC"

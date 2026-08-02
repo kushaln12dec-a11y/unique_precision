@@ -194,6 +194,7 @@ const OperatorJobListPage = ({
     setSelectedJobIds,
     setSelectedEntryIds,
     handleChildRowSelect,
+    isBilled,
   });
   qaTableDataRef.current = filteredGridTableData;
 
@@ -263,6 +264,7 @@ const OperatorJobListPage = ({
           activeOperatorRuns={activeOperatorRuns}
           handleOpenRunningJob={handleImageInput}
           completionAlerts={completionAlerts}
+          isBilled={isBilled}
         />
 
         <OperatorPageOverlays

@@ -58,6 +58,8 @@ type OperatorFiltersProps = {
   }>;
   onOpenRunningJob: (groupId: string, cutId?: string) => void;
   onClearAllFilters: () => void;
+  hideStageLegend?: boolean;
+  hideRunningInfo?: boolean;
 };
 
 export const OperatorFilters: React.FC<OperatorFiltersProps> = ({
@@ -89,6 +91,8 @@ export const OperatorFilters: React.FC<OperatorFiltersProps> = ({
   runningMachineAlerts,
   onOpenRunningJob,
   onClearAllFilters,
+  hideStageLegend = false,
+  hideRunningInfo = false,
 }) => {
   const [showRunningJobsModal, setShowRunningJobsModal] = React.useState(false);
 
@@ -167,14 +171,16 @@ export const OperatorFilters: React.FC<OperatorFiltersProps> = ({
               />
             </div>
           </div>
-          <div className="operator-stage-legend-inline">
-            <span className="operator-stage-legend-title">Stage Legend:</span>
-            <span className="operator-stage-chip empty">NOT STARTED</span>
-            <span className="operator-stage-chip running">RUNNING</span>
-            <span className="operator-stage-chip ready">HOLD</span>
-            <span className="operator-stage-chip saved">LOGGED</span>
-            <span className="operator-stage-chip sent">QC</span>
-          </div>
+          {!hideStageLegend && (
+            <div className="operator-stage-legend-inline">
+              <span className="operator-stage-legend-title">Stage Legend:</span>
+              <span className="operator-stage-chip empty">NOT STARTED</span>
+              <span className="operator-stage-chip running">RUNNING</span>
+              <span className="operator-stage-chip ready">HOLD</span>
+              <span className="operator-stage-chip saved">LOGGED</span>
+              <span className="operator-stage-chip sent">QC</span>
+            </div>
+          )}
         </div>
 
         <div className="panel-header-actions">
@@ -188,20 +194,22 @@ export const OperatorFilters: React.FC<OperatorFiltersProps> = ({
             </div>
           )}
           <div className="operator-actions-row">
-            <button
-              type="button"
-              className="btn-download-csv operator-running-info-btn"
-              onClick={() => setShowRunningJobsModal(true)}
-              disabled={runningMachineAlerts.length === 0}
-              title={runningMachineAlerts.length > 0 ? "Show running machine info" : "No running machines"}
-            >
-              <span className="operator-running-info-icon-wrap" aria-hidden="true">
-                <PrecisionManufacturingRoundedIcon sx={{ fontSize: "1rem" }} />
-                {runningMachineAlerts.length > 0 ? (
-                  <RadioButtonCheckedRoundedIcon className="operator-running-info-icon-pulse" sx={{ fontSize: "0.46rem" }} />
-                ) : null}
-              </span>
-            </button>
+            {!hideRunningInfo && (
+              <button
+                type="button"
+                className="btn-download-csv operator-running-info-btn"
+                onClick={() => setShowRunningJobsModal(true)}
+                disabled={runningMachineAlerts.length === 0}
+                title={runningMachineAlerts.length > 0 ? "Show running machine info" : "No running machines"}
+              >
+                <span className="operator-running-info-icon-wrap" aria-hidden="true">
+                  <PrecisionManufacturingRoundedIcon sx={{ fontSize: "1rem" }} />
+                  {runningMachineAlerts.length > 0 ? (
+                    <RadioButtonCheckedRoundedIcon className="operator-running-info-icon-pulse" sx={{ fontSize: "0.46rem" }} />
+                  ) : null}
+                </span>
+              </button>
+            )}
             <button className="btn-download-csv" onClick={onDownloadCSV} title="Download CSV">
               <DownloadIcon sx={{ fontSize: "1rem" }} />
               CSV

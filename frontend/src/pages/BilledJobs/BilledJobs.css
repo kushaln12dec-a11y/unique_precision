@@ -78,3 +78,80 @@
 .billed-jobs-view .standalone-page-wrapper h3 {
   display: none !important;
 }
+
+.billed-jobs-view .billed-programmer-wrapper .programmer-panel .panel-header {
+  display: grid !important;
+  grid-template-columns: minmax(240px, 340px) 210px max-content 1fr;
+  align-items: end !important;
+  gap: 0.75rem !important;
+  margin-bottom: 0.75rem;
+}
+
+.billed-jobs-view .billed-programmer-wrapper .programmer-panel .inline-filters {
+  display: contents !important;
+}
+
+.billed-jobs-view .billed-programmer-wrapper .programmer-panel .inline-filters .filter-group {
+  min-width: 0 !important;
+  width: 100%;
+}
+
+.billed-jobs-view .billed-programmer-wrapper .programmer-panel .inline-filters .filter-group:nth-child(1) {
+  grid-column: 1;
+}
+
+.billed-jobs-view .billed-programmer-wrapper .programmer-panel .inline-filters .filter-group:nth-child(2) {
+  grid-column: 2;
+}
+
+.billed-jobs-view .billed-programmer-wrapper .programmer-panel .inline-filters .filter-group:nth-child(3) {
+  grid-column: 3;
+  width: auto;
+}
+
+.billed-jobs-view .billed-programmer-wrapper .programmer-panel .inline-filters .filter-input,
+.billed-jobs-view .billed-programmer-wrapper .programmer-panel .inline-filters .filter-select {
+  width: 100% !important;
+}
+
+.billed-jobs-view .billed-programmer-wrapper .programmer-panel .inline-filters .critical-filter-label {
+  white-space: nowrap !important;
+}
+
+.billed-jobs-view .billed-programmer-wrapper .programmer-panel .panel-header-actions {
+  grid-column: 4;
+  width: auto !important;
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  justify-content: flex-end !important;
+  align-items: flex-end !important;
+}
+
+.billed-jobs-view .billed-programmer-wrapper .programmer-panel .panel-header-actions > * {
+  flex: 0 0 auto !important;
+}
+
+@media (max-width: 1100px) {
+  .billed-jobs-view .billed-programmer-wrapper .programmer-panel .panel-header {
+    grid-template-columns: minmax(220px, 1fr) 210px max-content;
+  }
+
+  .billed-jobs-view .billed-programmer-wrapper .programmer-panel .panel-header-actions {
+    grid-column: 1 / -1;
+    justify-content: flex-end !important;
+  }
+}
+
+@media (max-width: 760px) {
+  .billed-jobs-view .billed-programmer-wrapper .programmer-panel .panel-header {
+    grid-template-columns: 1fr;
+  }
+
+  .billed-jobs-view .billed-programmer-wrapper .programmer-panel .inline-filters .filter-group:nth-child(1),
+  .billed-jobs-view .billed-programmer-wrapper .programmer-panel .inline-filters .filter-group:nth-child(2),
+  .billed-jobs-view .billed-programmer-wrapper .programmer-panel .inline-filters .filter-group:nth-child(3),
+  .billed-jobs-view .billed-programmer-wrapper .programmer-panel .panel-header-actions {
+    grid-column: 1;
+  }
+}

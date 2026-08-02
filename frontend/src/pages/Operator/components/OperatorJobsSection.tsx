@@ -50,6 +50,7 @@ type Props = {
   activeOperatorRuns: EmployeeLog[];
   onOpenRunningJob: (groupId: string, cutId?: string) => void;
   completionAlerts: OperatorCompletionAlert[];
+  isBilled?: boolean;
 };
 
 export const OperatorJobsSection: React.FC<Props> = ({
@@ -89,6 +90,7 @@ export const OperatorJobsSection: React.FC<Props> = ({
   activeOperatorRuns,
   onOpenRunningJob,
   completionAlerts,
+  isBilled = false,
 }) => {
   const alertToastHistoryRef = React.useRef<Map<string, number>>(new Map());
 
@@ -206,7 +208,7 @@ export const OperatorJobsSection: React.FC<Props> = ({
         onCreatedByFilterChange={setCreatedByFilter}
         onAssignedToFilterChange={setAssignedToFilter}
         canUseTaskSwitchTimer={canUseTaskSwitchTimer && canOperateInputs}
-        canOperateInputs={canOperateInputs}
+        canOperateInputs={!isBilled && canOperateInputs}
         onSaveTaskSwitch={handleSaveTaskSwitch}
         onTimerRunningChange={setIsTaskTimerRunning}
         onShowToast={(message, variant = "info") => {
@@ -214,11 +216,13 @@ export const OperatorJobsSection: React.FC<Props> = ({
           setTimeout(() => setToast((prev) => ({ ...prev, visible: false })), 2500);
         }}
         onDownloadCSV={handleDownloadCSV}
-        onSendSelectedRowsToQa={canOperateInputs ? handleSendSelectedRowsToQa : () => undefined}
+        onSendSelectedRowsToQa={!isBilled && canOperateInputs ? handleSendSelectedRowsToQa : () => undefined}
         selectedRowsCount={selectedEntryIds.size}
-        runningMachineAlerts={runningMachineAlerts}
+        runningMachineAlerts={isBilled ? [] : runningMachineAlerts}
         onOpenRunningJob={onOpenRunningJob}
         onClearAllFilters={handleClearFilters}
+        hideStageLegend={isBilled}
+        hideRunningInfo={isBilled}
       />
 
       {loadingJobs && operatorGridJobs.length === 0 ? (

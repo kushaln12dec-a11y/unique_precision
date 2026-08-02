@@ -60,6 +60,7 @@ type OperatorPageContentProps = {
   activeOperatorRuns: EmployeeLog[];
   handleOpenRunningJob: (groupId: string, cutId?: string) => void;
   completionAlerts: OperatorCompletionAlert[];
+  isBilled?: boolean;
 };
 
 const OperatorPageContent = (props: OperatorPageContentProps) => {
@@ -116,6 +117,7 @@ const OperatorPageContent = (props: OperatorPageContentProps) => {
     activeOperatorRuns,
     handleOpenRunningJob,
     completionAlerts,
+    isBilled = false,
   } = props;
 
   return (
@@ -159,6 +161,7 @@ const OperatorPageContent = (props: OperatorPageContentProps) => {
           activeOperatorRuns={activeOperatorRuns}
           onOpenRunningJob={handleOpenRunningJob}
           completionAlerts={completionAlerts}
+          isBilled={isBilled}
         />
       ) : activeTab === "logged_jobs" ? (
         <OperatorJobsSection
@@ -206,6 +209,7 @@ const OperatorPageContent = (props: OperatorPageContentProps) => {
           activeOperatorRuns={activeOperatorRuns}
           onOpenRunningJob={handleOpenRunningJob}
           completionAlerts={[]} // No alerts for logged jobs
+          isBilled={isBilled}
         />
       ) : (
         <OperatorLogsSection
