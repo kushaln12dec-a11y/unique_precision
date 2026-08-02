@@ -240,7 +240,7 @@ const ProgrammerDashboardPage = ({ forceTab, hideLayout, mode }: { forceTab?: "j
   const shouldShowNewJobButton = mode !== "billed";
 
   return (
-    <div className={hideLayout ? "standalone-page-wrapper" : "programmer-container"}>
+    <div className={hideLayout ? `standalone-page-wrapper ${mode === "billed" ? "billed-programmer-wrapper" : ""}`.trim() : "programmer-container"}>
       {!hideLayout && <Sidebar currentPath={currentPathname} onNavigate={handleProgrammerNavigate} />}
       <div className={`${hideLayout ? "" : "programmer-content"} ${isProgrammerFormRoute ? "programmer-content-scrollable" : ""}`}>
         {!hideLayout && <Header title="Programmer" onNavigate={handleProgrammerNavigate} />}

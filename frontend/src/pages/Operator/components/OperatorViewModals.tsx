@@ -34,7 +34,6 @@ const buildOperatorBreakdown = (qtyData: QuantityInputData, timestampMs: number)
     addDuration(entry?.name, Number(entry?.durationSeconds || 0));
   });
 
-  // Use the preserved current segment worked seconds if available, otherwise calculate
   const currentSegmentSeconds = qtyData.currentSegmentWorkedSeconds !== undefined
     ? Math.max(0, qtyData.currentSegmentWorkedSeconds)
     : Math.max(0, getCurrentSegmentWorkedSeconds(qtyData, timestampMs));
@@ -165,38 +164,33 @@ const OperatorViewModals = ({
         isOpen={Boolean(pendingEndTimeCapture)}
         onClose={handleCancelEndTimeCapture}
         title="Confirm End Time"
-        size="small"
+        size="medium"
       >
         {pendingEndTimeCapture && pendingEndTimeQty ? (
           <div className="operator-endtime-confirm">
+            <p className="endtime-confirm-notice">
+              Please review the final work session details before locking the end time for this quantity.
+            </p>
+
             <div className="operator-endtime-summary-card">
-              <div className="summary-main-row">
-                <div className="summary-item">
-                  <span className="summary-label">JOB REF</span>
-                  <span className="summary-value highlight">{String(pendingEndTimeJob?.refNumber || "-")}</span>
-                </div>
-                <div className="summary-item">
-                  <span className="summary-label">SETTING</span>
-                  <span className="summary-value">{pendingEndTimeSetting}</span>
-                </div>
-                <div className="summary-item">
-                  <span className="summary-label">QTY</span>
-                  <span className="summary-value">{String(pendingEndTimeCapture.quantityIndex + 1)}</span>
-                </div>
+              <div className="summary-card-header">
+                <span className="summary-badge-job">Job Ref: {String(pendingEndTimeJob?.refNumber || "-")}</span>
+                <span className="summary-badge-setting">Setting #{pendingEndTimeSetting}</span>
+                <span className="summary-badge-qty">Qty #{String(pendingEndTimeCapture.quantityIndex + 1)}</span>
               </div>
 
               <div className="summary-details-grid">
-                <div className="summary-item">
+                <div className="summary-detail-box highlight-box">
                   <span className="summary-label">MACHINE HOURS</span>
-                  <span className="summary-value">{machineHoursLabel}</span>
+                  <span className="summary-value highlight">{machineHoursLabel}</span>
                 </div>
-                <div className="summary-item">
-                  <span className="summary-label">TOTAL DURATION</span>
+                <div className="summary-detail-box">
+                  <span className="summary-label">TOTAL WORKED DURATION</span>
                   <span className="summary-value">{formatWorkedDuration(pendingEndTimeWorkedSeconds)}</span>
                 </div>
                 {pendingEndTimeIdleDuration && (
-                  <div className="summary-item">
-                    <span className="summary-label">IDLE TIME</span>
+                  <div className="summary-detail-box idle-box">
+                    <span className="summary-label">IDLE TIME DURATION</span>
                     <span className="summary-value">{pendingEndTimeIdleDuration}</span>
                   </div>
                 )}
@@ -205,11 +199,11 @@ const OperatorViewModals = ({
 
             {pendingEndTimeBreakdown.length > 0 && (
               <div className="operator-breakdown-section">
-                <h4 className="breakdown-title">Operator Breakdown</h4>
+                <h4 className="breakdown-title">Assigned Operator Breakdown</h4>
                 <div className="breakdown-list">
                   {pendingEndTimeBreakdown.map((entry) => (
                     <div key={entry.name} className="breakdown-item">
-                      <span className="operator-name">{entry.name}</span>
+                      <span className="operator-name">👤 {entry.name}</span>
                       <span className="operator-duration">{formatWorkedDuration(entry.durationSeconds)}</span>
                     </div>
                   ))}
@@ -232,7 +226,7 @@ const OperatorViewModals = ({
                   );
                 }}
               >
-                Confirm & Lock
+                Confirm & Lock End Time
               </button>
             </div>
           </div>

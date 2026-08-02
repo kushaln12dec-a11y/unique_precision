@@ -47,7 +47,7 @@ const BilledJobsPage = () => {
               <OperatorJobListPage forceTab="logged_jobs" hideLayout={true} isBilled={true} />
             )}
             {activeTab === "QC" && (
-              <QualityControlPage forceTab="LOGGED" hideLayout={true} />
+              <QualityControlPage forceTab="LOGGED" hideLayout={true} isBilled={true} />
             )}
           </div>
         </div>

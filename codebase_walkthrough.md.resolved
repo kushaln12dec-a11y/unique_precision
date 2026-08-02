@@ -1,0 +1,419 @@
+# Unique Precision — Full Codebase Walkthrough
+
+> **Manufacturing ERP** for WEDM/SEDM precision machining — job tracking, operator time logging, QC inspection, and dashboard analytics.
+
+---
+
+## 🏗️ High-Level Architecture
+
+```mermaid
+graph TD
+    subgraph Frontend["Frontend (Vite + React 19)"]
+        A[App Router] --> B[Programmer Module]
+        A --> C[Operator Module]
+        A --> D[QC Module]
+        A --> E[Dashboard Module]
+        A --> F[Admin Console]
+        A --> G[User Management]
+        A --> H[Billed Jobs]
+        A --> I[Employee Logs]
+    end
+
+    subgraph Backend["Backend (Express 5 + TypeScript)"]
+        J[API Routes] --> K[Services / Business Logic]
+        K --> L[Prisma ORM]
+        J --> M[Auth Middleware - JWT + RBAC]
+        J --> N[Validators - Zod]
+    end
+
+    subgraph Infra["Infrastructure"]
+        L --> O[(PostgreSQL - Neon)]
+        P[Socket.IO] -.->|Real-time| A
+        Q[Redis - Upstash] -.->|Cache| J
+        R[Cloudflare R2] -.->|File Storage| J
+    end
+
+    Frontend -->|REST API| Backend
+    Backend -->|WebSocket| Frontend
+```
+
+| Layer | Tech | Purpose |
+|-------|------|---------|
+| **Frontend** | React 19, Vite 7, React Router 7, Redux Toolkit, AG Grid, Recharts, MUI, Socket.IO Client | SPA with role-based dashboards |
+| **Backend** | Express 5, TypeScript, Prisma 7, Zod 4, Socket.IO, Puppeteer | REST API + WebSocket server |
+| **Database** | PostgreSQL (Neon serverless) | Primary data store |
+| **Cache** | Redis (Upstash) with in-memory fallback | Dashboard metrics & master config caching |
+| **Storage** | Cloudflare R2 (S3-compatible) | Job images, cut images, last images |
+| **Auth** | JWT + bcrypt, role-based middleware | Login, token verification, RBAC |
+
+---
+
+## 📁 Project Structure
+
+```
+code/
+├── backend/
+│   ├── prisma/
+│   │   ├── schema.prisma       # 13 models, ~300 lines
+│   │   ├── seed.ts             # DB seeding script
+│   │   └── migrations/
+│   ├── server/
+│   │   ├── src/
+│   │   │   ├── index.ts        # Server entrypoint (HTTP + Socket.IO)
+│   │   │   ├── app.ts          # Express app setup (routes, middleware, static)
+│   │   │   ├── config/         # env, database, initDB, R2 storage
+│   │   │   ├── controllers/    # auth-controller, job-controller
+│   │   │   ├── routes/         # 12 route files (~180KB total)
+│   │   │   ├── services/       # auth, job, job-calculation, job-helpers
+│   │   │   ├── middleware/     # auth, RBAC, error handler, rate limiter
+│   │   │   ├── lib/            # prisma client, socket.io, redis, httpError
+│   │   │   ├── utils/          # dateTime, bigint, prismaMappers, job-utils
+│   │   │   ├── validators/     # Zod schemas
+│   │   │   └── scripts/        # Admin seeding, user role updates, data imports
+│   │   └── templates/          # HTML templates (inspection reports)
+│   └── package.json
+│
+├── frontend/
+│   ├── src/
+│   │   ├── App.tsx             # Router with 14 routes, lazy loading, ProtectedRoute
+│   │   ├── main.tsx            # React DOM entry
+│   │   ├── components/         # 37 shared components (DataTable, Header, Sidebar, Modals, etc.)
+│   │   ├── pages/
+│   │   │   ├── Programmer/     # 83 files — Job creation, SEDM calculations
+│   │   │   ├── Operator/       # 106 files — Production logging, task timer
+│   │   │   ├── QC/             # 15 files — Quality control decisions
+│   │   │   ├── Dashboard/      # 26 files — Analytics per role
+│   │   │   ├── AdminConsole/   # 5 files — Master config, system settings
+│   │   │   ├── User Management/# 14 files — CRUD users, role management
+│   │   │   ├── BilledJobs/     # 2 files — Billing overview
+│   │   │   ├── EmployeeLogs/   # 2 files — Employee activity logs
+│   │   │   └── Login page/     # 2 files
+│   │   ├── services/           # 13 API service files
+│   │   ├── store/              # Redux Toolkit (dashboard + filters slices)
+│   │   ├── types/              # 10 TypeScript type files
+│   │   └── utils/              # 13 utility modules
+│   └── package.json
+│
+├── PROJECT_FLOW.md             # Architecture documentation
+├── CALCULATION_FIXES_SUMMARY.md
+├── ENV_VARIABLES.md
+└── package.json                # Root — monorepo build & start scripts
+```
+
+---
+
+## 📊 Database Schema (13 Models)
+
+```mermaid
+erDiagram
+    User ||--o{ Job : "creates"
+    User ||--o{ Job : "assigned"
+    User ||--o{ EmployeeLog : "logs"
+    Job ||--o{ JobOperatorCapture : "captures"
+    Job ||--o{ JobQuantityQaState : "qaStates"
+    Job ||--o{ EmployeeLog : "logs"
+    MasterConfig ||--o{ MasterConfigCustomer : "customers"
+    MasterConfig ||--o{ MasterConfigMaterial : "materials"
+    MasterConfig ||--o{ MasterConfigPassOption : "passOptions"
+    MasterConfig ||--o{ MasterConfigSedmElectrodeOption : "electrodes"
+    MasterConfig ||--o{ MasterConfigMachineOption : "machines"
+    MasterConfig ||--o{ MasterConfigSedmThOption : "thOptions"
+
+    User {
+        uuid id PK
+        string email UK
+        string role
+        string empId UK
+    }
+
+    Job {
+        uuid id PK
+        bigint groupId
+        string customer
+        decimal rate
+        decimal cut
+        decimal thickness
+        int qty
+        string sedm
+        decimal totalHrs
+        decimal totalAmount
+        string qcDecision
+        string refNumber
+    }
+
+    EmployeeLog {
+        uuid id PK
+        string role
+        string activityType
+        string status
+        datetime startedAt
+        datetime endedAt
+        int durationSeconds
+        json metadata
+    }
+
+    JobOperatorCapture {
+        uuid id PK
+        uuid jobId FK
+        string captureMode
+        int fromQty
+        int toQty
+    }
+
+    JobQuantityQaState {
+        uuid jobId FK
+        int quantityNumber
+        string status
+    }
+```
+
+### Key Models
+
+| Model | Purpose |
+|-------|---------|
+| **User** | All employees — roles: `ADMIN`, `PROGRAMMER`, `OPERATOR`, `QC`, `ACCOUNTANT` |
+| **Job** | Central entity — each row = one "setting/cut" of a machining job, grouped by `groupId` |
+| **JobOperatorCapture** | Operator's per-quantity time/machine data snapshots |
+| **JobQuantityQaState** | Per-quantity QC status (PENDING/APPROVED/REJECTED) |
+| **EmployeeLog** | Time-tracking entries for all roles (start/complete/reject) |
+| **MasterConfig** (+children) | System-wide configuration — customers, rates, materials, SEDM settings |
+| **IdleTimeConfig** | Configurable idle time reasons & durations |
+| **Counter** | Auto-incrementing reference number generator |
+| **SystemErrorLog** | Server-side error tracking |
+
+---
+
+## 🔌 Backend API Routes
+
+| Route File | Prefix | Lines | Key Responsibilities |
+|------------|--------|-------|---------------------|
+| [auth-routes.ts](file:///c:/Users/N%20KUNAL/Desktop/UNIQUE%20PRECISION/code/backend/server/src/routes/auth-routes.ts) | `/api/auth` | ~10 | Login/register delegation |
+| [job-routes.ts](file:///c:/Users/N%20KUNAL/Desktop/UNIQUE%20PRECISION/code/backend/server/src/routes/job-routes.ts) | `/api/jobs` | ~50 | CRUD jobs (Programmer-facing) |
+| [operator-routes.ts](file:///c:/Users/N%20KUNAL/Desktop/UNIQUE%20PRECISION/code/backend/server/src/routes/operator-routes.ts) | `/api/operator` | 910 | Operator job list, updates, captures, QA send, quantity management |
+| [employee-logs-routes.ts](file:///c:/Users/N%20KUNAL/Desktop/UNIQUE%20PRECISION/code/backend/server/src/routes/employee-logs-routes.ts) | `/api/employee-logs` | 1251 | Start/complete/reject logs for all roles, machine conflict validation |
+| [dashboard-routes.ts](file:///c:/Users/N%20KUNAL/Desktop/UNIQUE%20PRECISION/code/backend/server/src/routes/dashboard-routes.ts) | `/api/dashboard` | 949 | Role-specific analytics with Redis caching |
+| [master-config-routes.ts](file:///c:/Users/N%20KUNAL/Desktop/UNIQUE%20PRECISION/code/backend/server/src/routes/master-config-routes.ts) | `/api/master-config` | 391 | Global config CRUD (admin-only write) |
+| [user-routes.ts](file:///c:/Users/N%20KUNAL/Desktop/UNIQUE%20PRECISION/code/backend/server/src/routes/user-routes.ts) | `/api/users` | ~300 | User CRUD, role management |
+| [inspection-reports-routes.ts](file:///c:/Users/N%20KUNAL/Desktop/UNIQUE%20PRECISION/code/backend/server/src/routes/inspection-reports-routes.ts) | `/api/inspection-reports` | ~170 | Puppeteer-based PDF report generation |
+| [idle-time-config-routes.ts](file:///c:/Users/N%20KUNAL/Desktop/UNIQUE%20PRECISION/code/backend/server/src/routes/idle-time-config-routes.ts) | `/api/idle-time-config` | ~100 | Idle time type configuration |
+| [upload-routes.ts](file:///c:/Users/N%20KUNAL/Desktop/UNIQUE%20PRECISION/code/backend/server/src/routes/upload-routes.ts) | `/api/upload` | ~40 | R2/S3 file uploads (Multer) |
+| [operatorShared.ts](file:///c:/Users/N%20KUNAL/Desktop/UNIQUE%20PRECISION/code/backend/server/src/routes/operatorShared.ts) | — | 630 | Shared operator logic (revenue rebalancing, capture sync) |
+| [debug-routes.ts](file:///c:/Users/N%20KUNAL/Desktop/UNIQUE%20PRECISION/code/backend/server/src/routes/debug-routes.ts) | `/api/debug` | ~70 | Debug/diagnostic endpoints |
+
+### Middleware Stack
+- **Authentication**: JWT verification → `req.user` injection
+- **RBAC**: Role-based access (`adminMiddleware`, [canViewOperatorScreen](file:///c:/Users/N%20KUNAL/Desktop/UNIQUE%20PRECISION/code/backend/server/src/routes/operator-routes.ts#27-29), etc.)
+- **Rate Limiting**: Auth endpoints (stricter) + general API
+- **Error Handling**: Centralized error middleware + JSON parse error handler
+- **Security**: Helmet, CORS, compression
+- **Logging**: Morgan (dev mode)
+
+---
+
+## 🖥️ Frontend Pages & Modules
+
+### Route Map
+
+| Path | Page | Role Access |
+|------|------|-------------|
+| `/login` | Login | Public |
+| `/dashboard` | SharedDashboard (role-adaptive) | All authenticated |
+| `/operator-dashboard` | OperatorDashboard | Operator |
+| `/programmer/*` | ProgrammerDashboard | Programmer, Admin |
+| `/operator` | OperatorJobList | Operator, Admin, Programmer |
+| `/operator/viewpage` | OperatorJobDetail | Operator, Admin, Programmer |
+| `/qc` | QualityControlPage | QC, Admin |
+| `/qc/inspection-report` | InspectionReportPage | QC, Admin |
+| `/inventory` | InventoryPage | Admin |
+| `/users` | UserManagement | Admin |
+| `/jobLogs` | EmployeeLogs | Admin |
+| `/billed-jobs` | BilledJobsPage | Admin, Accountant |
+| `/admin-console` | AdminConsole | Admin |
+
+### Module Breakdown
+
+#### 📐 Programmer Module (83 files)
+The largest module by file count. Handles job creation with complex WEDM/SEDM calculations.
+
+- **Pages**: `ProgrammerDashboardPage` (13.7KB), `ProgrammerJobForm` (6.5KB)
+- **Components** (38): Cut section, child cuts table, SEDM modal, customer/material/pass autocompletes, image upload, job details modal, filters
+- **Hooks** (13): `useJobHandlers`, `useProgrammerPageController`, `useProgrammerState`, `useProgrammerLogs`, `useProgrammerGrid`, form state/validation
+- **Utils** (13): SEDM calculations, thickness rates, priority sorting, CSV export, group sorting, validation
+- **Styles**: 12 partitioned CSS files (~77KB total)
+
+#### ⚙️ Operator Module (106 files)
+The **most complex** module. Production floor time-tracking, machine hours, idle time, task timer, and QA pipeline.
+
+- **Pages**: `OperatorJobListPage` (12.6KB), `OperatorJobDetailPage` (19.3KB)
+- **Components** (38): Task timer, quantity cards, input sections, pause reason, idle history, send-to-QA modal, bulk assignment, multi-select operators, filters
+- **Hooks** (21): `useOperatorActions`, `useOperatorRunActions`, `useOperatorPersistenceActions`, `useOperatorViewData` (16.9KB!), `useOperatorInputs`, assignment sync, logs, filters
+- **Utils** (24): Machine hours calc, pause state, validation, capture payloads, QA progress, table columns/helpers, CSV export
+- **Styles**: 15 partitioned CSS files (~120KB total)
+
+#### ✅ QC Module (15 files)
+Quality control — inspecting quantities, approve/reject decisions, inspection report generation.
+
+- **Pages**: `QualityControlPage` (13.8KB), `InspectionReportPage` (15.3KB)
+- **Components** (6): QC-specific UI elements
+- **Utils**: QC columns, QC utils, inspection report utils
+
+#### 📊 Dashboard Module (26 files)
+Role-adaptive analytics dashboard.
+
+- **Views**: Admin, Programmer, Operator, QC dashboards — each with role-specific metrics
+- **Components** (9): MetricsCard, RevenueChart, ActivityFeed, JobTimeline, DashboardFilters, RoleViewSwitcher, PerformanceCard, TopPerformers
+- **Hooks** (5): `useDashboardData` + per-role metric hooks
+- **Data Source**: Redis-cached aggregations from the backend
+
+#### 🛠️ Admin Console (5 files)
+Master configuration management — customers with per-customer SEDM rates, materials, pass options, machine options, SEDM electrode/thickness options, global calculation parameters.
+
+#### 👥 User Management (14 files)
+User CRUD with role assignment, employee ID management, phone normalization.
+
+---
+
+## 🔄 Key Data Flows
+
+### 1. Job Creation (Programmer → DB)
+```
+ProgrammerJobForm → useJobHandlers → programmerUtils (calc) 
+    → jobApi.createJobs → POST /api/jobs 
+    → job.validator (Zod) → job-service.createJobs 
+    → prisma.$transaction → Counter (refNumber) + Job rows
+    → emitJobsUpdated (Socket.IO) → All clients refresh
+```
+
+### 2. Operator Time Logging
+```
+OperatorJobDetail → useOperatorRunActions → employeeLogsApi 
+    → POST /api/employee-logs/operator/start
+    → Machine conflict check → Active log validation
+    → EmployeeLog.create (status: "ACTIVE")
+    → ... work happens ...
+    → POST /api/employee-logs/operator/complete
+    → Duration calc → Revenue rebalancing → Capture sync
+    → emitJobsUpdated → Dashboard cache invalidation
+```
+
+### 3. Revenue Rebalancing (operatorShared.ts)
+When operator logs are created/completed, the system automatically:
+1. Fetches all completed operator logs for the job
+2. Calculates each quantity's proportional revenue based on actual worked time vs. estimated time
+3. Updates `EmployeeLog.metadata` with per-quantity revenue allocations
+4. Syncs `JobOperatorCapture` records
+
+### 4. QC Flow
+```
+Operator sends qty to QA → JobQuantityQaState = "PENDING"
+QC views → Approve/Reject per quantity
+Reject → Notification to operator for rework
+All approved → Group qcDecision = "APPROVED"
+```
+
+### 5. Dashboard Metrics (Cached)
+```
+Client → GET /api/dashboard?view=programmer&preset=this_week
+    → cacheGet("dashboard:programmer:...") 
+    → If miss: Query Jobs + EmployeeLogs → Aggregate → cacheSet (60s TTL)
+    → Return grouped metrics, activity feed, revenue charts
+```
+
+---
+
+## 🧩 Shared Components (37 files)
+
+| Component | Purpose |
+|-----------|---------|
+| `Header` | Top nav bar with breadcrumbs, notifications, user menu |
+| `Sidebar` | Left nav with role-based menu items |
+| `DataTable` | Generic table with sorting, selection |
+| `LazyAgGrid` | AG Grid wrapper with custom styling (14KB CSS!) |
+| `FilterModal` + `FilterBadges` + `FilterButton` | Reusable filter system |
+| `Modal` | Base modal component |
+| `ConfirmDeleteModal` | Delete confirmation dialog |
+| `Pagination` | Page controls |
+| `Toast` | Notification toasts |
+| `ProtectedRoute` | Auth-guarded route wrapper |
+| `AppLoader` | Loading spinner |
+| `ImageZoomModal` | Image lightbox |
+| `RangeSlider` | Dual-range slider |
+| `JobRefLink` | Clickable job reference links |
+| `MarqueeCopyText` | Overflowing text with copy |
+| `CreatedByBadge` | User attribution badge |
+
+---
+
+## 🔐 Auth & Security
+
+- **JWT tokens** with role payload → stored client-side
+- **Role hierarchy**: ADMIN > PROGRAMMER > OPERATOR > QC > ACCOUNTANT
+- **Socket.IO auth**: Token verified on handshake (auth header, query param, or Bearer)
+- **Rate limiting**: Auth routes (stricter), general API
+- **Security headers**: Helmet
+- **Input validation**: Zod schemas on backend
+
+---
+
+## ⚡ Real-time (Socket.IO)
+
+- Server emits `jobs:updated` events with `{ groupId, jobId, updatedBy, source }`
+- Clients join `jobs` room on connect
+- Per-user rooms (`user:<id>`) and per-role rooms (`role:<ROLE>`) for targeted events
+- Sources: `operator:update`, `operator:capture`, `employee-log:complete`, etc.
+
+---
+
+## 📦 State Management
+
+### Redux Toolkit
+- **dashboardSlice**: Dashboard view state, date range, filters
+- **filtersSlice**: Cross-module filter state
+
+### Local State
+Each major module uses **custom hooks** extensively (21 hooks in Operator alone!) following a composition pattern:
+```
+Page Component
+  └── usePageController (orchestrates)
+        ├── useData (API fetching)
+        ├── useFilters (filter state)
+        ├── useActions (mutations)
+        ├── useInputs (form state)
+        └── useGrid (AG Grid config)
+```
+
+---
+
+## 📈 Codebase Statistics
+
+| Metric | Value |
+|--------|-------|
+| **Backend route files** | 12 files, ~4,600 lines |
+| **Frontend pages** | 12 modules, ~260 files |
+| **Shared components** | 37 files |
+| **API services** | 13 files |
+| **Custom hooks** | ~40+ hooks |
+| **Prisma models** | 13 models |
+| **CSS files** | ~40+ partitioned files |
+| **Heaviest backend file** | `employee-logs-routes.ts` (1,251 lines / 47KB) |
+| **Heaviest frontend hook** | `useOperatorViewData.ts` (16.9KB) |
+
+---
+
+## ⚠️ Notable Patterns & Observations
+
+1. **CSS Partitioning**: Large CSS files are split into numbered parts (e.g., `Operator.part01.css` through `Operator.part09.css`) — likely for maintainability at scale.
+
+2. **Fat Route Files**: Business logic lives largely in route handlers rather than a service layer — `employee-logs-routes.ts` (1,251 lines) and `dashboard-routes.ts` (949 lines) contain extensive inline logic.
+
+3. **Revenue Rebalancing**: The `rebalanceOperatorRevenueForJob` function (197 lines) is the most critical business logic — it proportionally redistributes job revenue across operator logs based on actual worked time.
+
+4. **Dual Cache Strategy**: Redis (Upstash) with automatic in-memory fallback — gracefully degrades if Redis is unavailable.
+
+5. **Machine Conflict Detection**: Backend validates that operators can't simultaneously use the same machine, but *can* run different quantities of the same job on different machines.
+
+6. **BigInt Handling**: PostgreSQL `BigInt` for `groupId` requires custom JSON serialization (`app.set("json replacer")`).
+
+7. **Puppeteer for Reports**: Inspection reports are rendered as HTML templates and converted to PDF via headless Chromium.
+
+8. **Monorepo-style**: Single repo with `frontend/` and `backend/` — root `package.json` builds both sequentially. Backend serves frontend static files in production.

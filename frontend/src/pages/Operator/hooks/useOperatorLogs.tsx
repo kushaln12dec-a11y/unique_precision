@@ -56,8 +56,8 @@ export const useOperatorLogs = ({
   const getLogQuantityNumbers = useCallback((log: EmployeeLog): number[] => {
     const fromMeta = Array.isArray((log.metadata as any)?.quantityNumbers)
       ? ((log.metadata as any).quantityNumbers as unknown[])
-          .map((qty) => Number(qty))
-          .filter((qty) => Number.isInteger(qty) && qty >= 1)
+        .map((qty) => Number(qty))
+        .filter((qty) => Number.isInteger(qty) && qty >= 1)
       : [];
     if (fromMeta.length > 0) return fromMeta;
 
@@ -252,7 +252,10 @@ export const useOperatorLogs = ({
           formatOperatorLogStatus(row.status),
         ];
       });
-      const csvContent = [headers.join(","), ...rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(","))].join("\n");
+      const csvContent = "\uFEFF" + [
+        headers.map((h) => `"${String(h).replace(/"/g, '""')}"`).join(","),
+        ...rows.map((r) => r.map((c) => `"${String(c ?? "").replace(/"/g, '""')}"`).join(",")),
+      ].join("\r\n");
       const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
       const link = document.createElement("a");
       const url = URL.createObjectURL(blob);
