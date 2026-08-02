@@ -24,7 +24,7 @@ import "../Operator/Operator.part07.css";
 import "./QualityControlDashboard.css";
 import "./components/QcReportTemplateModal.css";
 
-const QualityControlPage = ({ forceTab, hideLayout }: { forceTab?: "QUEUE" | "LOGGED"; hideLayout?: boolean }) => {
+const QualityControlPage = ({ forceTab, hideLayout, isBilled }: { forceTab?: "QUEUE" | "LOGGED"; hideLayout?: boolean; isBilled?: boolean }) => {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const { customerFilter, descriptionFilter, operatorFilter, searchFilter } = useAppSelector((state) => state.filters.qc);
@@ -187,6 +187,8 @@ const QualityControlPage = ({ forceTab, hideLayout }: { forceTab?: "QUEUE" | "LO
     await processTemplateSelection(templateSelection.row, templateSelection.action, variant);
   };
 
+  const isLoggedMode = qcTab === "LOGGED" || isBilled;
+
   const columns = useMemo(
     () =>
       createQcColumns({
@@ -209,8 +211,9 @@ const QualityControlPage = ({ forceTab, hideLayout }: { forceTab?: "QUEUE" | "LO
           setReportCloseCandidate(row);
           setIsCloseConfirmOpen(true);
         },
+        showLogged: isLoggedMode,
       }),
-    [updateDecision]
+    [updateDecision, isLoggedMode]
   );
 
   const handleClearAllFilters = () => {

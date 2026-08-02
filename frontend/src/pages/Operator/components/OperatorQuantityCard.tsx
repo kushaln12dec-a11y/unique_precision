@@ -13,6 +13,7 @@ import { decimalHoursToHHMMSS } from "../utils/machineHrsCalculation";
 import { useQuantityTimer } from "../hooks/useQuantityTimer";
 import { getQaStageLabel } from "../utils/qaProgress";
 import { estimatedDurationSecondsFromHours, formatMachineLabel } from "../../../utils/jobFormatting";
+import { getCurrentISTDateTime } from "../../../utils/dateTime";
 import type { OperatorQuantityCardProps } from "../types/operatorQuantityCard";
 import { getOperatorQuantityHistory } from "../utils/operatorQuantityHistory";
 
@@ -133,23 +134,27 @@ export const OperatorQuantityCard: React.FC<OperatorQuantityCardProps> = ({
                   onShowToast?.("Please select Machine and Operator Name before starting.", "error");
                   return;
                 }
-                if (!qtyData.startTime && !qtyData.endTime) onInputChange(cutId, qtyIndex, "startTime", value);
+                if (isAdmin || (!qtyData.startTime && !qtyData.endTime)) {
+                  onInputChange(cutId, qtyIndex, "startTime", value);
+                }
               }}
               applyCapturedValue={false}
               onTimeCapture={(timestampMs) => {
-                if (!canOperateInputs) return;
+                if (!canOperateInputs && !isAdmin) return;
                 const hasMachine = Boolean(String(qtyData.machineNumber || "").trim());
                 const hasOperator = Array.isArray(qtyData.opsName) && qtyData.opsName.length > 0;
                 if (!hasMachine || !hasOperator) {
                   onShowToast?.("Please select Machine and Operator Name before starting.", "error");
                   return;
                 }
-                if (!canRunAssignedJob) {
+                if (!canRunAssignedJob && !isAdmin) {
                   blockRunAction();
                   return;
                 }
                 if (!qtyData.startTime && !qtyData.endTime) {
                   onStartTimeCaptured?.(cutId, qtyIndex, timestampMs);
+                } else if (isAdmin) {
+                  onInputChange(cutId, qtyIndex, "startTime", getCurrentISTDateTime(timestampMs));
                 } else {
                   onShowToast?.("Start time can only be set once!", "error");
                 }
@@ -160,14 +165,15 @@ export const OperatorQuantityCard: React.FC<OperatorQuantityCardProps> = ({
               showPauseButtonInInput={false}
               isPaused={qtyData.isPaused || false}
               onPauseToggle={() => {
-                if (!canRunAssignedJob) {
+                if (!canRunAssignedJob && !isAdmin) {
                   blockRunAction();
                   return;
                 }
-                if (canOperateInputs && !qtyData.endTime && !isShiftOverPause) onInputChange(cutId, qtyIndex, "togglePause", "");
+                if ((canOperateInputs || isAdmin) && !qtyData.endTime && !isShiftOverPause) onInputChange(cutId, qtyIndex, "togglePause", "");
               }}
-              disablePauseButton={!canOperateInputs || !!qtyData.endTime || isShiftOverPause || !canRunAssignedJob}
-              disabled={!canOperateInputs || !!qtyData.startTime || !!qtyData.endTime || !canRunAssignedJob}
+              disablePauseButton={(!canOperateInputs && !isAdmin) || !!qtyData.endTime || isShiftOverPause || (!canRunAssignedJob && !isAdmin)}
+              disabled={isAdmin ? false : (!canOperateInputs || !!qtyData.startTime || !!qtyData.endTime || !canRunAssignedJob)}
+              allowManualInput={isAdmin}
             />
           </div>
           <div className="operator-input-card operator-input-card-time">
@@ -175,32 +181,36 @@ export const OperatorQuantityCard: React.FC<OperatorQuantityCardProps> = ({
             <DateTimeInput
               value={qtyData.endTime}
               onChange={(value) => {
-                if (!canOperateInputs) return;
-                if (!qtyData.endTime) {
+                if (!canOperateInputs && !isAdmin) return;
+                if (isAdmin || !qtyData.endTime) {
                   onInputChange(cutId, qtyIndex, "endTime", value);
                   if (qtyData.startTime && value) setTimeout(() => onInputChange(cutId, qtyIndex, "recalculateMachineHrs", ""), 100);
                 }
               }}
               applyCapturedValue={false}
               onTimeCapture={(timestampMs) => {
-                if (!canOperateInputs) return;
-                if (!canRunAssignedJob) {
+                if (!canOperateInputs && !isAdmin) return;
+                if (!canRunAssignedJob && !isAdmin) {
                   blockRunAction();
                   return;
                 }
-                if (qtyData.isPaused) {
+                if (qtyData.isPaused && !isAdmin) {
                   onShowToast?.("Resume this quantity before capturing end time.", "error");
                   return;
                 }
                 if (!qtyData.endTime) {
                   onRequestEndTimeCapture?.(cutId, qtyIndex, timestampMs);
+                } else if (isAdmin) {
+                  onInputChange(cutId, qtyIndex, "endTime", getCurrentISTDateTime(timestampMs));
+                  if (qtyData.startTime) setTimeout(() => onInputChange(cutId, qtyIndex, "recalculateMachineHrs", ""), 100);
                 } else {
                   onShowToast?.("End time can only be set once!", "error");
                 }
               }}
               placeholder="DD/MM/YYYY HH:MM:SS"
               error={validationErrors.endTime}
-              disabled={!canOperateInputs || !!qtyData.endTime || qtyData.isPaused || !canRunAssignedJob}
+              disabled={isAdmin ? false : (!canOperateInputs || !!qtyData.endTime || qtyData.isPaused || !canRunAssignedJob)}
+              allowManualInput={isAdmin}
             />
           </div>
           <div className="operator-input-card">

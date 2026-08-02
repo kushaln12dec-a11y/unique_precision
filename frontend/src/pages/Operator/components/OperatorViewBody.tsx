@@ -1,4 +1,4 @@
-import React from "react";
+import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
 import AppLoader from "../../../components/AppLoader";
 import type { JobEntry } from "../../../types/job";
 import type { CutInputData } from "../types/cutInput";
@@ -47,30 +47,32 @@ type Props = {
 };
 
 const getCutInputData = (cutInputs: Map<number | string, CutInputData>, cutId: number | string, quantity: number = 1): CutInputData =>
-  cutInputs.get(cutId) || { quantities: Array.from({ length: quantity }, () => ({
-    startTime: "",
-    startTimeEpochMs: null,
-    endTime: "",
-    endTimeEpochMs: null,
-    workedDurationSeconds: 0,
-    pauseTimeOffsetSeconds: 0,
-    machineHrs: "",
-    machineNumber: "",
-    opsName: [],
-    operatorHistory: [],
-    operatorHistoryDetails: [],
-    idleTime: "",
-    idleTimeDuration: "",
-    lastImage: null,
-    lastImageFile: null,
-    isPaused: false,
-    pauseStartTime: null,
-    currentPauseOperatorName: "",
-    totalPauseTime: 0,
-    pausedElapsedTime: 0,
-    pauseSessions: [],
-    currentPauseReason: "",
-  })) };
+  cutInputs.get(cutId) || {
+    quantities: Array.from({ length: quantity }, () => ({
+      startTime: "",
+      startTimeEpochMs: null,
+      endTime: "",
+      endTimeEpochMs: null,
+      workedDurationSeconds: 0,
+      pauseTimeOffsetSeconds: 0,
+      machineHrs: "",
+      machineNumber: "",
+      opsName: [],
+      operatorHistory: [],
+      operatorHistoryDetails: [],
+      idleTime: "",
+      idleTimeDuration: "",
+      lastImage: null,
+      lastImageFile: null,
+      isPaused: false,
+      pauseStartTime: null,
+      currentPauseOperatorName: "",
+      totalPauseTime: 0,
+      pausedElapsedTime: 0,
+      pauseSessions: [],
+      currentPauseReason: "",
+    }))
+  };
 
 const OperatorViewBody: React.FC<Props> = ({
   jobs,
@@ -138,6 +140,18 @@ const OperatorViewBody: React.FC<Props> = ({
           </span>
         )}
       </div>
+
+      {isAdmin && (
+        <div className="admin-time-preference-bar">
+          <div className="admin-preference-title">
+            <AdminPanelSettingsIcon sx={{ fontSize: "1.1rem" }} />
+            <span>Admin Time Entry Options:</span>
+          </div>
+          <div className="admin-preference-info">
+            Enter or edit time using <strong>📅 Calendar Date-Time Picker</strong>, <strong>🕐 Current IST Clock Capture</strong>, or <strong>⌨️ Direct Manual Typing</strong>.
+          </div>
+        </div>
+      )}
 
       <OperatorJobInfo parentJob={parentJob} groupId={groupId} />
 

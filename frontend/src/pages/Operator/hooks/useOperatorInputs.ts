@@ -184,8 +184,8 @@ export const useOperatorInputs = (
           if (qtyData.currentPauseReason === "Shift Over") {
             return newMap;
           }
-        if (tryResumePausedQuantity(now)) return newMap;
-      } else {
+          if (tryResumePausedQuantity(now)) return newMap;
+        } else {
           quantities[quantityIndex] = pauseRunningQuantity(qtyData, now, currentUserDisplayName);
           newMap.set(cutId, { ...current, quantities });
           return newMap;
@@ -201,7 +201,7 @@ export const useOperatorInputs = (
         newMap.set(cutId, { ...current, quantities });
         return newMap;
       }
-      
+
       if (field === "startTimeEpochMs" || field === "endTimeEpochMs") {
         const parsed = typeof value === "string" && value.trim() ? Number(value) : null;
         const numericValue = Number.isFinite(parsed as number) ? (parsed as number) : null;
@@ -216,9 +216,6 @@ export const useOperatorInputs = (
       if (field === "resetTimer") {
         quantities[quantityIndex] = buildResetQuantityState(qtyData);
         newMap.set(cutId, { ...current, quantities });
-        return newMap;
-      }
-      if (field === "endTime" && qtyData.endTime) {
         return newMap;
       }
       const updatedQtyData: QuantityInputData = {
