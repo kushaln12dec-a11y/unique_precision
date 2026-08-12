@@ -37,9 +37,14 @@ const getHandshakeToken = (socket: {
 };
 
 export const initSocketServer = (server: HttpServer) => {
+  const allowedOrigins = String(process.env.FRONTEND_ORIGIN || "http://localhost:5173")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+
   io = new Server<ClientToServerEvents, ServerToClientEvents, Record<string, never>, SocketData>(server, {
     cors: {
-      origin: true,
+      origin: allowedOrigins,
       credentials: true,
     },
   });

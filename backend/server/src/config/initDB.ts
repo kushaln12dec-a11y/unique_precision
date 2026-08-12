@@ -321,26 +321,34 @@ const schemaStatements: string[] = [
 export const initDB = async (): Promise<void> => {
   console.log("Initializing database schema...");
 
-  try {
-    for (const statement of schemaStatements) {
-      await prisma.$executeRawUnsafe(statement);
+  if (process.env.RUN_SCHEMA_INIT === "true") {
+    try {
+      for (const statement of schemaStatements) {
+        await prisma.$executeRawUnsafe(statement);
+      }
+      console.log("Database schema ensured.");
+    } catch (error) {
+      console.error("Database schema initialization failed:", error);
+      return;
     }
-    console.log("Database schema ensured.");
-  } catch (error) {
-    console.error("Database schema initialization failed:", error);
-    return;
+  } else {
+    console.log("Skipping schema init (set RUN_SCHEMA_INIT=true to enable).");
   }
 
   try {
-    const passwordHash = await bcrypt.hash("raki123", 10);
-    await prisma.$executeRaw`
-      INSERT INTO "User" ("email", "passwordHash", "passwordText", "empId", "role", "createdAt", "updatedAt")
-      VALUES (${`rakis@gmail.com`}, ${passwordHash}, ${"raki123"}, ${"EMP0001"}, ${"ADMIN"}, NOW(), NOW())
-      ON CONFLICT ("email") DO UPDATE
-      SET "empId" = COALESCE("User"."empId", EXCLUDED."empId"),
-          "passwordText" = COALESCE("User"."passwordText", EXCLUDED."passwordText");
-    `;
-    console.log("Default admin ensured.");
+    if (process.env.SEED_DEFAULT_ADMIN === "true" && process.env.NODE_ENV !== "production") {
+      const passwordHash = await bcrypt.hash("raki123", 10);
+      await prisma.$executeRaw`
+        INSERT INTO "User" ("email", "passwordHash", "passwordText", "empId", "role", "createdAt", "updatedAt")
+        VALUES (${`rakis@gmail.com`}, ${passwordHash}, ${"raki123"}, ${"EMP0001"}, ${"ADMIN"}, NOW(), NOW())
+        ON CONFLICT ("email") DO UPDATE
+        SET "empId" = COALESCE("User"."empId", EXCLUDED."empId"),
+            "passwordText" = COALESCE("User"."passwordText", EXCLUDED."passwordText");
+      `;
+      console.log("Default admin ensured.");
+    } else {
+      console.log("Skipping default admin seed (requires SEED_DEFAULT_ADMIN=true and non-production).");
+    }
 
     const allUsers = await prisma.user.findMany({
       select: { id: true, empId: true },

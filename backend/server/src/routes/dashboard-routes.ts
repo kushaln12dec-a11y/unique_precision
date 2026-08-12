@@ -904,14 +904,14 @@ router.get("/summary", async (req, res) => {
         })),
     };
 
-    const result = {
+    const result: Record<string, unknown> = {
       meta: {
         generatedAt: new Date().toISOString(),
         activeView,
         allowedViews:
-          reqRole === "ADMIN" || reqRole === "ACCOUNTANT" || reqRole === "PROGRAMMER"
-            ? ["ADMIN", "OPERATOR", "PROGRAMMER", "QC"]
-            : [activeView],
+          reqRole === "ADMIN" || reqRole === "ACCOUNTANT"
+            ? (["ADMIN", "OPERATOR", "PROGRAMMER", "QC"] as DashboardView[])
+            : ([activeView] as DashboardView[]),
         dateRange: {
           preset: dateRange.preset,
           label: dateRange.label,
@@ -931,11 +931,23 @@ router.get("/summary", async (req, res) => {
           programmers: uniqueStrings(filteredJobs.map((job) => job.createdBy).filter(Boolean)),
         },
       },
-      admin,
-      operator,
-      programmer,
-      qc,
     };
+
+    // Non-admins only receive the view payload(s) they are allowed to see.
+    if (reqRole === "ADMIN" || reqRole === "ACCOUNTANT") {
+      result.admin = admin;
+      result.operator = operator;
+      result.programmer = programmer;
+      result.qc = qc;
+    } else if (activeView === "OPERATOR") {
+      result.operator = operator;
+    } else if (activeView === "PROGRAMMER") {
+      result.programmer = programmer;
+    } else if (activeView === "QC") {
+      result.qc = qc;
+    } else {
+      result.admin = admin;
+    }
 
     await cacheSet(cacheKey, result, CACHE_TTL.DASHBOARD);
     return res.json(result);

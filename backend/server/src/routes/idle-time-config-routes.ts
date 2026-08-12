@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { prisma } from "../lib/prisma";
 import { authMiddleware } from "../middleware/auth";
+import { authorize } from "../middleware/rbac-middleware";
 
 const router = Router();
 
@@ -36,7 +37,7 @@ router.get("/:type", async (req, res) => {
 });
 
 // Create or update idle time configuration
-router.post("/", async (req, res) => {
+router.post("/", authorize("ADMIN"), async (req, res) => {
   try {
     const { idleTimeType, durationMinutes } = req.body;
 
@@ -58,16 +59,20 @@ router.post("/", async (req, res) => {
 });
 
 // Update idle time configuration
-router.put("/:type", async (req, res) => {
+router.put("/:type", authorize("ADMIN"), async (req, res) => {
   try {
     const { durationMinutes } = req.body;
+    const idleTimeType = Array.isArray(req.params.type) ? req.params.type[0] : req.params.type;
 
+    if (!idleTimeType) {
+      return res.status(400).json({ message: "idleTimeType is required" });
+    }
     if (durationMinutes === undefined) {
       return res.status(400).json({ message: "durationMinutes is required" });
     }
 
     const config = await prisma.idleTimeConfig.update({
-      where: { idleTimeType: req.params.type },
+      where: { idleTimeType },
       data: { durationMinutes },
     });
 
@@ -82,12 +87,16 @@ router.put("/:type", async (req, res) => {
 });
 
 // Delete idle time configuration
-router.delete("/:type", async (req, res) => {
+router.delete("/:type", authorize("ADMIN"), async (req, res) => {
   try {
+    const idleTimeType = Array.isArray(req.params.type) ? req.params.type[0] : req.params.type;
+    if (!idleTimeType) {
+      return res.status(400).json({ message: "idleTimeType is required" });
+    }
     try {
-      await prisma.idleTimeConfig.delete({ where: { idleTimeType: req.params.type } });
+      await prisma.idleTimeConfig.delete({ where: { idleTimeType } });
       res.json({ message: "Idle time configuration deleted successfully" });
-    } catch (deleteError) {
+    } catch (_deleteError) {
       return res.status(404).json({ message: "Idle time configuration not found" });
     }
   } catch (error: any) {

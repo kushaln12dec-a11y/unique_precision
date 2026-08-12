@@ -12,7 +12,13 @@ export const resolveStoredFile = async (
 ): Promise<string | null> => {
   if (value === null || value === undefined || value === "") return null;
   if (isDataUrl(value)) {
-    // Temporary mode: keep image data directly in the DB instead of uploading to R2.
+    // Temporary/local mode may store data URLs in the DB when R2 is unavailable.
+    // Keep data URLs only when ALLOW_DATA_URL_STORAGE=true or NODE_ENV !== production.
+    // Always reject data URLs in production.
+    if (process.env.NODE_ENV === "production") {
+      console.warn(`Rejecting data URL storage for prefix "${keyPrefix}" in production.`);
+      return null;
+    }
     return uploadDataUrl(value, keyPrefix);
   }
   return String(value);

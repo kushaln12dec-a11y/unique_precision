@@ -58,6 +58,10 @@ const createJobInputSchema = z.object({
 
 export const createJobsSchema = z.union([createJobInputSchema, z.array(createJobInputSchema).min(1)]);
 
+export const updateJobSchema = createJobInputSchema
+  .partial()
+  .omit({ id: true, _id: true, groupId: true, createdAt: true, createdBy: true });
+
 export const jobsQuerySchema = z.object({
   limit: z.coerce.number().int().positive().max(100).optional(),
   offset: z.coerce.number().int().min(0).optional(),

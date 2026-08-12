@@ -9,7 +9,7 @@ export const authorize = (...allowedRoles: string[]) => {
       return next(new HttpError(401, "Unauthorized"));
     }
 
-    if (!allowedRoles.includes(userRole)) {
+    if (!allowedRoles.map((r) => r.toUpperCase()).includes(String(userRole).toUpperCase())) {
       return next(new HttpError(403, "Forbidden"));
     }
 
