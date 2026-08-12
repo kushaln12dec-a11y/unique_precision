@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { login } from "../../services/api";
+import { getHomePathForRole, getHomePathFromToken } from "../../utils/homeRoute";
+import { getUserRoleFromToken, isTokenExpired, getDecodedTokenPayload, clearAuthSession } from "../../utils/auth";
 import { companySlides } from "../../data/companySlides";
 import { useCarousel } from "../../utils/useCarousel";
 import VisibilityIcon from "@mui/icons-material/Visibility";
@@ -17,12 +19,16 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
 
-  // Redirect if already logged in
+  // Redirect if already logged in with a valid token
   useEffect(() => {
     const token = localStorage.getItem("token");
-    if (token) {
-      navigate("/dashboard");
+    if (!token) return;
+    const payload = getDecodedTokenPayload();
+    if (!payload || isTokenExpired(payload)) {
+      clearAuthSession();
+      return;
     }
+    navigate(getHomePathFromToken(), { replace: true });
   }, [navigate]);
 
   useEffect(() => {
@@ -49,11 +55,13 @@ const Login = () => {
     setError("");
 
     try {
-      await login(empId, password);
-      // Redirect to dashboard on successful login
-      navigate("/dashboard");
+      const result = await login(empId, password);
+      const role =
+        (result as { user?: { role?: string } })?.user?.role || getUserRoleFromToken();
+      navigate(getHomePathForRole(role), { replace: true });
     } catch (err: any) {
       setError(err.message || "Login failed. Please try again.");
+    } finally {
       setIsLoading(false);
     }
   };

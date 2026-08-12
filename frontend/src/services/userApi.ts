@@ -1,4 +1,5 @@
 import type { User, CreateUserData, UpdateUserData } from "../types/user";
+import { apiFetch } from "../utils/apiClient";
 import { apiUrl } from "./apiClient";
 import { formatEmployeeId } from "../utils/employeeId";
 
@@ -9,12 +10,15 @@ const getDisplayEmail = (email: unknown): string => {
   return AUTO_GENERATED_EMP_EMAIL_REGEX.test(normalizedEmail) ? "" : normalizedEmail;
 };
 
-const getAuthHeaders = () => {
+const getAuthHeaders = (): Record<string, string> => {
   const token = localStorage.getItem("token");
-  return {
+  const headers: Record<string, string> = {
     "Content-Type": "application/json",
-    Authorization: `Bearer ${token}`,
   };
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+  return headers;
 };
 
 const normalizeUser = (user: any): User => ({
@@ -26,21 +30,19 @@ const normalizeUser = (user: any): User => ({
   empId: formatEmployeeId(user?.empId),
   image: user?.image ? String(user.image) : "",
   role: user?.role ?? "OPERATOR",
-  password: String(user?.password ?? ""),
   createdAt: user?.createdAt ? String(user.createdAt) : undefined,
   updatedAt: user?.updatedAt ? String(user.updatedAt) : undefined,
 });
 
 export const getUsers = async (roles?: string[]): Promise<User[]> => {
   let url = "/api/users";
-  
-  // Add roles query parameter if provided
+
   if (roles && roles.length > 0) {
     const rolesParam = roles.join(",");
     url += `?roles=${encodeURIComponent(rolesParam)}`;
   }
-  
-  const res = await fetch(apiUrl(url), {
+
+  const res = await apiFetch(apiUrl(url), {
     method: "GET",
     headers: getAuthHeaders(),
   });
@@ -54,7 +56,7 @@ export const getUsers = async (roles?: string[]): Promise<User[]> => {
 };
 
 export const getUserById = async (id: string): Promise<User> => {
-  const res = await fetch(apiUrl(`/api/users/${id}`), {
+  const res = await apiFetch(apiUrl(`/api/users/${id}`), {
     method: "GET",
     headers: getAuthHeaders(),
   });
@@ -67,7 +69,7 @@ export const getUserById = async (id: string): Promise<User> => {
 };
 
 export const createUser = async (userData: CreateUserData): Promise<User> => {
-  const res = await fetch(apiUrl("/api/users"), {
+  const res = await apiFetch(apiUrl("/api/users"), {
     method: "POST",
     headers: getAuthHeaders(),
     body: JSON.stringify(userData),
@@ -82,7 +84,7 @@ export const createUser = async (userData: CreateUserData): Promise<User> => {
 };
 
 export const getNextEmpId = async (): Promise<string> => {
-  const res = await fetch(apiUrl("/api/users/next-emp-id"), {
+  const res = await apiFetch(apiUrl("/api/users/next-emp-id"), {
     method: "GET",
     headers: getAuthHeaders(),
   });
@@ -96,7 +98,7 @@ export const getNextEmpId = async (): Promise<string> => {
 };
 
 export const updateUser = async (id: string, userData: UpdateUserData): Promise<User> => {
-  const res = await fetch(apiUrl(`/api/users/${id}`), {
+  const res = await apiFetch(apiUrl(`/api/users/${id}`), {
     method: "PUT",
     headers: getAuthHeaders(),
     body: JSON.stringify(userData),
@@ -111,7 +113,7 @@ export const updateUser = async (id: string, userData: UpdateUserData): Promise<
 };
 
 export const deleteUser = async (id: string): Promise<void> => {
-  const res = await fetch(apiUrl(`/api/users/${id}`), {
+  const res = await apiFetch(apiUrl(`/api/users/${id}`), {
     method: "DELETE",
     headers: getAuthHeaders(),
   });

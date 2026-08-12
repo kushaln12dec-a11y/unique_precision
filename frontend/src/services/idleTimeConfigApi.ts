@@ -1,3 +1,4 @@
+import { apiFetch } from "../utils/apiClient";
 import { apiUrl } from "./apiClient";
 import { syncServerTimeOffset } from "./serverTime";
 
@@ -7,17 +8,20 @@ export type IdleTimeConfig = {
   durationMinutes: number;
 };
 
-const getAuthHeaders = () => {
+const getAuthHeaders = (): Record<string, string> => {
   const token = localStorage.getItem("token");
-  return {
+  const headers: Record<string, string> = {
     "Content-Type": "application/json",
-    Authorization: `Bearer ${token}`,
   };
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+  return headers;
 };
 
 const fetchWithServerTime = async (input: string, init?: RequestInit) => {
   const requestStartedAtMs = Date.now();
-  const response = await fetch(apiUrl(input), init);
+  const response = await apiFetch(apiUrl(input), init);
   syncServerTimeOffset(response, {
     requestStartedAtMs,
     responseReceivedAtMs: Date.now(),

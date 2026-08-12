@@ -119,7 +119,7 @@ const OperatorViewBody: React.FC<Props> = ({
   if (!(jobs.length > 0 && parentJob)) {
     return (
       <div className="roleboard-body">
-        <AppLoader variant="inline" message="No data available." />
+        <div className="dashboard-empty-state">No data available.</div>
       </div>
     );
   }

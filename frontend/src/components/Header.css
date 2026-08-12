@@ -318,6 +318,16 @@
   max-width: 180px;
 }
 
+.user-pill-button {
+  cursor: pointer;
+  font: inherit;
+  text-align: right;
+}
+
+.user-pill-button:hover {
+  border-color: var(--color-primary, #2563eb);
+}
+
 .user-label {
   font-size: 0.52rem;
   font-weight: 600;

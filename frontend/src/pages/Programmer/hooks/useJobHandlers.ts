@@ -77,7 +77,10 @@ export const useJobHandlers = ({
     try {
       const displayName = getUserDisplayNameFromToken();
       const createdBy = displayName || "Unknown User";
-      const groupId = editingGroupId || String(Date.now());
+      // Server requires numeric BigInt groupId; generate a collision-resistant numeric id for new groups.
+      const groupId =
+        editingGroupId ||
+        String(BigInt(Date.now()) * 1000n + BigInt(Math.floor(Math.random() * 1000)));
       const existingGroupJobs = editingGroupId
         ? sortGroupEntriesParentFirst(jobs.filter((job) => String(job.groupId) === String(editingGroupId)))
         : [];
@@ -92,7 +95,7 @@ export const useJobHandlers = ({
           ...cut,
           cutImage: normalizedCutImage as any,
           refNumber: editingGroupId ? refNumber || cut.refNumber || "" : "",
-          id: `${groupId}-${index}`,
+          id: existingJob?.id || `${groupId}-${index}`,
           groupId,
           totalHrs: cutTotals.totalHrs,
           totalAmount: cutTotals.totalAmount,
@@ -121,8 +124,9 @@ export const useJobHandlers = ({
         finishSaveAndReturnToProgrammerTable("Job updated successfully!");
       } else {
         const createdJobs = await createJobs(entries);
+        const createdGroupId = String(createdJobs[0]?.groupId || groupId);
         void completeProgrammerJobLog({
-          jobGroupId: groupId,
+          jobGroupId: createdGroupId,
           refNumber: createdJobs[0]?.refNumber || "",
           customer: createdJobs[0]?.customer || "",
           description: createdJobs[0]?.description || "",

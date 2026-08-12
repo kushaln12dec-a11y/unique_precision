@@ -2,6 +2,7 @@ import { lazy, Suspense } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import AppLoader from "./components/AppLoader";
 import ProtectedRoute from "./components/ProtectedRoute";
+import { getHomePathFromToken } from "./utils/homeRoute";
 
 const Login = lazy(() => import("./pages/Login page/Login"));
 const SharedDashboard = lazy(() => import("./pages/Dashboard/SharedDashboard"));
@@ -16,6 +17,8 @@ const UserManagement = lazy(() => import("./pages/User Management/UserManagement
 const EmployeeLogs = lazy(() => import("./pages/EmployeeLogs/EmployeeLogs"));
 const AdminConsole = lazy(() => import("./pages/AdminConsole/AdminConsole"));
 const BilledJobs = lazy(() => import("./pages/BilledJobs/BilledJobsPage"));
+
+const HomeRedirect = () => <Navigate to={getHomePathFromToken()} replace />;
 
 function AppRoutes() {
   return (
@@ -33,7 +36,7 @@ function AppRoutes() {
         <Route
           path="/operator-dashboard"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute allowedRoles={["ADMIN", "OPERATOR", "PROGRAMMER"]}>
               <OperatorDashboardWrapper />
             </ProtectedRoute>
           }
@@ -41,7 +44,7 @@ function AppRoutes() {
         <Route
           path="/programmer/*"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute allowedRoles={["ADMIN", "PROGRAMMER"]}>
               <ProgrammerDashboard />
             </ProtectedRoute>
           }
@@ -49,7 +52,7 @@ function AppRoutes() {
         <Route
           path="/operator"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute allowedRoles={["ADMIN", "OPERATOR", "PROGRAMMER"]}>
               <OperatorJobList />
             </ProtectedRoute>
           }
@@ -57,7 +60,7 @@ function AppRoutes() {
         <Route
           path="/operator/viewpage"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute allowedRoles={["ADMIN", "OPERATOR", "PROGRAMMER"]}>
               <OperatorJobDetail />
             </ProtectedRoute>
           }
@@ -65,7 +68,7 @@ function AppRoutes() {
         <Route
           path="/qc"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute allowedRoles={["ADMIN", "QC"]}>
               <QualityControl />
             </ProtectedRoute>
           }
@@ -73,7 +76,7 @@ function AppRoutes() {
         <Route
           path="/qc/inspection-report"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute allowedRoles={["ADMIN", "QC"]}>
               <InspectionReportPage />
             </ProtectedRoute>
           }
@@ -89,7 +92,7 @@ function AppRoutes() {
         <Route
           path="/users"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute allowedRoles={["ADMIN"]}>
               <UserManagement />
             </ProtectedRoute>
           }
@@ -97,7 +100,7 @@ function AppRoutes() {
         <Route
           path="/jobLogs"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute allowedRoles={["ADMIN", "ACCOUNTANT"]}>
               <EmployeeLogs />
             </ProtectedRoute>
           }
@@ -105,7 +108,7 @@ function AppRoutes() {
         <Route
           path="/billed-jobs"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute allowedRoles={["ADMIN", "ACCOUNTANT"]}>
               <BilledJobs />
             </ProtectedRoute>
           }
@@ -115,13 +118,20 @@ function AppRoutes() {
         <Route
           path="/admin-console"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute allowedRoles={["ADMIN"]}>
               <AdminConsole />
             </ProtectedRoute>
           }
         />
-        <Route path="/" element={<Navigate to="/dashboard" replace />} />
-        <Route path="*" element={<Navigate to="/dashboard" replace />} />
+        <Route
+          path="/"
+          element={
+            <ProtectedRoute>
+              <HomeRedirect />
+            </ProtectedRoute>
+          }
+        />
+        <Route path="*" element={<HomeRedirect />} />
       </Routes>
     </Suspense>
   );

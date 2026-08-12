@@ -33,6 +33,7 @@ export const useOperatorJobBoard = ({
 
   const jobsFetchPage = useCallback(
     async (offset: number, limit: number) => {
+      // List grid keeps jobApi for FilterValues support; operator detail/simple flows use operatorApi.
       if (hasJobSearch) {
         const items = await fetchAllPaginatedItems<JobEntry>(
           async (pageOffset, pageLimit) => {
