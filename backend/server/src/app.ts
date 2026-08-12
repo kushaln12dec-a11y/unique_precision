@@ -23,10 +23,22 @@ const morgan = require("morgan");
 
 const app = express();
 
-const allowedOrigins = String(process.env.FRONTEND_ORIGIN || "http://localhost:5173")
+const configuredOrigins = String(process.env.FRONTEND_ORIGIN || "http://localhost:5173")
   .split(",")
   .map((s) => s.trim())
   .filter(Boolean);
+
+const isDev = process.env.NODE_ENV !== "production";
+const localDevOriginPattern =
+  /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i;
+
+const isOriginAllowed = (origin?: string | null): boolean => {
+  if (!origin) return true;
+  if (configuredOrigins.includes(origin)) return true;
+  // Vite may hop ports when 5173 is busy (e.g. 5174).
+  if (isDev && localDevOriginPattern.test(origin)) return true;
+  return false;
+};
 
 // Keep BigInt values serializable across Prisma responses.
 app.set("json replacer", (_key: string, value: any) =>
@@ -46,8 +58,8 @@ app.use((_req, res, next) => {
 app.use(
   cors({
     origin: (origin, cb) => {
-      if (!origin || allowedOrigins.includes(origin)) return cb(null, true);
-      return cb(new Error("Not allowed by CORS"));
+      if (isOriginAllowed(origin)) return cb(null, true);
+      return cb(null, false);
     },
     credentials: true,
   })

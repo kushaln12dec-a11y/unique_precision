@@ -62,3 +62,31 @@ export const loginUser = async (emailOrEmpId: string, password: string) => {
     },
   };
 };
+
+export const changePassword = async (
+  userId: string,
+  currentPassword: string,
+  newPassword: string
+) => {
+  if (!userId) throw new HttpError(401, "Unauthorized");
+  if (!currentPassword || !newPassword) {
+    throw new HttpError(400, "Current password and new password are required");
+  }
+  if (String(newPassword).length < 6) {
+    throw new HttpError(400, "New password must be at least 6 characters");
+  }
+
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user) throw new HttpError(404, "User not found");
+
+  const matches = await bcrypt.compare(String(currentPassword), user.passwordHash);
+  if (!matches) throw new HttpError(401, "Current password is incorrect");
+
+  const passwordHash = await bcrypt.hash(String(newPassword), 10);
+  await prisma.user.update({
+    where: { id: userId },
+    data: { passwordHash, passwordText: null },
+  });
+
+  return { message: "Password updated successfully" };
+};
