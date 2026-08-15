@@ -1,9 +1,8 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, Routes, Route, Navigate } from "react-router-dom";
 import Sidebar from "../../components/Sidebar";
 import Header from "../../components/Header";
 import { getUserRoleFromToken } from "../../utils/auth";
-import "../../utils/tokenDebug";
 import ProgrammerPageOverlays from "./components/ProgrammerPageOverlays";
 import ProgrammerJobsSection from "./components/ProgrammerJobsSection";
 import ProgrammerLogsSection from "./components/ProgrammerLogsSection";
@@ -55,6 +54,7 @@ const ProgrammerDashboardPage = ({ forceTab, hideLayout, mode }: { forceTab?: "j
     currentPathname,
     jobs,
     loadingJobs,
+    jobsError,
     loadingEditGroup,
     setJobs,
     cuts,
@@ -66,6 +66,12 @@ const ProgrammerDashboardPage = ({ forceTab, hideLayout, mode }: { forceTab?: "j
     handleNewJob: handleNewJobState,
     handleCancel: handleCancelState,
   } = useProgrammerState(filters, customerFilter, descriptionFilter, createdByFilter, criticalFilter, searchFilter);
+
+  useEffect(() => {
+    if (!jobsError) return;
+    setToast({ message: jobsError, variant: "error", visible: true });
+    window.setTimeout(() => setToast({ message: "", variant: "error", visible: false }), 3000);
+  }, [jobsError]);
 
   const {
     users,

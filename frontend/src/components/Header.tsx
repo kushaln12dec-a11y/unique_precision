@@ -5,6 +5,7 @@ import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import NotificationsActiveRoundedIcon from "@mui/icons-material/NotificationsActiveRounded";
 import RadioButtonCheckedRoundedIcon from "@mui/icons-material/RadioButtonCheckedRounded";
 import Modal from "./Modal";
+import ChangePasswordModal from "./ChangePasswordModal";
 import { getUserDesignationFromToken, getUserDisplayNameFromToken, getUserEmpIdFromToken } from "../utils/auth";
 
 import { resolveHeaderBreadcrumbs, type BreadcrumbItem } from "./headerBreadcrumbs";
@@ -25,6 +26,7 @@ const Header = ({ title, onNavigate, breadcrumbsOverride }: HeaderProps) => {
   const empId = getUserEmpIdFromToken();
   const designation = getUserDesignationFromToken();
   const [showNotificationsModal, setShowNotificationsModal] = useState(false);
+  const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
 
   const breadcrumbs = useMemo(() => {
     return resolveHeaderBreadcrumbs({
@@ -46,7 +48,7 @@ const Header = ({ title, onNavigate, breadcrumbsOverride }: HeaderProps) => {
 
   const { notifications, unreadCount } = useHeaderNotifications({
     currentUserName: displayName || "",
-    isActive: showNotificationsModal,
+    isActive: true,
   });
 
   return (
@@ -104,12 +106,17 @@ const Header = ({ title, onNavigate, breadcrumbsOverride }: HeaderProps) => {
           </button>
 
           {(displayName || empId) && (
-            <div className="user-pill" title={displayName || empId || undefined}>
+            <button
+              type="button"
+              className="user-pill user-pill-button"
+              title="Change password"
+              onClick={() => setShowChangePasswordModal(true)}
+            >
               <span className="user-label">Logged in as</span>
               <span className="user-name">{displayName || empId || "USER"}</span>
               {empId && <span className="user-emp-id">{empId}</span>}
               {designation && <span className="user-designation">{designation}</span>}
-            </div>
+            </button>
           )}
         </div>
       </div>
@@ -186,6 +193,11 @@ const Header = ({ title, onNavigate, breadcrumbsOverride }: HeaderProps) => {
           )}
         </div>
       </Modal>
+
+      <ChangePasswordModal
+        isOpen={showChangePasswordModal}
+        onClose={() => setShowChangePasswordModal(false)}
+      />
     </>
   );
 };

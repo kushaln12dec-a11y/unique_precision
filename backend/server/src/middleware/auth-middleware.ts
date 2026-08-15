@@ -43,7 +43,9 @@ export const verifyAuthToken = (token: string): AuthenticatedUser => {
     throw new HttpError(500, "JWT_SECRET is not configured");
   }
 
-  return jwt.verify(token, process.env.JWT_SECRET) as AuthenticatedUser;
+  return jwt.verify(token, process.env.JWT_SECRET, {
+    algorithms: ["HS256"],
+  }) as AuthenticatedUser;
 };
 
 export const authenticateEventStream = (req: Request, _res: Response, next: NextFunction) => {

@@ -21,13 +21,6 @@ const IMPORT_FILE = path.resolve(process.cwd(), "server/src/scripts/activeMember
 const AUTO_EMAIL_DOMAIN = "uniqueprecision.local";
 
 const VALID_ROLES = new Set(["ADMIN", "PROGRAMMER", "OPERATOR", "QC", "ACCOUNTANT"]);
-const ROLE_PASSWORDS: Record<string, string> = {
-  ADMIN: "admin",
-  PROGRAMMER: "programmer",
-  OPERATOR: "operator",
-  QC: "qc",
-  ACCOUNTANT: "accountant",
-};
 
 const normalizeRole = (value: unknown): string => {
   const cleaned = String(value || "").trim().toUpperCase();
@@ -37,10 +30,11 @@ const normalizeRole = (value: unknown): string => {
   return "OPERATOR";
 };
 
-const getRolePassword = (role: string): string => {
-  const normalizedRole = String(role || "").trim().toUpperCase();
-  return ROLE_PASSWORDS[normalizedRole] ?? normalizedRole.toLowerCase();
-};
+/** Temporary passwords for imports — never use role-named secrets. */
+const makeTempPassword = (): string =>
+  `Tmp-${Math.random().toString(36).slice(2, 10)}-${Date.now().toString(36)}`;
+
+const getRolePassword = (_role: string): string => makeTempPassword();
 
 const splitName = (value: unknown): { firstName: string; lastName: string } => {
   const cleaned = String(value || "")
@@ -144,7 +138,8 @@ const importUsers = async () => {
     const { firstName, lastName } = splitName(row.name);
     const phone = normalizePhone(row.mobile);
     const role = normalizeRole(row.dept);
-    const passwordHash = await bcrypt.hash(getRolePassword(role), 10);
+    const tempPassword = getRolePassword(role);
+    const passwordHash = await bcrypt.hash(tempPassword, 10);
 
     const existing = await prisma.user.findFirst({
       where: {
@@ -168,7 +163,6 @@ const importUsers = async () => {
           phone,
           role,
           passwordHash,
-          passwordText: getRolePassword(role),
         },
       });
       updated += 1;
@@ -181,7 +175,6 @@ const importUsers = async () => {
           empId,
           email,
           passwordHash,
-          passwordText: getRolePassword(role),
           firstName,
           lastName,
           phone,
@@ -200,7 +193,6 @@ const importUsers = async () => {
           empId,
           email: fallbackEmail,
           passwordHash,
-          passwordText: getRolePassword(role),
           firstName,
           lastName,
           phone,
@@ -220,7 +212,7 @@ const importUsers = async () => {
         created,
         updated,
         skipped,
-        passwordRule: ROLE_PASSWORDS,
+        passwordRule: "random-temporary-passwords-set-via-admin",
         appEnv: process.env.APP_ENV || "development",
       },
       null,

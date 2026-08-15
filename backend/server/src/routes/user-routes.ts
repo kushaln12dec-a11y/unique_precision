@@ -4,7 +4,7 @@ import { prisma } from "../lib/prisma";
 import { authMiddleware, adminMiddleware } from "../middleware/auth";
 import { mapUser } from "../utils/prismaMappers";
 import { resolveStoredFile } from "../utils/objectStorage";
-import { formatEmpId, getEmpIdSequence } from "../utils/employeeId";
+import { formatEmpId, getEmpIdSequence, normalizeEmpId } from "../utils/employeeId";
 
 const router = Router();
 const EMP_ID_COUNTER_KEY = "empId";
@@ -14,6 +14,15 @@ const getParamId = (value: unknown): string | undefined => {
   if (typeof value === "string") return value;
   return undefined;
 };
+
+const mapUserPublic = (user: any) => ({
+  id: user.id,
+  firstName: user.firstName ?? "",
+  lastName: user.lastName ?? "",
+  empId: normalizeEmpId(user.empId) || "",
+  role: user.role ?? "OPERATOR",
+  image: user.image ?? "",
+});
 
 const reserveNextEmpId = async (): Promise<string> =>
   prisma.$transaction(async (tx) => {
@@ -68,16 +77,18 @@ router.get("/next-emp-id", adminMiddleware, async (_req, res) => {
   }
 });
 
-// Get all users
+// Get all users — full list is ADMIN only; non-admins may request a roles filter for limited fields
 router.get("/", async (req, res) => {
   try {
     const { roles } = req.query;
     const isAdmin = String(req.user?.role || "").trim().toUpperCase() === "ADMIN";
-    
-    // Build query filter
+
+    if (!isAdmin && !roles) {
+      return res.status(403).json({ message: "Forbidden" });
+    }
+
     const query: any = {};
-    
-    // If roles query parameter is provided, filter by roles
+
     if (roles) {
       const roleArray = Array.isArray(roles)
         ? roles.map((role) => String(role).trim()).filter(Boolean)
@@ -89,11 +100,16 @@ router.get("/", async (req, res) => {
         query.role = { in: roleArray };
       }
     }
-    
+
     const users = await prisma.user.findMany({
       where: Object.keys(query).length ? query : undefined,
     });
-    res.json(users.map((user) => mapUser(user, { includePassword: isAdmin })));
+
+    if (!isAdmin) {
+      return res.json(users.map(mapUserPublic));
+    }
+
+    res.json(users.map((user) => mapUser(user)));
   } catch (error: any) {
     res.status(500).json({ message: "Error fetching users" });
   }
@@ -110,7 +126,7 @@ router.get("/:id", adminMiddleware, async (req, res) => {
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
-    res.json(mapUser(user, { includePassword: true }));
+    res.json(mapUser(user));
   } catch (error: any) {
     res.status(500).json({ message: "Error fetching user" });
   }
@@ -164,7 +180,6 @@ router.post("/", adminMiddleware, async (req, res) => {
           data: {
             email: emailToUse,
             passwordHash: hashedPassword,
-            passwordText: String(password),
             firstName,
             lastName,
             phone,
@@ -187,7 +202,7 @@ router.post("/", adminMiddleware, async (req, res) => {
       return res.status(500).json({ message: "Failed to allocate employee ID" });
     }
 
-    res.status(201).json(mapUser(user, { includePassword: true }));
+    res.status(201).json(mapUser(user));
   } catch (error: any) {
     if (error.code === "P2002") {
       return res.status(400).json({ message: "User with this email already exists" });
@@ -216,7 +231,6 @@ router.put("/:id", adminMiddleware, async (req, res) => {
 
     if (password) {
       updateData.passwordHash = await bcrypt.hash(password, 10);
-      updateData.passwordText = String(password);
     }
 
     const id = getParamId(req.params.id);
@@ -239,8 +253,8 @@ router.put("/:id", adminMiddleware, async (req, res) => {
       where: { id },
       data: updateData,
     });
-    
-    res.json(mapUser(user, { includePassword: true }));
+
+    res.json(mapUser(user));
   } catch (error: any) {
     if (error.code === "P2025") {
       return res.status(404).json({ message: "User not found" });

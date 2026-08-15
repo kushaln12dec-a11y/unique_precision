@@ -8,8 +8,6 @@ import { getUserRoleFromToken } from "../../../utils/auth";
 import type { FilterValues } from "../../../components/FilterModal";
 import { getOperatorUsers } from "../utils/operatorUserOptions";
 
-const STORAGE_KEY = "programmerJobs";
-
 /**
  * Hook for fetching and managing operator data
  */
@@ -24,6 +22,7 @@ export const useOperatorData = (
   const navigate = useNavigate();
   const [jobs, setJobs] = useState<JobEntry[]>([]);
   const [loadingJobs, setLoadingJobs] = useState(true);
+  const [jobsError, setJobsError] = useState("");
   const [operatorUsers, setOperatorUsers] = useState<User[]>([]);
   const [users, setUsers] = useState<User[]>([]);
 
@@ -39,6 +38,8 @@ export const useOperatorData = (
   const refreshJobs = useCallback(async (): Promise<JobEntry[]> => {
     try {
       setLoadingJobs(true);
+      setJobsError("");
+      // Uses jobApi for rich filters; prefer operatorApi on detail/simple flows (see jobApi deprecation).
       const fetchedJobs = await getOperatorJobs(
         { ...filters, search: searchFilter },
         customerFilter,
@@ -48,24 +49,10 @@ export const useOperatorData = (
       );
       setJobs(fetchedJobs);
       return fetchedJobs;
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to fetch jobs", error);
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) {
-        try {
-          const parsed = JSON.parse(stored) as JobEntry[];
-          if (Array.isArray(parsed)) {
-            const fallbackJobs = parsed.map((job) => ({
-              ...job,
-              assignedTo: job.assignedTo || "Unassign",
-            }));
-            setJobs(fallbackJobs);
-            return fallbackJobs;
-          }
-        } catch (parseError) {
-          console.error("Failed to parse jobs from storage", parseError);
-        }
-      }
+      setJobs([]);
+      setJobsError(error?.message || "Failed to fetch operator jobs.");
       return [];
     } finally {
       setLoadingJobs(false);
@@ -105,6 +92,7 @@ export const useOperatorData = (
   return {
     jobs,
     loadingJobs,
+    jobsError,
     setJobs,
     operatorUsers,
     users,

@@ -1,5 +1,6 @@
 import type { FilterValues } from "../components/FilterModal";
 import type { JobEntry } from "../types/job";
+import { apiFetch } from "../utils/apiClient";
 import { apiUrl } from "./apiClient";
 
 export type PaginatedResult<T> = {
@@ -15,12 +16,15 @@ export type PaginationParams = {
   limit?: number;
 };
 
-export const getAuthHeaders = () => {
+export const getAuthHeaders = (): Record<string, string> => {
   const token = localStorage.getItem("token");
-  return {
+  const headers: Record<string, string> = {
     "Content-Type": "application/json",
-    Authorization: `Bearer ${token}`,
   };
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+  return headers;
 };
 
 export const buildQueryParams = (
@@ -115,7 +119,7 @@ const getListPayload = (payload: any): any[] => {
 };
 
 export const fetchJobList = async (url: string): Promise<JobEntry[]> => {
-  const res = await fetch(apiUrl(url), {
+  const res = await apiFetch(apiUrl(url), {
     method: "GET",
     headers: getAuthHeaders(),
   });
@@ -125,7 +129,7 @@ export const fetchJobList = async (url: string): Promise<JobEntry[]> => {
 };
 
 export const fetchPaginatedJobList = async (url: string): Promise<PaginatedResult<JobEntry>> => {
-  const res = await fetch(apiUrl(url), {
+  const res = await apiFetch(apiUrl(url), {
     method: "GET",
     headers: getAuthHeaders(),
   });
@@ -143,7 +147,7 @@ export const fetchPaginatedJobList = async (url: string): Promise<PaginatedResul
 };
 
 export const fetchSingleJob = async (url: string, errorMessage: string): Promise<any> => {
-  const res = await fetch(apiUrl(url), {
+  const res = await apiFetch(apiUrl(url), {
     method: "GET",
     headers: getAuthHeaders(),
   });

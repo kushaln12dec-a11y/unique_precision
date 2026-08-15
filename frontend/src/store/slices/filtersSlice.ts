@@ -74,6 +74,12 @@ const filtersSlice = createSlice({
     },
     clearProgrammerFilters(state) {
       state.programmer.filters = {};
+      state.programmer.customerFilter = "";
+      state.programmer.descriptionFilter = "";
+      state.programmer.createdByFilter = "";
+      state.programmer.criticalFilter = false;
+      state.programmer.showFilterModal = false;
+      state.programmer.searchFilter = "";
     },
     setProgrammerShowFilterModal(state, action: PayloadAction<boolean>) {
       state.programmer.showFilterModal = action.payload;

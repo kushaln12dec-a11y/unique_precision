@@ -37,9 +37,21 @@ const getHandshakeToken = (socket: {
 };
 
 export const initSocketServer = (server: HttpServer) => {
+  const configuredOrigins = String(process.env.FRONTEND_ORIGIN || "http://localhost:5173")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  const isDev = process.env.NODE_ENV !== "production";
+  const localDevOriginPattern = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i;
+
   io = new Server<ClientToServerEvents, ServerToClientEvents, Record<string, never>, SocketData>(server, {
     cors: {
-      origin: true,
+      origin: (origin, cb) => {
+        if (!origin) return cb(null, true);
+        if (configuredOrigins.includes(origin)) return cb(null, true);
+        if (isDev && localDevOriginPattern.test(origin)) return cb(null, true);
+        return cb(null, false);
+      },
       credentials: true,
     },
   });

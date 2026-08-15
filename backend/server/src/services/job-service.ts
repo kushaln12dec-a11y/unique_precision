@@ -16,6 +16,7 @@ import {
 } from "../utils/job-utils";
 import { buildCreateJobsTransaction, groupJobsByGroupId } from "./job-service-helpers";
 import { emitJobsUpdated } from "../lib/socket";
+import { invalidateDashboardCache } from "../lib/redis";
 
 type JobsQuery = Record<string, unknown>;
 
@@ -193,6 +194,7 @@ export const createJobs = async (payload: any[] | any, reqUser?: any) => {
     updatedBy: resolveReqUserName(reqUser) || String((Array.isArray(payload) ? payload[0] : payload)?.createdBy || "").trim(),
     source: "programmer:create",
   });
+  await invalidateDashboardCache();
 
   const result = createdJobs.map(mapJob);
   return Array.isArray(payload) ? result : result[0];
@@ -243,6 +245,7 @@ export const updateJob = async (id: string, body: any, reqUser?: any) => {
       updatedBy: actorName,
       source: "programmer:update",
     });
+    await invalidateDashboardCache();
 
     return mapJob(job);
   } catch (error: any) {
@@ -327,6 +330,7 @@ export const updateGroupQcDecision = async (
     updatedBy,
     source: "qc:decision",
   });
+  await invalidateDashboardCache();
 
   return updatedJobs.map(mapJob);
 };
@@ -358,6 +362,7 @@ export const updateGroupQcReportClosed = async (groupIdParam: string, body: { cl
     updatedBy: resolveReqUserName(reqUser),
     source: "qc:report-close",
   });
+  await invalidateDashboardCache();
 
   return updatedJobs.map(mapJob);
 };
@@ -380,6 +385,7 @@ export const deleteJob = async (id: string, reqUser?: any) => {
       updatedBy: resolveReqUserName(reqUser),
       source: "programmer:delete",
     });
+    await invalidateDashboardCache();
     return { message: "Job deleted successfully" };
   } catch (error: any) {
     if (error?.code === "P2025") {
@@ -403,6 +409,7 @@ export const deleteJobsByGroupId = async (groupIdParam: string, reqUser?: any) =
       updatedBy: resolveReqUserName(reqUser),
       source: "programmer:delete-group",
     });
+    await invalidateDashboardCache();
   }
   return {
     message: "Jobs deleted successfully",

@@ -12,7 +12,9 @@ import MenuOpenRoundedIcon from '@mui/icons-material/MenuOpenRounded';
 import ReceiptLongIcon from '@mui/icons-material/ReceiptLong';
 import { useLocation, useNavigate } from 'react-router-dom';
 import type { SidebarProps } from '../types/sidebar';
-import { getUserRoleFromToken } from '../utils/auth';
+import { clearAuthSession, getUserRoleFromToken } from '../utils/auth';
+import { disconnectAppSocket } from '../services/socket';
+import { clearOperatorDraftsForUser } from '../pages/Operator/utils/operatorViewStorage';
 import './Sidebar.css';
 
 const Sidebar = ({ onNavigate, className = "" }: SidebarProps) => {
@@ -87,7 +89,9 @@ const Sidebar = ({ onNavigate, className = "" }: SidebarProps) => {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
+    clearOperatorDraftsForUser();
+    disconnectAppSocket();
+    clearAuthSession();
     setIsTabletOpen(false);
     navigate('/login', { replace: true });
   };

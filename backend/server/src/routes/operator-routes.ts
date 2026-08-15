@@ -97,9 +97,10 @@ const findActiveQuantityConflict = async (
   jobId: string,
   fromQty: number,
   toQty: number,
-  options: { excludeLogId?: string } = {}
+  options: { excludeLogId?: string; client?: typeof prisma } = {}
 ) => {
-  const activeLogs = await prisma.employeeLog.findMany({
+  const db = options.client || prisma;
+  const activeLogs = await db.employeeLog.findMany({
     where: {
       role: "OPERATOR",
       activityType: "OPERATOR_PRODUCTION",
@@ -259,8 +260,37 @@ const getRequestedOperatorNames = (value: unknown): string[] =>
     .map((entry) => entry.trim().toUpperCase())
     .filter((entry) => entry && entry !== "UNASSIGN" && entry !== "UNASSIGNED");
 
-const canOperatorAdjustOwnAssignment = (req: any, currentValue: unknown, requestedValue: unknown) => {
-  return true;
+const buildSelfIdentityTokens = (reqUser: any): Set<string> => {
+  const tokens = new Set<string>();
+  const fullName = String(reqUser?.fullName || "").trim().toUpperCase();
+  if (fullName) tokens.add(fullName);
+  const firstName = String(reqUser?.firstName || "").trim();
+  const lastName = String(reqUser?.lastName || "").trim();
+  const joined = `${firstName} ${lastName}`.trim().toUpperCase();
+  if (joined) tokens.add(joined);
+  const empId = String(reqUser?.empId || "").trim().toUpperCase();
+  if (empId) tokens.add(empId);
+  const email = String(reqUser?.email || "").trim().toUpperCase();
+  if (email) {
+    tokens.add(email);
+    const local = email.split("@")[0]?.trim();
+    if (local) tokens.add(local);
+  }
+  return tokens;
+};
+
+/** Operators may only set ops/assignment identity to themselves; admins/programmers unrestricted. */
+const canOperatorAdjustOwnAssignment = (req: any, _currentValue: unknown, requestedValue: unknown) => {
+  const role = getRequestRole(req);
+  if (role === "ADMIN" || role === "PROGRAMMER") return true;
+  if (role !== "OPERATOR") return false;
+
+  const selfTokens = buildSelfIdentityTokens(req?.user);
+  if (selfTokens.size === 0) return false;
+
+  const requested = getRequestedOperatorNames(requestedValue);
+  if (requested.length === 0) return false;
+  return requested.every((name) => selfTokens.has(name));
 };
 
 router.get("/jobs", async (req, res) => {
@@ -505,26 +535,6 @@ router.post("/jobs/:id/capture-input", async (req, res) => {
       return res.status(400).json({ message: `Invalid quantity range. Allowed range is 1 to ${totalQty}.` });
     }
 
-    if (hasCaptureRangeOverlap(job.operatorCaptures || [], resolvedFromQty, resolvedToQty)) {
-      return res.status(409).json({
-        message: `${formatJobQuantityLabel(job, resolvedFromQty, resolvedToQty)} already has captured data and cannot be replaced.`,
-      });
-    }
-
-    const quantityConflict = await findActiveQuantityConflict(
-      String(job.id),
-      resolvedFromQty,
-      resolvedToQty,
-      operatorLogId ? { excludeLogId: String(operatorLogId) } : {}
-    );
-    if (quantityConflict) {
-      const conflictFromQty = Math.max(1, Number(quantityConflict.quantityFrom || 1));
-      const conflictToQty = Math.max(conflictFromQty, Number(quantityConflict.quantityTo || conflictFromQty));
-      return res.status(409).json({
-        message: `Qty ${conflictFromQty === conflictToQty ? conflictFromQty : `${conflictFromQty}-${conflictToQty}`} is already being worked on by ${String(quantityConflict.userName || "another operator")}.`,
-      });
-    }
-
     const captureEntry = buildCaptureEntry({
       mode,
       resolvedFromQty,
@@ -541,27 +551,75 @@ router.post("/jobs/:id/capture-input", async (req, res) => {
       updatedBy: updateData.updatedBy || "",
     });
 
-    await prisma.$transaction(async (tx) => {
-      await tx.jobOperatorCapture.create({
-        data: {
-          ...captureEntry,
-          jobId: job.id,
-        },
-      });
+    try {
+      await prisma.$transaction(async (tx) => {
+        // Serialize captures per job to close TOCTOU gaps between overlap checks and insert.
+        await tx.$queryRawUnsafe(`SELECT id FROM "Job" WHERE id = $1::uuid FOR UPDATE`, job.id);
 
-      for (let qty = resolvedFromQty; qty <= resolvedToQty; qty += 1) {
-        await tx.jobQuantityQaState.upsert({
-          where: { jobId_quantityNumber: { jobId: job.id, quantityNumber: qty } },
-          update: { status: "SAVED" },
-          create: { jobId: job.id, quantityNumber: qty, status: "SAVED" },
+        const lockedJob = await tx.job.findUnique({
+          where: { id: job.id },
+          include: { operatorCaptures: true },
         });
-      }
+        if (!lockedJob) {
+          throw Object.assign(new Error("Job not found"), { statusCode: 404 });
+        }
 
-      await tx.job.update({
-        where: { id: job.id },
-        data: updateData,
+        if (hasCaptureRangeOverlap(lockedJob.operatorCaptures || [], resolvedFromQty, resolvedToQty)) {
+          throw Object.assign(
+            new Error(
+              `${formatJobQuantityLabel(lockedJob, resolvedFromQty, resolvedToQty)} already has captured data and cannot be replaced.`
+            ),
+            { statusCode: 409 }
+          );
+        }
+
+        const quantityConflict = await findActiveQuantityConflict(
+          String(job.id),
+          resolvedFromQty,
+          resolvedToQty,
+          {
+            ...(operatorLogId ? { excludeLogId: String(operatorLogId) } : {}),
+            client: tx as typeof prisma,
+          }
+        );
+        if (quantityConflict) {
+          const conflictFromQty = Math.max(1, Number(quantityConflict.quantityFrom || 1));
+          const conflictToQty = Math.max(conflictFromQty, Number(quantityConflict.quantityTo || conflictFromQty));
+          throw Object.assign(
+            new Error(
+              `Qty ${conflictFromQty === conflictToQty ? conflictFromQty : `${conflictFromQty}-${conflictToQty}`} is already being worked on by ${String(quantityConflict.userName || "another operator")}.`
+            ),
+            { statusCode: 409 }
+          );
+        }
+
+        await tx.jobOperatorCapture.create({
+          data: {
+            ...captureEntry,
+            jobId: job.id,
+          },
+        });
+
+        for (let qty = resolvedFromQty; qty <= resolvedToQty; qty += 1) {
+          await tx.jobQuantityQaState.upsert({
+            where: { jobId_quantityNumber: { jobId: job.id, quantityNumber: qty } },
+            update: { status: "SAVED" },
+            create: { jobId: job.id, quantityNumber: qty, status: "SAVED" },
+          });
+        }
+
+        await tx.job.update({
+          where: { id: job.id },
+          data: updateData,
+        });
       });
-    });
+    } catch (txError: any) {
+      const statusCode = Number(txError?.statusCode || 0);
+      if (statusCode === 404 || statusCode === 409) {
+        return res.status(statusCode).json({ message: txError.message });
+      }
+      throw txError;
+    }
 
     const refreshedJob = await prisma.job.findUnique({
       where: { id: job.id },

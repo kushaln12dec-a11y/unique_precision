@@ -32,6 +32,7 @@ export const useOperatorViewData = (groupId: string | null, cutIdParam: string |
   const [cutInputs, setCutInputs] = useState<Map<number | string, CutInputData>>(new Map());
   const [expandedCuts, setExpandedCuts] = useState<Set<number | string>>(new Set());
   const hasLoadedInitialDataRef = useRef(false);
+  const loadGenerationRef = useRef(0);
 
   // Fetch idle time configs
   useEffect(() => {
@@ -63,12 +64,14 @@ export const useOperatorViewData = (groupId: string | null, cutIdParam: string |
       setLoadingJobs(false);
       return;
     }
+    const loadGeneration = ++loadGenerationRef.current;
     try {
       if (!hasLoadedInitialDataRef.current) {
         setLoadingJobs(true);
       }
       invalidateEmployeeLogsCache(/employee-logs/);
       const fetchedJobs = await getOperatorJobsByGroupId(groupId);
+      if (loadGeneration !== loadGenerationRef.current) return;
         const operatorLogs = await getEmployeeLogs({
           role: "OPERATOR",
           jobGroupId: groupId,
@@ -281,8 +284,23 @@ export const useOperatorViewData = (groupId: string | null, cutIdParam: string |
                 opsName: prevQty.opsName?.length > 0 ? prevQty.opsName : qty.opsName,
                 startTime: hasStartTime ? qty.startTime : prevQty.startTime,
                 startTimeEpochMs: hasStartTime ? qty.startTimeEpochMs : prevQty.startTimeEpochMs,
+                endTime: String(qty.endTime || "").trim() ? qty.endTime : prevQty.endTime,
+                endTimeEpochMs: qty.endTimeEpochMs || prevQty.endTimeEpochMs,
+                idleTime: prevQty.idleTime || qty.idleTime,
+                idleTimeDuration: prevQty.idleTimeDuration || qty.idleTimeDuration,
+                lastImage: prevQty.lastImage || qty.lastImage,
+                lastImageFile: prevQty.lastImageFile || qty.lastImageFile,
+                pauseSessions:
+                  Array.isArray(prevQty.pauseSessions) && prevQty.pauseSessions.length > 0
+                    ? prevQty.pauseSessions
+                    : qty.pauseSessions,
                 isPaused: hasStartTime ? qty.isPaused : prevQty.isPaused,
                 pauseStartTime: hasStartTime ? qty.pauseStartTime : prevQty.pauseStartTime,
+                currentPauseReason: prevQty.currentPauseReason || qty.currentPauseReason,
+                currentPauseOperatorName: prevQty.currentPauseOperatorName || qty.currentPauseOperatorName,
+                totalPauseTime: prevQty.totalPauseTime || qty.totalPauseTime,
+                pausedElapsedTime: prevQty.pausedElapsedTime || qty.pausedElapsedTime,
+                machineHrs: String(qty.machineHrs || "").trim() ? qty.machineHrs : prevQty.machineHrs,
               };
             });
             next.set(cutId, { ...nextCut, quantities: mergedQuantities });

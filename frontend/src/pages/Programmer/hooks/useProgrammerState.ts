@@ -6,8 +6,6 @@ import type { FilterValues } from "../../../components/FilterModal";
 import { DEFAULT_CUT, sortGroupEntriesParentFirst, type CutForm } from "../programmerUtils";
 import { removeParentMirrorEntries, toEditableCutForm } from "../utils/programmerStateUtils";
 
-const STORAGE_KEY = "programmerJobs";
-
 const hasCutDraftData = (cut: CutForm) => {
   if (!cut) return false;
   const valuesToCheck: Array<unknown> = [
@@ -43,6 +41,7 @@ export const useProgrammerState = (
   const filtersKey = JSON.stringify(filters || {});
   const [jobs, setJobs] = useState<JobEntry[]>([]);
   const [loadingJobs, setLoadingJobs] = useState(true);
+  const [jobsError, setJobsError] = useState("");
   const [loadingEditGroup, setLoadingEditGroup] = useState(false);
   const [cuts, setCuts] = useState<CutForm[]>([DEFAULT_CUT]);
   const [editingGroupId, setEditingGroupId] = useState<string | null>(null);
@@ -62,6 +61,7 @@ export const useProgrammerState = (
   const refreshJobs = useCallback(async () => {
     try {
       setLoadingJobs(true);
+      setJobsError("");
       const fetchedJobs = await getProgrammerJobs(
         { ...filters, search: searchFilter },
         customerFilter,
@@ -70,29 +70,10 @@ export const useProgrammerState = (
         descriptionFilter
       );
       setJobs(fetchedJobs);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to fetch jobs", error);
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) {
-        try {
-          const parsed = JSON.parse(stored) as JobEntry[];
-          if (Array.isArray(parsed)) {
-            let filtered = parsed;
-            if (criticalFilter) {
-              filtered = parsed.filter((job) => job.critical === true);
-            }
-            setJobs(
-              filtered.map((job) => ({
-                ...job,
-                assignedTo: job.assignedTo || "Unassign",
-                groupId: String(job.groupId ?? job.id),
-              }))
-            );
-          }
-        } catch (parseError) {
-          console.error("Failed to parse jobs from storage", parseError);
-        }
-      }
+      setJobs([]);
+      setJobsError(error?.message || "Failed to fetch programmer jobs.");
     } finally {
       setLoadingJobs(false);
     }
@@ -255,6 +236,7 @@ export const useProgrammerState = (
     currentPathname: location.pathname,
     jobs,
     loadingJobs,
+    jobsError,
     loadingEditGroup,
     setJobs,
     cuts,

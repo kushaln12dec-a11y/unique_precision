@@ -19,7 +19,6 @@ export const loginUser = async (emailOrEmpId: string, password: string) => {
         { email: identifier },
         { email: identifierLower },
         ...empIdCandidates.map((empId) => ({ empId })),
-        ...(identifierLower === "admin" ? [{ role: "ADMIN" }] : []),
       ],
     },
   });
@@ -28,17 +27,7 @@ export const loginUser = async (emailOrEmpId: string, password: string) => {
     throw new HttpError(401, "Invalid credentials");
   }
 
-  let isMatch = await bcrypt.compare(password, user.passwordHash);
-  const rolePassword = String(user.role || "OPERATOR").trim().toLowerCase();
-
-  if (!isMatch && rolePassword && password === rolePassword) {
-    const passwordHash = await bcrypt.hash(rolePassword, 10);
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { passwordHash, passwordText: rolePassword },
-    });
-    isMatch = true;
-  }
+  const isMatch = await bcrypt.compare(password, user.passwordHash);
 
   if (!isMatch) {
     throw new HttpError(401, "Invalid credentials");
@@ -57,7 +46,7 @@ export const loginUser = async (emailOrEmpId: string, password: string) => {
       fullName,
     },
     process.env.JWT_SECRET,
-    { expiresIn: "7d" }
+    { expiresIn: "7d", algorithm: "HS256" }
   );
 
   return {
@@ -72,4 +61,32 @@ export const loginUser = async (emailOrEmpId: string, password: string) => {
       fullName,
     },
   };
+};
+
+export const changePassword = async (
+  userId: string,
+  currentPassword: string,
+  newPassword: string
+) => {
+  if (!userId) throw new HttpError(401, "Unauthorized");
+  if (!currentPassword || !newPassword) {
+    throw new HttpError(400, "Current password and new password are required");
+  }
+  if (String(newPassword).length < 6) {
+    throw new HttpError(400, "New password must be at least 6 characters");
+  }
+
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user) throw new HttpError(404, "User not found");
+
+  const matches = await bcrypt.compare(String(currentPassword), user.passwordHash);
+  if (!matches) throw new HttpError(401, "Current password is incorrect");
+
+  const passwordHash = await bcrypt.hash(String(newPassword), 10);
+  await prisma.user.update({
+    where: { id: userId },
+    data: { passwordHash, passwordText: null },
+  });
+
+  return { message: "Password updated successfully" };
 };

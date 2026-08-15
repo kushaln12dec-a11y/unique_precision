@@ -23,10 +23,28 @@ const morgan = require("morgan");
 
 const app = express();
 
+const configuredOrigins = String(process.env.FRONTEND_ORIGIN || "http://localhost:5173")
+  .split(",")
+  .map((s) => s.trim())
+  .filter(Boolean);
+
+const isDev = process.env.NODE_ENV !== "production";
+const localDevOriginPattern =
+  /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i;
+
+const isOriginAllowed = (origin?: string | null): boolean => {
+  if (!origin) return true;
+  if (configuredOrigins.includes(origin)) return true;
+  // Vite may hop ports when 5173 is busy (e.g. 5174).
+  if (isDev && localDevOriginPattern.test(origin)) return true;
+  return false;
+};
+
 // Keep BigInt values serializable across Prisma responses.
 app.set("json replacer", (_key: string, value: any) =>
   typeof value === "bigint" ? value.toString() : value
 );
+app.set("trust proxy", 1);
 app.use((_req, res, next) => {
   const originalWriteHead = res.writeHead.bind(res);
   res.writeHead = ((...args: any[]) => {
@@ -37,10 +55,18 @@ app.use((_req, res, next) => {
   }) as typeof res.writeHead;
   next();
 });
-app.use(cors());
+app.use(
+  cors({
+    origin: (origin, cb) => {
+      if (isOriginAllowed(origin)) return cb(null, true);
+      return cb(null, false);
+    },
+    credentials: true,
+  })
+);
 app.use(helmet());
 app.use(compression());
-app.use(morgan("dev"));
+app.use(morgan(process.env.NODE_ENV === "production" ? "combined" : "dev"));
 app.use(express.json({ limit: "10mb" }));
 app.use(jsonErrorHandler);
 

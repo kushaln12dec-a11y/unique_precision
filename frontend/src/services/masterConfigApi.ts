@@ -1,4 +1,5 @@
 import type { MasterConfig } from "../types/masterConfig";
+import { apiFetch } from "../utils/apiClient";
 import { apiUrl } from "./apiClient";
 import { DEFAULT_SEDM_CUSTOMER_PRICING } from "../pages/AdminConsole/adminConsoleUtils";
 
@@ -11,12 +12,15 @@ let masterConfigCache:
 let masterConfigPromise: Promise<MasterConfig> | null = null;
 const MASTER_CONFIG_TTL_MS = 60_000;
 
-const getAuthHeaders = () => {
+const getAuthHeaders = (): Record<string, string> => {
   const token = localStorage.getItem("token");
-  return {
+  const headers: Record<string, string> = {
     "Content-Type": "application/json",
-    Authorization: `Bearer ${token}`,
   };
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+  return headers;
 };
 
 export const getMasterConfig = async (): Promise<MasterConfig> => {
@@ -29,7 +33,7 @@ export const getMasterConfig = async (): Promise<MasterConfig> => {
     return masterConfigPromise;
   }
 
-  masterConfigPromise = fetch(apiUrl("/api/master-config"), {
+  masterConfigPromise = apiFetch(apiUrl("/api/master-config"), {
     method: "GET",
     headers: getAuthHeaders(),
   })
@@ -90,7 +94,7 @@ export const getMasterConfig = async (): Promise<MasterConfig> => {
 };
 
 export const updateMasterConfig = async (payload: MasterConfig): Promise<MasterConfig> => {
-  const res = await fetch(apiUrl("/api/master-config"), {
+  const res = await apiFetch(apiUrl("/api/master-config"), {
     method: "PUT",
     headers: getAuthHeaders(),
     body: JSON.stringify(payload),

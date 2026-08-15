@@ -12,8 +12,12 @@ const PORT = Number(process.env.PORT) || 3000;
 const startServer = async () => {
   const dbOk = await connectDB();
   if (!dbOk) {
+    if (process.env.NODE_ENV === "production") {
+      console.error("Database connection failed in production. Exiting.");
+      process.exit(1);
+    }
     console.warn("Database connection not established. Server will still start for health checks.");
-  } else {
+  } else if (process.env.RUN_SCHEMA_INIT === "true") {
     await initDB();
   }
 

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { getActiveOperatorRunLogs, getEmployeeLogs } from "../services/employeeLogsApi";
-import { getOperatorJobsPage } from "../services/jobApi";
+import { getOperatorJobsPage } from "../services/operatorApi";
 import type { EmployeeLog } from "../types/employeeLog";
 import type { JobEntry } from "../types/job";
 import { fetchAllPaginatedItems } from "../utils/paginationUtils";
@@ -58,7 +58,7 @@ export const useHeaderNotifications = ({
         }
 
         const jobs = await fetchAllPaginatedItems<JobEntry>(
-          (offset, limit) => getOperatorJobsPage(undefined, "", "", "", "", { offset, limit }),
+          (offset, limit) => getOperatorJobsPage(undefined, undefined, undefined, { offset, limit }),
           HEADER_ALERT_FETCH_PAGE_SIZE,
         );
         if (!isMounted) return;

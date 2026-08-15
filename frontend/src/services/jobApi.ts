@@ -1,5 +1,6 @@
 import type { JobEntry } from "../types/job";
 import { sortGroupEntriesParentFirst } from "../pages/Programmer/programmerUtils";
+import { apiFetch } from "../utils/apiClient";
 import { apiUrl } from "./apiClient";
 import {
   buildQueryParams,
@@ -50,6 +51,7 @@ export const getProgrammerJobsPage = async (
   return fetchPaginatedJobList(queryString ? `/api/jobs/programmer?${queryString}` : "/api/jobs/programmer");
 };
 
+/** @deprecated Prefer operatorApi.getOperatorJobs for operator list/detail flows when filters allow. */
 export const getOperatorJobs = async (
   filters?: any,
   customerFilter?: string,
@@ -61,6 +63,7 @@ export const getOperatorJobs = async (
   return fetchJobList(queryString ? `/api/jobs/operator?${queryString}` : "/api/jobs/operator");
 };
 
+/** @deprecated Prefer operatorApi.getOperatorJobsPage for operator list pages when filters allow. */
 export const getOperatorJobsPage = async (
   filters?: any,
   customerFilter?: string,
@@ -104,7 +107,7 @@ export const getJobsByGroupId = async (groupId: string): Promise<JobEntry[]> => 
 };
 
 export const createJobs = async (jobs: JobEntry[]): Promise<JobEntry[]> => {
-  const res = await fetch(apiUrl("/api/jobs"), {
+  const res = await apiFetch(apiUrl("/api/jobs"), {
     method: "POST",
     headers: getAuthHeaders(),
     body: JSON.stringify(jobs),
@@ -119,7 +122,7 @@ export const createJobs = async (jobs: JobEntry[]): Promise<JobEntry[]> => {
 };
 
 export const updateJob = async (id: string, jobData: Partial<JobEntry>): Promise<JobEntry> => {
-  const res = await fetch(apiUrl(`/api/jobs/${id}`), {
+  const res = await apiFetch(apiUrl(`/api/jobs/${id}`), {
     method: "PUT",
     headers: getAuthHeaders(),
     body: JSON.stringify(jobData),
@@ -156,7 +159,7 @@ export const updateJobsByGroupId = async (groupId: string, jobs: JobEntry[]): Pr
 };
 
 export const deleteJob = async (id: string): Promise<void> => {
-  const res = await fetch(apiUrl(`/api/jobs/${id}`), {
+  const res = await apiFetch(apiUrl(`/api/jobs/${id}`), {
     method: "DELETE",
     headers: getAuthHeaders(),
   });
@@ -164,7 +167,7 @@ export const deleteJob = async (id: string): Promise<void> => {
 };
 
 export const deleteJobsByGroupId = async (groupId: string): Promise<void> => {
-  const res = await fetch(apiUrl(`/api/jobs/group/${groupId}`), {
+  const res = await apiFetch(apiUrl(`/api/jobs/group/${groupId}`), {
     method: "DELETE",
     headers: getAuthHeaders(),
   });
@@ -176,7 +179,7 @@ const updateGroupDecision = async (
   body: Record<string, unknown>,
   fallback: string
 ): Promise<JobEntry[]> => {
-  const res = await fetch(apiUrl(route), {
+  const res = await apiFetch(apiUrl(route), {
     method: "PUT",
     headers: getAuthHeaders(),
     body: JSON.stringify(body),

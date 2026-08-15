@@ -1,3 +1,4 @@
+import { apiFetch } from "../utils/apiClient";
 import { apiUrl } from "./apiClient";
 
 export type InstrumentSelection = {
@@ -42,16 +43,19 @@ export type InspectionReportPayload = {
   approvedBy: string;
 };
 
-const getAuthHeaders = () => {
+const getAuthHeaders = (): Record<string, string> => {
   const token = localStorage.getItem("token");
-  return {
+  const headers: Record<string, string> = {
     "Content-Type": "application/json",
-    Authorization: `Bearer ${token}`,
   };
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+  return headers;
 };
 
 export const generateInspectionReport = async (payload: InspectionReportPayload): Promise<Blob> => {
-  const res = await fetch(apiUrl("/api/inspection-reports/generate"), {
+  const res = await apiFetch(apiUrl("/api/inspection-reports/generate"), {
     method: "POST",
     headers: getAuthHeaders(),
     body: JSON.stringify(payload),
@@ -66,7 +70,7 @@ export const generateInspectionReport = async (payload: InspectionReportPayload)
 };
 
 export const getInspectionReportPreviewHtml = async (payload: InspectionReportPayload): Promise<string> => {
-  const res = await fetch(apiUrl("/api/inspection-reports/preview-html"), {
+  const res = await apiFetch(apiUrl("/api/inspection-reports/preview-html"), {
     method: "POST",
     headers: getAuthHeaders(),
     body: JSON.stringify(payload),

@@ -50,10 +50,10 @@ const mapJobCore = (job: any) => {
     sedmOver20Length: decimalToString(job.sedmOver20Length),
     sedmLengthValue: decimalToString(job.sedmLengthValue),
     sedmHoles: job.sedmHoles !== null && job.sedmHoles !== undefined ? String(job.sedmHoles) : "",
-    totalHrs: job.totalHrs !== null && job.totalHrs !== undefined ? Number(job.totalHrs) : 0,
-    totalAmount: job.totalAmount !== null && job.totalAmount !== undefined ? Number(job.totalAmount) : 0,
-    wedmAmount: job.wedmAmount !== null && job.wedmAmount !== undefined ? Number(job.wedmAmount) : 0,
-    sedmAmount: job.sedmAmount !== null && job.sedmAmount !== undefined ? Number(job.sedmAmount) : 0,
+    totalHrs: job.totalHrs !== null && job.totalHrs !== undefined ? decimalToString(job.totalHrs) : "0",
+    totalAmount: job.totalAmount !== null && job.totalAmount !== undefined ? decimalToString(job.totalAmount) : "0",
+    wedmAmount: job.wedmAmount !== null && job.wedmAmount !== undefined ? decimalToString(job.wedmAmount) : "0",
+    sedmAmount: job.sedmAmount !== null && job.sedmAmount !== undefined ? decimalToString(job.sedmAmount) : "0",
   };
 };
 
@@ -78,9 +78,10 @@ const mapOperatorCaptures = (job: any) => {
     : [];
 };
 
-export const mapUser = (user: any, options?: { includePassword?: boolean }) => {
+export const mapUser = (user: any, _options?: { includePassword?: boolean }) => {
   if (!user) return user;
-  const { passwordHash, ...rest } = user;
+  // Never include passwordHash/passwordText/password in API responses.
+  const { passwordHash: _passwordHash, passwordText: _passwordText, password: _password, ...rest } = user;
   const rawEmail = String(user.email ?? "").trim().toLowerCase();
   const email = AUTO_GENERATED_EMP_EMAIL_REGEX.test(rawEmail) ? "" : rawEmail;
   return {
@@ -93,7 +94,6 @@ export const mapUser = (user: any, options?: { includePassword?: boolean }) => {
     empId: normalizeEmpId(user.empId) || "",
     image: user.image ?? "",
     role: user.role ?? "OPERATOR",
-    ...(options?.includePassword ? { password: user.passwordText ?? "" } : {}),
   };
 };
 

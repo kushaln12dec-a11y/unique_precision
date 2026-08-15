@@ -17,3 +17,18 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
     next(error);
   }
 };
+
+export const changePassword = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userId = String(req.user?.userId || "").trim();
+    const { currentPassword, newPassword } = req.body ?? {};
+    const result = await authService.changePassword(
+      userId,
+      String(currentPassword || ""),
+      String(newPassword || "")
+    );
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+};

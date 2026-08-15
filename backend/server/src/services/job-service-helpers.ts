@@ -25,6 +25,8 @@ export const buildCreateJobsTransaction = async (payload: any[] | any) => {
     return jobWithoutIds;
   });
 
+  // Prefer server-allocated ref numbers to avoid client collisions / spoofing.
+  // Accept a client-supplied value only when it already matches JOB-#####; otherwise allocate via counter.
   let refNumber = String(cleanedJobsData[0]?.refNumber || "").trim().toUpperCase();
   if (!JOB_REF_REGEX.test(refNumber)) {
     refNumber = await getNextJobRef();

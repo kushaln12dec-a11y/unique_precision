@@ -36,4 +36,25 @@ export const login = async (empId: string, password: string): Promise<LoginRespo
     throw error;
   }
 };
+
+export const changePassword = async (
+  currentPassword: string,
+  newPassword: string
+): Promise<{ message: string }> => {
+  const token = localStorage.getItem("token");
+  const res = await fetch(apiUrl("/api/auth/change-password"), {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify({ currentPassword, newPassword }),
+  });
+
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(data.message || "Failed to change password");
+  }
+  return data;
+};
   

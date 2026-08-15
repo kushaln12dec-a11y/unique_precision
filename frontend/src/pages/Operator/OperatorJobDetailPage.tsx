@@ -1,5 +1,4 @@
-import { useCallback, useMemo, useState, useEffect } from "react";
-import { useRef } from "react";
+import { useCallback, useMemo, useState, useEffect, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import Sidebar from "../../components/Sidebar";
 import Header from "../../components/Header";
@@ -42,6 +41,7 @@ const OperatorJobDetailPage = () => {
 
   const [validationErrors, setValidationErrors] = useState<Map<number | string, Record<string, Record<string, string>>>>(new Map());
   const [liveNowMs, setLiveNowMs] = useState<number>(getServerNowMs());
+  const [hasUnsavedEdits, setHasUnsavedEdits] = useState(false);
   const [pendingEndTimeCapture, setPendingEndTimeCapture] = useState<{
     cutId: number | string;
     quantityIndex: number;
@@ -70,13 +70,53 @@ const OperatorJobDetailPage = () => {
     reloadOperatorViewData,
   } = useOperatorViewData(groupId, cutIdParam);
 
-  const { handleCutImageChange, handleInputChange, copyQuantityToAll, copyQuantityToCount } = useOperatorInputs(
+  const markDirty = useCallback(() => setHasUnsavedEdits(true), []);
+  const clearDirty = useCallback(() => setHasUnsavedEdits(false), []);
+
+  const {
+    handleCutImageChange: baseHandleCutImageChange,
+    handleInputChange: baseHandleInputChange,
+    copyQuantityToAll: baseCopyQuantityToAll,
+    copyQuantityToCount: baseCopyQuantityToCount,
+  } = useOperatorInputs(
     cutInputs,
     setCutInputs,
     idleTimeConfigs,
     validationErrors,
     setValidationErrors,
     currentUserDisplayName
+  );
+
+  const handleCutImageChange = useCallback(
+    (...args: Parameters<typeof baseHandleCutImageChange>) => {
+      markDirty();
+      return baseHandleCutImageChange(...args);
+    },
+    [baseHandleCutImageChange, markDirty]
+  );
+
+  const handleInputChange = useCallback(
+    (...args: Parameters<typeof baseHandleInputChange>) => {
+      markDirty();
+      return baseHandleInputChange(...args);
+    },
+    [baseHandleInputChange, markDirty]
+  );
+
+  const copyQuantityToAll = useCallback(
+    (...args: Parameters<typeof baseCopyQuantityToAll>) => {
+      markDirty();
+      return baseCopyQuantityToAll(...args);
+    },
+    [baseCopyQuantityToAll, markDirty]
+  );
+
+  const copyQuantityToCount = useCallback(
+    (...args: Parameters<typeof baseCopyQuantityToCount>) => {
+      markDirty();
+      return baseCopyQuantityToCount(...args);
+    },
+    [baseCopyQuantityToCount, markDirty]
   );
 
   const {
@@ -102,7 +142,45 @@ const OperatorJobDetailPage = () => {
   } = useOperatorViewActions({ jobs, cutInputs, setCutInputs, setValidationErrors, currentUserDisplayName, isAdmin });
   const allowedOperatorUsers = useMemo(() => operatorUsers, [operatorUsers]);
 
+  const handleSaveQuantityWithDirtyClear = useCallback(
+    async (...args: Parameters<typeof handleSaveQuantity>) => {
+      await handleSaveQuantity(...args);
+      clearDirty();
+    },
+    [clearDirty, handleSaveQuantity]
+  );
 
+  const handleSaveRangeWithDirtyClear = useCallback(
+    async (...args: Parameters<typeof handleSaveRange>) => {
+      await handleSaveRange(...args);
+      clearDirty();
+    },
+    [clearDirty, handleSaveRange]
+  );
+
+  useEffect(() => {
+    if (!hasUnsavedEdits) return undefined;
+    const onBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = "";
+    };
+    window.addEventListener("beforeunload", onBeforeUnload);
+    return () => window.removeEventListener("beforeunload", onBeforeUnload);
+  }, [hasUnsavedEdits]);
+
+  const confirmLeaveIfDirty = useCallback(() => {
+    if (!hasUnsavedEdits) return true;
+    return window.confirm("You have unsaved operator changes. Leave this page anyway?");
+  }, [hasUnsavedEdits]);
+
+  const safeNavigate = useCallback(
+    (path: string) => {
+      if (!confirmLeaveIfDirty()) return;
+      clearDirty();
+      navigate(path);
+    },
+    [clearDirty, confirmLeaveIfDirty, navigate]
+  );
 
   useOperatorAssignmentSync({
     allowedOperatorUsers,
@@ -113,6 +191,7 @@ const OperatorJobDetailPage = () => {
     setJobs,
     setCutInputs,
     userRole,
+    reloadInFlightRef,
   });
 
   const restoreScrollPosition = useCallback(() => {
@@ -153,6 +232,7 @@ const OperatorJobDetailPage = () => {
   }, [getScrollContainer, reloadOperatorViewData]);
 
   const handleRequestEndTimeCapture = useCallback((cutId: number | string, quantityIndex: number, timestampMs: number) => {
+    markDirty();
     const qtyData = cutInputs.get(cutId)?.quantities?.[quantityIndex];
     if (!qtyData?.startTime) {
       setActionToast({
@@ -211,7 +291,7 @@ const OperatorJobDetailPage = () => {
       previousEndTimeEpochMs: qtyData.endTimeEpochMs || null,
       previousMachineHrs: String(qtyData.machineHrs || ""),
     });
-  }, [cutInputs, getPersistedIdleDuration, setActionToast, setCutInputs]);
+  }, [cutInputs, getPersistedIdleDuration, markDirty, setActionToast, setCutInputs]);
 
   const handleCancelEndTimeCapture = useCallback(() => {
     if (!pendingEndTimeCapture) return;
@@ -422,9 +502,9 @@ const OperatorJobDetailPage = () => {
 
   return (
     <div className="roleboard-container">
-      <Sidebar currentPath="/operator" onNavigate={(path) => navigate(path)} />
+      <Sidebar currentPath="/operator" onNavigate={safeNavigate} />
       <div className="roleboard-content operator-viewpage-content">
-        <Header title="Operator View" />
+        <Header title="Operator View" onNavigate={safeNavigate} />
         <div className="programmer-panel operator-viewpage-panel">
           <OperatorViewBody
             jobs={jobs}
@@ -447,8 +527,8 @@ const OperatorJobDetailPage = () => {
             handleInputChange={handleInputChange}
             copyQuantityToAll={copyQuantityToAll}
             copyQuantityToCount={copyQuantityToCount}
-            handleSaveQuantity={handleSaveQuantity}
-            handleSaveRange={handleSaveRange}
+            handleSaveQuantity={handleSaveQuantityWithDirtyClear}
+            handleSaveRange={handleSaveRangeWithDirtyClear}
             setPendingDispatch={setPendingDispatch}
             setActionToast={setActionToast}
             setPendingReset={setPendingReset}

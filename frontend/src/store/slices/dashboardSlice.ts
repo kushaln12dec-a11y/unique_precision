@@ -1,5 +1,6 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import type { DashboardDateRangePreset, DashboardRoleView } from "../../types/dashboard";
+import { getUserRoleFromToken } from "../../utils/auth";
 
 type DashboardFilters = {
   customer: string;
@@ -16,8 +17,16 @@ export type DashboardState = {
   filters: DashboardFilters;
 };
 
+const resolveInitialView = (): DashboardRoleView => {
+  const role = String(getUserRoleFromToken() || "").toUpperCase();
+  if (role === "OPERATOR") return "OPERATOR";
+  if (role === "PROGRAMMER") return "PROGRAMMER";
+  if (role === "QC") return "QC";
+  return "ADMIN";
+};
+
 const initialState: DashboardState = {
-  activeView: "ADMIN",
+  activeView: resolveInitialView(),
   dateRange: "THIS_MONTH",
   customStartDate: "",
   customEndDate: "",

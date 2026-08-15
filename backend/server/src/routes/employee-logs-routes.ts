@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { authMiddleware } from "../middleware/auth";
+import { authorize } from "../middleware/rbac-middleware";
 import { prisma } from "../lib/prisma";
 import { emitJobsUpdated } from "../lib/socket";
 import { parseOperatorDateTime } from "../utils/dateTime";
@@ -43,6 +44,21 @@ const getAssignedOperatorNames = (value: unknown): string[] =>
     .map((entry) => entry.trim().toUpperCase())
     .filter((entry) => entry && entry !== "UNASSIGN" && entry !== "UNASSIGNED");
 
+const buildSelfIdentityTokens = (reqUser: any): Set<string> => {
+  const tokens = new Set<string>();
+  const name = resolveReqUserName(reqUser);
+  if (name) tokens.add(name);
+  const empId = String(reqUser?.empId || "").trim().toUpperCase();
+  if (empId) tokens.add(empId);
+  const email = String(reqUser?.email || "").trim().toUpperCase();
+  if (email) {
+    tokens.add(email);
+    const local = email.split("@")[0]?.trim();
+    if (local) tokens.add(local);
+  }
+  return tokens;
+};
+
 const isUserAssignedToJob = (reqUser: any, assignedValue: unknown) => {
   const role = String(reqUser?.role || "").trim().toUpperCase();
   if (role === "ADMIN") return true;
@@ -51,8 +67,18 @@ const isUserAssignedToJob = (reqUser: any, assignedValue: unknown) => {
   return getAssignedOperatorNames(assignedValue).includes(currentUserName);
 };
 
-const canOperatorAdjustOwnAssignment = (reqUser: any, currentValue: unknown, requestedValue: unknown) => {
-  return true;
+/** Operators may only set ops/assignment identity to themselves; admins/programmers unrestricted. */
+const canOperatorAdjustOwnAssignment = (reqUser: any, _currentValue: unknown, requestedValue: unknown) => {
+  const role = String(reqUser?.role || "").trim().toUpperCase();
+  if (role === "ADMIN" || role === "PROGRAMMER") return true;
+  if (role !== "OPERATOR") return false;
+
+  const selfTokens = buildSelfIdentityTokens(reqUser);
+  if (selfTokens.size === 0) return false;
+
+  const requested = getRequestedOperatorNames(requestedValue);
+  if (requested.length === 0) return false;
+  return requested.every((name) => selfTokens.has(name));
 };
 
 const parsePositiveInt = (value: unknown, fallback: number) => {
@@ -398,7 +424,7 @@ const createPaginatedResponse = <T,>(items: T[], total: number, offset: number, 
   hasMore: offset + items.length < total,
 });
 
-router.post("/programmer/start", async (req, res) => {
+router.post("/programmer/start", authorize("PROGRAMMER", "ADMIN"), async (req, res) => {
   try {
     const reqUser = req.user as any;
     const { refNumber } = req.body || {};
@@ -427,7 +453,7 @@ router.post("/programmer/start", async (req, res) => {
   }
 });
 
-router.post("/programmer/complete", async (req, res) => {
+router.post("/programmer/complete", authorize("PROGRAMMER", "ADMIN"), async (req, res) => {
   try {
     const reqUser = req.user as any;
     const { logId, jobGroupId, refNumber, customer, description, settingsCount, quantityCount } = req.body || {};
@@ -512,7 +538,7 @@ router.post("/programmer/complete", async (req, res) => {
   }
 });
 
-router.post("/programmer/reject", async (req, res) => {
+router.post("/programmer/reject", authorize("PROGRAMMER", "ADMIN"), async (req, res) => {
   try {
     const reqUser = req.user as any;
     const { logId } = req.body || {};
@@ -571,7 +597,7 @@ router.post("/programmer/reject", async (req, res) => {
   }
 });
 
-router.post("/operator/complete", async (req, res) => {
+router.post("/operator/complete", authorize("OPERATOR", "ADMIN", "PROGRAMMER"), async (req, res) => {
   try {
     const reqUser = req.user as any;
     const {
@@ -612,6 +638,15 @@ router.post("/operator/complete", async (req, res) => {
       : null;
 
     if (existingLog) {
+      const role = String(reqUser?.role || "").trim().toUpperCase();
+      const isAdmin = role === "ADMIN";
+      if (!isAdmin && existingLog.userId && userId && existingLog.userId !== userId) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+      if (!isAdmin && existingLog.userId && !userId) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+
       const parsedEnd = parseFlexibleDate(endTime || req.body?.endedAt) || new Date();
       const parsedStart = existingLog.startedAt instanceof Date ? existingLog.startedAt : parseFlexibleDate(startTime) || parsedEnd;
       const elapsedSeconds = Math.max(0, Math.floor((parsedEnd.getTime() - parsedStart.getTime()) / 1000));
@@ -813,7 +848,7 @@ router.post("/operator/complete", async (req, res) => {
   }
 });
 
-router.post("/operator/start", async (req, res) => {
+router.post("/operator/start", authorize("OPERATOR", "ADMIN", "PROGRAMMER"), async (req, res) => {
   try {
     const reqUser = req.user as any;
     const {
@@ -963,7 +998,7 @@ router.post("/operator/start", async (req, res) => {
   }
 });
 
-router.post("/operator/task-switch", async (req, res) => {
+router.post("/operator/task-switch", authorize("OPERATOR", "ADMIN", "PROGRAMMER"), async (req, res) => {
   try {
     const reqUser = req.user as any;
     const role = String(reqUser?.role || "").toUpperCase();

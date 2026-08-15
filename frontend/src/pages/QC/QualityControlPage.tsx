@@ -30,6 +30,7 @@ const QualityControlPage = ({ forceTab, hideLayout, isBilled }: { forceTab?: "QU
   const { customerFilter, descriptionFilter, operatorFilter, searchFilter } = useAppSelector((state) => state.filters.qc);
   const [qcGridJobs, setQcGridJobs] = useState<JobEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [gridRefreshKey, setGridRefreshKey] = useState(0);
   const [reportCloseCandidate, setReportCloseCandidate] = useState<QcRow | null>(null);
   const [isCloseConfirmOpen, setIsCloseConfirmOpen] = useState(false);
   const [templateSelection, setTemplateSelection] = useState<{
@@ -47,35 +48,40 @@ const QualityControlPage = ({ forceTab, hideLayout, isBilled }: { forceTab?: "QU
     setToast({ message, variant, visible: true });
     window.setTimeout(() => setToast((prev) => ({ ...prev, visible: false })), 2500);
   }, []);
-  const loadQcJobs = useCallback(async () => {
-    try {
-      setLoading(true);
-      const page = await getQcJobsPage(
-        {},
-        customerFilter,
-        undefined,
-        descriptionFilter,
-        { offset: 0, limit: 100 }
-      );
-      setQcGridJobs(page.items);
-    } catch {
-      showToast("Failed to load QC queue.", "error");
-    } finally {
-      setLoading(false);
-    }
-  }, [customerFilter, descriptionFilter, showToast]);
 
   useEffect(() => {
     if (!localStorage.getItem("token")) navigate("/login");
   }, [navigate]);
 
   useEffect(() => {
-    void loadQcJobs();
-  }, [loadQcJobs]);
+    setGridRefreshKey((key) => key + 1);
+  }, [customerFilter, descriptionFilter]);
 
   useJobSync(() => {
-    void loadQcJobs();
+    setGridRefreshKey((key) => key + 1);
   });
+
+  const qcFetchPage = useCallback(
+    async (offset: number, limit: number) => {
+      try {
+        if (offset === 0) setLoading(true);
+        const page = await getQcJobsPage(
+          {},
+          customerFilter,
+          undefined,
+          descriptionFilter,
+          { offset, limit }
+        );
+        return { items: page.items, hasMore: page.hasMore };
+      } catch {
+        showToast("Failed to load QC queue.", "error");
+        return { items: [] as JobEntry[], hasMore: false };
+      } finally {
+        if (offset === 0) setLoading(false);
+      }
+    },
+    [customerFilter, descriptionFilter, showToast]
+  );
 
   const tableData = useMemo(() => buildQcRows(qcGridJobs, qcTab === "LOGGED"), [qcGridJobs, qcTab]);
   const filteredTableData = useMemo(() => {
@@ -259,16 +265,7 @@ const QualityControlPage = ({ forceTab, hideLayout, isBilled }: { forceTab?: "QU
               />
               <LazyAgGrid
                 columnDefs={qcColumnDefs as any}
-                fetchPage={async (offset, limit) => {
-                  const page = await getQcJobsPage(
-                    {},
-                    customerFilter,
-                    undefined,
-                    descriptionFilter,
-                    { offset, limit }
-                  );
-                  return { items: page.items, hasMore: page.hasMore };
-                }}
+                fetchPage={qcFetchPage}
                 rows={qcGridJobs}
                 onRowsChange={setQcGridJobs}
                 transformRows={() => filteredTableData}
@@ -276,6 +273,8 @@ const QualityControlPage = ({ forceTab, hideLayout, isBilled }: { forceTab?: "QU
                 getRowClass={(params) => getParentRowClassName(params.data.parent, params.data.entries, false)}
                 emptyMessage="No data available."
                 className="jobs-table-wrapper"
+                pageSize={50}
+                refreshKey={`${gridRefreshKey}|${customerFilter}|${descriptionFilter}`}
               />
             </>
           )}

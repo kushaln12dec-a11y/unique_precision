@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import * as jobService from "../services/job-service";
 import { HttpError } from "../lib/httpError";
-import { createJobsSchema, jobsQuerySchema } from "../validators/job.validator";
+import { createJobsSchema, jobsQuerySchema, updateJobSchema } from "../validators/job.validator";
 
 const getParam = (value: string | string[] | undefined, name: string) => {
   if (typeof value === "string" && value.trim()) {
@@ -81,7 +81,8 @@ export const createJob = async (req: Request, res: Response, next: NextFunction)
 
 export const updateJob = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const job = await jobService.updateJob(getParam(req.params.id, "job id"), req.body, req.user);
+    const payload = updateJobSchema.parse(req.body);
+    const job = await jobService.updateJob(getParam(req.params.id, "job id"), payload, req.user);
     res.json(job);
   } catch (error) {
     next(error);

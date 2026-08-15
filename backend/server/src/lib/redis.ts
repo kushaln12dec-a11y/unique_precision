@@ -106,3 +106,25 @@ export async function cacheDel(key: string): Promise<void> {
     console.error("Redis DEL error:", err);
   }
 }
+
+/** Clears dashboard:* entries from memory and Redis (pattern delete when available). */
+export async function invalidateDashboardCache(): Promise<void> {
+  const prefix = "dashboard:";
+
+  for (const key of Array.from(memoryCache.keys())) {
+    if (key.startsWith(prefix)) {
+      memoryCache.delete(key);
+    }
+  }
+
+  if (!redis) return;
+
+  try {
+    const keys = await redis.keys(`${prefix}*`);
+    if (Array.isArray(keys) && keys.length > 0) {
+      await redis.del(...keys);
+    }
+  } catch (err) {
+    console.error("Redis dashboard cache invalidation error:", err);
+  }
+}

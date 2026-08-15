@@ -7,29 +7,13 @@ const getEmailLocalPart = (email: unknown): string | null => {
   return localPart || null;
 };
 
-export const getUserRoleFromToken = (): string | null => {
-  const token = localStorage.getItem("token");
-  if (!token) {
-    return null;
-  }
-
-  const parts = token.split(".");
-  if (parts.length < 2) {
-    return null;
-  }
-
-  try {
-    const payload = parts[1]
-      .replace(/-/g, "+")
-      .replace(/_/g, "/");
-    const decoded = JSON.parse(atob(payload));
-    return decoded.role || null;
-  } catch {
-    return null;
-  }
+const padBase64 = (value: string): string => {
+  const remainder = value.length % 4;
+  if (remainder === 0) return value;
+  return value + "=".repeat(4 - remainder);
 };
 
-const getDecodedTokenPayload = (): Record<string, any> | null => {
+export const getDecodedTokenPayload = (): Record<string, any> | null => {
   const token = localStorage.getItem("token");
   if (!token) return null;
 
@@ -37,11 +21,26 @@ const getDecodedTokenPayload = (): Record<string, any> | null => {
   if (parts.length < 2) return null;
 
   try {
-    const payload = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+    const payload = padBase64(parts[1].replace(/-/g, "+").replace(/_/g, "/"));
     return JSON.parse(atob(payload));
   } catch {
     return null;
   }
+};
+
+export const isTokenExpired = (payload?: Record<string, any> | null): boolean => {
+  const decoded = payload === undefined ? getDecodedTokenPayload() : payload;
+  if (!decoded || typeof decoded.exp !== "number") return false;
+  return decoded.exp * 1000 <= Date.now();
+};
+
+export const clearAuthSession = (): void => {
+  localStorage.removeItem("token");
+};
+
+export const getUserRoleFromToken = (): string | null => {
+  const decoded = getDecodedTokenPayload();
+  return decoded?.role || null;
 };
 
 export const getUserDisplayNameFromToken = (): string | null => {

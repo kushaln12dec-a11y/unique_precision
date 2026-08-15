@@ -1,3 +1,4 @@
+import { apiFetch } from "../utils/apiClient";
 import { apiUrl } from "./apiClient";
 import type {
   DashboardDateRangePreset,
@@ -16,12 +17,15 @@ export type DashboardSummaryParams = {
   programmer?: string;
 };
 
-const getAuthHeaders = () => {
+const getAuthHeaders = (): Record<string, string> => {
   const token = localStorage.getItem("token");
-  return {
+  const headers: Record<string, string> = {
     "Content-Type": "application/json",
-    Authorization: `Bearer ${token}`,
   };
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+  return headers;
 };
 
 export const getDashboardSummary = async (
@@ -37,7 +41,7 @@ export const getDashboardSummary = async (
   if (params.operator) query.append("operator", params.operator);
   if (params.programmer) query.append("programmer", params.programmer);
 
-  const res = await fetch(apiUrl(`/api/dashboard/summary?${query.toString()}`), {
+  const res = await apiFetch(apiUrl(`/api/dashboard/summary?${query.toString()}`), {
     method: "GET",
     headers: getAuthHeaders(),
   });

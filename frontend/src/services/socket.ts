@@ -4,12 +4,16 @@ import { apiUrl } from "./apiClient";
 let socket: Socket | null = null;
 let activeToken = "";
 
+export const disconnectAppSocket = () => {
+  socket?.disconnect();
+  socket = null;
+  activeToken = "";
+};
+
 export const getAppSocket = () => {
   const token = localStorage.getItem("token")?.trim() || "";
   if (!token) {
-    socket?.disconnect();
-    socket = null;
-    activeToken = "";
+    disconnectAppSocket();
     return null;
   }
 
@@ -17,7 +21,7 @@ export const getAppSocket = () => {
     return socket;
   }
 
-  socket?.disconnect();
+  disconnectAppSocket();
   activeToken = token;
   socket = io(apiUrl(""), {
     auth: { token },

@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Sidebar from "../../components/Sidebar";
 import Header from "../../components/Header";
@@ -80,7 +80,7 @@ const OperatorJobListPage = ({
     handleRemoveFilter,
   } = useOperatorFilters();
 
-  const { jobs, loadingJobs, setJobs, operatorUsers, users, canAssign, refreshJobs } = useOperatorData(
+  const { jobs, loadingJobs, jobsError, setJobs, operatorUsers, users, canAssign, refreshJobs } = useOperatorData(
     filters,
     customerFilter,
     descriptionFilter,
@@ -88,6 +88,16 @@ const OperatorJobListPage = ({
     assignedToFilter,
     searchFilter
   );
+
+  useEffect(() => {
+    if (!jobsError) return;
+    setToast({
+      message: jobsError,
+      variant: "error",
+      visible: true,
+    });
+    window.setTimeout(() => setToast((prev) => ({ ...prev, visible: false })), 3000);
+  }, [jobsError]);
 
   const refreshOperatorBoard = useCallback(async () => {
     const latestJobs = await refreshJobs();

@@ -66,11 +66,7 @@ export const useOperatorPersistenceActions = ({
       const activeLogId = activeOperatorLogIds.get(`${String(cutId)}:${quantityIndex}`) || await resolveActiveOperatorLogId(cutId, quantityIndex);
       const payload = buildSingleCapturePayload(qtyData, imageBase64, quantityIndex, activeLogId);
 
-      try {
-        await captureOperatorInput(String(cutId), payload);
-      } catch (error: any) {
-        if (!error?.message?.includes("overlaps")) throw error;
-      }
+      await captureOperatorInput(String(cutId), payload);
 
       await updateOperatorJob(String(cutId), {
         assignedTo: getAssignedToValue(opsName),
@@ -95,9 +91,15 @@ export const useOperatorPersistenceActions = ({
         next.delete(`${String(cutId)}:${quantityIndex}`);
         return next;
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to save quantity", error);
-      showAndHideToast(setSaveToast, "Failed to save quantity. Please try again.", "error", 3000);
+      const backendMessage = String(error?.message || "");
+      showAndHideToast(
+        setSaveToast,
+        backendMessage || "Failed to save quantity. Please try again.",
+        "error",
+        3000
+      );
     }
   }, [activeOperatorLogIds, clearQuantityErrors, cutInputs, resolveActiveOperatorLogId, setActiveOperatorLogIds, setQaStatusesByCut, setSaveToast, setSavedQuantities, setValidationErrors]);
 
