@@ -138,14 +138,18 @@ export const getOperatorJobs = async (query: JobsQuery) => {
 };
 
 export const getQcJobs = async (query: JobsQuery) => {
-  const where = buildJobWhere({ query });
+  const baseWhere = buildJobWhere({ query });
+  const where = {
+    ...baseWhere,
+    qaStates: { some: { status: "SENT_TO_QA" } },
+  };
   const { limit, offset } = getPagination({ query });
-  const { totalGroups, groupIds } = await getPagedGroupIds(where, offset, limit);
+  const { totalGroups, groupIds } = await getPagedGroupIds(where, offset, limit, "updatedAt");
 
   const jobs = groupIds.length
     ? await prisma.job.findMany({
         where: { groupId: { in: groupIds } },
-        orderBy: [{ createdAt: "desc" }, { id: "asc" }],
+        orderBy: [{ updatedAt: "desc" }, { createdAt: "desc" }, { id: "asc" }],
         select: qcListSelect,
       })
     : [];

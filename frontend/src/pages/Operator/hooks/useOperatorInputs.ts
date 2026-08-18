@@ -218,6 +218,9 @@ export const useOperatorInputs = (
         newMap.set(cutId, { ...current, quantities });
         return newMap;
       }
+      if (field === "machineNumber" && String(qtyData.startTime || "").trim()) {
+        return newMap;
+      }
       const updatedQtyData: QuantityInputData = {
         ...qtyData,
         ...(field !== "recalculateMachineHrs" && field !== "addIdleTimeToMachineHrs" ? { [field]: value } : {}),

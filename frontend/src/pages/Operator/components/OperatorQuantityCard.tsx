@@ -68,6 +68,7 @@ export const OperatorQuantityCard: React.FC<OperatorQuantityCardProps> = ({
   );
   const rangeBadgeKey = `${rangeStartQty}-${rangeEndQty}`;
   const isShiftOverPause = qtyData.isPaused && qtyData.currentPauseReason === "Shift Over";
+  const isMachineNumberLocked = Boolean(String(qtyData.startTime || "").trim());
   const { latestWorkedByName, operatorHistoryDetails, shouldShowOperatorHistory, shouldShowWorkedBySummary, formatWorkedDuration } =
     getOperatorQuantityHistory(qtyData, isRangeMode);
 
@@ -230,15 +231,15 @@ export const OperatorQuantityCard: React.FC<OperatorQuantityCardProps> = ({
             <SelectDropdown
               value={machineOptions.includes(String(qtyData.machineNumber || "").trim()) ? String(qtyData.machineNumber || "").trim() : ""}
               onChange={(nextValue) => {
-                if (!canEditAssignments) return;
+                if (!canEditAssignments || isMachineNumberLocked) return;
                 onInputChange(cutId, qtyIndex, "machineNumber", nextValue);
               }}
               options={machineOptions.map((machine) => ({ label: formatMachineLabel(machine), value: machine }))}
               placeholder="Select"
               align="left"
-              className={`machine-number-select ${validationErrors.machineNumber ? "input-error" : ""}`.trim()}
+              className={`machine-number-select ${validationErrors.machineNumber ? "input-error" : ""} ${isMachineNumberLocked ? "machine-number-locked" : ""}`.trim()}
               menuMinWidth={96}
-              disabled={!canEditAssignments}
+              disabled={!canEditAssignments || isMachineNumberLocked}
             />
             {validationErrors.machineNumber && <p className="field-error">{validationErrors.machineNumber}</p>}
           </div>

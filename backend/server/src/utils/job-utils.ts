@@ -87,6 +87,7 @@ export const qcListSelect = {
   cut: true,
   assignedTo: true,
   createdAt: true,
+  updatedAt: true,
   qcDecision: true,
   qcReportClosed: true,
   priority: true,
@@ -376,14 +377,14 @@ export const createPaginatedResponse = <T,>(items: T[], total: number, offset: n
   hasMore: offset + items.length < total,
 });
 
-export const getPagedGroupIds = async (where: Prisma.JobWhereInput, offset: number, limit: number) => {
+export const getPagedGroupIds = async (where: Prisma.JobWhereInput, offset: number, limit: number, orderByField: "createdAt" | "updatedAt" = "createdAt") => {
   const [allGroups, pagedGroups] = await Promise.all([
     prisma.job.groupBy({ by: ["groupId"], where }),
     prisma.job.groupBy({
       by: ["groupId"],
       where,
-      _max: { createdAt: true },
-      orderBy: { _max: { createdAt: "desc" } },
+      _max: { [orderByField]: true } as any,
+      orderBy: { _max: { [orderByField]: "desc" } } as any,
       skip: offset,
       take: limit,
     }),
