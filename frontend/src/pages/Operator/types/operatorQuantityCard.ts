@@ -5,6 +5,7 @@ import type { QuantityProgressStatus } from "../utils/qaProgress";
 export type OperatorQuantityCardProps = {
   qtyData: QuantityInputData;
   qtyIndex: number;
+  quantityIdentifier?: string;
   cutId: number | string;
   isRangeMode: boolean;
   isRangeValid: boolean;

@@ -665,6 +665,7 @@ router.post("/jobs/:id/capture-input", async (req, res) => {
 
         const finalPayload = {
           ...basePayload,
+          settingLabel: String(existingLog.settingLabel || basePayload.settingLabel || ""),
           metadata: {
             ...(basePayload.metadata || {}),
           },

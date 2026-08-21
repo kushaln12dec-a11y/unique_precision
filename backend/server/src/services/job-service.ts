@@ -28,6 +28,23 @@ const normalizeAssignedOperatorNames = (value: unknown): string[] =>
     .map((entry) => normalizeOperatorName(entry))
     .filter((entry) => entry && entry !== "UNASSIGN" && entry !== "UNASSIGNED");
 
+const buildQcWhere = (where: any, query: JobsQuery) => {
+  const isClosedView = query.isBilled === "true";
+  const qcVisibilityWhere = isClosedView
+    ? {
+        OR: [
+          { qcReportClosed: true },
+          { qcDecision: { in: ["APPROVED", "REJECTED"] } },
+        ],
+      }
+    : {
+        qaStates: { some: { status: "SENT_TO_QA" } },
+        qcReportClosed: false,
+      };
+
+  return { AND: [where, qcVisibilityWhere] };
+};
+
 const buildAssignmentNotificationEntries = ({
   actorName,
   job,
@@ -138,7 +155,7 @@ export const getOperatorJobs = async (query: JobsQuery) => {
 };
 
 export const getQcJobs = async (query: JobsQuery) => {
-  const where = buildJobWhere({ query });
+  const where = buildQcWhere(buildJobWhere({ query }), query);
   const { limit, offset } = getPagination({ query });
   const { totalGroups, groupIds } = await getPagedGroupIds(where, offset, limit);
 

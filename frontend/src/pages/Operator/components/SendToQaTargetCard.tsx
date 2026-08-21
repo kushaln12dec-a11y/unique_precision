@@ -1,5 +1,6 @@
 import { getQaStageLabel, type QuantityProgressStatus } from "../utils/qaProgress";
 import type { SendToQaModalTarget } from "./SendToQaModal";
+import { formatQuantityIdentifier } from "../../../utils/jobFormatting";
 
 type SelectionMode = "pick" | "range";
 
@@ -77,7 +78,7 @@ const SendToQaTargetCard = ({
             <select value={rangeStart} onChange={(event) => onSetRangeStart(event.target.value)}>
               <option value="">Select</option>
               {target.eligibleQuantityNumbers.map((qty) => (
-                <option key={`${target.jobId}-from-${qty}`} value={qty}>Qty {qty}</option>
+                <option key={`${target.jobId}-from-${qty}`} value={qty}>{formatQuantityIdentifier(qty)}</option>
               ))}
             </select>
           </label>
@@ -86,7 +87,7 @@ const SendToQaTargetCard = ({
             <select value={rangeEnd} onChange={(event) => onSetRangeEnd(event.target.value)}>
               <option value="">Select</option>
               {target.eligibleQuantityNumbers.map((qty) => (
-                <option key={`${target.jobId}-to-${qty}`} value={qty}>Qty {qty}</option>
+                <option key={`${target.jobId}-to-${qty}`} value={qty}>{formatQuantityIdentifier(qty)}</option>
               ))}
             </select>
           </label>
@@ -110,7 +111,7 @@ const SendToQaTargetCard = ({
                 disabled={!isEligible}
                 onClick={() => onToggleQuantity(quantityNumber)}
               >
-                <span>Q{quantityNumber}</span>
+                <span>{formatQuantityIdentifier(quantityNumber, "Q")}</span>
                 <small>{getQaStageLabel(status)}</small>
               </button>
             );

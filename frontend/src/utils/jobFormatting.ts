@@ -134,3 +134,96 @@ export const formatJobRefDisplay = (value: unknown, withHash = true): string => 
   const normalized = compact.replace(/^JOB-?/i, "JOB");
   return withHash ? `#${normalized}` : normalized;
 };
+
+export const getQuantityIdentifier = (quantityIndexOrNumber: unknown): string => {
+  const numeric = Number(quantityIndexOrNumber);
+  if (!Number.isFinite(numeric)) return "";
+  const normalized = Math.trunc(numeric);
+  return normalized > 0 ? String(normalized) : "";
+};
+
+export const getQuantityIdentifierFromIndex = (quantityIndex: unknown): string => {
+  const numeric = Number(quantityIndex);
+  if (!Number.isFinite(numeric)) return "";
+  return getQuantityIdentifier(Math.trunc(numeric) + 1);
+};
+
+export const formatQuantityIdentifier = (quantityIndexOrNumber: unknown, prefix = "Qty"): string => {
+  const identifier = getQuantityIdentifier(quantityIndexOrNumber);
+  const separator = prefix === "Q" ? "" : " ";
+  return identifier ? `${prefix}${separator}${identifier}` : `${prefix} -`;
+};
+
+export const formatQuantityIdentifierFromIndex = (quantityIndex: unknown, prefix = "Qty"): string => {
+  const identifier = getQuantityIdentifierFromIndex(quantityIndex);
+  return identifier ? `${prefix} ${identifier}` : `${prefix} -`;
+};
+
+export const formatQuantityRangeIdentifier = (
+  fromQuantityNumber: unknown,
+  toQuantityNumber: unknown,
+  prefix = "Qty"
+): string => {
+  const from = getQuantityIdentifier(fromQuantityNumber);
+  const to = getQuantityIdentifier(toQuantityNumber);
+  if (!from && !to) return `${prefix} -`;
+  if (!to || from === to) return `${prefix} ${from || to}`;
+  return `${prefix} ${from}-${to}`;
+};
+
+export const getSettingIdentifier = (job: { settingIdentifier?: unknown; settingNumber?: unknown; setting?: unknown } | null | undefined, fallbackIndex?: number): string => {
+  const explicit = String(job?.settingIdentifier || "").trim();
+  if (explicit) return explicit;
+  const numericSettingNumber = Number(job?.settingNumber);
+  if (Number.isFinite(numericSettingNumber) && numericSettingNumber > 0) return String(Math.trunc(numericSettingNumber));
+  const numericFallback = Number(fallbackIndex);
+  if (Number.isFinite(numericFallback) && numericFallback >= 0) return String(Math.trunc(numericFallback) + 1);
+  const setting = String(job?.setting || "").trim();
+  return setting || "";
+};
+
+export const formatSettingIdentifier = (
+  job: { settingIdentifier?: unknown; settingNumber?: unknown; setting?: unknown } | null | undefined,
+  fallbackIndex?: number,
+  prefix = "Setting"
+): string => {
+  const identifier = getSettingIdentifier(job, fallbackIndex);
+  return identifier ? `${prefix} ${identifier}` : `${prefix} -`;
+};
+
+export const withJobIdentifiers = <T extends { id?: unknown; groupId?: unknown; qty?: unknown; settingIdentifier?: string; settingNumber?: number }>(
+  jobs: T[]
+): Array<T & { settingNumber: number; settingIdentifier: string; quantityIdentifiers: string[] }> => {
+  const groups = new Map<string, T[]>();
+  const groupOrder: string[] = [];
+
+  jobs.forEach((job) => {
+    const groupKey = String(job.groupId ?? job.id ?? "");
+    if (!groups.has(groupKey)) {
+      groups.set(groupKey, []);
+      groupOrder.push(groupKey);
+    }
+    groups.get(groupKey)!.push(job);
+  });
+
+  return groupOrder.flatMap((groupKey) => {
+    const groupJobs = [...(groups.get(groupKey) || [])].sort((left: any, right: any) => {
+      const leftTime = new Date(String(left?.createdAt || "")).getTime();
+      const rightTime = new Date(String(right?.createdAt || "")).getTime();
+      if (Number.isFinite(leftTime) && Number.isFinite(rightTime) && leftTime !== rightTime) return leftTime - rightTime;
+      return String(left?.id || "").localeCompare(String(right?.id || ""));
+    });
+
+    return groupJobs.map((job, index) => {
+      const nextSettingNumber = index + 1;
+      const totalQty = Math.max(0, Math.trunc(Number(job.qty || 0)));
+
+      return {
+        ...job,
+        settingNumber: nextSettingNumber,
+        settingIdentifier: String(nextSettingNumber),
+        quantityIdentifiers: Array.from({ length: totalQty }, (_, index) => String(index + 1)),
+      };
+    });
+  });
+};

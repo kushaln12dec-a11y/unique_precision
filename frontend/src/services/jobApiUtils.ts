@@ -1,6 +1,7 @@
 import type { FilterValues } from "../components/FilterModal";
 import type { JobEntry } from "../types/job";
 import { apiFetch } from "../utils/apiClient";
+import { withJobIdentifiers } from "../utils/jobFormatting";
 import { apiUrl } from "./apiClient";
 
 export type PaginatedResult<T> = {
@@ -125,7 +126,7 @@ export const fetchJobList = async (url: string): Promise<JobEntry[]> => {
   });
   if (!res.ok) throw new Error("Failed to fetch jobs");
   const payload = await res.json();
-  return getListPayload(payload).map(normalizeJobListItem);
+  return withJobIdentifiers(getListPayload(payload).map(normalizeJobListItem));
 };
 
 export const fetchPaginatedJobList = async (url: string): Promise<PaginatedResult<JobEntry>> => {
@@ -136,7 +137,7 @@ export const fetchPaginatedJobList = async (url: string): Promise<PaginatedResul
   if (!res.ok) throw new Error("Failed to fetch jobs");
 
   const payload = await res.json();
-  const items = getListPayload(payload).map(normalizeJobListItem);
+  const items = withJobIdentifiers(getListPayload(payload).map(normalizeJobListItem));
   return {
     items,
     total: Number(payload?.total || items.length || 0),

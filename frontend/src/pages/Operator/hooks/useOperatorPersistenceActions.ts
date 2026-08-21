@@ -3,6 +3,7 @@ import { completeOperatorProductionLog } from "../../../services/employeeLogsApi
 import { captureOperatorInput, updateOperatorJob, updateOperatorQaStatus } from "../../../services/operatorApi";
 import type { CutInputData } from "../types/cutInput";
 import type { JobEntry, QuantityQaStatus } from "../../../types/job";
+import { formatQuantityIdentifierFromIndex, formatQuantityRangeIdentifier } from "../../../utils/jobFormatting";
 import { readImageFileAsBase64, showAndHideToast } from "../utils/operatorViewActionUtils";
 import {
   applyQaStatusToQuantities,
@@ -85,7 +86,7 @@ export const useOperatorPersistenceActions = ({
         return next;
       });
       clearQuantityErrors(cutId, quantityIndex);
-      showAndHideToast(setSaveToast, `Quantity ${quantityIndex + 1} saved successfully!`, "success", 2000);
+      showAndHideToast(setSaveToast, `${formatQuantityIdentifierFromIndex(quantityIndex, "Quantity")} saved successfully!`, "success", 2000);
       setActiveOperatorLogIds((prev) => {
         const next = new Map(prev);
         next.delete(`${String(cutId)}:${quantityIndex}`);
@@ -147,7 +148,7 @@ export const useOperatorPersistenceActions = ({
         next.set(cutId, applyQaStatusToQuantities(next.get(cutId) || {}, Array.from({ length: toQty - fromQty + 1 }, (_, idx) => fromQty + idx), "SAVED"));
         return next;
       });
-      showAndHideToast(setSaveToast, `Range ${fromQty}-${toQty} saved successfully!`, "success", 2000);
+      showAndHideToast(setSaveToast, `${formatQuantityRangeIdentifier(fromQty, toQty, "Range")} saved successfully!`, "success", 2000);
       setActiveOperatorLogIds((prev) => {
         const next = new Map(prev);
         next.delete(`${String(cutId)}:${sourceQuantityIndex}`);
@@ -177,7 +178,7 @@ export const useOperatorPersistenceActions = ({
         next.set(cutId, applyQaStatusToQuantities(next.get(cutId) || {}, quantityNumbers, status));
         return next;
       });
-      showAndHideToast(setActionToast, `${status === "SENT_TO_QA" ? "Sent to QC" : "Marked Ready for QC"}: Qty ${quantityNumbers.join(", ")}`, "success");
+      showAndHideToast(setActionToast, `${status === "SENT_TO_QA" ? "Sent to QC" : "Marked Ready for QC"}: ${quantityNumbers.map((qty) => formatQuantityIdentifierFromIndex(qty - 1)).join(", ")}`, "success");
     } catch (error) {
       console.error("Failed to update QC status", error);
       showAndHideToast(setActionToast, "Failed to update QC status.", "error");

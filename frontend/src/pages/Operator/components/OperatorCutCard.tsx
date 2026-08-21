@@ -3,7 +3,7 @@ import ImageUpload from "../../Programmer/components/ImageUpload";
 import type { JobEntry } from "../../../types/job";
 import type { CutInputData } from "../types/cutInput";
 import { OperatorInputSection } from "./OperatorInputSection";
-import { estimatedHoursFromAmount, formatEstimatedTime } from "../../../utils/jobFormatting";
+import { estimatedHoursFromAmount, formatEstimatedTime, formatSettingIdentifier } from "../../../utils/jobFormatting";
 import "../OperatorViewPage.css";
 
 import type { QuantityProgressStatus } from "../utils/qaProgress";
@@ -93,12 +93,13 @@ export const OperatorCutCard: React.FC<OperatorCutCardProps> = ({
   runBlockedReason,
 }) => {
   const quantity = Number(cutItem.qty || 1);
+  const settingLabel = formatSettingIdentifier(cutItem, index);
   const cutEstimatedHrs = estimatedHoursFromAmount(calculateTotals(cutItem as any).wedmAmount);
   const expectedHoursPerQuantity = cutEstimatedHrs / Math.max(1, quantity);
   return (
     <div className="operator-cut-card">
       <div className="operator-cut-header" onClick={onToggleExpansion}>
-        <h4>Setting {index + 1}</h4>
+        <h4>{settingLabel}</h4>
         <div className="cut-expand-indicator">{isExpanded ? "?" : "?"}</div>
       </div>
 
@@ -130,14 +131,14 @@ export const OperatorCutCard: React.FC<OperatorCutCardProps> = ({
             </div>
 
             <div className="operator-cut-image-section">
-              <label>Last Image (Cut {index + 1})</label>
+              <label>Last Image ({settingLabel})</label>
               <ImageUpload
                 images={
                   cutData.quantities && cutData.quantities.length > 0 && cutData.quantities[0].lastImage
                     ? [cutData.quantities[0].lastImage]
                     : (Array.isArray(cutItem.cutImage) ? cutItem.cutImage : (cutItem.cutImage ? [cutItem.cutImage] : []))
                 }
-                label={`Setting ${index + 1} Last Image`}
+                label={`${settingLabel} Last Image`}
                 onImageChange={onImageChange}
                 onRemove={(imageIndex) => {
                   if (imageIndex === 0) {
@@ -159,6 +160,7 @@ export const OperatorCutCard: React.FC<OperatorCutCardProps> = ({
             canEditAssignments={canEditAssignments}
             canOperateInputs={canOperateInputs}
             isAdmin={isAdmin}
+            quantityIdentifiers={cutItem.quantityIdentifiers}
             onInputChange={onInputChange}
             onApplyToAllQuantities={onApplyToAllQuantities}
             onApplyToCountQuantities={onApplyToCountQuantities}

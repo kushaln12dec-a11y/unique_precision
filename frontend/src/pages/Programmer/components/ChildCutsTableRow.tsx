@@ -1,7 +1,7 @@
 import ActionButtons from "./ActionButtons";
 import type { JobEntry } from "../../../types/job";
 import { getQaProgressCounts } from "../../Operator/utils/qaProgress";
-import { estimatedTimeFromAmount, formatMachineLabel, toMachineIndex, toYN } from "../../../utils/jobFormatting";
+import { estimatedTimeFromAmount, formatMachineLabel, formatSettingIdentifier, toMachineIndex, toYN } from "../../../utils/jobFormatting";
 import { getThicknessDisplayValue } from "../programmerUtils";
 import MarqueeCopyText from "../../../components/MarqueeCopyText";
 import { buildStatusBadges, getParentSerialPrefix, isUnassignedValue, renderBadgeTicker, toAlphabetSuffix } from "../utils/childCutsTableUtils";
@@ -84,6 +84,7 @@ const ChildCutsTableRow = ({
     ),
   ];
   const machineSelectOptions = machineDropdownOptions.map((machine) => ({ id: machine, name: machine }));
+  const settingActionLabel = formatSettingIdentifier(entry, index).toLowerCase();
 
   return (
     <tr key={rowKey} className={`${rowClassName} child-row`.trim()}>
@@ -164,10 +165,10 @@ const ChildCutsTableRow = ({
           onEdit={onEdit}
           onImage={onImage}
           onDelete={onDelete}
-          viewLabel={`View cut ${index + 1} details`}
-          editLabel={`Edit cut ${index + 1}`}
-          imageLabel={`Image Input cut ${index + 1}`}
-          deleteLabel={`Delete cut ${index + 1}`}
+          viewLabel={`View ${settingActionLabel} details`}
+          editLabel={`Edit ${settingActionLabel}`}
+          imageLabel={`Image Input ${settingActionLabel}`}
+          deleteLabel={`Delete ${settingActionLabel}`}
           isChildTable={true}
           isOperator={isOperator}
           disableImageButton={disableImageButton}

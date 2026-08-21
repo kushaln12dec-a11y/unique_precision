@@ -1,6 +1,7 @@
 import type { JobEntry } from "../types/job";
 import { sortGroupEntriesParentFirst } from "../pages/Programmer/programmerUtils";
 import { apiFetch } from "../utils/apiClient";
+import { withJobIdentifiers } from "../utils/jobFormatting";
 import { apiUrl } from "./apiClient";
 import {
   buildQueryParams,
@@ -103,7 +104,7 @@ export const getJobById = async (id: string): Promise<JobEntry> => {
 
 export const getJobsByGroupId = async (groupId: string): Promise<JobEntry[]> => {
   const jobs = await fetchSingleJob(`/api/jobs/group/${groupId}`, "Failed to fetch jobs");
-  return sortGroupEntriesParentFirst(jobs.map(normalizeJobListItem));
+  return withJobIdentifiers(sortGroupEntriesParentFirst(jobs.map(normalizeJobListItem)));
 };
 
 export const createJobs = async (jobs: JobEntry[]): Promise<JobEntry[]> => {
@@ -118,7 +119,7 @@ export const createJobs = async (jobs: JobEntry[]): Promise<JobEntry[]> => {
   }
 
   const createdJobs = await res.json();
-  return (Array.isArray(createdJobs) ? createdJobs : [createdJobs]).map(normalizeJobListItem);
+  return withJobIdentifiers((Array.isArray(createdJobs) ? createdJobs : [createdJobs]).map(normalizeJobListItem));
 };
 
 export const updateJob = async (id: string, jobData: Partial<JobEntry>): Promise<JobEntry> => {
@@ -155,7 +156,7 @@ export const updateJobsByGroupId = async (groupId: string, jobs: JobEntry[]): Pr
     Promise.all(deleteTasks),
   ]);
 
-  return updatedJobs.filter(Boolean);
+  return withJobIdentifiers(updatedJobs.filter(Boolean));
 };
 
 export const deleteJob = async (id: string): Promise<void> => {
@@ -189,7 +190,7 @@ const updateGroupDecision = async (
     throw new Error(error.message || fallback);
   }
   const jobs = await res.json();
-  return jobs.map(normalizeJobListItem);
+  return withJobIdentifiers(jobs.map(normalizeJobListItem));
 };
 
 export const updateQcDecisionByGroupId = async (

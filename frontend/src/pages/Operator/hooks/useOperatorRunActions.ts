@@ -4,6 +4,7 @@ import { updateOperatorJob } from "../../../services/operatorApi";
 import { getServerNowMs } from "../../../services/serverTime";
 import type { JobEntry } from "../../../types/job";
 import { getCurrentISTDateTime } from "../../../utils/dateTime";
+import { getSettingIdentifier } from "../../../utils/jobFormatting";
 import type { CutInputData, QuantityInputData } from "../types/cutInput";
 import { formatDurationToClock, formatWorkedSecondsAsMachineHrs, getCurrentSegmentWorkedSeconds } from "../utils/operatorTimeUtils";
 import { getAssignedToValue, getOperatorOpsName } from "../utils/operatorCapturePayloads";
@@ -118,7 +119,7 @@ export const useOperatorRunActions = ({
         refNumber: String((job as any).refNumber || ""),
         customer: job.customer || "",
         description: job.description || "",
-        settingLabel: String(job.setting || ""),
+        settingLabel: getSettingIdentifier(job, jobs.findIndex((item) => String(item.id) === String(cutId))),
         fromQty,
         toQty: fromQty,
         quantityCount: 1,
@@ -208,7 +209,7 @@ export const useOperatorRunActions = ({
           refNumber: String((job as any).refNumber || ""),
           customer: job.customer || "",
           description: job.description || "",
-          settingLabel: String(job.setting || ""),
+          settingLabel: getSettingIdentifier(job, jobs.findIndex((item) => String(item.id) === String(cutId))),
           fromQty: quantityIndex + 1,
           toQty: quantityIndex + 1,
           quantityCount: 1,

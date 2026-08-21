@@ -5,7 +5,7 @@ import { deleteJob } from "../../../services/jobApi";
 import { updateOperatorQaStatus } from "../../../services/operatorApi";
 import { getDispatchableQuantityNumbers, getQuantityProgressStatuses } from "../utils/qaProgress";
 import { buildStableOperatorList } from "../utils/operatorViewPageHelpers";
-import { formatJobRefDisplay } from "../../../utils/jobFormatting";
+import { formatJobRefDisplay, formatQuantityRangeIdentifier, getSettingIdentifier } from "../../../utils/jobFormatting";
 import type { JobEntry } from "../../../types/job";
 import type { SendToQaModalTarget } from "../components/SendToQaModal";
 import type { OperatorTableRow } from "../types";
@@ -34,7 +34,7 @@ type BulkAssignmentPayloadItem = {
 const formatBulkAssignmentQuantityLabel = (job: JobEntry | undefined, fromQty: number, toQty: number) => {
   const refNumber = formatJobRefDisplay(job?.refNumber || job?.id || "", false);
   const jobLabel = refNumber ? `Job #${refNumber}` : `Job ${String(job?.id || "").trim() || "Unknown"}`;
-  const quantityLabel = fromQty === toQty ? `Qty ${fromQty}` : `Qty ${fromQty}-${toQty}`;
+  const quantityLabel = formatQuantityRangeIdentifier(fromQty, toQty);
   return `${jobLabel}, ${quantityLabel}`;
 };
 
@@ -65,7 +65,7 @@ const buildSendToQaTargets = (entries: JobEntry[], tableData: OperatorTableRow[]
       customer: entry.customer || "",
       description: entry.description || "",
       refNumber: entry.refNumber || "",
-      settingLabel: String(settingIndex >= 0 ? settingIndex + 1 : index + 1),
+      settingLabel: getSettingIdentifier(entry, settingIndex >= 0 ? settingIndex : index),
       totalQty,
       eligibleQuantityNumbers,
       statusByQuantity,

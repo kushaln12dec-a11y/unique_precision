@@ -10,7 +10,7 @@ import { useOperatorViewActions } from "./hooks/useOperatorViewActions";
 import OperatorViewBody from "./components/OperatorViewBody";
 import OperatorViewModals from "./components/OperatorViewModals";
 import { getUserDisplayNameFromToken, getUserRoleFromToken } from "../../utils/auth";
-import { estimatedDurationSecondsFromHours, MACHINE_OPTIONS, toMachineIndex } from "../../utils/jobFormatting";
+import { estimatedDurationSecondsFromHours, formatQuantityIdentifierFromIndex, MACHINE_OPTIONS, toMachineIndex } from "../../utils/jobFormatting";
 import { getQuantityElapsedSeconds, parseOperatorDateTime } from "./utils/operatorTimeUtils";
 import { getServerNowMs, refreshServerTimeOffset } from "../../services/serverTime";
 import { useJobSync } from "../../hooks/useJobSync";
@@ -463,7 +463,7 @@ const OperatorJobDetailPage = () => {
       handleInputChange(cutId, quantityIndex, "resetTimer", "");
       await reloadOperatorViewDataPreservingScroll();
       setActionToast({
-        message: `Quantity ${quantityIndex + 1} reset successfully.`,
+        message: `${formatQuantityIdentifierFromIndex(quantityIndex, "Quantity")} reset successfully.`,
         variant: "success",
         visible: true,
       });

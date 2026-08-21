@@ -1,4 +1,5 @@
 import React from "react";
+import { formatQuantityRangeIdentifier } from "../../../utils/jobFormatting";
 
 type Props = {
   totalQuantity: number;
@@ -54,7 +55,7 @@ export const OperatorInputRangeControls: React.FC<Props> = ({
           setRangeTo(String(Math.max(2, Math.min(totalQuantity, v))));
         }} placeholder="To" className="apply-count-input" />
         <span className="capture-range-hint">
-          {isRangeValid ? `Qty ${rangeStartQty}-${rangeEndQty} (${rangeEndQty - rangeStartQty + 1})` : `Select range 1-${totalQuantity}`}
+          {isRangeValid ? `${formatQuantityRangeIdentifier(rangeStartQty, rangeEndQty)} (${rangeEndQty - rangeStartQty + 1})` : `Select range 1-${totalQuantity}`}
         </span>
         <button
           type="button"
@@ -62,7 +63,7 @@ export const OperatorInputRangeControls: React.FC<Props> = ({
           disabled={!isRangeValid}
           onClick={() => {
             setIsRangeApproved(true);
-            onShowToast?.(`Range ${rangeStartQty}-${rangeEndQty} accepted.`, "success");
+            onShowToast?.(`${formatQuantityRangeIdentifier(rangeStartQty, rangeEndQty, "Range")} accepted.`, "success");
           }}
           title="Approve selected range"
           aria-label="Approve selected range"

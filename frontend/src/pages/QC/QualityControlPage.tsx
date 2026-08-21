@@ -4,7 +4,6 @@ import Sidebar from "../../components/Sidebar";
 import Header from "../../components/Header";
 import LazyAgGrid from "../../components/LazyAgGrid";
 import Toast from "../../components/Toast";
-import AppLoader from "../../components/AppLoader";
 import ConfirmDeleteModal from "../../components/ConfirmDeleteModal";
 import type { JobEntry } from "../../types/job";
 import { getQcJobsPage, setQcReportClosedByGroupId, updateQcDecisionByGroupId } from "../../services/jobApi";
@@ -29,7 +28,6 @@ const QualityControlPage = ({ forceTab, hideLayout, isBilled }: { forceTab?: "QU
   const dispatch = useAppDispatch();
   const { customerFilter, descriptionFilter, operatorFilter, searchFilter } = useAppSelector((state) => state.filters.qc);
   const [qcGridJobs, setQcGridJobs] = useState<JobEntry[]>([]);
-  const [loading, setLoading] = useState(true);
   const [gridRefreshKey, setGridRefreshKey] = useState(0);
   const [reportCloseCandidate, setReportCloseCandidate] = useState<QcRow | null>(null);
   const [isCloseConfirmOpen, setIsCloseConfirmOpen] = useState(false);
@@ -64,9 +62,8 @@ const QualityControlPage = ({ forceTab, hideLayout, isBilled }: { forceTab?: "QU
   const qcFetchPage = useCallback(
     async (offset: number, limit: number) => {
       try {
-        if (offset === 0) setLoading(true);
         const page = await getQcJobsPage(
-          {},
+          isBilled ? { isBilled: true } : {},
           customerFilter,
           undefined,
           descriptionFilter,
@@ -76,11 +73,9 @@ const QualityControlPage = ({ forceTab, hideLayout, isBilled }: { forceTab?: "QU
       } catch {
         showToast("Failed to load QC queue.", "error");
         return { items: [] as JobEntry[], hasMore: false };
-      } finally {
-        if (offset === 0) setLoading(false);
       }
     },
-    [customerFilter, descriptionFilter, showToast]
+    [customerFilter, descriptionFilter, isBilled, showToast]
   );
 
   const tableData = useMemo(() => buildQcRows(qcGridJobs, qcTab === "LOGGED"), [qcGridJobs, qcTab]);
@@ -249,35 +244,29 @@ const QualityControlPage = ({ forceTab, hideLayout, isBilled }: { forceTab?: "QU
         {!hideLayout && <Header title="QC" />}
         <div className="roleboard-body qc-table-panel">
           {!hideLayout && <h3 style={{ marginTop: "1rem" }}>{qcTab === "QUEUE" ? "QC Queue" : "Closed QC Reports"}</h3>}
-          {loading && qcGridJobs.length === 0 ? (
-            <AppLoader message="Loading QC queue..." />
-          ) : (
-            <>
-              <QcFilters
-                searchValue={searchFilter || customerFilter || descriptionFilter}
-                operatorFilter={operatorFilter}
-                operatorOptions={qcOperatorOptions}
-                onSearchChange={(value) => {
-                  dispatch(setQcSearchFilter(value));
-                }}
-                onOperatorChange={(value) => dispatch(setQcOperatorFilter(value))}
-                onClearAll={handleClearAllFilters}
-              />
-              <LazyAgGrid
-                columnDefs={qcColumnDefs as any}
-                fetchPage={qcFetchPage}
-                rows={qcGridJobs}
-                onRowsChange={setQcGridJobs}
-                transformRows={() => filteredTableData}
-                getRowId={(row: QcRow) => row.qcItemId}
-                getRowClass={(params) => getParentRowClassName(params.data.parent, params.data.entries, false)}
-                emptyMessage="No data available."
-                className="jobs-table-wrapper"
-                pageSize={50}
-                refreshKey={`${gridRefreshKey}|${customerFilter}|${descriptionFilter}`}
-              />
-            </>
-          )}
+          <QcFilters
+            searchValue={searchFilter || customerFilter || descriptionFilter}
+            operatorFilter={operatorFilter}
+            operatorOptions={qcOperatorOptions}
+            onSearchChange={(value) => {
+              dispatch(setQcSearchFilter(value));
+            }}
+            onOperatorChange={(value) => dispatch(setQcOperatorFilter(value))}
+            onClearAll={handleClearAllFilters}
+          />
+          <LazyAgGrid
+            columnDefs={qcColumnDefs as any}
+            fetchPage={qcFetchPage}
+            rows={qcGridJobs}
+            onRowsChange={setQcGridJobs}
+            transformRows={() => filteredTableData}
+            getRowId={(row: QcRow) => row.qcItemId}
+            getRowClass={(params) => getParentRowClassName(params.data.parent, params.data.entries, false)}
+            emptyMessage="No data available."
+            className="jobs-table-wrapper"
+            pageSize={50}
+            refreshKey={`${gridRefreshKey}|${customerFilter}|${descriptionFilter}|${isBilled ? "billed" : "queue"}`}
+          />
         </div>
       </div>
 
