@@ -7,6 +7,7 @@ import type { CutInputData, QuantityInputData } from "../types/cutInput";
 import { formatCompactDurationWords, getQuantityElapsedSeconds, getCurrentSegmentWorkedSeconds } from "../utils/operatorTimeUtils";
 import { getPersistedIdleDuration } from "../utils/operatorViewPageHelpers";
 import { formatQuantityIdentifierFromIndex, getSettingIdentifier } from "../../../utils/jobFormatting";
+import "../Operator.part08.css";
 
 type PendingDispatch = { cutId: number | string; quantityNumbers: number[] } | null;
 type PendingQuantity = { cutId: number | string; quantityIndex: number } | null;

@@ -305,26 +305,21 @@ export const rebalanceOperatorRevenueForJob = async (
       };
     });
 
-    // Calculate capped ETA shares sequentially
-    let passRemainingEstimatedSeconds = Math.max(0, estimatedSecondsPerQuantity);
-    const entryCappedShares = normalizedEntries.map((entry) => {
-      const safeWorkedSeconds = Math.max(0, entry.workedSeconds);
-      const cappedShare = Math.max(0, Math.min(safeWorkedSeconds, passRemainingEstimatedSeconds));
-      passRemainingEstimatedSeconds = Math.max(0, passRemainingEstimatedSeconds - cappedShare);
-      return { ...entry, cappedShare, safeWorkedSeconds };
+    const entryWorkingShares = normalizedEntries.map((entry) => {
+      return { ...entry, safeWorkedSeconds: Math.max(0, entry.workedSeconds) };
     });
 
-    const totalCappedShare = entryCappedShares.reduce((sum, e) => sum + e.cappedShare, 0);
-    const fallbackCappedShare = entryCappedShares.length > 0 ? 1 / entryCappedShares.length : 0;
+    const totalWorkedSeconds = entryWorkingShares.reduce((sum, e) => sum + e.safeWorkedSeconds, 0);
+    const fallbackShareRatio = entryWorkingShares.length > 0 ? 1 / entryWorkingShares.length : 0;
 
     let remainingRevenue = Math.max(0, Number(perQuantityRevenue.toFixed(2)));
     let remainingEstimatedSeconds = Math.max(0, estimatedSecondsPerQuantity);
 
-    entryCappedShares.forEach((entry, index) => {
+    entryWorkingShares.forEach((entry, index) => {
       const currentRevenueByQuantity = revenueByLogId.get(entry.logId) || {};
-      const shareRatio = totalCappedShare > 0 ? entry.cappedShare / totalCappedShare : fallbackCappedShare;
+      const shareRatio = totalWorkedSeconds > 0 ? entry.safeWorkedSeconds / totalWorkedSeconds : fallbackShareRatio;
 
-      const isLastEntry = index === entryCappedShares.length - 1;
+      const isLastEntry = index === entryWorkingShares.length - 1;
       const allocatedRevenue = isLastEntry
         ? Math.max(0, Number(remainingRevenue.toFixed(2)))
         : Math.max(0, Number((perQuantityRevenue * shareRatio).toFixed(2)));

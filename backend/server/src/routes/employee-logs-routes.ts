@@ -48,8 +48,16 @@ const buildSelfIdentityTokens = (reqUser: any): Set<string> => {
   const tokens = new Set<string>();
   const name = resolveReqUserName(reqUser);
   if (name) tokens.add(name);
+
+  const firstName = String(reqUser?.firstName || "").trim().toUpperCase();
+  if (firstName) tokens.add(firstName);
+
+  const lastName = String(reqUser?.lastName || "").trim().toUpperCase();
+  if (lastName) tokens.add(lastName);
+
   const empId = String(reqUser?.empId || "").trim().toUpperCase();
   if (empId) tokens.add(empId);
+
   const email = String(reqUser?.email || "").trim().toUpperCase();
   if (email) {
     tokens.add(email);
@@ -68,7 +76,7 @@ const isUserAssignedToJob = (reqUser: any, assignedValue: unknown) => {
 };
 
 /** Operators may only set ops/assignment identity to themselves; admins/programmers unrestricted. */
-const canOperatorAdjustOwnAssignment = (reqUser: any, _currentValue: unknown, requestedValue: unknown) => {
+const canOperatorAdjustOwnAssignment = (reqUser: any, currentValue: unknown, requestedValue: unknown) => {
   const role = String(reqUser?.role || "").trim().toUpperCase();
   if (role === "ADMIN" || role === "PROGRAMMER") return true;
   if (role !== "OPERATOR") return false;
@@ -76,9 +84,23 @@ const canOperatorAdjustOwnAssignment = (reqUser: any, _currentValue: unknown, re
   const selfTokens = buildSelfIdentityTokens(reqUser);
   if (selfTokens.size === 0) return false;
 
+  const current = getAssignedOperatorNames(currentValue);
   const requested = getRequestedOperatorNames(requestedValue);
-  if (requested.length === 0) return false;
-  return requested.every((name) => selfTokens.has(name));
+
+  const added = requested.filter((name) => !current.includes(name));
+  const removed = current.filter((name) => !requested.includes(name));
+
+  const result = [...added, ...removed].every((name) => selfTokens.has(name));
+  console.log("[DEBUG canOperatorAdjustOwnAssignment]", {
+    role,
+    selfTokens: Array.from(selfTokens),
+    current,
+    requested,
+    added,
+    removed,
+    result,
+  });
+  return result;
 };
 
 const parsePositiveInt = (value: unknown, fallback: number) => {

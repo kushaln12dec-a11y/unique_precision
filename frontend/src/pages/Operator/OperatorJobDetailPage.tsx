@@ -429,11 +429,15 @@ const OperatorJobDetailPage = () => {
 
   useEffect(() => {
     void refreshServerTimeOffset(true).catch(() => { });
+  }, []);
+
+  useEffect(() => {
+    if (!hasActiveQuantityTimer) return;
     const syncTimerId = window.setInterval(() => {
       void refreshServerTimeOffset().catch(() => { });
-    }, 15000);
+    }, 60000);
     return () => window.clearInterval(syncTimerId);
-  }, []);
+  }, [hasActiveQuantityTimer]);
 
   useEffect(() => {
     if (!hasActiveQuantityTimer) return;

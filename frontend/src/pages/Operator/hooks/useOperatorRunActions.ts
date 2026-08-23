@@ -21,6 +21,7 @@ type Params = {
   setCutInputs: React.Dispatch<React.SetStateAction<Map<number | string, CutInputData>>>;
   ensureCurrentUserAssigned: (job: JobEntry | undefined) => boolean;
   currentUserDisplayName: string;
+  isAdmin?: boolean;
 };
 
 export const useOperatorRunActions = ({
@@ -33,8 +34,9 @@ export const useOperatorRunActions = ({
   setCutInputs,
   ensureCurrentUserAssigned,
   currentUserDisplayName,
+  isAdmin = false,
 }: Params) => {
-  const getShiftOverKey = (cutId: number | string, quantityIndex: number) => `${String(cutId)}:${quantityIndex}`;
+  const getShiftOverKey = (cutId: number | string, quantityIndex: number) => `${cutId}-${quantityIndex}`;
 
   const getResumeValidationMessage = (qtyData: QuantityInputData) => {
     const selectedOps = Array.isArray(qtyData.opsName)
@@ -42,6 +44,20 @@ export const useOperatorRunActions = ({
       : [];
     if (!selectedOps.length) return "Select Ops Name before resuming.";
     if (!String(qtyData.machineNumber || "").trim()) return "Select machine number before resuming.";
+
+    if (!isAdmin) {
+      const currentNameUpper = String(currentUserDisplayName || "").trim().toUpperCase();
+      if (currentNameUpper) {
+        const isOperatorInList = selectedOps.some((name) => {
+          const selName = name.toUpperCase();
+          return currentNameUpper.includes(selName) || selName.includes(currentNameUpper);
+        });
+        if (!isOperatorInList) {
+          return "You must add your name to Ops Name before resuming.";
+        }
+      }
+    }
+
     return null;
   };
 

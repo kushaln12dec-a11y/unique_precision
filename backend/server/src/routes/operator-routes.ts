@@ -184,8 +184,8 @@ const getLogQuantityNumbers = (log: any) => {
   const metadata = (log?.metadata || {}) as Record<string, any>;
   const metadataQuantities = Array.isArray(metadata.quantityNumbers)
     ? metadata.quantityNumbers
-        .map((value) => Number(value))
-        .filter((value) => Number.isInteger(value) && value >= 1)
+      .map((value) => Number(value))
+      .filter((value) => Number.isInteger(value) && value >= 1)
     : [];
   if (metadataQuantities.length > 0) return metadataQuantities;
 
@@ -264,8 +264,10 @@ const buildSelfIdentityTokens = (reqUser: any): Set<string> => {
   const tokens = new Set<string>();
   const fullName = String(reqUser?.fullName || "").trim().toUpperCase();
   if (fullName) tokens.add(fullName);
-  const firstName = String(reqUser?.firstName || "").trim();
-  const lastName = String(reqUser?.lastName || "").trim();
+  const firstName = String(reqUser?.firstName || "").trim().toUpperCase();
+  if (firstName) tokens.add(firstName);
+  const lastName = String(reqUser?.lastName || "").trim().toUpperCase();
+  if (lastName) tokens.add(lastName);
   const joined = `${firstName} ${lastName}`.trim().toUpperCase();
   if (joined) tokens.add(joined);
   const empId = String(reqUser?.empId || "").trim().toUpperCase();
@@ -280,7 +282,7 @@ const buildSelfIdentityTokens = (reqUser: any): Set<string> => {
 };
 
 /** Operators may only set ops/assignment identity to themselves; admins/programmers unrestricted. */
-const canOperatorAdjustOwnAssignment = (req: any, _currentValue: unknown, requestedValue: unknown) => {
+const canOperatorAdjustOwnAssignment = (req: any, currentValue: unknown, requestedValue: unknown) => {
   const role = getRequestRole(req);
   if (role === "ADMIN" || role === "PROGRAMMER") return true;
   if (role !== "OPERATOR") return false;
@@ -288,9 +290,13 @@ const canOperatorAdjustOwnAssignment = (req: any, _currentValue: unknown, reques
   const selfTokens = buildSelfIdentityTokens(req?.user);
   if (selfTokens.size === 0) return false;
 
+  const current = normalizeAssignedOperatorNames(currentValue);
   const requested = getRequestedOperatorNames(requestedValue);
-  if (requested.length === 0) return false;
-  return requested.every((name) => selfTokens.has(name));
+
+  const added = requested.filter((name) => !current.includes(name));
+  const removed = current.filter((name) => !requested.includes(name));
+
+  return [...added, ...removed].every((name) => selfTokens.has(name));
 };
 
 router.get("/jobs", async (req, res) => {
@@ -419,6 +425,12 @@ router.put("/jobs/:id", async (req, res) => {
     });
     if (!existingJob) {
       return res.status(404).json({ message: "Job not found" });
+    }
+
+    if (updateData.assignedTo !== undefined) {
+      if (!canOperatorAdjustOwnAssignment(req, existingJob.assignedTo, updateData.assignedTo)) {
+        return res.status(403).json({ message: "Operators can only add or remove their own name." });
+      }
     }
 
     const updatedAt = new Date();

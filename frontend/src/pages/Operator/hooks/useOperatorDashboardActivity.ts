@@ -20,7 +20,6 @@ export const useOperatorDashboardActivity = ({
     if (document.visibilityState !== "visible") return;
 
     try {
-      invalidateEmployeeLogsCache(/employee-logs/);
       const logs = await getActiveOperatorRunLogs();
       if (!isMounted) return;
       setActiveOperatorRuns(logs.filter((log) => String(log.jobId || "").trim() && !log.endedAt));
@@ -31,7 +30,6 @@ export const useOperatorDashboardActivity = ({
 
   const refreshOperatorHistory = useCallback(async (isMounted: boolean = true) => {
     try {
-      invalidateEmployeeLogsCache(/employee-logs/);
       const logs = await getEmployeeLogs({ role: "OPERATOR", limit: 500 });
       if (!isMounted) return;
       setOperatorHistoryLogs(logs.filter((log) => String(log.jobId || "").trim()));
@@ -63,10 +61,6 @@ export const useOperatorDashboardActivity = ({
       };
     }
 
-    const intervalId = window.setInterval(() => {
-      void loadActiveRuns();
-    }, 5000);
-
     const handleVisibilityChange = () => {
       if (document.visibilityState === "visible") {
         void loadActiveRuns();
@@ -77,12 +71,12 @@ export const useOperatorDashboardActivity = ({
 
     return () => {
       isMounted = false;
-      window.clearInterval(intervalId);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
   }, [activeTab, refreshActiveRuns]);
 
   useJobSync(() => {
+    invalidateEmployeeLogsCache(/employee-logs/);
     void refreshActiveRuns(true);
     void refreshOperatorHistory(true);
   }, activeTab === "jobs" || activeTab === "logged_jobs");

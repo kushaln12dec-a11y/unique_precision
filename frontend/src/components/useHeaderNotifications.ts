@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { getActiveOperatorRunLogs, getEmployeeLogs } from "../services/employeeLogsApi";
 import { getOperatorJobsPage } from "../services/operatorApi";
+import { useJobSync } from "../hooks/useJobSync";
 import type { EmployeeLog } from "../types/employeeLog";
 import type { JobEntry } from "../types/job";
 import { fetchAllPaginatedItems } from "../utils/paginationUtils";
@@ -24,6 +25,11 @@ export const useHeaderNotifications = ({
   const [operatorGridJobs, setOperatorGridJobs] = useState<JobEntry[]>([]);
   const [assignmentLogs, setAssignmentLogs] = useState<EmployeeLog[]>([]);
   const [personalActivityLogs, setPersonalActivityLogs] = useState<EmployeeLog[]>([]);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  useJobSync(() => {
+    setRefreshKey((value) => value + 1);
+  }, isActive);
 
   useEffect(() => {
     if (!isActive) {
@@ -72,16 +78,20 @@ export const useHeaderNotifications = ({
       }
     };
 
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        void loadHeaderNotifications();
+      }
+    };
+
     void loadHeaderNotifications();
-    const intervalId = window.setInterval(() => {
-      void loadHeaderNotifications();
-    }, 15000);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
 
     return () => {
       isMounted = false;
-      window.clearInterval(intervalId);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
-  }, [isActive]);
+  }, [isActive, refreshKey]);
 
   const notifications = useMemo<HeaderNotificationItem[]>(() => {
     const assignmentItems = buildAssignmentNotificationItems({

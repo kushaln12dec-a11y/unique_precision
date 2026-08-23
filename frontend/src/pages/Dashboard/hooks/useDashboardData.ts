@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useJobSync } from "../../../hooks/useJobSync";
 import { getDashboardSummary } from "../../../services/dashboardApi";
 import { useAppDispatch, useAppSelector } from "../../../store/hooks";
 import {
@@ -25,6 +26,11 @@ export const useDashboardData = (forcedView?: DashboardRoleView) => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  useJobSync(() => {
+    setRefreshKey((value) => value + 1);
+  }, true);
 
   useEffect(() => {
     if (forcedView) {
@@ -67,12 +73,18 @@ export const useDashboardData = (forcedView?: DashboardRoleView) => {
       }
     };
 
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        void load(true);
+      }
+    };
+
     void load();
-    const interval = window.setInterval(() => void load(true), 60000);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
 
     return () => {
       cancelled = true;
-      window.clearInterval(interval);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
   }, [
     activeView,
@@ -83,6 +95,7 @@ export const useDashboardData = (forcedView?: DashboardRoleView) => {
     dashboardState.filters.machine,
     dashboardState.filters.operator,
     dashboardState.filters.programmer,
+    refreshKey,
   ]);
 
   const meta = useMemo(() => data?.meta ?? null, [data]);

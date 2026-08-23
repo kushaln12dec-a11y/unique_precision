@@ -53,7 +53,7 @@ const getEmployeeLogItems = (payload: any): EmployeeLog[] => {
   return [];
 };
 
-const EMPLOYEE_LOGS_DEDUPE_TTL_MS = 1200;
+const EMPLOYEE_LOGS_DEDUPE_TTL_MS = 5000;
 const employeeLogsInFlight = new Map<string, Promise<any>>();
 const employeeLogsResponseCache = new Map<string, { expiresAt: number; payload: any }>();
 const ACTIVE_OPERATOR_RUNS_CACHE_TTL_MS = 2000;
@@ -121,6 +121,8 @@ export const getEmployeeLogs = async (params: GetEmployeeLogsParams = {}): Promi
   if (params.jobGroupId) query.append("jobGroupId", params.jobGroupId);
   if (params.startDate) query.append("startDate", params.startDate);
   if (params.endDate) query.append("endDate", params.endDate);
+  if (params.offset !== undefined) query.append("offset", String(Math.max(0, params.offset)));
+  if (params.limit !== undefined) query.append("limit", String(Math.max(1, params.limit)));
 
   const url = query.toString() ? `/api/employee-logs?${query.toString()}` : "/api/employee-logs";
   const payload = await fetchEmployeeLogsPayload(url);
