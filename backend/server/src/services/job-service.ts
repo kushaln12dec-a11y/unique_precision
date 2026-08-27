@@ -28,6 +28,53 @@ const normalizeAssignedOperatorNames = (value: unknown): string[] =>
     .map((entry) => normalizeOperatorName(entry))
     .filter((entry) => entry && entry !== "UNASSIGN" && entry !== "UNASSIGNED");
 
+const buildSelfIdentityTokens = (reqUser: any): string[] => {
+  const tokens = new Set<string>();
+  const fullName = resolveReqUserName(reqUser);
+  if (fullName) tokens.add(fullName);
+  const firstName = normalizeOperatorName(reqUser?.firstName);
+  if (firstName) tokens.add(firstName);
+  const lastName = normalizeOperatorName(reqUser?.lastName);
+  if (lastName) tokens.add(lastName);
+  const joined = `${firstName} ${lastName}`.trim();
+  if (joined) tokens.add(joined);
+  const empId = normalizeOperatorName(reqUser?.empId);
+  if (empId) tokens.add(empId);
+  const email = normalizeOperatorName(reqUser?.email);
+  if (email) {
+    tokens.add(email);
+    const local = email.split("@")[0]?.trim();
+    if (local) tokens.add(local);
+  }
+  return Array.from(tokens).filter(Boolean);
+};
+
+const applyOperatorSelfScope = (where: any, reqUser?: any) => {
+  const role = String(reqUser?.role || "").trim().toUpperCase();
+  if (role !== "OPERATOR") return where;
+
+  const tokens = buildSelfIdentityTokens(reqUser);
+  if (tokens.length === 0) {
+    return {
+      AND: [
+        where,
+        { id: "__no_operator_identity__" },
+      ],
+    };
+  }
+
+  return {
+    AND: [
+      where,
+      {
+        OR: tokens.map((token) => ({
+          assignedTo: { contains: token, mode: "insensitive" as const },
+        })),
+      },
+    ],
+  };
+};
+
 const buildQcWhere = (where: any, query: JobsQuery) => {
   const isClosedView = query.isBilled === "true";
   const qcVisibilityWhere = isClosedView
@@ -135,8 +182,8 @@ export const getProgrammerJobs = async (query: JobsQuery) => {
   return createPaginatedResponse(orderedJobs.map(mapJobList), totalGroups, offset, limit);
 };
 
-export const getOperatorJobs = async (query: JobsQuery) => {
-  const where = buildJobWhere({ query });
+export const getOperatorJobs = async (query: JobsQuery, reqUser?: any) => {
+  const where = applyOperatorSelfScope(buildJobWhere({ query }), reqUser);
   const { limit, offset } = getPagination({ query });
   const { totalGroups, groupIds } = await getPagedGroupIds(where, offset, limit);
 

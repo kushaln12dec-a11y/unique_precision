@@ -41,8 +41,6 @@ export const OperatorQuantityCard: React.FC<OperatorQuantityCardProps> = ({
   onRequestShiftOver,
   onRequestResume,
   onRequestEndTimeCapture,
-  onSaveQuantity,
-  onSaveRange,
   savedRanges,
   canReset,
   canRunAssignedJob,
@@ -319,8 +317,6 @@ export const OperatorQuantityCard: React.FC<OperatorQuantityCardProps> = ({
         onRequestResetTimer={onRequestResetTimer}
         onRequestShiftOver={onRequestShiftOver}
         onInputChange={onInputChange}
-        onSaveQuantity={onSaveQuantity}
-        onSaveRange={onSaveRange}
         isAlreadySaved={["SAVED", "READY_FOR_QA", "SENT_TO_QA"].includes(getStatus(qtyIndex + 1))}
         quantityLabel={singleQuantityLabel}
         rangeQuantityLabel={formatQuantityRangeIdentifier(rangeStartQty, rangeEndQty, "Range")}

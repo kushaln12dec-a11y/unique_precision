@@ -198,8 +198,7 @@ export const normalizeAssignedOperators = (
     const primaryName = normalizeOperatorLabel(name);
     const normalizedName = String(primaryName || "").trim().toLowerCase();
     if (!normalizedName || normalizedName === "unassigned" || normalizedName === "unassign") return;
-    const mappedName = operatorNameLookup.get(normalizedName);
-    if (!mappedName) return;
+    const mappedName = operatorNameLookup.get(normalizedName) || primaryName;
     const key = mappedName.toLowerCase();
     if (unique.has(key)) return;
     unique.add(key);

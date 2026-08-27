@@ -279,12 +279,16 @@ export const buildJobWhere = (req: any) => {
     const assignedTo = String(req.query.assignedTo).split(",").map(s => s.trim()).filter(Boolean);
     if (assignedTo.length > 0) {
       const isUnassign = assignedTo.some(val => /^unassign(?:ed)?$/i.test(val));
+      const namedAssignments = assignedTo.filter((val) => !/^unassign(?:ed)?$/i.test(val));
+      const namedAssignmentWhere = namedAssignments.map((value) => ({
+        assignedTo: { contains: value, mode: "insensitive" as const },
+      }));
       if (isUnassign) {
         where.AND = [
           ...(Array.isArray(where.AND) ? where.AND : []),
           {
             OR: [
-              { assignedTo: { in: assignedTo } },
+              ...namedAssignmentWhere,
               { assignedTo: "Unassign" },
               { assignedTo: "Unassigned" },
               { assignedTo: "" },
@@ -292,8 +296,11 @@ export const buildJobWhere = (req: any) => {
             ],
           },
         ];
-      } else {
-        where.assignedTo = { in: assignedTo };
+      } else if (namedAssignmentWhere.length > 0) {
+        where.AND = [
+          ...(Array.isArray(where.AND) ? where.AND : []),
+          { OR: namedAssignmentWhere },
+        ];
       }
     }
   }

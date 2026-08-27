@@ -119,7 +119,7 @@ export const useOperatorViewData = (groupId: string | null, cutIdParam: string |
         const quantities: QuantityInputData[] = Array.from({ length: quantity }, () => createEmptyQuantityInputData());
         const captures = Array.isArray(existing.operatorCaptures) ? existing.operatorCaptures : [];
         const tableMachineNumbers = getMachineNumberArray(existing.machineNumber || "");
-        const captureFallbackOpsNameArray = isMultiQuantityJob ? [] : assignedToArray;
+        const captureFallbackOpsNameArray = assignedToArray;
         const captureFallbackMachineNumber = isMultiQuantityJob ? "" : (tableMachineNumbers[0] || "");
 
         if (captures.length > 0) {
@@ -244,7 +244,7 @@ export const useOperatorViewData = (groupId: string | null, cutIdParam: string |
             quantities[idx] = {
               ...quantities[idx],
               machineNumber: tableMachineNumbers[idx] || "",
-              opsName: [],
+              opsName: [...opsNameArray],
             };
           }
         }

@@ -490,3 +490,51 @@
 .operator-action-primary-btn.resume:hover {
   box-shadow: 0 14px 24px rgba(37, 99, 235, 0.22);
 }
+
+.operator-unsaved-modal .modal-header {
+  margin-bottom: 0.75rem;
+}
+
+.operator-unsaved-modal-message {
+  margin: 0;
+  color: var(--color-text);
+  font-size: 0.98rem;
+  line-height: 1.5;
+}
+
+.operator-unsaved-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 1.35rem;
+}
+
+.operator-unsaved-modal-cancel,
+.operator-unsaved-modal-confirm {
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.92rem;
+  font-weight: 700;
+  min-width: 96px;
+  padding: 0.68rem 1rem;
+}
+
+.operator-unsaved-modal-cancel {
+  background: var(--color-surface-muted);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+}
+
+.operator-unsaved-modal-confirm {
+  background: var(--color-danger);
+  color: #ffffff;
+}
+
+.operator-unsaved-modal-cancel:hover {
+  background: color-mix(in srgb, var(--color-surface-muted) 70%, var(--color-text) 8%);
+}
+
+.operator-unsaved-modal-confirm:hover {
+  background: color-mix(in srgb, var(--color-danger) 88%, #000000);
+}

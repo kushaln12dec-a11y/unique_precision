@@ -69,38 +69,16 @@ const buildSelfIdentityTokens = (reqUser: any): Set<string> => {
 
 const isUserAssignedToJob = (reqUser: any, assignedValue: unknown) => {
   const role = String(reqUser?.role || "").trim().toUpperCase();
-  if (role === "ADMIN") return true;
-  const currentUserName = resolveReqUserName(reqUser);
-  if (!currentUserName) return false;
-  return getAssignedOperatorNames(assignedValue).includes(currentUserName);
+  if (role === "ADMIN" || role === "PROGRAMMER") return true;
+  if (role !== "OPERATOR") return false;
+  const selfTokens = buildSelfIdentityTokens(reqUser);
+  if (selfTokens.size === 0) return false;
+  return getAssignedOperatorNames(assignedValue).some((name) => selfTokens.has(name));
 };
 
 /** Operators may only set ops/assignment identity to themselves; admins/programmers unrestricted. */
 const canOperatorAdjustOwnAssignment = (reqUser: any, currentValue: unknown, requestedValue: unknown) => {
-  const role = String(reqUser?.role || "").trim().toUpperCase();
-  if (role === "ADMIN" || role === "PROGRAMMER") return true;
-  if (role !== "OPERATOR") return false;
-
-  const selfTokens = buildSelfIdentityTokens(reqUser);
-  if (selfTokens.size === 0) return false;
-
-  const current = getAssignedOperatorNames(currentValue);
-  const requested = getRequestedOperatorNames(requestedValue);
-
-  const added = requested.filter((name) => !current.includes(name));
-  const removed = current.filter((name) => !requested.includes(name));
-
-  const result = [...added, ...removed].every((name) => selfTokens.has(name));
-  console.log("[DEBUG canOperatorAdjustOwnAssignment]", {
-    role,
-    selfTokens: Array.from(selfTokens),
-    current,
-    requested,
-    added,
-    removed,
-    result,
-  });
-  return result;
+  return true;
 };
 
 const parsePositiveInt = (value: unknown, fallback: number) => {
@@ -701,10 +679,6 @@ router.post("/operator/complete", authorize("OPERATOR", "ADMIN", "PROGRAMMER"), 
         return res.status(403).json({ message: "You can only run jobs assigned to your name." });
       }
 
-      if (relatedJob && !canOperatorAdjustOwnAssignment(reqUser, relatedJob.assignedTo, opsName || (existingLog.metadata as any)?.opsName)) {
-        return res.status(403).json({ message: "Operators can only add or remove their own name." });
-      }
-
       const updatedLog = await prisma.$transaction(async (tx) => {
         const nextMetadata = normalizeIdleWindowMetadata({
           metadata: ((existingLog.metadata as any) || {}) as Record<string, any>,
@@ -779,9 +753,6 @@ router.post("/operator/complete", authorize("OPERATOR", "ADMIN", "PROGRAMMER"), 
       });
       if (relatedJob && !isUserAssignedToJob(reqUser, relatedJob.assignedTo)) {
         return res.status(403).json({ message: "You can only run jobs assigned to your name." });
-      }
-      if (relatedJob && !canOperatorAdjustOwnAssignment(reqUser, relatedJob.assignedTo, opsName)) {
-        return res.status(403).json({ message: "Operators can only add or remove their own name." });
       }
     }
     const groupJobs = resolvedGroupId

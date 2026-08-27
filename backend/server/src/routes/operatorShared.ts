@@ -183,13 +183,13 @@ const getRawWorkedSecondsForOperatorLog = (log: {
   metadata?: any;
 }) => {
   const metadata = (log.metadata || {}) as Record<string, any>;
-  const fromMachineHours = parseMachineHoursToSeconds(metadata.machineHrs);
-  if (fromMachineHours !== null && fromMachineHours > 0) return fromMachineHours;
-
   const fromWorkedSeconds = Number(metadata.workedSeconds || 0);
   if (Number.isFinite(fromWorkedSeconds) && fromWorkedSeconds > 0) {
     return Math.max(0, Math.round(fromWorkedSeconds));
   }
+
+  const fromMachineHours = parseMachineHoursToSeconds(metadata.machineHrs);
+  if (fromMachineHours !== null && fromMachineHours > 0) return fromMachineHours;
 
   return Math.max(0, Number(log.durationSeconds || 0));
 };

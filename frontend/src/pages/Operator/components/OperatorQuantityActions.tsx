@@ -26,8 +26,6 @@ type Props = {
   onRequestResetTimer?: (cutId: number | string, quantityIndex: number) => void;
   onRequestShiftOver?: (cutId: number | string, quantityIndex: number) => void;
   onInputChange: (cutId: number | string, quantityIndex: number, field: OperatorInputField, value: string | string[]) => void;
-  onSaveQuantity?: (cutId: number | string, quantityIndex: number) => void;
-  onSaveRange?: (cutId: number | string, sourceQuantityIndex: number, fromQty: number, toQty: number) => void;
   isAlreadySaved?: boolean;
 };
 
@@ -39,14 +37,7 @@ const OperatorQuantityActions: React.FC<Props> = ({
   cutId,
   qtyIndex,
   quantityLabel,
-  rangeQuantityLabel,
   isRangeMode,
-  isRangeValid,
-  isRangeApproved,
-  rangeStartQty,
-  rangeEndQty,
-  rangeBadgeKey,
-  savedRanges,
   qtyStartTime,
   qtyEndTime,
   isShiftOverPause,
@@ -56,35 +47,13 @@ const OperatorQuantityActions: React.FC<Props> = ({
   onRequestResetTimer,
   onRequestShiftOver,
   onInputChange,
-  onSaveQuantity,
-  onSaveRange,
-  isAlreadySaved,
 }) => {
-  const canSaveSingleQuantity = canOperateInputs && Boolean(String(qtyEndTime || "").trim());
-  const canSaveRange = canOperateInputs && !isRangeMode ? false : Boolean(String(qtyEndTime || "").trim()) && isRangeValid && isRangeApproved;
   const showRunBlockedToast = () => onShowToast?.(runBlockedReason || "Your name must be assigned to this job before you can run it.", "error");
   const singleLabel = quantityLabel || `Quantity ${qtyIndex + 1}`;
-  const rangeLabel = rangeQuantityLabel || `Range ${rangeStartQty}-${rangeEndQty}`;
 
   return (
     <div className="quantity-save-section">
-      {isRangeMode ? (
-        <button
-          type="button"
-          className={`btn-save-quantity ${savedRanges.has(rangeBadgeKey) ? "saved" : ""}`}
-          disabled={!canSaveRange}
-          onClick={() => {
-            if (!canRunAssignedJob) return showRunBlockedToast();
-            if (savedRanges.has(rangeBadgeKey)) return onShowToast?.(`${rangeLabel} is already saved.`, "info");
-            if (!String(qtyEndTime || "").trim()) return onShowToast?.("Click End Time before saving.", "error");
-            if (!isRangeValid) return onShowToast?.(`Enter range between 1 and ${Math.max(rangeEndQty, rangeStartQty)}.`, "error");
-            if (!isRangeApproved) return onShowToast?.("Please click Check to accept the range.", "error");
-            onSaveRange?.(cutId, qtyIndex, rangeStartQty, rangeEndQty);
-          }}
-        >
-          {savedRanges.has(rangeBadgeKey) ? "Saved" : `Save ${rangeLabel}`}
-        </button>
-      ) : (
+      {!isRangeMode && (
         <>
           {qtyStartTime && !qtyEndTime && (!isPaused || isShiftOverPause) && (
             <button
@@ -113,19 +82,6 @@ const OperatorQuantityActions: React.FC<Props> = ({
               Reset {singleLabel}
             </button>
           )}
-          <button
-            type="button"
-            className={`btn-save-quantity ${isAlreadySaved ? "saved" : ""}`}
-            disabled={!canSaveSingleQuantity || !canRunAssignedJob}
-            onClick={() => {
-              if (!canRunAssignedJob) return showRunBlockedToast();
-              if (isAlreadySaved) return onShowToast?.(`${singleLabel} is already saved.`, "info");
-              if (!String(qtyEndTime || "").trim()) return onShowToast?.("Click End Time before saving.", "error");
-              onSaveQuantity?.(cutId, qtyIndex);
-            }}
-          >
-            {isAlreadySaved ? "Saved" : `Save ${singleLabel}`}
-          </button>
         </>
       )}
     </div>

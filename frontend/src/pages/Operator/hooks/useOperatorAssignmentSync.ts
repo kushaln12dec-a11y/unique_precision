@@ -122,17 +122,10 @@ export const useOperatorAssignmentSync = ({
         const currentAssignedOperators = parseAssignedOperators(job.assignedTo || "").filter((name) =>
           validOperatorNames.has(normalizeOperatorName(name).toLowerCase())
         );
-        const normalizedCurrentUser = String(currentUserDisplayName || "").trim().toLowerCase();
 
         const nextAssignedOperators =
-          userRole === "OPERATOR" && normalizedCurrentUser
-            ? (() => {
-                const retainedOthers = currentAssignedOperators.filter((name) => name.toLowerCase() !== normalizedCurrentUser);
-                const hasSelfSelected = namesFromInputs.some((name) => name.toLowerCase() === normalizedCurrentUser);
-                return hasSelfSelected
-                  ? [...retainedOthers, currentUserDisplayName]
-                  : retainedOthers;
-              })()
+          namesFromInputs.length === 0
+            ? currentAssignedOperators
             : namesFromInputs;
 
         const stableNextAssignedOperators = buildStableOperatorList(nextAssignedOperators);
@@ -159,10 +152,10 @@ export const useOperatorAssignmentSync = ({
           prev.map((entry) =>
             String(entry.id) === jobId
               ? {
-                  ...entry,
-                  assignedTo: nextAssignedTo,
-                  machineNumber: nextMachineNumber,
-                }
+                ...entry,
+                assignedTo: nextAssignedTo,
+                machineNumber: nextMachineNumber,
+              }
               : entry
           )
         );
@@ -175,13 +168,13 @@ export const useOperatorAssignmentSync = ({
           setJobs((prev) =>
             prev.map((entry) =>
               String(entry.id) === jobId &&
-              String(entry.assignedTo || "").trim() === nextAssignedTo &&
-              String(entry.machineNumber || "").trim() === nextMachineNumber
+                String(entry.assignedTo || "").trim() === nextAssignedTo &&
+                String(entry.machineNumber || "").trim() === nextMachineNumber
                 ? {
-                    ...entry,
-                    assignedTo: previousAssignedTo,
-                    machineNumber: previousMachineNumber,
-                  }
+                  ...entry,
+                  assignedTo: previousAssignedTo,
+                  machineNumber: previousMachineNumber,
+                }
                 : entry
             )
           );
