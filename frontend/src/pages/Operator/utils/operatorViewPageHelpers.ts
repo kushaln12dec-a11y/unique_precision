@@ -1,4 +1,5 @@
 import { formatDurationToClock } from "./operatorTimeUtils";
+import { getDecodedTokenPayload } from "../../../utils/auth";
 
 const normalizeOperatorName = (value: unknown) => String(value || "").trim().toUpperCase();
 
@@ -8,8 +9,34 @@ export const parseAssignedOperators = (value: unknown) =>
     .map((entry) => normalizeOperatorName(entry))
     .filter((entry) => entry && entry.toLowerCase() !== "unassign" && entry.toLowerCase() !== "unassigned");
 
+export const getCurrentUserOperatorTokens = (fallbackDisplayName?: string) => {
+  const decoded = getDecodedTokenPayload() || {};
+  const tokens = new Set<string>();
+  const addToken = (value: unknown) => {
+    const normalized = normalizeOperatorName(value);
+    if (normalized) tokens.add(normalized);
+  };
+
+  addToken(fallbackDisplayName);
+  addToken(decoded.fullName);
+  addToken(decoded.name);
+  addToken(decoded.username);
+  addToken(decoded.firstName);
+  addToken(decoded.lastName);
+  addToken(decoded.empId);
+
+  const joinedName = `${String(decoded.firstName || "").trim()} ${String(decoded.lastName || "").trim()}`.trim();
+  addToken(joinedName);
+
+  const email = String(decoded.email || "").trim();
+  addToken(email);
+  addToken(email.split("@")[0]);
+
+  return tokens;
+};
+
 export const isCurrentUserAssignedToJob = (assignedTo: unknown, currentUserDisplayName: string, isAdmin: boolean) =>
-  isAdmin || parseAssignedOperators(assignedTo).includes(normalizeOperatorName(currentUserDisplayName));
+  isAdmin || parseAssignedOperators(assignedTo).some((operatorName) => getCurrentUserOperatorTokens(currentUserDisplayName).has(operatorName));
 
 export const buildStableOperatorList = (names: string[]) =>
   Array.from(

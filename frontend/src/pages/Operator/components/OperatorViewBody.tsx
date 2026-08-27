@@ -6,6 +6,7 @@ import { OperatorCutCard } from "./OperatorCutCard";
 import { OperatorJobInfo } from "./OperatorJobInfo";
 import { OperatorTotalsSection } from "./OperatorTotalsSection";
 import { isCurrentUserAssignedToJob } from "../utils/operatorViewPageHelpers";
+import { formatSettingIdentifier } from "../../../utils/jobFormatting";
 
 type Props = {
   jobs: JobEntry[];
@@ -136,7 +137,7 @@ const OperatorViewBody: React.FC<Props> = ({
         </div>
         {cutIdParam && (
           <span className="cut-indicator">
-            Viewing Setting {jobs.findIndex((j) => String(j.id) === String(cutIdParam)) + 1}
+            Viewing {formatSettingIdentifier(jobs.find((j) => String(j.id) === String(cutIdParam)), jobs.findIndex((j) => String(j.id) === String(cutIdParam)))}
           </span>
         )}
       </div>

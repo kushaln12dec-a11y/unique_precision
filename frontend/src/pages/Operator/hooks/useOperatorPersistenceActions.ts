@@ -3,6 +3,7 @@ import { completeOperatorProductionLog } from "../../../services/employeeLogsApi
 import { captureOperatorInput, updateOperatorJob, updateOperatorQaStatus } from "../../../services/operatorApi";
 import type { CutInputData } from "../types/cutInput";
 import type { JobEntry, QuantityQaStatus } from "../../../types/job";
+import { formatQuantityIdentifierFromIndex, formatQuantityRangeIdentifier } from "../../../utils/jobFormatting";
 import { readImageFileAsBase64, showAndHideToast } from "../utils/operatorViewActionUtils";
 import {
   applyQaStatusToQuantities,
@@ -85,7 +86,7 @@ export const useOperatorPersistenceActions = ({
         return next;
       });
       clearQuantityErrors(cutId, quantityIndex);
-      showAndHideToast(setSaveToast, `Quantity ${quantityIndex + 1} saved successfully!`, "success", 2000);
+      showAndHideToast(setSaveToast, `${formatQuantityIdentifierFromIndex(quantityIndex, "Quantity")} saved successfully!`, "success", 2000);
       setActiveOperatorLogIds((prev) => {
         const next = new Map(prev);
         next.delete(`${String(cutId)}:${quantityIndex}`);
@@ -147,7 +148,7 @@ export const useOperatorPersistenceActions = ({
         next.set(cutId, applyQaStatusToQuantities(next.get(cutId) || {}, Array.from({ length: toQty - fromQty + 1 }, (_, idx) => fromQty + idx), "SAVED"));
         return next;
       });
-      showAndHideToast(setSaveToast, `Range ${fromQty}-${toQty} saved successfully!`, "success", 2000);
+      showAndHideToast(setSaveToast, `${formatQuantityRangeIdentifier(fromQty, toQty, "Range")} saved successfully!`, "success", 2000);
       setActiveOperatorLogIds((prev) => {
         const next = new Map(prev);
         next.delete(`${String(cutId)}:${sourceQuantityIndex}`);
@@ -177,7 +178,7 @@ export const useOperatorPersistenceActions = ({
         next.set(cutId, applyQaStatusToQuantities(next.get(cutId) || {}, quantityNumbers, status));
         return next;
       });
-      showAndHideToast(setActionToast, `${status === "SENT_TO_QA" ? "Sent to QC" : "Marked Ready for QC"}: Qty ${quantityNumbers.join(", ")}`, "success");
+      showAndHideToast(setActionToast, `${status === "SENT_TO_QA" ? "Sent to QC" : "Marked Ready for QC"}: ${quantityNumbers.map((qty) => formatQuantityIdentifierFromIndex(qty - 1)).join(", ")}`, "success");
     } catch (error) {
       console.error("Failed to update QC status", error);
       showAndHideToast(setActionToast, "Failed to update QC status.", "error");
@@ -219,8 +220,17 @@ export const useOperatorPersistenceActions = ({
     const logId = activeOperatorLogIds.get(key) || await resolveActiveOperatorLogId(cutId, quantityIndex);
     const machineNumber = String(qtyData.machineNumber || "").trim();
     const opsName = getOperatorOpsName(qtyData.opsName);
+    const qtyDataForCapture = {
+      ...qtyData,
+      endTime: options.endTime,
+      endTimeEpochMs: options.timestampMs,
+      machineHrs: options.machineHrs,
+      idleTime: options.idleTime,
+      idleTimeDuration: options.idleTimeDuration,
+    };
 
     try {
+      let completedLogId = logId;
       if (logId) {
         const completedLog = await completeOperatorProductionLog({
           logId,
@@ -235,13 +245,17 @@ export const useOperatorPersistenceActions = ({
           pauseSessions: getPauseSessionsForCurrentSegment(qtyData),
         });
 
-        const completedLogId = String((completedLog as any)?._id || (completedLog as any)?.id || logId);
+        completedLogId = String((completedLog as any)?._id || (completedLog as any)?.id || logId);
         setActiveOperatorLogIds((prev) => {
           const next = new Map(prev);
-          next.set(key, completedLogId);
+          if (completedLogId) next.set(key, completedLogId);
           return next;
         });
       }
+
+      let imageBase64 = qtyData.lastImage;
+      if (qtyData.lastImageFile) imageBase64 = await readImageFileAsBase64(qtyData.lastImageFile);
+      await captureOperatorInput(String(cutId), buildSingleCapturePayload(qtyDataForCapture, imageBase64, quantityIndex, completedLogId));
 
       await updateOperatorJob(String(cutId), {
         startTime: String(qtyData.startTime || ""),
@@ -249,7 +263,24 @@ export const useOperatorPersistenceActions = ({
         machineHrs: options.machineHrs,
         idleTime: "",
         idleTimeDuration: "",
+        assignedTo: getAssignedToValue(opsName),
+        machineNumber,
       });
+
+      setSavedQuantities((prev) => {
+        const next = new Map(prev);
+        const saved = next.get(cutId) || new Set<number>();
+        saved.add(quantityIndex);
+        next.set(cutId, saved);
+        return next;
+      });
+      setQaStatusesByCut((prev) => {
+        const next = new Map(prev);
+        next.set(cutId, { ...(next.get(cutId) || {}), [quantityIndex + 1]: (next.get(cutId) || {})[quantityIndex + 1] || "SAVED" });
+        return next;
+      });
+      clearQuantityErrors(cutId, quantityIndex);
+      showAndHideToast(setSaveToast, `${formatQuantityIdentifierFromIndex(quantityIndex, "Quantity")} logged successfully!`, "success", 2000);
 
       return true;
     } catch (error) {
@@ -258,7 +289,7 @@ export const useOperatorPersistenceActions = ({
       showAndHideToast(setActionToast, message, "error", 3500);
       return false;
     }
-  }, [activeOperatorLogIds, cutInputs, ensureCurrentUserAssigned, jobs, resolveActiveOperatorLogId, setActionToast, setActiveOperatorLogIds]);
+  }, [activeOperatorLogIds, clearQuantityErrors, cutInputs, ensureCurrentUserAssigned, jobs, resolveActiveOperatorLogId, setActionToast, setActiveOperatorLogIds, setQaStatusesByCut, setSaveToast, setSavedQuantities]);
 
   return {
     handleSaveQuantity,

@@ -34,7 +34,7 @@ export const getProgrammerJobs = async (req: Request, res: Response, next: NextF
 export const getOperatorJobs = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const query = jobsQuerySchema.parse(req.query);
-    const jobs = await jobService.getOperatorJobs(query);
+    const jobs = await jobService.getOperatorJobs(query, req.user);
     res.json(jobs);
   } catch (error) {
     next(error);

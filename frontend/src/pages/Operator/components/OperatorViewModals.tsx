@@ -6,6 +6,8 @@ import { decimalHoursToHHMMSS } from "../utils/machineHrsCalculation";
 import type { CutInputData, QuantityInputData } from "../types/cutInput";
 import { formatCompactDurationWords, getQuantityElapsedSeconds, getCurrentSegmentWorkedSeconds } from "../utils/operatorTimeUtils";
 import { getPersistedIdleDuration } from "../utils/operatorViewPageHelpers";
+import { formatQuantityIdentifierFromIndex, getSettingIdentifier } from "../../../utils/jobFormatting";
+import "../Operator.part08.css";
 
 type PendingDispatch = { cutId: number | string; quantityNumbers: number[] } | null;
 type PendingQuantity = { cutId: number | string; quantityIndex: number } | null;
@@ -98,7 +100,7 @@ const OperatorViewModals = ({
     ? cutInputs.get(pendingEndTimeCapture.cutId)?.quantities?.[pendingEndTimeCapture.quantityIndex] || null
     : null;
   const pendingEndTimeSetting = pendingEndTimeCapture && pendingEndTimeJob
-    ? String(jobs.findIndex((job) => String(job.id) === String(pendingEndTimeCapture.cutId)) + 1)
+    ? getSettingIdentifier(pendingEndTimeJob, jobs.findIndex((job) => String(job.id) === String(pendingEndTimeCapture.cutId)))
     : "N/A";
   const pendingEndTimeWorkedSeconds =
     pendingEndTimeCapture && pendingEndTimeQty
@@ -129,10 +131,10 @@ const OperatorViewModals = ({
             {
               label: "Setting",
               value: pendingDispatchJob
-                ? String(jobs.findIndex((j) => String(j.id) === String(pendingDispatch.cutId)) + 1)
+                ? getSettingIdentifier(pendingDispatchJob, jobs.findIndex((j) => String(j.id) === String(pendingDispatch.cutId)))
                 : "N/A",
             },
-            { label: "Quantities", value: pendingDispatch.quantityNumbers.join(", ") },
+            { label: "Quantities", value: pendingDispatch.quantityNumbers.map((qty) => formatQuantityIdentifierFromIndex(qty - 1)).join(", ") },
           ]}
           confirmButtonText="Dispatch To QC"
           onConfirm={async () => {
@@ -148,8 +150,8 @@ const OperatorViewModals = ({
           title="Confirm Reset"
           message="Are you sure you want to reset this quantity timer?"
           details={[
-            { label: "Setting", value: String(jobs.findIndex((j) => String(j.id) === String(pendingReset.cutId)) + 1) },
-            { label: "Quantity", value: String(pendingReset.quantityIndex + 1) },
+            { label: "Setting", value: getSettingIdentifier(jobs.find((j) => String(j.id) === String(pendingReset.cutId)), jobs.findIndex((j) => String(j.id) === String(pendingReset.cutId))) },
+            { label: "Quantity", value: formatQuantityIdentifierFromIndex(pendingReset.quantityIndex) },
           ]}
           confirmButtonText="Reset Timer"
           onConfirm={async () => {
@@ -176,7 +178,7 @@ const OperatorViewModals = ({
               <div className="summary-card-header">
                 <span className="summary-badge-job">Job Ref: {String(pendingEndTimeJob?.refNumber || "-")}</span>
                 <span className="summary-badge-setting">Setting #{pendingEndTimeSetting}</span>
-                <span className="summary-badge-qty">Qty #{String(pendingEndTimeCapture.quantityIndex + 1)}</span>
+                <span className="summary-badge-qty">{formatQuantityIdentifierFromIndex(pendingEndTimeCapture.quantityIndex)}</span>
               </div>
 
               <div className="summary-details-grid">

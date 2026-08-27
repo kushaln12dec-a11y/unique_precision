@@ -4,6 +4,7 @@ import { updateOperatorJob } from "../../../services/operatorApi";
 import { getServerNowMs } from "../../../services/serverTime";
 import type { JobEntry } from "../../../types/job";
 import { getCurrentISTDateTime } from "../../../utils/dateTime";
+import { getSettingIdentifier } from "../../../utils/jobFormatting";
 import type { CutInputData, QuantityInputData } from "../types/cutInput";
 import { formatDurationToClock, formatWorkedSecondsAsMachineHrs, getCurrentSegmentWorkedSeconds } from "../utils/operatorTimeUtils";
 import { getAssignedToValue, getOperatorOpsName } from "../utils/operatorCapturePayloads";
@@ -20,6 +21,7 @@ type Params = {
   setCutInputs: React.Dispatch<React.SetStateAction<Map<number | string, CutInputData>>>;
   ensureCurrentUserAssigned: (job: JobEntry | undefined) => boolean;
   currentUserDisplayName: string;
+  isAdmin?: boolean;
 };
 
 export const useOperatorRunActions = ({
@@ -32,8 +34,9 @@ export const useOperatorRunActions = ({
   setCutInputs,
   ensureCurrentUserAssigned,
   currentUserDisplayName,
+  isAdmin = false,
 }: Params) => {
-  const getShiftOverKey = (cutId: number | string, quantityIndex: number) => `${String(cutId)}:${quantityIndex}`;
+  const getShiftOverKey = (cutId: number | string, quantityIndex: number) => `${cutId}-${quantityIndex}`;
 
   const getResumeValidationMessage = (qtyData: QuantityInputData) => {
     const selectedOps = Array.isArray(qtyData.opsName)
@@ -41,6 +44,20 @@ export const useOperatorRunActions = ({
       : [];
     if (!selectedOps.length) return "Select Ops Name before resuming.";
     if (!String(qtyData.machineNumber || "").trim()) return "Select machine number before resuming.";
+
+    if (!isAdmin) {
+      const currentNameUpper = String(currentUserDisplayName || "").trim().toUpperCase();
+      if (currentNameUpper) {
+        const isOperatorInList = selectedOps.some((name) => {
+          const selName = name.toUpperCase();
+          return currentNameUpper.includes(selName) || selName.includes(currentNameUpper);
+        });
+        if (!isOperatorInList) {
+          return "You must add your name to Ops Name before resuming.";
+        }
+      }
+    }
+
     return null;
   };
 
@@ -118,7 +135,7 @@ export const useOperatorRunActions = ({
         refNumber: String((job as any).refNumber || ""),
         customer: job.customer || "",
         description: job.description || "",
-        settingLabel: String(job.setting || ""),
+        settingLabel: getSettingIdentifier(job, jobs.findIndex((item) => String(item.id) === String(cutId))),
         fromQty,
         toQty: fromQty,
         quantityCount: 1,
@@ -208,7 +225,7 @@ export const useOperatorRunActions = ({
           refNumber: String((job as any).refNumber || ""),
           customer: job.customer || "",
           description: job.description || "",
-          settingLabel: String(job.setting || ""),
+          settingLabel: getSettingIdentifier(job, jobs.findIndex((item) => String(item.id) === String(cutId))),
           fromQty: quantityIndex + 1,
           toQty: quantityIndex + 1,
           quantityCount: 1,

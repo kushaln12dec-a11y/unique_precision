@@ -1,5 +1,6 @@
 import type { JobEntry } from "../types/job";
 import { apiFetch } from "../utils/apiClient";
+import { withJobIdentifiers } from "../utils/jobFormatting";
 import { apiUrl } from "./apiClient";
 import { syncServerTimeOffset } from "./serverTime";
 
@@ -66,6 +67,22 @@ const fetchWithServerTime = async (input: string, init?: RequestInit) => {
   return response;
 };
 
+const toNumericJobAmount = (value: unknown): number => {
+  const numeric = Number(value ?? 0);
+  return Number.isFinite(numeric) ? numeric : 0;
+};
+
+const normalizeOperatorJob = (job: any): JobEntry => ({
+  ...job,
+  id: job._id || job.id,
+  groupId: String(job.groupId ?? job.id),
+  assignedTo: job.assignedTo || "Unassign",
+  totalHrs: toNumericJobAmount(job.totalHrs),
+  totalAmount: toNumericJobAmount(job.totalAmount),
+  wedmAmount: toNumericJobAmount(job.wedmAmount),
+  sedmAmount: toNumericJobAmount(job.sedmAmount),
+});
+
 // Get operator jobs
 export const getOperatorJobs = async (
   customerFilter?: string,
@@ -89,12 +106,7 @@ export const getOperatorJobs = async (
   }
 
   const jobs = await res.json();
-  return jobs.map((job: any) => ({
-    ...job,
-    id: job._id || job.id,
-    groupId: String(job.groupId ?? job.id),
-    assignedTo: job.assignedTo || "Unassign",
-  }));
+  return withJobIdentifiers(jobs.map(normalizeOperatorJob));
 };
 
 export const getOperatorJobsPage = async (
@@ -122,13 +134,8 @@ export const getOperatorJobsPage = async (
   }
 
   const payload = await res.json();
-  const items = Array.isArray(payload?.items)
-    ? payload.items.map((job: any) => ({
-        ...job,
-        id: job._id || job.id,
-        groupId: String(job.groupId ?? job.id),
-        assignedTo: job.assignedTo || "Unassign",
-      }))
+  const items: JobEntry[] = Array.isArray(payload?.items)
+    ? withJobIdentifiers((payload.items as any[]).map(normalizeOperatorJob))
     : [];
 
   return {
@@ -152,12 +159,7 @@ export const getOperatorJobById = async (id: string): Promise<JobEntry> => {
   }
 
   const job = await res.json();
-  return {
-    ...job,
-    id: job._id || job.id,
-    groupId: String(job.groupId ?? job.id),
-    assignedTo: job.assignedTo || "Unassign",
-  };
+  return normalizeOperatorJob(job);
 };
 
 // Get operator jobs by groupId
@@ -172,12 +174,7 @@ export const getOperatorJobsByGroupId = async (groupId: string): Promise<JobEntr
   }
 
   const jobs = await res.json();
-  return jobs.map((job: any) => ({
-    ...job,
-    id: job._id || job.id,
-    groupId: String(job.groupId ?? job.id),
-    assignedTo: job.assignedTo || "Unassign",
-  }));
+  return withJobIdentifiers(jobs.map(normalizeOperatorJob));
 };
 
 // Update operator job
@@ -194,12 +191,7 @@ export const updateOperatorJob = async (id: string, jobData: Partial<JobEntry>):
   }
 
   const job = await res.json();
-  return {
-    ...job,
-    id: job._id || job.id,
-    groupId: String(job.groupId ?? job.id),
-    assignedTo: job.assignedTo || "Unassign",
-  };
+  return normalizeOperatorJob(job);
 };
 
 // Capture operator input (POST)
@@ -216,12 +208,7 @@ export const captureOperatorInput = async (id: string, inputData: CaptureOperato
   }
 
   const job = await res.json();
-  return {
-    ...job,
-    id: job._id || job.id,
-    groupId: String(job.groupId ?? job.id),
-    assignedTo: job.assignedTo || "Unassign",
-  };
+  return normalizeOperatorJob(job);
 };
 
 export const updateOperatorQaStatus = async (
@@ -240,12 +227,7 @@ export const updateOperatorQaStatus = async (
   }
 
   const job = await res.json();
-  return {
-    ...job,
-    id: job._id || job.id,
-    groupId: String(job.groupId ?? job.id),
-    assignedTo: job.assignedTo || "Unassign",
-  };
+  return normalizeOperatorJob(job);
 };
 
 export const resetOperatorQuantity = async (
@@ -264,12 +246,7 @@ export const resetOperatorQuantity = async (
   }
 
   const job = await res.json();
-  return {
-    ...job,
-    id: job._id || job.id,
-    groupId: String(job.groupId ?? job.id),
-    assignedTo: job.assignedTo || "Unassign",
-  };
+  return normalizeOperatorJob(job);
 };
 
 // Bulk update operator jobs

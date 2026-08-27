@@ -12,7 +12,7 @@ import OperatorQuantityTimers from "./OperatorQuantityTimers";
 import { decimalHoursToHHMMSS } from "../utils/machineHrsCalculation";
 import { useQuantityTimer } from "../hooks/useQuantityTimer";
 import { getQaStageLabel } from "../utils/qaProgress";
-import { estimatedDurationSecondsFromHours, formatMachineLabel } from "../../../utils/jobFormatting";
+import { estimatedDurationSecondsFromHours, formatMachineLabel, formatQuantityIdentifier, formatQuantityIdentifierFromIndex, formatQuantityRangeIdentifier } from "../../../utils/jobFormatting";
 import { getCurrentISTDateTime } from "../../../utils/dateTime";
 import type { OperatorQuantityCardProps } from "../types/operatorQuantityCard";
 import { getOperatorQuantityHistory } from "../utils/operatorQuantityHistory";
@@ -20,6 +20,7 @@ import { getOperatorQuantityHistory } from "../utils/operatorQuantityHistory";
 export const OperatorQuantityCard: React.FC<OperatorQuantityCardProps> = ({
   qtyData,
   qtyIndex,
+  quantityIdentifier,
   cutId,
   isRangeMode,
   isRangeValid,
@@ -40,8 +41,6 @@ export const OperatorQuantityCard: React.FC<OperatorQuantityCardProps> = ({
   onRequestShiftOver,
   onRequestResume,
   onRequestEndTimeCapture,
-  onSaveQuantity,
-  onSaveRange,
   savedRanges,
   canReset,
   canRunAssignedJob,
@@ -67,6 +66,10 @@ export const OperatorQuantityCard: React.FC<OperatorQuantityCardProps> = ({
     quantityRequiredSeconds
   );
   const rangeBadgeKey = `${rangeStartQty}-${rangeEndQty}`;
+  const singleQuantityLabel = quantityIdentifier
+    ? formatQuantityIdentifier(quantityIdentifier)
+    : formatQuantityIdentifierFromIndex(qtyIndex);
+  const rangeQuantityLabel = formatQuantityRangeIdentifier(rangeStartQty, rangeEndQty, "Quantity");
   const isShiftOverPause = qtyData.isPaused && qtyData.currentPauseReason === "Shift Over";
   const { latestWorkedByName, operatorHistoryDetails, shouldShowOperatorHistory, shouldShowWorkedBySummary, formatWorkedDuration } =
     getOperatorQuantityHistory(qtyData, isRangeMode);
@@ -79,7 +82,7 @@ export const OperatorQuantityCard: React.FC<OperatorQuantityCardProps> = ({
     <div className="quantity-input-group">
       <div className="quantity-header">
         <div className="quantity-title-row">
-          <h6 className="quantity-label">{isRangeMode && isRangeValid ? `Quantity ${rangeStartQty}-${rangeEndQty}` : `Quantity ${qtyIndex + 1}`}</h6>
+          <h6 className="quantity-label">{isRangeMode && isRangeValid ? rangeQuantityLabel : singleQuantityLabel.replace(/^Qty\b/, "Quantity")}</h6>
           {!isRangeMode && <span className={`range-status-badge status-${getStatus(qtyIndex + 1).toLowerCase()}`}>{getQaStageLabel(getStatus(qtyIndex + 1))}</span>}
           {isRangeMode && isRangeValid && <span className={`range-status-badge ${isRangeApproved ? "approved" : "pending"}`}>{isRangeApproved ? "Confirmed" : "Selected"}</span>}
         </div>
@@ -314,9 +317,9 @@ export const OperatorQuantityCard: React.FC<OperatorQuantityCardProps> = ({
         onRequestResetTimer={onRequestResetTimer}
         onRequestShiftOver={onRequestShiftOver}
         onInputChange={onInputChange}
-        onSaveQuantity={onSaveQuantity}
-        onSaveRange={onSaveRange}
         isAlreadySaved={["SAVED", "READY_FOR_QA", "SENT_TO_QA"].includes(getStatus(qtyIndex + 1))}
+        quantityLabel={singleQuantityLabel}
+        rangeQuantityLabel={formatQuantityRangeIdentifier(rangeStartQty, rangeEndQty, "Range")}
       />
     </div>
   );

@@ -2,6 +2,7 @@ import { useCallback } from "react";
 import type { CutInputData } from "../types/cutInput";
 import type { JobEntry } from "../../../types/job";
 import { showAndHideToast } from "../utils/operatorViewActionUtils";
+import { isCurrentUserAssignedToJob } from "../utils/operatorViewPageHelpers";
 import { useOperatorViewActionState } from "./useOperatorViewActionState";
 import { useOperatorPersistenceActions } from "./useOperatorPersistenceActions";
 import { useOperatorRunActions } from "./useOperatorRunActions";
@@ -14,12 +15,6 @@ type Params = {
   currentUserDisplayName: string;
   isAdmin: boolean;
 };
-
-const parseAssignedOperators = (value: unknown): string[] =>
-  String(value || "")
-    .split(",")
-    .map((entry) => String(entry || "").trim().toUpperCase())
-    .filter((entry) => entry && entry !== "UNASSIGN" && entry !== "UNASSIGNED");
 
 export const useOperatorViewActions = ({ jobs, cutInputs, setCutInputs, setValidationErrors, currentUserDisplayName, isAdmin }: Params) => {
   const {
@@ -58,8 +53,7 @@ export const useOperatorViewActions = ({ jobs, cutInputs, setCutInputs, setValid
 
   const ensureCurrentUserAssigned = useCallback((job: JobEntry | undefined) => {
     if (isAdmin) return true;
-    const assignedOperators = parseAssignedOperators(job?.assignedTo || "");
-    const isAssigned = assignedOperators.includes(String(currentUserDisplayName || "").trim().toUpperCase());
+    const isAssigned = isCurrentUserAssignedToJob(job?.assignedTo || "", currentUserDisplayName, isAdmin);
     if (!isAssigned) {
       showAndHideToast(setActionToast, "Your name must be assigned to this job before you can run it.", "error", 3500);
       return false;

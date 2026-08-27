@@ -22,6 +22,9 @@ export type QuantityQaStatus = "SAVED" | "READY_FOR_QA" | "SENT_TO_QA";
 export type JobEntry = CutForm & {
   id: number | string;
   groupId: string | number;
+  settingIdentifier?: string;
+  settingNumber?: number;
+  quantityIdentifiers?: string[];
   totalHrs: number;
   totalAmount: number;
   wedmAmount: number;
