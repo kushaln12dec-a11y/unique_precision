@@ -60,6 +60,7 @@ model Job {
   createdAt        DateTime @default(now())
   createdBy        String
   assignedTo       String?  @default("Unassigned")
+  operatorAssignmentsJson String?
   refNumber        String?
   startTime        String?
   endTime          String?

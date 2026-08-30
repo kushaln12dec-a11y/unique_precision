@@ -77,15 +77,11 @@ router.get("/next-emp-id", adminMiddleware, async (_req, res) => {
   }
 });
 
-// Get all users — full list is ADMIN only; non-admins may request a roles filter for limited fields
+// Get all users — full list is ADMIN only; non-admins get limited public fields
 router.get("/", async (req, res) => {
   try {
     const { roles } = req.query;
     const isAdmin = String(req.user?.role || "").trim().toUpperCase() === "ADMIN";
-
-    if (!isAdmin && !roles) {
-      return res.status(403).json({ message: "Forbidden" });
-    }
 
     const query: any = {};
 
@@ -93,12 +89,15 @@ router.get("/", async (req, res) => {
       const roleArray = Array.isArray(roles)
         ? roles.map((role) => String(role).trim()).filter(Boolean)
         : String(roles)
-            .split(",")
-            .map((role) => role.trim())
-            .filter(Boolean);
+          .split(",")
+          .map((role) => role.trim())
+          .filter(Boolean);
       if (roleArray.length > 0) {
         query.role = { in: roleArray };
       }
+    } else if (!isAdmin) {
+      // Non-admins without a roles filter: default to OPERATOR + ADMIN users (for dropdowns)
+      query.role = { in: ["OPERATOR", "ADMIN"] };
     }
 
     const users = await prisma.user.findMany({

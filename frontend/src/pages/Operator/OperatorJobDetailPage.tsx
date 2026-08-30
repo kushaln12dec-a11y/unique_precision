@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import Sidebar from "../../components/Sidebar";
 import Header from "../../components/Header";
 import Toast from "../../components/Toast";
-import Modal from "../../components/Modal";
+
 import { resetOperatorQuantity } from "../../services/operatorApi";
 import { useOperatorViewData } from "./hooks/useOperatorViewData";
 import { useOperatorInputs } from "./hooks/useOperatorInputs";
@@ -42,8 +42,7 @@ const OperatorJobDetailPage = () => {
 
   const [validationErrors, setValidationErrors] = useState<Map<number | string, Record<string, Record<string, string>>>>(new Map());
   const [liveNowMs, setLiveNowMs] = useState<number>(getServerNowMs());
-  const [hasUnsavedEdits, setHasUnsavedEdits] = useState(false);
-  const [pendingLeavePath, setPendingLeavePath] = useState<string | null>(null);
+
   const [pendingEndTimeCapture, setPendingEndTimeCapture] = useState<{
     cutId: number | string;
     quantityIndex: number;
@@ -72,8 +71,8 @@ const OperatorJobDetailPage = () => {
     reloadOperatorViewData,
   } = useOperatorViewData(groupId, cutIdParam);
 
-  const markDirty = useCallback(() => setHasUnsavedEdits(true), []);
-  const clearDirty = useCallback(() => setHasUnsavedEdits(false), []);
+  const markDirty = useCallback(() => { }, []);
+  const clearDirty = useCallback(() => { }, []);
 
   const {
     handleCutImageChange: baseHandleCutImageChange,
@@ -141,7 +140,7 @@ const OperatorJobDetailPage = () => {
     handleStartTimeCaptured,
     handlePauseResumeAction,
     handleEndTimeCaptured,
-  } = useOperatorViewActions({ jobs, cutInputs, setCutInputs, setValidationErrors, currentUserDisplayName, isAdmin });
+  } = useOperatorViewActions({ jobs, cutInputs, setCutInputs, setValidationErrors, currentUserDisplayName });
   const allowedOperatorUsers = useMemo(() => operatorUsers, [operatorUsers]);
 
   const handleSaveQuantityWithDirtyClear = useCallback(
@@ -160,39 +159,15 @@ const OperatorJobDetailPage = () => {
     [clearDirty, handleSaveRange]
   );
 
-  useEffect(() => {
-    if (!hasUnsavedEdits) return undefined;
-    const onBeforeUnload = (event: BeforeUnloadEvent) => {
-      event.preventDefault();
-      event.returnValue = "";
-    };
-    window.addEventListener("beforeunload", onBeforeUnload);
-    return () => window.removeEventListener("beforeunload", onBeforeUnload);
-  }, [hasUnsavedEdits]);
+
 
   const safeNavigate = useCallback(
     (path: string) => {
-      if (hasUnsavedEdits) {
-        setPendingLeavePath(path);
-        return;
-      }
-      clearDirty();
       navigate(path);
     },
-    [clearDirty, hasUnsavedEdits, navigate]
+    [navigate]
   );
 
-  const handleCancelLeavePage = useCallback(() => {
-    setPendingLeavePath(null);
-  }, []);
-
-  const handleConfirmLeavePage = useCallback(() => {
-    if (!pendingLeavePath) return;
-    const nextPath = pendingLeavePath;
-    setPendingLeavePath(null);
-    clearDirty();
-    navigate(nextPath);
-  }, [clearDirty, navigate, pendingLeavePath]);
 
   useOperatorAssignmentSync({
     allowedOperatorUsers,
@@ -376,7 +351,6 @@ const OperatorJobDetailPage = () => {
     });
     if (!success) return false;
 
-    clearDirty();
     await reloadOperatorViewDataPreservingScroll();
     setPendingEndTimeCapture(null);
     setActionToast({
@@ -590,26 +564,6 @@ const OperatorJobDetailPage = () => {
         handleResetQuantity={handleResetQuantity}
         handleConfirmEndTimeCapture={handleConfirmEndTimeCapture}
       />
-      <Modal
-        isOpen={Boolean(pendingLeavePath)}
-        onClose={handleCancelLeavePage}
-        title="Unsaved Operator Changes"
-        size="small"
-        className="operator-unsaved-modal"
-        disableOverlayClick
-      >
-        <p className="operator-unsaved-modal-message">
-          You have unsaved operator changes. Leave this page anyway?
-        </p>
-        <div className="operator-unsaved-modal-actions">
-          <button type="button" className="operator-unsaved-modal-cancel" onClick={handleCancelLeavePage}>
-            Stay
-          </button>
-          <button type="button" className="operator-unsaved-modal-confirm" onClick={handleConfirmLeavePage}>
-            Leave page
-          </button>
-        </div>
-      </Modal>
     </div>
   );
 };

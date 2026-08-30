@@ -58,19 +58,24 @@ export const useOperatorAssignmentSync = ({
 
       prev.forEach((cutData, cutId) => {
         const nextQuantities = (cutData.quantities || []).map((quantity) => {
-          const sanitizedOps = (Array.isArray(quantity.opsName) ? quantity.opsName : [])
-            .map((name) => allowedNames.get(normalizeOperatorName(name).toLowerCase()) || "")
+          // Normalize names to their canonical casing if found in allowed list;
+          // if not found, preserve the name as-is (do NOT drop it — user list may not be fully loaded)
+          const normalizedOps = (Array.isArray(quantity.opsName) ? quantity.opsName : [])
+            .map((name) => {
+              const normalized = normalizeOperatorName(name);
+              return allowedNames.get(normalized.toLowerCase()) || normalized;
+            })
             .filter(Boolean);
 
-          const uniqueSanitizedOps = Array.from(new Set(sanitizedOps));
-          const currentOpsSnapshot = JSON.stringify(Array.isArray(quantity.opsName) ? quantity.opsName : []);
-          const nextOpsSnapshot = JSON.stringify(uniqueSanitizedOps);
-          if (currentOpsSnapshot === nextOpsSnapshot) return quantity;
+          const uniqueOps = Array.from(new Set(normalizedOps));
+          const currentSnapshot = JSON.stringify(Array.isArray(quantity.opsName) ? quantity.opsName : []);
+          const nextSnapshot = JSON.stringify(uniqueOps);
+          if (currentSnapshot === nextSnapshot) return quantity;
 
           hasChanged = true;
           return {
             ...quantity,
-            opsName: uniqueSanitizedOps,
+            opsName: uniqueOps,
           };
         });
 
@@ -132,10 +137,19 @@ export const useOperatorAssignmentSync = ({
         const stableCurrentAssignedOperators = buildStableOperatorList(currentAssignedOperators);
         const nextAssignedTo = stableNextAssignedOperators.join(", ") || "Unassign";
         const currentAssignedTo = stableCurrentAssignedOperators.join(", ") || "Unassign";
-        const syncSignature = `${nextAssignedTo}|${nextMachineNumber}`;
+        const nextOperatorAssignmentsJson = JSON.stringify(cutData.quantities.map(qty => ({
+          opsName: qty.opsName || [],
+          machineNumber: qty.machineNumber || ""
+        })));
+        const syncSignature = `${nextAssignedTo}|${nextMachineNumber}|${nextOperatorAssignmentsJson}`;
         const jobId = String(job.id);
+        const currentOperatorAssignmentsJson = String((job as any).operatorAssignmentsJson || "[]").trim();
 
-        if (currentAssignedTo === nextAssignedTo && String(job.machineNumber || "").trim() === nextMachineNumber) {
+        if (
+          currentAssignedTo === nextAssignedTo &&
+          String(job.machineNumber || "").trim() === nextMachineNumber &&
+          (currentOperatorAssignmentsJson === nextOperatorAssignmentsJson || (currentOperatorAssignmentsJson === "[]" && nextOperatorAssignmentsJson === JSON.stringify([])))
+        ) {
           pendingAssignmentSyncRef.current.delete(jobId);
           return;
         }
@@ -155,6 +169,7 @@ export const useOperatorAssignmentSync = ({
                 ...entry,
                 assignedTo: nextAssignedTo,
                 machineNumber: nextMachineNumber,
+                operatorAssignmentsJson: nextOperatorAssignmentsJson,
               }
               : entry
           )
@@ -163,6 +178,7 @@ export const useOperatorAssignmentSync = ({
         void updateOperatorJob(String(job.id), {
           assignedTo: nextAssignedTo,
           machineNumber: nextMachineNumber,
+          operatorAssignmentsJson: nextOperatorAssignmentsJson,
         }).catch(() => {
           pendingAssignmentSyncRef.current.delete(jobId);
           setJobs((prev) =>

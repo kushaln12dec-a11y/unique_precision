@@ -626,6 +626,19 @@ router.post("/operator/complete", authorize("OPERATOR", "ADMIN", "PROGRAMMER"), 
     const userId = toUuid(reqUser?.userId);
     const resolvedJobId = toUuid(jobId);
     const normalizedStatus = String(status || "COMPLETED").toUpperCase() === "REJECTED" ? "REJECTED" : "COMPLETED";
+
+    if (logId) {
+      const explicitLog = await prisma.employeeLog.findUnique({
+        where: { id: String(logId) }
+      });
+      if (explicitLog) {
+        if (explicitLog.status !== "IN_PROGRESS") {
+          // Idempotency: log was already completed/rejected by a previous click/retry.
+          return res.status(201).json(mapEmployeeLog(explicitLog));
+        }
+      }
+    }
+
     const existingLog = logId
       ? await prisma.employeeLog.findFirst({
         where: {
@@ -638,15 +651,6 @@ router.post("/operator/complete", authorize("OPERATOR", "ADMIN", "PROGRAMMER"), 
       : null;
 
     if (existingLog) {
-      const role = String(reqUser?.role || "").trim().toUpperCase();
-      const isAdmin = role === "ADMIN";
-      if (!isAdmin && existingLog.userId && userId && existingLog.userId !== userId) {
-        return res.status(403).json({ message: "Forbidden" });
-      }
-      if (!isAdmin && existingLog.userId && !userId) {
-        return res.status(403).json({ message: "Forbidden" });
-      }
-
       const parsedEnd = parseFlexibleDate(endTime || req.body?.endedAt) || new Date();
       const parsedStart = existingLog.startedAt instanceof Date ? existingLog.startedAt : parseFlexibleDate(startTime) || parsedEnd;
       const elapsedSeconds = Math.max(0, Math.floor((parsedEnd.getTime() - parsedStart.getTime()) / 1000));
@@ -674,10 +678,6 @@ router.post("/operator/complete", authorize("OPERATOR", "ADMIN", "PROGRAMMER"), 
           },
         })
         : null;
-
-      if (relatedJob && !isUserAssignedToJob(reqUser, relatedJob.assignedTo)) {
-        return res.status(403).json({ message: "You can only run jobs assigned to your name." });
-      }
 
       const updatedLog = await prisma.$transaction(async (tx) => {
         const nextMetadata = normalizeIdleWindowMetadata({
@@ -746,15 +746,6 @@ router.post("/operator/complete", authorize("OPERATOR", "ADMIN", "PROGRAMMER"), 
       actorName: resolveReqUserName(reqUser),
     });
     const resolvedGroupId = toBigInt(jobGroupId) ?? null;
-    if (resolvedJobId) {
-      const relatedJob = await prisma.job.findUnique({
-        where: { id: resolvedJobId },
-        select: { assignedTo: true },
-      });
-      if (relatedJob && !isUserAssignedToJob(reqUser, relatedJob.assignedTo)) {
-        return res.status(403).json({ message: "You can only run jobs assigned to your name." });
-      }
-    }
     const groupJobs = resolvedGroupId
       ? await prisma.job.findMany({
         where: { groupId: resolvedGroupId },
@@ -866,13 +857,7 @@ router.post("/operator/start", authorize("OPERATOR", "ADMIN", "PROGRAMMER"), asy
     const resolvedToQty = Math.max(resolvedFromQty, Number(toQty || resolvedFromQty));
 
     if (resolvedJobId) {
-      const relatedJob = await prisma.job.findUnique({
-        where: { id: resolvedJobId },
-        select: { assignedTo: true },
-      });
-      if (relatedJob && !isUserAssignedToJob(reqUser, relatedJob.assignedTo)) {
-        return res.status(403).json({ message: "You can only run jobs assigned to your name." });
-      }
+      // Intentionally removed assignment restriction per business rule: Any authorized operator should be able to start/resume/end
     }
 
     if (resolvedJobId) {

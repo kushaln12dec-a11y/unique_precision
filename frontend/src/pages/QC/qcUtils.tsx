@@ -41,13 +41,29 @@ export const getQcRowSearchValues = (row: QcRow) => {
   const createdAtParts = getDisplayDateTimeParts(row.entry.createdAt || row.parent.createdAt);
   const decision = String(row.parent.qcDecision || row.entry.qcDecision || "PENDING").toLowerCase().replace(/_/g, " ");
 
+  const captures = Array.isArray(row.entry.operatorCaptures) ? row.entry.operatorCaptures : [];
+  const capture = captures.find((c: any) => {
+    const cFrom = Math.max(1, Number(c.fromQty || 1));
+    const cTo = Math.max(cFrom, Number(c.toQty || cFrom));
+    return row.quantityFrom >= cFrom && row.quantityFrom <= cTo;
+  });
+
+  let opNameStr = "";
+  if (capture?.opsName) {
+    opNameStr = Array.isArray(capture.opsName) ? capture.opsName.join(", ") : String(capture.opsName);
+  }
+  if (!opNameStr) {
+    opNameStr = String(row.entry.assignedTo || row.parent.assignedTo || "-");
+  }
+
   return [
     row.entry.customer || row.parent.customer || "-",
     row.entry.description || row.parent.description || "-",
     formatJobRefDisplay(String(row.entry.refNumber || row.parent.refNumber || "").trim()),
+    String((row.entry as any).programRefFile || (row.entry as any).programRefFileName || row.parent.refNumber || "-"),
     row.quantityLabel,
     row.reportScopeLabel,
-    getPrimaryOperatorName(row.entry.assignedTo || row.parent.assignedTo),
+    opNameStr,
     createdAtParts.date,
     createdAtParts.time,
     `${createdAtParts.date} ${createdAtParts.time}`.trim(),
