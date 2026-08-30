@@ -54,6 +54,7 @@ const mapJobCore = (job: any) => {
     totalAmount: job.totalAmount !== null && job.totalAmount !== undefined ? decimalToString(job.totalAmount) : "0",
     wedmAmount: job.wedmAmount !== null && job.wedmAmount !== undefined ? decimalToString(job.wedmAmount) : "0",
     sedmAmount: job.sedmAmount !== null && job.sedmAmount !== undefined ? decimalToString(job.sedmAmount) : "0",
+    operatorAssignmentsJson: job.operatorAssignmentsJson || null,
   };
 };
 
@@ -72,9 +73,9 @@ const mapQaStates = (job: any) => {
 const mapOperatorCaptures = (job: any) => {
   return Array.isArray(job.operatorCaptures)
     ? job.operatorCaptures.map((capture: any) => {
-        const { jobId, job: _job, ...rest } = capture;
-        return { ...rest, _id: capture.id };
-      })
+      const { jobId, job: _job, ...rest } = capture;
+      return { ...rest, _id: capture.id };
+    })
     : [];
 };
 

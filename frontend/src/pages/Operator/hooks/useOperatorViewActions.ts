@@ -1,8 +1,6 @@
 import { useCallback } from "react";
 import type { CutInputData } from "../types/cutInput";
 import type { JobEntry } from "../../../types/job";
-import { showAndHideToast } from "../utils/operatorViewActionUtils";
-import { isCurrentUserAssignedToJob } from "../utils/operatorViewPageHelpers";
 import { useOperatorViewActionState } from "./useOperatorViewActionState";
 import { useOperatorPersistenceActions } from "./useOperatorPersistenceActions";
 import { useOperatorRunActions } from "./useOperatorRunActions";
@@ -13,10 +11,9 @@ type Params = {
   setCutInputs: React.Dispatch<React.SetStateAction<Map<number | string, CutInputData>>>;
   setValidationErrors: React.Dispatch<React.SetStateAction<Map<number | string, Record<string, Record<string, string>>>>>;
   currentUserDisplayName: string;
-  isAdmin: boolean;
 };
 
-export const useOperatorViewActions = ({ jobs, cutInputs, setCutInputs, setValidationErrors, currentUserDisplayName, isAdmin }: Params) => {
+export const useOperatorViewActions = ({ jobs, cutInputs, setCutInputs, setValidationErrors, currentUserDisplayName }: Params) => {
   const {
     operatorUsers,
     savedQuantities,
@@ -51,15 +48,10 @@ export const useOperatorViewActions = ({ jobs, cutInputs, setCutInputs, setValid
     });
   }, [setValidationErrors]);
 
-  const ensureCurrentUserAssigned = useCallback((job: JobEntry | undefined) => {
-    if (isAdmin) return true;
-    const isAssigned = isCurrentUserAssignedToJob(job?.assignedTo || "", currentUserDisplayName, isAdmin);
-    if (!isAssigned) {
-      showAndHideToast(setActionToast, "Your name must be assigned to this job before you can run it.", "error", 3500);
-      return false;
-    }
+  const ensureCurrentUserAssigned = useCallback((_job?: JobEntry) => {
+    // Business rule update: Any authorized operator should be able to start/resume/end.
     return true;
-  }, [currentUserDisplayName, isAdmin]);
+  }, []);
 
   const { handleSaveQuantity, handleSaveRange, handleUpdateQaStatus, handleEndTimeCaptured } = useOperatorPersistenceActions({
     jobs,

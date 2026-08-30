@@ -104,7 +104,6 @@ const OperatorViewBody: React.FC<Props> = ({
   onRequestEndTimeCapture,
   handleStartTimeCaptured,
   isAdmin,
-  currentUserDisplayName,
   groupEstimatedHrs,
   totalWedmAmount,
   totalSedmAmount,

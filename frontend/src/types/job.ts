@@ -34,6 +34,7 @@ export type JobEntry = CutForm & {
   updatedAt?: string;
   updatedBy?: string;
   assignedTo: string;
+  operatorAssignmentsJson?: string | null;
   machineNumber?: string;
   startTime?: string;
   endTime?: string;

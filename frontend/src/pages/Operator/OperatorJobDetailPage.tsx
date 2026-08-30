@@ -140,7 +140,7 @@ const OperatorJobDetailPage = () => {
     handleStartTimeCaptured,
     handlePauseResumeAction,
     handleEndTimeCaptured,
-  } = useOperatorViewActions({ jobs, cutInputs, setCutInputs, setValidationErrors, currentUserDisplayName, isAdmin });
+  } = useOperatorViewActions({ jobs, cutInputs, setCutInputs, setValidationErrors, currentUserDisplayName });
   const allowedOperatorUsers = useMemo(() => operatorUsers, [operatorUsers]);
 
   const handleSaveQuantityWithDirtyClear = useCallback(

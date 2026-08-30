@@ -19,9 +19,8 @@ type Params = {
   setActiveOperatorLogIds: React.Dispatch<React.SetStateAction<Map<string, string>>>;
   setActionToast: React.Dispatch<React.SetStateAction<any>>;
   setCutInputs: React.Dispatch<React.SetStateAction<Map<number | string, CutInputData>>>;
-  ensureCurrentUserAssigned: (job: JobEntry | undefined) => boolean;
+  ensureCurrentUserAssigned: (job?: JobEntry) => boolean;
   currentUserDisplayName: string;
-  isAdmin?: boolean;
 };
 
 export const useOperatorRunActions = ({
@@ -34,7 +33,6 @@ export const useOperatorRunActions = ({
   setCutInputs,
   ensureCurrentUserAssigned,
   currentUserDisplayName,
-  isAdmin = false,
 }: Params) => {
   const getShiftOverKey = (cutId: number | string, quantityIndex: number) => `${cutId}-${quantityIndex}`;
 

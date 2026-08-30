@@ -401,7 +401,7 @@ router.put("/jobs/:id", async (req, res) => {
       return res.status(403).json({ message: "Only admins, programmers, and operators can update operator jobs." });
     }
     const { id, _id, operatorCaptures, quantityQaStates, qaStates, ...updateData } = req.body;
-    const allowedFields = new Set(["assignedTo", "machineNumber", "startTime", "endTime", "machineHrs", "opsName", "idleTime", "idleTimeDuration", "lastImage", "updatedBy"]);
+    const allowedFields = new Set(["assignedTo", "operatorAssignmentsJson", "machineNumber", "startTime", "endTime", "machineHrs", "opsName", "idleTime", "idleTimeDuration", "lastImage", "updatedBy"]);
     const invalidField = Object.keys(updateData || {}).find((field) => !allowedFields.has(field));
     if (invalidField) {
       return res.status(400).json({ message: `Field ${invalidField} cannot be updated from the operator screen.` });
@@ -566,9 +566,9 @@ router.post("/jobs/:id/capture-input", async (req, res) => {
         if (hasCaptureRangeOverlap(lockedJob.operatorCaptures || [], resolvedFromQty, resolvedToQty)) {
           throw Object.assign(
             new Error(
-              `${formatJobQuantityLabel(lockedJob, resolvedFromQty, resolvedToQty)} already has captured data and cannot be replaced.`
+              `${formatJobQuantityLabel(lockedJob, resolvedFromQty, resolvedToQty)} already has captured data.`
             ),
-            { statusCode: 409 }
+            { statusCode: 409, isAlreadyCaptured: true }
           );
         }
 
@@ -588,7 +588,7 @@ router.post("/jobs/:id/capture-input", async (req, res) => {
             new Error(
               `Qty ${conflictFromQty === conflictToQty ? conflictFromQty : `${conflictFromQty}-${conflictToQty}`} is already being worked on by ${String(quantityConflict.userName || "another operator")}.`
             ),
-            { statusCode: 409 }
+            { statusCode: 409, isActiveConflict: true }
           );
         }
 
@@ -613,6 +613,13 @@ router.post("/jobs/:id/capture-input", async (req, res) => {
         });
       });
     } catch (txError: any) {
+      if (txError?.isAlreadyCaptured) {
+        const refreshedJob = await prisma.job.findUnique({
+          where: { id: job.id },
+          include: operatorJobInclude,
+        });
+        return res.json(mapJob(refreshedJob));
+      }
       const statusCode = Number(txError?.statusCode || 0);
       if (statusCode === 404 || statusCode === 409) {
         return res.status(statusCode).json({ message: txError.message });

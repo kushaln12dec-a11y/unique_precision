@@ -180,12 +180,31 @@ export const useOperatorViewData = (groupId: string | null, cutIdParam: string |
             }
           });
 
+          let parsedAssignments: any[] | null = null;
+          if (existing.operatorAssignmentsJson) {
+            try {
+              const assignments = JSON.parse(existing.operatorAssignmentsJson);
+              if (Array.isArray(assignments)) parsedAssignments = assignments;
+            } catch (e) {
+              console.error("Failed to parse operatorAssignmentsJson", e);
+            }
+          }
+
           for (let idx = 0; idx < quantity; idx += 1) {
             if ((quantities[idx]?.opsName || []).length > 0) continue;
+
+            let fallbackOps = [...captureFallbackOpsNameArray];
+            let fallbackMachine = captureFallbackMachineNumber;
+
+            if (parsedAssignments && parsedAssignments[idx]) {
+              fallbackOps = Array.isArray(parsedAssignments[idx].opsName) ? parsedAssignments[idx].opsName : fallbackOps;
+              fallbackMachine = parsedAssignments[idx].machineNumber || fallbackMachine;
+            }
+
             quantities[idx] = {
               ...quantities[idx],
-              machineNumber: captureFallbackMachineNumber,
-              opsName: [...captureFallbackOpsNameArray],
+              machineNumber: fallbackMachine,
+              opsName: fallbackOps,
             };
           }
         } else {
@@ -248,6 +267,22 @@ export const useOperatorViewData = (groupId: string | null, cutIdParam: string |
               opsName: [],
             };
           }
+
+          if (existing.operatorAssignmentsJson) {
+            try {
+              const assignments = JSON.parse(existing.operatorAssignmentsJson);
+              if (Array.isArray(assignments)) {
+                quantities.forEach((qty, idx) => {
+                  if (assignments[idx]) {
+                    qty.opsName = Array.isArray(assignments[idx].opsName) ? assignments[idx].opsName : qty.opsName;
+                    qty.machineNumber = assignments[idx].machineNumber || qty.machineNumber;
+                  }
+                });
+              }
+            } catch (e) {
+              console.error("Failed to parse operatorAssignmentsJson", e);
+            }
+          }
         }
 
         initialInputs.set(jobId, {
@@ -276,31 +311,15 @@ export const useOperatorViewData = (groupId: string | null, cutIdParam: string |
                 const isLocked = Boolean(String(qty.endTime || "").trim());
                 if (isLocked) return qty;
 
-                const hasStartTime = Boolean(String(qty.startTime || "").trim());
-
                 return {
                   ...qty,
-                  // Server-authoritative per-qty assignment wins; use prev only when server data is empty
-                  machineNumber: qty.machineNumber || prevQty.machineNumber,
-                  opsName: qty.opsName?.length > 0 ? qty.opsName : (prevQty.opsName || []),
-                  startTime: hasStartTime ? qty.startTime : prevQty.startTime,
-                  startTimeEpochMs: hasStartTime ? qty.startTimeEpochMs : prevQty.startTimeEpochMs,
+                  // Preserve uncommitted end-form inputs from draft state if the user was typing
                   endTime: String(qty.endTime || "").trim() ? qty.endTime : prevQty.endTime,
                   endTimeEpochMs: qty.endTimeEpochMs || prevQty.endTimeEpochMs,
                   idleTime: prevQty.idleTime || qty.idleTime,
                   idleTimeDuration: prevQty.idleTimeDuration || qty.idleTimeDuration,
                   lastImage: prevQty.lastImage || qty.lastImage,
                   lastImageFile: prevQty.lastImageFile || qty.lastImageFile,
-                  pauseSessions:
-                    Array.isArray(prevQty.pauseSessions) && prevQty.pauseSessions.length > 0
-                      ? prevQty.pauseSessions
-                      : qty.pauseSessions,
-                  isPaused: hasStartTime ? qty.isPaused : prevQty.isPaused,
-                  pauseStartTime: hasStartTime ? qty.pauseStartTime : prevQty.pauseStartTime,
-                  currentPauseReason: prevQty.currentPauseReason || qty.currentPauseReason,
-                  currentPauseOperatorName: prevQty.currentPauseOperatorName || qty.currentPauseOperatorName,
-                  totalPauseTime: prevQty.totalPauseTime || qty.totalPauseTime,
-                  pausedElapsedTime: prevQty.pausedElapsedTime || qty.pausedElapsedTime,
                   machineHrs: String(qty.machineHrs || "").trim() ? qty.machineHrs : prevQty.machineHrs,
                 };
               });
