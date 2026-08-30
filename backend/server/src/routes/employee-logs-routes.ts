@@ -751,9 +751,6 @@ router.post("/operator/complete", authorize("OPERATOR", "ADMIN", "PROGRAMMER"), 
         where: { id: resolvedJobId },
         select: { assignedTo: true },
       });
-      if (relatedJob && !isUserAssignedToJob(reqUser, relatedJob.assignedTo)) {
-        return res.status(403).json({ message: "You can only run jobs assigned to your name." });
-      }
     }
     const groupJobs = resolvedGroupId
       ? await prisma.job.findMany({

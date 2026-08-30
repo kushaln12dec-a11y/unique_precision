@@ -5,7 +5,6 @@ import type { CutInputData } from "../types/cutInput";
 import { OperatorCutCard } from "./OperatorCutCard";
 import { OperatorJobInfo } from "./OperatorJobInfo";
 import { OperatorTotalsSection } from "./OperatorTotalsSection";
-import { isCurrentUserAssignedToJob } from "../utils/operatorViewPageHelpers";
 import { formatSettingIdentifier } from "../../../utils/jobFormatting";
 
 type Props = {
@@ -206,8 +205,7 @@ const OperatorViewBody: React.FC<Props> = ({
                 onRequestEndTimeCapture={onRequestEndTimeCapture}
                 onStartTimeCaptured={handleStartTimeCaptured}
                 isAdmin={isAdmin}
-                canRunAssignedJob={isCurrentUserAssignedToJob(cutItem.assignedTo, currentUserDisplayName, isAdmin)}
-                runBlockedReason="Your name must be assigned to this job before you can run it."
+                canRunAssignedJob={true}
               />
             );
           })}

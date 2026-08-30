@@ -22,7 +22,7 @@ export const formatDateForQuery = (isoDate: string): string => {
 
 export const parseOperatorDateTime = (value?: string): Date | null => {
   if (!value || typeof value !== "string") return null;
-  const match = value.match(/^(\d{2})\/(\d{2})\/(\d{4})\s+(\d{2}):(\d{2})(?::(\d{2}))?$/);
+  const match = value.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?$/);
   if (!match) return null;
   const day = Number(match[1]);
   const month = Number(match[2]);

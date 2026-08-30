@@ -50,44 +50,23 @@ const buildSelfIdentityTokens = (reqUser: any): string[] => {
 };
 
 const applyOperatorSelfScope = (where: any, reqUser?: any) => {
-  const role = String(reqUser?.role || "").trim().toUpperCase();
-  if (role !== "OPERATOR") return where;
-
-  const tokens = buildSelfIdentityTokens(reqUser);
-  if (tokens.length === 0) {
-    return {
-      AND: [
-        where,
-        { id: "__no_operator_identity__" },
-      ],
-    };
-  }
-
-  return {
-    AND: [
-      where,
-      {
-        OR: tokens.map((token) => ({
-          assignedTo: { contains: token, mode: "insensitive" as const },
-        })),
-      },
-    ],
-  };
+  // Operators should now see all jobs unconditionally
+  return where;
 };
 
 const buildQcWhere = (where: any, query: JobsQuery) => {
   const isClosedView = query.isBilled === "true";
   const qcVisibilityWhere = isClosedView
     ? {
-        OR: [
-          { qcReportClosed: true },
-          { qcDecision: { in: ["APPROVED", "REJECTED"] } },
-        ],
-      }
+      OR: [
+        { qcReportClosed: true },
+        { qcDecision: { in: ["APPROVED", "REJECTED"] } },
+      ],
+    }
     : {
-        qaStates: { some: { status: "SENT_TO_QA" } },
-        qcReportClosed: false,
-      };
+      qaStates: { some: { status: "SENT_TO_QA" } },
+      qcReportClosed: false,
+    };
 
   return { AND: [where, qcVisibilityWhere] };
 };
@@ -170,10 +149,10 @@ export const getProgrammerJobs = async (query: JobsQuery) => {
 
   const jobs = groupIds.length
     ? await prisma.job.findMany({
-        where: { ...where, groupId: { in: groupIds } },
-        orderBy: [{ createdAt: "desc" }, { id: "asc" }],
-        select: programmerListSelect,
-      })
+      where: { ...where, groupId: { in: groupIds } },
+      orderBy: [{ createdAt: "desc" }, { id: "asc" }],
+      select: programmerListSelect,
+    })
     : [];
 
   const jobsByGroupId = groupJobsByGroupId(jobs);
@@ -189,10 +168,10 @@ export const getOperatorJobs = async (query: JobsQuery, reqUser?: any) => {
 
   const jobs = groupIds.length
     ? await prisma.job.findMany({
-        where: { ...where, groupId: { in: groupIds } },
-        orderBy: [{ createdAt: "desc" }, { id: "asc" }],
-        select: operatorListSelect,
-      })
+      where: { ...where, groupId: { in: groupIds } },
+      orderBy: [{ createdAt: "desc" }, { id: "asc" }],
+      select: operatorListSelect,
+    })
     : [];
 
   const jobsByGroupId = groupJobsByGroupId(jobs);
@@ -208,10 +187,10 @@ export const getQcJobs = async (query: JobsQuery) => {
 
   const jobs = groupIds.length
     ? await prisma.job.findMany({
-        where: { groupId: { in: groupIds } },
-        orderBy: [{ createdAt: "desc" }, { id: "asc" }],
-        select: qcListSelect,
-      })
+      where: { groupId: { in: groupIds } },
+      orderBy: [{ createdAt: "desc" }, { id: "asc" }],
+      select: qcListSelect,
+    })
     : [];
 
   const jobsByGroupId = groupJobsByGroupId(jobs);

@@ -15,6 +15,12 @@ export const parseAssignedOperators = (rawAssignedTo: unknown): string[] => {
   return [...new Set(normalized.split(",").map((value) => normalizeOperatorName(value)).filter(Boolean))];
 };
 
+const toMachineIndex = (machineNumber: string): string =>
+  String(machineNumber || "")
+    .replace(/^Mach\s*-?\s*/i, "")
+    .trim()
+    .toUpperCase();
+
 const parseOpsNames = (rawValue: unknown): string[] =>
   String(rawValue || "")
     .split(",")
@@ -143,12 +149,46 @@ export const mergeJobAssignmentsIntoInputs = (
     const currentCut = nextInputs.get(job.id);
     if (!currentCut?.quantities?.length) return;
 
-    const mergedQuantities = currentCut.quantities.map((qty) => {
+    const jobAssignedOps = parseAssignedOperators(job.assignedTo || "");
+    const localOpsUnion = Array.from(
+      new Set(
+        currentCut.quantities.flatMap((qty) =>
+          (Array.isArray(qty.opsName) ? qty.opsName : []).map(normalizeOperatorName)
+        )
+      )
+    );
+
+    const isOpsMatch =
+      jobAssignedOps.length === localOpsUnion.length &&
+      jobAssignedOps.every((op) => localOpsUnion.includes(op)) &&
+      localOpsUnion.every((op) => jobAssignedOps.includes(op));
+
+    const jobMachineNumbers = String(job.machineNumber || "")
+      .split(",")
+      .map((m) => toMachineIndex(m.trim()))
+      .filter(Boolean);
+
+    const localMachineUnion = Array.from(
+      new Set(currentCut.quantities.map((q) => toMachineIndex(String(q.machineNumber || ""))).filter(Boolean))
+    );
+
+    const isMachineMatch =
+      jobMachineNumbers.length === localMachineUnion.length &&
+      jobMachineNumbers.every((m) => localMachineUnion.includes(m)) &&
+      localMachineUnion.every((m) => jobMachineNumbers.includes(m));
+
+    const mergedQuantities = currentCut.quantities.map((qty, index) => {
       const hasLockedCapture = Boolean(String(qty.endTime || "").trim());
-      if (hasLockedCapture) return qty;
+      const hasStarted = Boolean(String(qty.startTime || "").trim());
+      if (hasLockedCapture || hasStarted) return qty;
+
+      const fallbackMachineNumber =
+        jobMachineNumbers[index] || jobMachineNumbers[0] || "";
 
       return {
         ...qty,
+        opsName: !isOpsMatch ? [...jobAssignedOps] : qty.opsName,
+        machineNumber: !isMachineMatch ? fallbackMachineNumber : qty.machineNumber,
       };
     });
 
@@ -333,8 +373,8 @@ export const hydrateQuantityFromLogs = (
     currentPauseOperatorName:
       isPaused && pauseMarker
         ? String(
-            ((latestShiftOverLog?.metadata as any)?.idleOperatorName || latestShiftOverLog?.userName || quantity.currentPauseOperatorName || "")
-          ).trim()
+          ((latestShiftOverLog?.metadata as any)?.idleOperatorName || latestShiftOverLog?.userName || quantity.currentPauseOperatorName || "")
+        ).trim()
         : "",
     pausedElapsedTime: isPaused ? workedDurationSeconds : 0,
     totalPauseTime: persistedPauseSeconds,
