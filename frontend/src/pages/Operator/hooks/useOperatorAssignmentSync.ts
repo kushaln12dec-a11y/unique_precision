@@ -58,19 +58,24 @@ export const useOperatorAssignmentSync = ({
 
       prev.forEach((cutData, cutId) => {
         const nextQuantities = (cutData.quantities || []).map((quantity) => {
-          const sanitizedOps = (Array.isArray(quantity.opsName) ? quantity.opsName : [])
-            .map((name) => allowedNames.get(normalizeOperatorName(name).toLowerCase()) || "")
+          // Normalize names to their canonical casing if found in allowed list;
+          // if not found, preserve the name as-is (do NOT drop it — user list may not be fully loaded)
+          const normalizedOps = (Array.isArray(quantity.opsName) ? quantity.opsName : [])
+            .map((name) => {
+              const normalized = normalizeOperatorName(name);
+              return allowedNames.get(normalized.toLowerCase()) || normalized;
+            })
             .filter(Boolean);
 
-          const uniqueSanitizedOps = Array.from(new Set(sanitizedOps));
-          const currentOpsSnapshot = JSON.stringify(Array.isArray(quantity.opsName) ? quantity.opsName : []);
-          const nextOpsSnapshot = JSON.stringify(uniqueSanitizedOps);
-          if (currentOpsSnapshot === nextOpsSnapshot) return quantity;
+          const uniqueOps = Array.from(new Set(normalizedOps));
+          const currentSnapshot = JSON.stringify(Array.isArray(quantity.opsName) ? quantity.opsName : []);
+          const nextSnapshot = JSON.stringify(uniqueOps);
+          if (currentSnapshot === nextSnapshot) return quantity;
 
           hasChanged = true;
           return {
             ...quantity,
-            opsName: uniqueSanitizedOps,
+            opsName: uniqueOps,
           };
         });
 

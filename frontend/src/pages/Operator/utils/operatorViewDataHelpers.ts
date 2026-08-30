@@ -150,32 +150,10 @@ export const mergeJobAssignmentsIntoInputs = (
     if (!currentCut?.quantities?.length) return;
 
     const jobAssignedOps = parseAssignedOperators(job.assignedTo || "");
-    const localOpsUnion = Array.from(
-      new Set(
-        currentCut.quantities.flatMap((qty) =>
-          (Array.isArray(qty.opsName) ? qty.opsName : []).map(normalizeOperatorName)
-        )
-      )
-    );
-
-    const isOpsMatch =
-      jobAssignedOps.length === localOpsUnion.length &&
-      jobAssignedOps.every((op) => localOpsUnion.includes(op)) &&
-      localOpsUnion.every((op) => jobAssignedOps.includes(op));
-
     const jobMachineNumbers = String(job.machineNumber || "")
       .split(",")
       .map((m) => toMachineIndex(m.trim()))
       .filter(Boolean);
-
-    const localMachineUnion = Array.from(
-      new Set(currentCut.quantities.map((q) => toMachineIndex(String(q.machineNumber || ""))).filter(Boolean))
-    );
-
-    const isMachineMatch =
-      jobMachineNumbers.length === localMachineUnion.length &&
-      jobMachineNumbers.every((m) => localMachineUnion.includes(m)) &&
-      localMachineUnion.every((m) => jobMachineNumbers.includes(m));
 
     const mergedQuantities = currentCut.quantities.map((qty, index) => {
       const hasLockedCapture = Boolean(String(qty.endTime || "").trim());
@@ -187,8 +165,8 @@ export const mergeJobAssignmentsIntoInputs = (
 
       return {
         ...qty,
-        opsName: !isOpsMatch ? [...jobAssignedOps] : qty.opsName,
-        machineNumber: !isMachineMatch ? fallbackMachineNumber : qty.machineNumber,
+        opsName: (!qty.opsName || qty.opsName.length === 0) && currentCut.quantities.length === 1 && jobAssignedOps.length > 0 ? [...jobAssignedOps] : qty.opsName,
+        machineNumber: (!qty.machineNumber || qty.machineNumber.trim() === "") && fallbackMachineNumber ? fallbackMachineNumber : qty.machineNumber,
       };
     });
 

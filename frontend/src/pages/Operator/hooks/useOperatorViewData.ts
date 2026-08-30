@@ -119,7 +119,7 @@ export const useOperatorViewData = (groupId: string | null, cutIdParam: string |
         const quantities: QuantityInputData[] = Array.from({ length: quantity }, () => createEmptyQuantityInputData());
         const captures = Array.isArray(existing.operatorCaptures) ? existing.operatorCaptures : [];
         const tableMachineNumbers = getMachineNumberArray(existing.machineNumber || "");
-        const captureFallbackOpsNameArray = assignedToArray;
+        const captureFallbackOpsNameArray: string[] = []; // leave per-quantity opsName empty when not in capture
         const captureFallbackMachineNumber = isMultiQuantityJob ? "" : (tableMachineNumbers[0] || "");
 
         if (captures.length > 0) {
@@ -224,7 +224,7 @@ export const useOperatorViewData = (groupId: string | null, cutIdParam: string |
             pauseTimeOffsetSeconds: 0,
             machineHrs,
             machineNumber: tableMachineNumbers[0] || "",
-            opsName: [...opsNameArray],
+            opsName: isMultiQuantityJob ? [] : [...opsNameArray],
             operatorHistory: collectOperatorHistoryForQuantity(1, logsByJobId.get(String(jobId)) || []),
             operatorHistoryDetails: collectOperatorHistoryDetailsForQuantity(1, logsByJobId.get(String(jobId)) || []),
             idleTime,
@@ -240,11 +240,12 @@ export const useOperatorViewData = (groupId: string | null, cutIdParam: string |
             currentPauseReason: "",
           };
 
+          // Additional quantities start empty; operator will assign per-quantity
           for (let idx = 1; idx < quantity; idx += 1) {
             quantities[idx] = {
               ...quantities[idx],
               machineNumber: tableMachineNumbers[idx] || "",
-              opsName: [...opsNameArray],
+              opsName: [],
             };
           }
         }
@@ -279,8 +280,9 @@ export const useOperatorViewData = (groupId: string | null, cutIdParam: string |
 
                 return {
                   ...qty,
-                  machineNumber: prevQty.machineNumber || qty.machineNumber,
-                  opsName: prevQty.opsName?.length > 0 ? prevQty.opsName : qty.opsName,
+                  // Server-authoritative per-qty assignment wins; use prev only when server data is empty
+                  machineNumber: qty.machineNumber || prevQty.machineNumber,
+                  opsName: qty.opsName?.length > 0 ? qty.opsName : (prevQty.opsName || []),
                   startTime: hasStartTime ? qty.startTime : prevQty.startTime,
                   startTimeEpochMs: hasStartTime ? qty.startTimeEpochMs : prevQty.startTimeEpochMs,
                   endTime: String(qty.endTime || "").trim() ? qty.endTime : prevQty.endTime,
