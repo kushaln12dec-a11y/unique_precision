@@ -1,7 +1,7 @@
 import ConfirmDeleteModal from "../../../components/ConfirmDeleteModal";
 import Modal from "../../../components/Modal";
 import type { JobEntry } from "../../../types/job";
-import type { Dispatch, SetStateAction } from "react";
+import { type Dispatch, type SetStateAction, useState } from "react";
 import { decimalHoursToHHMMSS } from "../utils/machineHrsCalculation";
 import type { CutInputData, QuantityInputData } from "../types/cutInput";
 import { formatCompactDurationWords, getQuantityElapsedSeconds, getCurrentSegmentWorkedSeconds } from "../utils/operatorTimeUtils";
@@ -90,6 +90,8 @@ const OperatorViewModals = ({
   handleResetQuantity,
   handleConfirmEndTimeCapture,
 }: OperatorViewModalsProps) => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const pendingDispatchJob = pendingDispatch
     ? jobs.find((job) => String(job.id) === String(pendingDispatch.cutId))
     : null;
@@ -136,12 +138,18 @@ const OperatorViewModals = ({
             },
             { label: "Quantities", value: pendingDispatch.quantityNumbers.map((qty) => formatQuantityIdentifierFromIndex(qty - 1)).join(", ") },
           ]}
-          confirmButtonText="Dispatch To QC"
+          confirmButtonText={isSubmitting ? "Dispatching..." : "Dispatch To QC"}
           onConfirm={async () => {
-            await handleUpdateQaStatus(pendingDispatch.cutId, pendingDispatch.quantityNumbers, "SENT_TO_QA");
-            setPendingDispatch(null);
+            if (isSubmitting) return;
+            setIsSubmitting(true);
+            try {
+              await handleUpdateQaStatus(pendingDispatch.cutId, pendingDispatch.quantityNumbers, "SENT_TO_QA");
+              setPendingDispatch(null);
+            } finally {
+              setIsSubmitting(false);
+            }
           }}
-          onCancel={() => setPendingDispatch(null)}
+          onCancel={() => !isSubmitting && setPendingDispatch(null)}
         />
       )}
 
@@ -153,12 +161,18 @@ const OperatorViewModals = ({
             { label: "Setting", value: getSettingIdentifier(jobs.find((j) => String(j.id) === String(pendingReset.cutId)), jobs.findIndex((j) => String(j.id) === String(pendingReset.cutId))) },
             { label: "Quantity", value: formatQuantityIdentifierFromIndex(pendingReset.quantityIndex) },
           ]}
-          confirmButtonText="Reset Timer"
+          confirmButtonText={isSubmitting ? "Resetting..." : "Reset Timer"}
           onConfirm={async () => {
-            await handleResetQuantity(pendingReset.cutId, pendingReset.quantityIndex);
-            setPendingReset(null);
+            if (isSubmitting) return;
+            setIsSubmitting(true);
+            try {
+              await handleResetQuantity(pendingReset.cutId, pendingReset.quantityIndex);
+              setPendingReset(null);
+            } finally {
+              setIsSubmitting(false);
+            }
           }}
-          onCancel={() => setPendingReset(null)}
+          onCancel={() => !isSubmitting && setPendingReset(null)}
         />
       )}
 
@@ -214,21 +228,28 @@ const OperatorViewModals = ({
             )}
 
             <div className="confirm-modal-footer-simple">
-              <button type="button" className="btn-secondary-simple" onClick={handleCancelEndTimeCapture}>
+              <button type="button" className="btn-secondary-simple" onClick={handleCancelEndTimeCapture} disabled={isSubmitting}>
                 Cancel
               </button>
               <button
                 type="button"
                 className="btn-primary-simple"
+                disabled={isSubmitting}
                 onClick={async () => {
-                  await handleConfirmEndTimeCapture(
-                    pendingEndTimeCapture.cutId,
-                    pendingEndTimeCapture.quantityIndex,
-                    pendingEndTimeCapture.timestampMs
-                  );
+                  if (isSubmitting) return;
+                  setIsSubmitting(true);
+                  try {
+                    await handleConfirmEndTimeCapture(
+                      pendingEndTimeCapture.cutId,
+                      pendingEndTimeCapture.quantityIndex,
+                      pendingEndTimeCapture.timestampMs
+                    );
+                  } finally {
+                    setIsSubmitting(false);
+                  }
                 }}
               >
-                Confirm & Lock End Time
+                {isSubmitting ? "Saving..." : "Confirm & Lock End Time"}
               </button>
             </div>
           </div>

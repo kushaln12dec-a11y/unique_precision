@@ -466,6 +466,7 @@ router.put("/jobs/:id", async (req, res) => {
       return res.status(404).json({ message: "Job not found" });
     }
     console.error("Error updating operator job:", error);
+    require('fs').appendFileSync('error_debug.log', error.stack || String(error) + "\n");
     res.status(500).json({ message: "Error updating job" });
   }
 });
