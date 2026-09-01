@@ -31,10 +31,18 @@ const configuredOrigins = String(process.env.FRONTEND_ORIGIN || "http://localhos
 const isDev = process.env.NODE_ENV !== "production";
 const localDevOriginPattern =
   /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i;
+const cloudflarePagesPattern = /^https:\/\/.*\.pages\.dev$/i;
 
 const isOriginAllowed = (origin?: string | null): boolean => {
   if (!origin) return true;
   if (configuredOrigins.includes(origin)) return true;
+  // Explicitly allow production Cloudflare Pages URL
+  if (origin === "https://unique-precision.pages.dev") return true;
+  // Allow all unique-precision preview branches on Cloudflare Pages
+  if (origin.endsWith(".unique-precision.pages.dev")) return true;
+  // Optional: Allow all cloudflare pages (useful for dynamic preview URLs)
+  if (cloudflarePagesPattern.test(origin)) return true;
+
   // Vite may hop ports when 5173 is busy (e.g. 5174).
   if (isDev && localDevOriginPattern.test(origin)) return true;
   return false;
