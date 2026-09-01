@@ -197,7 +197,7 @@ export const OperatorQuantityCard: React.FC<OperatorQuantityCardProps> = ({
                   blockRunAction();
                   return;
                 }
-                if (qtyData.isPaused && !isAdmin) {
+                if (qtyData.isPaused) {
                   onShowToast?.("Resume this quantity before capturing end time.", "error");
                   return;
                 }
@@ -212,8 +212,8 @@ export const OperatorQuantityCard: React.FC<OperatorQuantityCardProps> = ({
               }}
               placeholder="DD/MM/YYYY HH:MM:SS"
               error={validationErrors.endTime}
-              disabled={isAdmin ? false : (!canOperateInputs || !!qtyData.endTime || qtyData.isPaused || !canRunAssignedJob)}
-              allowManualInput={isAdmin}
+              disabled={qtyData.isPaused ? true : isAdmin ? false : (!canOperateInputs || !!qtyData.endTime || !canRunAssignedJob)}
+              allowManualInput={isAdmin && !qtyData.isPaused}
             />
           </div>
           <div className="operator-input-card">
