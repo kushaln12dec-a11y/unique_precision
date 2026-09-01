@@ -105,7 +105,7 @@ const OperatorViewModals = ({
   const pendingEndTimeWorkedSeconds =
     pendingEndTimeCapture && pendingEndTimeQty
       ? (pendingEndTimeQty.currentSegmentWorkedSeconds !== undefined
-        ? pendingEndTimeQty.currentSegmentWorkedSeconds + Math.max(0, Number(pendingEndTimeQty.workedDurationSeconds || 0))
+        ? Math.max(0, pendingEndTimeQty.currentSegmentWorkedSeconds) + Math.max(0, Number(pendingEndTimeQty.workedDurationSeconds || 0))
         : getQuantityElapsedSeconds(pendingEndTimeQty, pendingEndTimeQty.endTimeEpochMs || pendingEndTimeCapture.timestampMs))
       : 0;
   const pendingEndTimeIdleDuration = pendingEndTimeQty

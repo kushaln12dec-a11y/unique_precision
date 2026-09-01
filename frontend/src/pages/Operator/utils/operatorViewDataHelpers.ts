@@ -231,7 +231,13 @@ export const collectOperatorHistoryForQuantity = (quantityNumber: number, logsFo
     const fromQty = Math.max(1, Number(log?.quantityFrom || 1));
     const toQty = Math.max(fromQty, Number(log?.quantityTo || fromQty));
     if (quantityNumber < fromQty || quantityNumber > toQty) return;
-    pushName(log?.userName);
+    // Use metadata.opsName first (actual operator names), fall back to userName
+    const rawOpsName = String((log.metadata as any)?.opsName || "").trim();
+    if (rawOpsName) {
+      rawOpsName.split(",").forEach((name) => pushName(name));
+    } else {
+      pushName(log?.userName);
+    }
   });
 
   return collected;
@@ -258,11 +264,23 @@ export const collectOperatorHistoryDetailsForQuantity = (quantityNumber: number,
     const rangeCount = Math.max(1, toQty - fromQty + 1);
     const logDuration = Number((log.metadata as any)?.workedSeconds || 0) || getDurationSeconds(log);
     if (logDuration <= 0) return;
+    const durationPerQuantity = logDuration / rangeCount;
     const revenueByQuantity = (((log.metadata as any)?.revenueByQuantity || {}) as Record<string, number>) || {};
     const quantityRevenue = Number(revenueByQuantity[String(quantityNumber)] || 0);
     const fallbackRevenue = Number((log.metadata as any)?.revenue || 0);
     const perQuantityRevenue = quantityRevenue > 0 ? quantityRevenue : (fallbackRevenue > 0 ? fallbackRevenue / rangeCount : 0);
-    addEntry(log?.userName, logDuration / rangeCount, perQuantityRevenue);
+
+    // Use metadata.opsName (the actual UI-selected operator names) rather than log.userName
+    // (which is only the logged-in account). Split time equally among all assigned operators.
+    const rawOpsName = String((log.metadata as any)?.opsName || "").trim();
+    const opsNames = rawOpsName
+      ? rawOpsName.split(",").map((n) => normalizeOperatorName(n)).filter(Boolean)
+      : [normalizeOperatorName(log?.userName)];
+    const validOpsNames = opsNames.filter(Boolean);
+    const opsCount = Math.max(1, validOpsNames.length);
+    validOpsNames.forEach((opsName) => {
+      addEntry(opsName, durationPerQuantity / opsCount, perQuantityRevenue / opsCount);
+    });
   });
 
   return Array.from(summary.entries())
