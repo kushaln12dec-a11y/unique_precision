@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "ts-node-dev server/src/index.ts",
     "build": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\" && prisma generate && tsc",
-    "start": "node dist/index.js",
+    "start": "npx prisma db push && node dist/index.js",
     "test": "jest",
     "clone-db": "node scripts/clone-postgres-data.js",
     "seed-admin": "ts-node-dev --transpile-only server/src/scripts/seedAdminUser.ts",
