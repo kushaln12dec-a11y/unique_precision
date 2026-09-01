@@ -43,12 +43,16 @@ export const initSocketServer = (server: HttpServer) => {
     .filter(Boolean);
   const isDev = process.env.NODE_ENV !== "production";
   const localDevOriginPattern = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i;
+  const cloudflarePagesPattern = /^https:\/\/.*\.pages\.dev$/i;
 
   io = new Server<ClientToServerEvents, ServerToClientEvents, Record<string, never>, SocketData>(server, {
     cors: {
       origin: (origin, cb) => {
         if (!origin) return cb(null, true);
         if (configuredOrigins.includes(origin)) return cb(null, true);
+        if (origin === "https://unique-precision.pages.dev") return cb(null, true);
+        if (origin.endsWith(".unique-precision.pages.dev")) return cb(null, true);
+        if (cloudflarePagesPattern.test(origin)) return cb(null, true);
         if (isDev && localDevOriginPattern.test(origin)) return cb(null, true);
         return cb(null, false);
       },
