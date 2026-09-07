@@ -4,6 +4,7 @@ import type { JobEntry } from "../../../types/job";
 import { useOperatorViewActionState } from "./useOperatorViewActionState";
 import { useOperatorPersistenceActions } from "./useOperatorPersistenceActions";
 import { useOperatorRunActions } from "./useOperatorRunActions";
+import { showAndHideToast } from "../utils/operatorViewActionUtils";
 
 type Params = {
   jobs: JobEntry[];
@@ -48,10 +49,36 @@ export const useOperatorViewActions = ({ jobs, cutInputs, setCutInputs, setValid
     });
   }, [setValidationErrors]);
 
-  const ensureCurrentUserAssigned = useCallback((_job?: JobEntry) => {
-    // Business rule update: Any authorized operator should be able to start/resume/end.
+  const ensureCurrentUserAssigned = useCallback((
+    _job?: JobEntry,
+    cutId?: number | string,
+    quantityIndex?: number
+  ): boolean => {
+    const normalizedUser = String(currentUserDisplayName || "").trim().toUpperCase();
+    if (!normalizedUser) {
+      showAndHideToast(setActionToast, "Cannot identify your user account. Please log in again.", "error", 3500);
+      return false;
+    }
+
+    if (cutId !== undefined && quantityIndex !== undefined) {
+      const qtyData = cutInputs.get(cutId)?.quantities?.[quantityIndex];
+      if (qtyData) {
+        const opsNameList = Array.isArray(qtyData.opsName)
+          ? qtyData.opsName.map((n) => String(n || "").trim().toUpperCase()).filter(Boolean)
+          : [];
+        if (opsNameList.length === 0) {
+          showAndHideToast(setActionToast, "Select your name in the Ops Name field before starting this job.", "error", 4000);
+          return false;
+        }
+        if (!opsNameList.includes(normalizedUser)) {
+          showAndHideToast(setActionToast, `Only assigned operators can run this job. Assign your name first.`, "error", 4000);
+          return false;
+        }
+      }
+    }
+
     return true;
-  }, []);
+  }, [currentUserDisplayName, cutInputs, setActionToast]);
 
   const { handleSaveQuantity, handleSaveRange, handleUpdateQaStatus, handleEndTimeCaptured } = useOperatorPersistenceActions({
     jobs,

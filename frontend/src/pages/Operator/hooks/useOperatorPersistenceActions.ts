@@ -27,7 +27,7 @@ type Params = {
   setSaveToast: React.Dispatch<React.SetStateAction<any>>;
   setActionToast: React.Dispatch<React.SetStateAction<any>>;
   setValidationErrors: React.Dispatch<React.SetStateAction<Map<number | string, Record<string, Record<string, string>>>>>;
-  ensureCurrentUserAssigned: (job: JobEntry | undefined) => boolean;
+  ensureCurrentUserAssigned: (job: JobEntry | undefined, cutId?: number | string, quantityIndex?: number) => boolean;
   clearQuantityErrors: (cutId: number | string, quantityIndex: number) => void;
 };
 
@@ -214,7 +214,7 @@ export const useOperatorPersistenceActions = ({
       showAndHideToast(setActionToast, "Job not found.", "error", 3000);
       return false;
     }
-    if (!ensureCurrentUserAssigned(job)) return false;
+    if (!ensureCurrentUserAssigned(job, cutId, quantityIndex)) return false;
 
     const key = `${String(cutId)}:${quantityIndex}`;
     const logId = activeOperatorLogIds.get(key) || await resolveActiveOperatorLogId(cutId, quantityIndex);
