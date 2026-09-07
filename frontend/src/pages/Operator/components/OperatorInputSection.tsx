@@ -34,8 +34,7 @@ type OperatorInputSectionProps = {
   onRequestEndTimeCapture?: (cutId: number | string, quantityIndex: number, timestampMs: number) => void;
   onStartTimeCaptured?: (cutId: number | string, quantityIndex: number, timestampMs: number) => void;
   requiredHoursPerQuantity?: number;
-  canRunAssignedJob?: boolean;
-  runBlockedReason?: string;
+  currentUserDisplayName?: string;
 };
 
 const createFallbackQuantity = () => ({
@@ -87,8 +86,7 @@ export const OperatorInputSection: React.FC<OperatorInputSectionProps> = ({
   onRequestEndTimeCapture,
   onStartTimeCaptured,
   requiredHoursPerQuantity = 0,
-  canRunAssignedJob = true,
-  runBlockedReason,
+  currentUserDisplayName = "",
 }) => {
   const [captureMode, setCaptureMode] = useState<"PER_QUANTITY" | "RANGE">("PER_QUANTITY");
   const [rangeFrom, setRangeFrom] = useState("1");
@@ -194,6 +192,17 @@ export const OperatorInputSection: React.FC<OperatorInputSectionProps> = ({
 
       {displayQuantities.map((qtyData, qtyIndex) => {
         if (isRangeMode && qtyIndex !== activeRangeSourceIndex) return null;
+        const normalizedUser = String(currentUserDisplayName || "").trim().toUpperCase();
+        const opsNameList = Array.isArray(qtyData.opsName)
+          ? qtyData.opsName.map((n) => String(n || "").trim().toUpperCase()).filter(Boolean)
+          : [];
+        const isUnassigned = opsNameList.length === 0;
+        const quantityCanRun = !isUnassigned && opsNameList.includes(normalizedUser);
+        const quantityBlockedReason = isUnassigned
+          ? "Select your name and machine to start this job."
+          : !quantityCanRun
+            ? "Assign your name to this job before starting."
+            : undefined;
         return (
           <OperatorQuantityCard
             key={qtyIndex}
@@ -224,8 +233,8 @@ export const OperatorInputSection: React.FC<OperatorInputSectionProps> = ({
             onSaveRange={onSaveRange}
             savedRanges={savedRanges}
             canReset={isAdmin || canOperateInputs}
-            canRunAssignedJob={canRunAssignedJob}
-            runBlockedReason={runBlockedReason}
+            canRunAssignedJob={isAdmin || quantityCanRun}
+            runBlockedReason={quantityBlockedReason}
             isAdmin={isAdmin}
           />
         );

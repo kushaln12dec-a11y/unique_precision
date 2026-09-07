@@ -57,8 +57,7 @@ type OperatorCutCardProps = {
   onRequestEndTimeCapture?: (cutId: number | string, quantityIndex: number, timestampMs: number) => void;
   onStartTimeCaptured?: (cutId: number | string, quantityIndex: number, timestampMs: number) => void;
   isAdmin: boolean;
-  canRunAssignedJob?: boolean;
-  runBlockedReason?: string;
+  currentUserDisplayName?: string;
 };
 
 export const OperatorCutCard: React.FC<OperatorCutCardProps> = ({
@@ -89,8 +88,7 @@ export const OperatorCutCard: React.FC<OperatorCutCardProps> = ({
   onRequestEndTimeCapture,
   onStartTimeCaptured,
   isAdmin,
-  canRunAssignedJob = true,
-  runBlockedReason,
+  currentUserDisplayName = "",
 }) => {
   const quantity = Number(cutItem.qty || 1);
   const settingLabel = formatSettingIdentifier(cutItem, index);
@@ -177,8 +175,7 @@ export const OperatorCutCard: React.FC<OperatorCutCardProps> = ({
             onRequestResume={onRequestResume}
             onRequestEndTimeCapture={onRequestEndTimeCapture}
             onStartTimeCaptured={onStartTimeCaptured}
-            canRunAssignedJob={canRunAssignedJob}
-            runBlockedReason={runBlockedReason}
+            currentUserDisplayName={currentUserDisplayName}
           />
         </>
       )}

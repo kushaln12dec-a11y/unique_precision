@@ -3,10 +3,11 @@ import Modal from "../../../components/Modal";
 import type { JobEntry } from "../../../types/job";
 import { type Dispatch, type SetStateAction, useState } from "react";
 import { decimalHoursToHHMMSS } from "../utils/machineHrsCalculation";
-import type { CutInputData, QuantityInputData } from "../types/cutInput";
-import { formatCompactDurationWords, getQuantityElapsedSeconds, getCurrentSegmentWorkedSeconds } from "../utils/operatorTimeUtils";
+import type { CutInputData } from "../types/cutInput";
+import { formatCompactDurationWords, getQuantityElapsedSeconds } from "../utils/operatorTimeUtils";
 import { getPersistedIdleDuration } from "../utils/operatorViewPageHelpers";
 import { formatQuantityIdentifierFromIndex, getSettingIdentifier } from "../../../utils/jobFormatting";
+import { getOperatorQuantityHistory } from "../utils/operatorQuantityHistory";
 import "../Operator.part08.css";
 
 type PendingDispatch = { cutId: number | string; quantityNumbers: number[] } | null;
@@ -20,48 +21,7 @@ type PendingEndTimeCapture = {
   previousMachineHrs: string;
 } | null;
 
-const normalizeOperatorName = (value: unknown) => String(value || "").trim().toUpperCase();
 const formatWorkedDuration = (seconds: number) => formatCompactDurationWords(Math.max(0, Math.round(seconds)));
-
-const buildOperatorBreakdown = (qtyData: QuantityInputData, timestampMs: number) => {
-  const summary = new Map<string, number>();
-  const addDuration = (rawName: unknown, durationSeconds: number) => {
-    const name = normalizeOperatorName(rawName);
-    const safeDuration = Math.max(0, Math.round(durationSeconds));
-    if (!name || safeDuration <= 0) return;
-    summary.set(name, (summary.get(name) || 0) + safeDuration);
-  };
-
-  (qtyData.operatorHistoryDetails || []).forEach((entry) => {
-    addDuration(entry?.name, Number(entry?.durationSeconds || 0));
-  });
-
-  const currentSegmentSeconds = qtyData.currentSegmentWorkedSeconds !== undefined
-    ? Math.max(0, qtyData.currentSegmentWorkedSeconds)
-    : Math.max(0, getCurrentSegmentWorkedSeconds(qtyData, timestampMs));
-
-  const currentOperators = Array.from(
-    new Set((qtyData.opsName || []).map((name) => normalizeOperatorName(name)).filter(Boolean))
-  );
-
-  if (currentSegmentSeconds > 0) {
-    if (currentOperators.length === 0) {
-      addDuration(qtyData.currentPauseOperatorName || "CURRENT SEGMENT", currentSegmentSeconds);
-    } else {
-      const baseShare = Math.floor(currentSegmentSeconds / currentOperators.length);
-      let remainder = currentSegmentSeconds % currentOperators.length;
-      currentOperators.forEach((name) => {
-        const share = baseShare + (remainder > 0 ? 1 : 0);
-        if (remainder > 0) remainder -= 1;
-        addDuration(name, share);
-      });
-    }
-  }
-
-  return Array.from(summary.entries())
-    .map(([name, durationSeconds]) => ({ name, durationSeconds }))
-    .sort((left, right) => right.durationSeconds - left.durationSeconds);
-};
 
 type OperatorViewModalsProps = {
   jobs: JobEntry[];
@@ -115,7 +75,7 @@ const OperatorViewModals = ({
     : "";
   const pendingEndTimeBreakdown =
     pendingEndTimeCapture && pendingEndTimeQty
-      ? buildOperatorBreakdown(pendingEndTimeQty, pendingEndTimeQty.endTimeEpochMs || pendingEndTimeCapture.timestampMs)
+      ? getOperatorQuantityHistory(pendingEndTimeQty, false).operatorHistoryDetails
       : [];
   const machineHoursDecimal = Number(pendingEndTimeQty?.machineHrs || 0);
   const machineHoursLabel =

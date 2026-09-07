@@ -110,6 +110,7 @@ const OperatorViewBody: React.FC<Props> = ({
   groupTotalAmount,
   groupOvertimeSeconds,
   loadingJobs,
+  currentUserDisplayName,
 }) => {
   if (loadingJobs) {
     return <AppLoader message="Loading operator details..." />;
@@ -204,7 +205,7 @@ const OperatorViewBody: React.FC<Props> = ({
                 onRequestEndTimeCapture={onRequestEndTimeCapture}
                 onStartTimeCaptured={handleStartTimeCaptured}
                 isAdmin={isAdmin}
-                canRunAssignedJob={true}
+                currentUserDisplayName={currentUserDisplayName}
               />
             );
           })}

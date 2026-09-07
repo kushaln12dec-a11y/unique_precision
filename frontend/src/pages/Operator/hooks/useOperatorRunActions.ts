@@ -19,7 +19,7 @@ type Params = {
   setActiveOperatorLogIds: React.Dispatch<React.SetStateAction<Map<string, string>>>;
   setActionToast: React.Dispatch<React.SetStateAction<any>>;
   setCutInputs: React.Dispatch<React.SetStateAction<Map<number | string, CutInputData>>>;
-  ensureCurrentUserAssigned: (job?: JobEntry) => boolean;
+  ensureCurrentUserAssigned: (job?: JobEntry, cutId?: number | string, quantityIndex?: number) => boolean;
   currentUserDisplayName: string;
 };
 
@@ -106,7 +106,7 @@ export const useOperatorRunActions = ({
     if (activeOperatorLogIds.has(key)) return;
     const job = jobs.find((item) => String(item.id) === String(cutId));
     if (!job) return;
-    if (!ensureCurrentUserAssigned(job)) return;
+    if (!ensureCurrentUserAssigned(job, cutId, quantityIndex)) return;
     const qtyData = cutInputs.get(cutId)?.quantities?.[quantityIndex];
     const nextMachineNumber = String(qtyData?.machineNumber || "").trim();
     if (!nextMachineNumber) {
@@ -194,7 +194,7 @@ export const useOperatorRunActions = ({
       showAndHideToast(setActionToast, "Job not found.", "error", 3000);
       return false;
     }
-    if (!ensureCurrentUserAssigned(job)) return false;
+    if (!ensureCurrentUserAssigned(job, cutId, quantityIndex)) return false;
     let previousQtySnapshot = { ...qtyData };
 
     try {
