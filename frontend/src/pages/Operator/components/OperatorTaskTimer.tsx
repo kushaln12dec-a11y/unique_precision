@@ -35,8 +35,14 @@ export const OperatorTaskTimer: React.FC<OperatorTaskTimerProps> = ({ onSaveTask
 
   useEffect(() => {
     getIdleTimeConfigs()
-      .then((configs) => setIdleOptions(configs.map((c) => c.idleTimeType)))
-      .catch(() => setIdleOptions(["Power Break", "Machine Breakdown", "Vertical Dial", "Cleaning", "Consumables Change"]));
+      .then((configs) => {
+        if (configs.length > 0) {
+          setIdleOptions(configs.map((c) => c.idleTimeType));
+        } else {
+          setIdleOptions(["Power Break", "Shift Over", "Machine Breakdown", "Vertical Dial", "Cleaning", "Consumables Change"]);
+        }
+      })
+      .catch(() => setIdleOptions(["Power Break", "Shift Over", "Machine Breakdown", "Vertical Dial", "Cleaning", "Consumables Change"]));
   }, []);
 
   useEffect(() => {

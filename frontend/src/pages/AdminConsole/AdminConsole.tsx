@@ -97,7 +97,8 @@ const AdminConsole = () => {
         setMachineOptions(nextMachineOptions);
 
         const fetchedIdle = await getIdleTimeConfigs();
-        const nextIdle = sanitizeOptions(fetchedIdle.map((c) => c.idleTimeType));
+        const fallbackIdle = ["Power Break", "Shift Over", "Machine Breakdown", "Vertical Dial", "Cleaning", "Consumables Change"];
+        const nextIdle = sanitizeOptions(fetchedIdle.length > 0 ? fetchedIdle.map((c) => c.idleTimeType) : fallbackIdle);
         setIdleTimeOptions(nextIdle);
 
         persistSnapshot(fetched, nextIdle, setSavedSnapshot);
