@@ -10,14 +10,14 @@ const SEDM_SLAB_GROUPS: Array<{
   minField: keyof CustomerRate;
   perField: keyof CustomerRate;
 }> = [
-  { key: "034", title: "0.3 - 0.4", minField: "sedm034Min", perField: "sedm034PerMm" },
-  { key: "056", title: "0.5 - 0.6", minField: "sedm056Min", perField: "sedm056PerMm" },
-  { key: "07", title: "0.7", minField: "sedm07Min", perField: "sedm07PerMm" },
-  { key: "0812", title: "0.8 - 1.2", minField: "sedm0812Min", perField: "sedm0812PerMm" },
-  { key: "1520", title: "1.5 - 2.0", minField: "sedm1520Min", perField: "sedm1520PerMm" },
-  { key: "2225", title: "2.2 - 2.5", minField: "sedm2225Min", perField: "sedm2225PerMm" },
-  { key: "30", title: "3.0", minField: "sedm30Min", perField: "sedm30PerMm" },
-];
+    { key: "034", title: "0.3 - 0.4", minField: "sedm034Min", perField: "sedm034PerMm" },
+    { key: "056", title: "0.5 - 0.6", minField: "sedm056Min", perField: "sedm056PerMm" },
+    { key: "07", title: "0.7", minField: "sedm07Min", perField: "sedm07PerMm" },
+    { key: "0812", title: "0.8 - 1.2", minField: "sedm0812Min", perField: "sedm0812PerMm" },
+    { key: "1520", title: "1.5 - 2.0", minField: "sedm1520Min", perField: "sedm1520PerMm" },
+    { key: "2225", title: "2.2 - 2.5", minField: "sedm2225Min", perField: "sedm2225PerMm" },
+    { key: "30", title: "3.0", minField: "sedm30Min", perField: "sedm30PerMm" },
+  ];
 type Props = {
   activeSection: AdminSection;
   setActiveSection: Dispatch<SetStateAction<AdminSection>>;
@@ -44,6 +44,10 @@ type Props = {
   setMachineInput: Dispatch<SetStateAction<string>>;
   machineOptions: string[];
   setMachineOptions: Dispatch<SetStateAction<string[]>>;
+  idleTimeInput: string;
+  setIdleTimeInput: Dispatch<SetStateAction<string>>;
+  idleTimeOptions: string[];
+  setIdleTimeOptions: Dispatch<SetStateAction<string[]>>;
   addOption: (
     rawValue: string,
     setValue: Dispatch<SetStateAction<string>>,
@@ -127,6 +131,10 @@ const AdminSectionModals = (props: Props) => {
     setMachineInput,
     machineOptions,
     setMachineOptions,
+    idleTimeInput,
+    setIdleTimeInput,
+    idleTimeOptions,
+    setIdleTimeOptions,
     addOption,
     removeOption,
     sanitizeMachineOptions,
@@ -162,10 +170,10 @@ const AdminSectionModals = (props: Props) => {
     () =>
       selectedSedmCustomer
         ? SEDM_SLAB_GROUPS.map((group) => ({
-            ...group,
-            minValue: selectedSedmCustomer[group.minField],
-            perValue: selectedSedmCustomer[group.perField],
-          }))
+          ...group,
+          minValue: selectedSedmCustomer[group.minField],
+          perValue: selectedSedmCustomer[group.perField],
+        }))
         : [],
     [selectedSedmCustomer]
   );
@@ -411,6 +419,20 @@ const AdminSectionModals = (props: Props) => {
         </div>
         <div className="admin-modal-actions admin-modal-actions-end">
           <SaveButton saving={saving} readOnly={readOnly} onSave={handleSaveAndClose} label="Save Hours Config" />
+        </div>
+      </Modal>
+
+      <Modal isOpen={activeSection === "idleTime"} onClose={() => setActiveSection(null)} title="Idle Time Options" className="admin-section-modal" size="small">
+        <label>Add Idle Time Reason</label>
+        <div className="admin-option-input-row">
+          <input type="text" value={idleTimeInput} disabled={readOnly} placeholder="e.g. Tooling Break" onChange={(e) => setIdleTimeInput(e.target.value)} />
+          <button type="button" className="admin-add-btn" disabled={readOnly} onClick={() => addOption(idleTimeInput, setIdleTimeInput, setIdleTimeOptions, "Enter a reason first")}>
+            Save
+          </button>
+        </div>
+        <OptionList items={idleTimeOptions} emptyText="No idle time options added yet." readOnly={readOnly} removeItem={(index) => removeOption(index, setIdleTimeOptions)} />
+        <div className="admin-modal-actions admin-modal-actions-end">
+          <SaveButton saving={saving} readOnly={readOnly} onSave={handleSaveAndClose} label="Save Idle Time Options" />
         </div>
       </Modal>
     </>

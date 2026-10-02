@@ -44,7 +44,7 @@ export const useTableColumns = ({
       {
         key: "customer",
         label: "Customer",
-        sortable: false,
+        sortable: true,
         sortKey: "customer",
         className: "customer-cell",
         headerClassName: "customer-header",
@@ -115,7 +115,7 @@ export const useTableColumns = ({
       {
         key: "description",
         label: "Description",
-        sortable: false,
+        sortable: true,
         sortKey: "description",
         render: (row) => {
           const full = row.kind === "parent" && row.hasChildren ? "" : (row.entry.description || "");
@@ -125,35 +125,35 @@ export const useTableColumns = ({
       {
         key: "cut",
         label: "Cut (mm)",
-        sortable: false,
+        sortable: true,
         sortKey: "cut",
         render: (row) => row.kind === "parent" && row.hasChildren ? "" : Math.round(Number(row.entry.cut || 0)),
       },
       {
         key: "thickness",
         label: "TH (MM)",
-        sortable: false,
+        sortable: true,
         sortKey: "thickness",
         render: (row) => row.kind === "parent" && row.hasChildren ? "" : getThicknessDisplayValue(row.entry.thickness),
       },
       {
         key: "passLevel",
         label: "Pass",
-        sortable: false,
+        sortable: true,
         sortKey: "passLevel",
         render: (row) => row.kind === "parent" && row.hasChildren ? "" : row.entry.passLevel,
       },
       {
         key: "setting",
         label: "Setting",
-        sortable: false,
+        sortable: true,
         sortKey: "setting",
         render: (row) => row.kind === "parent" && row.hasChildren ? "" : row.entry.setting,
       },
       {
         key: "qty",
         label: "Qty",
-        sortable: false,
+        sortable: true,
         sortKey: "qty",
         render: (row) => row.kind === "parent" && row.hasChildren ? "" : Number(row.entry.qty || 0).toString(),
       },
@@ -173,7 +173,7 @@ export const useTableColumns = ({
       {
         key: "totalHrs",
         label: "Cut Length Hrs",
-        sortable: false,
+        sortable: true,
         sortKey: "totalHrs",
         render: (row) => {
           const totalHrs =
@@ -203,26 +203,26 @@ export const useTableColumns = ({
       },
       ...(isAdmin
         ? [
-            {
-              key: "totalAmount",
-              label: "Total Amount (Rs.)",
-              sortable: false,
-              sortKey: "totalAmount",
-              render: (row: ProgrammerDisplayRow) =>
-                row.kind === "parent"
-                  ? row.tableRow.groupTotalAmount
-                    ? `Rs. ${Math.round(row.tableRow.groupTotalAmount)}`
-                    : "-"
-                  : row.entry.totalAmount
-                    ? `Rs. ${Math.round(row.entry.totalAmount)}`
-                    : "-",
-            },
-          ]
+          {
+            key: "totalAmount",
+            label: "Total Amount (Rs.)",
+            sortable: true,
+            sortKey: "totalAmount",
+            render: (row: ProgrammerDisplayRow) =>
+              row.kind === "parent"
+                ? row.tableRow.groupTotalAmount
+                  ? `Rs. ${Math.round(row.tableRow.groupTotalAmount)}`
+                  : "-"
+                : row.entry.totalAmount
+                  ? `Rs. ${Math.round(row.entry.totalAmount)}`
+                  : "-",
+          },
+        ]
         : []),
       {
         key: "createdBy",
         label: "Created By",
-        sortable: false,
+        sortable: true,
         sortKey: "createdBy",
         className: "created-by-cell",
         headerClassName: "created-by-header",
@@ -231,7 +231,7 @@ export const useTableColumns = ({
       {
         key: "createdAt",
         label: "Created At",
-        sortable: false,
+        sortable: true,
         sortKey: "createdAt",
         render: (row) => {
           const parts = getDisplayDateTimeParts(row.entry.createdAt);

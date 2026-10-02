@@ -14,6 +14,7 @@ export type InspectionReportRowPayload = {
   tolerance: string;
   measuringDimension: string;
   deviation: string;
+  samples?: string[];
   instruments: InstrumentSelection;
 };
 
@@ -32,6 +33,8 @@ export type InspectionReportPayload = {
   toolIdentificationNo?: string;
   consumablePartIdentificationNo?: string;
   consumablePartName?: string;
+  hrc?: string;
+  material?: string;
   quantity: string;
   decision: "ACCEPTED" | "REJECTED" | "PENDING";
   rows: InspectionReportRowPayload[];

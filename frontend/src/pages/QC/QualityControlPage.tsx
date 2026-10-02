@@ -6,16 +6,35 @@ import LazyAgGrid from "../../components/LazyAgGrid";
 import Toast from "../../components/Toast";
 import ConfirmDeleteModal from "../../components/ConfirmDeleteModal";
 import type { JobEntry } from "../../types/job";
-import { getQcJobsPage, setQcReportClosedByGroupId, updateQcDecisionByGroupId } from "../../services/jobApi";
-import { generateInspectionReport, type InspectionReportPayload } from "../../services/inspectionReportApi";
+import {
+  getQcJobsPage,
+  setQcReportClosedByGroupId,
+  updateQcDecisionByGroupId,
+} from "../../services/jobApi";
+import {
+  generateInspectionReport,
+  type InspectionReportPayload,
+} from "../../services/inspectionReportApi";
 import { useAppDispatch, useAppSelector } from "../../store/hooks";
-import { setQcCustomerFilter, setQcDescriptionFilter, setQcOperatorFilter, setQcSearchFilter } from "../../store/slices/filtersSlice";
+import {
+  setQcCustomerFilter,
+  setQcDescriptionFilter,
+  setQcOperatorFilter,
+  setQcSearchFilter,
+} from "../../store/slices/filtersSlice";
 import { matchesSearchQuery } from "../../utils/searchUtils";
 import { getParentRowClassName } from "../Programmer/utils/priorityUtils";
 import QcFilters from "./components/QcFilters";
 import QcReportTemplateModal from "./components/QcReportTemplateModal";
 import { createQcColumns } from "./qcColumns";
-import { buildQcRows, formatDateForTemplate, getDrawingNo, getPrimaryOperatorName, getQcRowSearchValues, type QcRow } from "./qcUtils";
+import {
+  buildQcRows,
+  formatDateForTemplate,
+  getDrawingNo,
+  getPrimaryOperatorName,
+  getQcRowSearchValues,
+  type QcRow,
+} from "./qcUtils";
 import { useJobSync } from "../../hooks/useJobSync";
 import "../RoleBoard.css";
 import "../Programmer/Programmer.css";
@@ -23,29 +42,49 @@ import "../Operator/Operator.part07.css";
 import "./QualityControlDashboard.css";
 import "./components/QcReportTemplateModal.css";
 
-const QualityControlPage = ({ forceTab, hideLayout, isBilled }: { forceTab?: "QUEUE" | "LOGGED"; hideLayout?: boolean; isBilled?: boolean }) => {
+const QualityControlPage = ({
+  forceTab,
+  hideLayout,
+  isBilled,
+}: {
+  forceTab?: "QUEUE" | "LOGGED";
+  hideLayout?: boolean;
+  isBilled?: boolean;
+}) => {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
-  const { customerFilter, descriptionFilter, operatorFilter, searchFilter } = useAppSelector((state) => state.filters.qc);
+  const { customerFilter, descriptionFilter, operatorFilter, searchFilter } =
+    useAppSelector((state) => state.filters.qc);
   const [qcGridJobs, setQcGridJobs] = useState<JobEntry[]>([]);
   const [gridRefreshKey, setGridRefreshKey] = useState(0);
-  const [reportCloseCandidate, setReportCloseCandidate] = useState<QcRow | null>(null);
+  const [reportCloseCandidate, setReportCloseCandidate] =
+    useState<QcRow | null>(null);
   const [isCloseConfirmOpen, setIsCloseConfirmOpen] = useState(false);
   const [templateSelection, setTemplateSelection] = useState<{
     row: QcRow;
     action: "OPEN" | "DOWNLOAD";
   } | null>(null);
   const [qcTab] = useState<"QUEUE" | "LOGGED">(forceTab || "QUEUE");
-  const [toast, setToast] = useState<{ message: string; variant: "success" | "error" | "info"; visible: boolean }>({
+  const [toast, setToast] = useState<{
+    message: string;
+    variant: "success" | "error" | "info";
+    visible: boolean;
+  }>({
     message: "",
     variant: "info",
     visible: false,
   });
 
-  const showToast = useCallback((message: string, variant: "success" | "error" | "info" = "info") => {
-    setToast({ message, variant, visible: true });
-    window.setTimeout(() => setToast((prev) => ({ ...prev, visible: false })), 2500);
-  }, []);
+  const showToast = useCallback(
+    (message: string, variant: "success" | "error" | "info" = "info") => {
+      setToast({ message, variant, visible: true });
+      window.setTimeout(
+        () => setToast((prev) => ({ ...prev, visible: false })),
+        2500,
+      );
+    },
+    [],
+  );
 
   useEffect(() => {
     if (!localStorage.getItem("token")) navigate("/login");
@@ -67,7 +106,7 @@ const QualityControlPage = ({ forceTab, hideLayout, isBilled }: { forceTab?: "QU
           customerFilter,
           undefined,
           descriptionFilter,
-          { offset, limit }
+          { offset, limit },
         );
         return { items: page.items, hasMore: page.hasMore };
       } catch {
@@ -75,37 +114,67 @@ const QualityControlPage = ({ forceTab, hideLayout, isBilled }: { forceTab?: "QU
         return { items: [] as JobEntry[], hasMore: false };
       }
     },
-    [customerFilter, descriptionFilter, isBilled, showToast]
+    [customerFilter, descriptionFilter, isBilled, showToast],
   );
 
-  const tableData = useMemo(() => buildQcRows(qcGridJobs, qcTab === "LOGGED"), [qcGridJobs, qcTab]);
+  const tableData = useMemo(
+    () => buildQcRows(qcGridJobs, qcTab === "LOGGED"),
+    [qcGridJobs, qcTab],
+  );
   const filteredTableData = useMemo(() => {
-    const searchQuery = (searchFilter || customerFilter || descriptionFilter).trim();
+    const searchQuery = (
+      searchFilter ||
+      customerFilter ||
+      descriptionFilter
+    ).trim();
     return tableData.filter((row) => {
-      const searchMatch = matchesSearchQuery(getQcRowSearchValues(row), searchQuery);
+      const searchMatch = matchesSearchQuery(
+        getQcRowSearchValues(row),
+        searchQuery,
+      );
       const operatorMatch = operatorFilter
-        ? getPrimaryOperatorName(row.entry.assignedTo || row.parent.assignedTo).toLowerCase() === operatorFilter.toLowerCase()
+        ? getPrimaryOperatorName(
+          row.entry.assignedTo || row.parent.assignedTo,
+        ).toLowerCase() === operatorFilter.toLowerCase()
         : true;
       return searchMatch && operatorMatch;
     });
-  }, [customerFilter, descriptionFilter, operatorFilter, searchFilter, tableData]);
+  }, [
+    customerFilter,
+    descriptionFilter,
+    operatorFilter,
+    searchFilter,
+    tableData,
+  ]);
 
   const qcOperatorOptions = useMemo(() => {
     const names = new Set<string>();
     tableData.forEach((row) => {
-      const name = getPrimaryOperatorName(row.entry.assignedTo || row.parent.assignedTo);
+      const name = getPrimaryOperatorName(
+        row.entry.assignedTo || row.parent.assignedTo,
+      );
       if (name && name !== "-") names.add(name);
     });
     return Array.from(names).sort((a, b) => a.localeCompare(b));
   }, [tableData]);
 
   const replaceGroupJobs = (groupId: string, updated: JobEntry[]) => {
-    setQcGridJobs((prev) => [...prev.filter((job) => String(job.groupId) !== groupId), ...updated]);
+    setQcGridJobs((prev) => [
+      ...prev.filter((job) => String(job.groupId) !== groupId),
+      ...updated,
+    ]);
   };
 
-  const updateDecision = async (groupId: string, decision: "APPROVED" | "REJECTED", label: string) => {
+  const updateDecision = async (
+    groupId: string,
+    decision: "APPROVED" | "REJECTED",
+    label: string,
+  ) => {
     try {
-      replaceGroupJobs(groupId, await updateQcDecisionByGroupId(groupId, decision));
+      replaceGroupJobs(
+        groupId,
+        await updateQcDecisionByGroupId(groupId, decision),
+      );
       showToast(`QC decision updated: ${label}.`, "success");
     } catch {
       showToast("Failed to update QC decision.", "error");
@@ -113,7 +182,10 @@ const QualityControlPage = ({ forceTab, hideLayout, isBilled }: { forceTab?: "QU
   };
 
   const buildReportPayload = useCallback(
-    (row: QcRow, templateVariant: "DEFAULT" | "TOOLING_SPARE"): InspectionReportPayload => ({
+    (
+      row: QcRow,
+      templateVariant: "DEFAULT" | "TOOLING_SPARE",
+    ): InspectionReportPayload => ({
       groupId: row.groupId,
       jobId: row.jobId,
       quantityNumber: row.quantityNumber,
@@ -123,13 +195,23 @@ const QualityControlPage = ({ forceTab, hideLayout, isBilled }: { forceTab?: "QU
       templateVariant,
       customerId: String(row.entry.customer || row.parent.customer || ""),
       date: formatDateForTemplate(new Date()),
-      drawingName: String(row.entry.description || row.parent.description || ""),
+      drawingName: String(
+        row.entry.description || row.parent.description || "",
+      ),
       drawingNo: getDrawingNo(row.entry) || getDrawingNo(row.parent),
       toolIdentificationNo: getDrawingNo(row.entry) || getDrawingNo(row.parent),
-      consumablePartIdentificationNo: getDrawingNo(row.entry) || getDrawingNo(row.parent),
-      consumablePartName: String(row.entry.description || row.parent.description || ""),
+      consumablePartIdentificationNo:
+        getDrawingNo(row.entry) || getDrawingNo(row.parent),
+      consumablePartName: String(
+        row.entry.description || row.parent.description || "",
+      ),
       quantity: String(Math.max(1, row.quantityCount || 1)),
-      decision: row.parent.qcDecision === "APPROVED" ? "ACCEPTED" : row.parent.qcDecision === "REJECTED" ? "REJECTED" : "PENDING",
+      decision:
+        row.parent.qcDecision === "APPROVED"
+          ? "ACCEPTED"
+          : row.parent.qcDecision === "REJECTED"
+            ? "REJECTED"
+            : "PENDING",
       rows: Array.from({ length: Math.max(1, row.quantityCount || 1) }, () => ({
         actualDimension: String(row.entry.cut ?? ""),
         tolerance: "",
@@ -144,10 +226,13 @@ const QualityControlPage = ({ forceTab, hideLayout, isBilled }: { forceTab?: "QU
       inspectedBy: "",
       approvedBy: "",
     }),
-    []
+    [],
   );
 
-  const downloadInspectionReport = async (payload: InspectionReportPayload, filename: string) => {
+  const downloadInspectionReport = async (
+    payload: InspectionReportPayload,
+    filename: string,
+  ) => {
     const blob = await generateInspectionReport(payload);
     const link = document.createElement("a");
     const url = URL.createObjectURL(blob);
@@ -159,7 +244,11 @@ const QualityControlPage = ({ forceTab, hideLayout, isBilled }: { forceTab?: "QU
     URL.revokeObjectURL(url);
   };
 
-  const processTemplateSelection = async (row: QcRow, action: "OPEN" | "DOWNLOAD", variant: "DEFAULT" | "TOOLING_SPARE") => {
+  const processTemplateSelection = async (
+    row: QcRow,
+    action: "OPEN" | "DOWNLOAD",
+    variant: "DEFAULT" | "TOOLING_SPARE",
+  ) => {
     const payload = buildReportPayload(row, variant);
     try {
       if (action === "OPEN") {
@@ -174,7 +263,10 @@ const QualityControlPage = ({ forceTab, hideLayout, isBilled }: { forceTab?: "QU
         });
         navigate(`/qc/inspection-report?${params.toString()}`);
       } else {
-        await downloadInspectionReport(payload, `inspection-report-${row.quantityLabel}.pdf`);
+        await downloadInspectionReport(
+          payload,
+          `inspection-report-${row.quantityLabel}.pdf`,
+        );
       }
     } catch {
       showToast("Failed to process inspection report action.", "error");
@@ -183,9 +275,17 @@ const QualityControlPage = ({ forceTab, hideLayout, isBilled }: { forceTab?: "QU
     }
   };
 
-  const handleTemplateSelection = async (variant: "DEFAULT" | "TOOLING_SPARE") => {
+  const handleTemplateSelection = async (
+    variant: "DEFAULT" | "TOOLING_SPARE",
+    count: number
+  ) => {
     if (!templateSelection) return;
-    await processTemplateSelection(templateSelection.row, templateSelection.action, variant);
+    const row = { ...templateSelection.row, quantityCount: count };
+    await processTemplateSelection(
+      row,
+      templateSelection.action,
+      variant,
+    );
   };
 
   const isLoggedMode = qcTab === "LOGGED" || isBilled;
@@ -195,18 +295,7 @@ const QualityControlPage = ({ forceTab, hideLayout, isBilled }: { forceTab?: "QU
       createQcColumns({
         updateDecision,
         onOpenReport: (row) => {
-          if (row.quantityCount && row.quantityCount > 1) {
-            void processTemplateSelection(row, "OPEN", "TOOLING_SPARE");
-          } else {
-            setTemplateSelection({ row, action: "OPEN" });
-          }
-        },
-        onDownloadReport: (row) => {
-          if (row.quantityCount && row.quantityCount > 1) {
-            void processTemplateSelection(row, "DOWNLOAD", "TOOLING_SPARE");
-          } else {
-            setTemplateSelection({ row, action: "DOWNLOAD" });
-          }
+          setTemplateSelection({ row, action: "OPEN" });
         },
         openClosePrompt: (row) => {
           setReportCloseCandidate(row);
@@ -214,7 +303,7 @@ const QualityControlPage = ({ forceTab, hideLayout, isBilled }: { forceTab?: "QU
         },
         showLogged: isLoggedMode,
       }),
-    [updateDecision, isLoggedMode]
+    [updateDecision, isLoggedMode],
   );
 
   const handleClearAllFilters = () => {
@@ -227,23 +316,40 @@ const QualityControlPage = ({ forceTab, hideLayout, isBilled }: { forceTab?: "QU
   const qcColumnDefs = useMemo(
     () =>
       columns.map((column: any) => ({
-        headerName: typeof column.label === "string" ? column.label : String(column.key),
+        headerName:
+          typeof column.label === "string" ? column.label : String(column.key),
         field: column.key,
-        minWidth: column.key === "description" ? 240 : column.key === "inspectionReport" || column.key === "decision" ? 220 : 130,
+        minWidth:
+          column.key === "description"
+            ? 240
+            : column.key === "inspectionReport" || column.key === "decision"
+              ? 220
+              : 130,
         cellClass: column.className,
         headerClass: column.headerClassName,
-        cellRenderer: column.render ? (params: any) => column.render?.(params.data, params.node?.rowIndex || 0) : undefined,
+        cellRenderer: column.render
+          ? (params: any) =>
+            column.render?.(params.data, params.node?.rowIndex || 0)
+          : undefined,
       })),
-    [columns]
+    [columns],
   );
 
   return (
-    <div className={hideLayout ? "standalone-page-wrapper" : "roleboard-container"}>
-      {!hideLayout && <Sidebar currentPath="/qc" onNavigate={(path) => navigate(path)} />}
+    <div
+      className={hideLayout ? "standalone-page-wrapper" : "roleboard-container"}
+    >
+      {!hideLayout && (
+        <Sidebar currentPath="/qc" onNavigate={(path) => navigate(path)} />
+      )}
       <div className={hideLayout ? "" : "roleboard-content"}>
         {!hideLayout && <Header title="QC" />}
         <div className="roleboard-body qc-table-panel">
-          {!hideLayout && <h3 style={{ marginTop: "1rem" }}>{qcTab === "QUEUE" ? "QC Queue" : "Closed QC Reports"}</h3>}
+          {!hideLayout && (
+            <h3 style={{ marginTop: "1rem" }}>
+              {qcTab === "QUEUE" ? "QC Queue" : "Closed QC Reports"}
+            </h3>
+          )}
           <QcFilters
             searchValue={searchFilter || customerFilter || descriptionFilter}
             operatorFilter={operatorFilter}
@@ -261,7 +367,13 @@ const QualityControlPage = ({ forceTab, hideLayout, isBilled }: { forceTab?: "QU
             onRowsChange={setQcGridJobs}
             transformRows={() => filteredTableData}
             getRowId={(row: QcRow) => row.qcItemId}
-            getRowClass={(params) => getParentRowClassName(params.data.parent, params.data.entries, false)}
+            getRowClass={(params) =>
+              getParentRowClassName(
+                params.data.parent,
+                params.data.entries,
+                false,
+              )
+            }
             emptyMessage="No data available."
             className="jobs-table-wrapper"
             pageSize={50}
@@ -276,15 +388,38 @@ const QualityControlPage = ({ forceTab, hideLayout, isBilled }: { forceTab?: "QU
           message="Are you sure you want to close this inspection report?"
           details={[
             { label: "QC Item", value: reportCloseCandidate.quantityLabel },
-            { label: "Report Type", value: reportCloseCandidate.reportScopeLabel },
-            { label: "Job Ref", value: reportCloseCandidate.entry.refNumber || reportCloseCandidate.groupId },
-            { label: "Customer", value: reportCloseCandidate.entry.customer || reportCloseCandidate.parent.customer || "-" },
+            {
+              label: "Report Type",
+              value: reportCloseCandidate.reportScopeLabel,
+            },
+            {
+              label: "Job Ref",
+              value:
+                reportCloseCandidate.entry.refNumber ||
+                reportCloseCandidate.groupId,
+            },
+            {
+              label: "Customer",
+              value:
+                reportCloseCandidate.entry.customer ||
+                reportCloseCandidate.parent.customer ||
+                "-",
+            },
           ]}
           confirmButtonText="Close Report"
           onConfirm={async () => {
             try {
-              replaceGroupJobs(reportCloseCandidate.groupId, await setQcReportClosedByGroupId(reportCloseCandidate.groupId, true));
-              showToast("Inspection report closed and removed from QC queue.", "success");
+              replaceGroupJobs(
+                reportCloseCandidate.groupId,
+                await setQcReportClosedByGroupId(
+                  reportCloseCandidate.groupId,
+                  true,
+                ),
+              );
+              showToast(
+                "Inspection report closed and removed from QC queue.",
+                "success",
+              );
             } catch {
               showToast("Failed to close QC report.", "error");
             } finally {
@@ -303,12 +438,22 @@ const QualityControlPage = ({ forceTab, hideLayout, isBilled }: { forceTab?: "QU
         <QcReportTemplateModal
           isOpen={true}
           onClose={() => setTemplateSelection(null)}
-          actionLabel={templateSelection.action === "OPEN" ? "Open" : "Download"}
-          onSelectTemplate={(variant) => void handleTemplateSelection(variant)}
+          actionLabel={
+            templateSelection.action === "OPEN" ? "Open" : "Download"
+          }
+          onSelectTemplate={(variant, count) =>
+            void handleTemplateSelection(variant, count)
+          }
+          maxQuantity={templateSelection.row.quantityCount || 1}
         />
       )}
 
-      <Toast message={toast.message} visible={toast.visible} variant={toast.variant} onClose={() => setToast((prev) => ({ ...prev, visible: false }))} />
+      <Toast
+        message={toast.message}
+        visible={toast.visible}
+        variant={toast.variant}
+        onClose={() => setToast((prev) => ({ ...prev, visible: false }))}
+      />
     </div>
   );
 };

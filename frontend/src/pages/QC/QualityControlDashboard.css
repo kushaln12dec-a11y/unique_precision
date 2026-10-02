@@ -45,12 +45,12 @@
 
 .jobs-table-wrapper .data-table th.qc-job-ref-col,
 .jobs-table-wrapper .data-table td.qc-job-ref-cell {
-  min-width: 132px;
+  min-width: 145px;
 }
 
 .jobs-table-wrapper .data-table th.qc-qty-col,
 .jobs-table-wrapper .data-table td.qc-qty-cell {
-  min-width: 170px;
+  min-width: 100px;
 }
 
 .jobs-table-wrapper .data-table td.qc-job-ref-cell,
@@ -58,6 +58,7 @@
   white-space: normal;
   word-break: normal;
   text-align: center;
+  overflow: visible;
 }
 
 .qc-quantity-cell {
@@ -88,6 +89,7 @@
   align-items: center;
   gap: 0.2rem;
   min-width: 0;
+  overflow: visible;
 }
 
 .qc-customer-name,
@@ -123,14 +125,16 @@
 
 .jobs-table-wrapper .data-table th.qc-decision-col,
 .jobs-table-wrapper .data-table td.qc-decision-cell {
-  min-width: 150px;
+  min-width: 160px;
   text-align: center;
+  overflow: visible;
 }
 
 .jobs-table-wrapper .data-table th.qc-inspection-col,
 .jobs-table-wrapper .data-table td.qc-inspection-cell {
-  min-width: 240px;
+  min-width: 140px;
   text-align: center;
+  overflow: visible;
 }
 
 .qc-decision-actions {
@@ -301,6 +305,7 @@
 }
 
 @media only screen and (min-width: 768px) and (max-width: 1024px) {
+
   .qc-approve-btn,
   .qc-reject-btn,
   .qc-inspection-report-btn,
@@ -314,6 +319,7 @@
     min-width: 220px;
   }
 }
+
 /* QC tab styles */
 .dashboard-tabs {
   display: inline-flex;

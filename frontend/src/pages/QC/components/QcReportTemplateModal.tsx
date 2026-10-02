@@ -1,3 +1,7 @@
+import { useState } from "react";
+import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
+import ViewModuleOutlinedIcon from "@mui/icons-material/ViewModuleOutlined";
+import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import Modal from "../../../components/Modal";
 
 type TemplateVariant = "DEFAULT" | "TOOLING_SPARE";
@@ -6,56 +10,103 @@ type QcReportTemplateModalProps = {
   isOpen: boolean;
   onClose: () => void;
   actionLabel: "Open" | "Download";
-  onSelectTemplate: (variant: TemplateVariant) => void;
+  onSelectTemplate: (variant: TemplateVariant, count: number) => void;
+  maxQuantity: number;
 };
-
-const templateOptions: Array<{
-  variant: TemplateVariant;
-  title: string;
-  description: string;
-}> = [
-    {
-      variant: "DEFAULT",
-      title: "Single Quantity Layout",
-      description: "Create one report sheet for one quantity only.",
-    },
-    {
-      variant: "TOOLING_SPARE",
-      title: "Consolidated Layout",
-      description: "Create one sheet for multiple quantities. The PDF uses Quantity 1 and Quantity 2 labels for clarity.",
-    },
-  ];
 
 const QcReportTemplateModal = ({
   isOpen,
   onClose,
   actionLabel,
   onSelectTemplate,
-}: QcReportTemplateModalProps) => (
-  <Modal isOpen={isOpen} onClose={onClose} title="Choose Inspection Report Layout" size="small">
-    <div className="qc-template-modal-grid">
-      {templateOptions.map((option) => {
-        const isDisabled = option.variant === "TOOLING_SPARE";
-        return (
+  maxQuantity,
+}: QcReportTemplateModalProps) => {
+  const [singleCount, setSingleCount] = useState(1);
+  const [consolidatedCount, setConsolidatedCount] = useState(Math.max(1, maxQuantity));
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} title="Choose Inspection Report Layout" size="small">
+      <div className="qc-template-modal-grid">
+
+        {/* Single Quantity Layout Card */}
+        <div className="qc-template-card qc-template-card--single">
+          <div className="qc-template-card-header">
+            <div className="qc-template-card-icon">
+              <DescriptionOutlinedIcon fontSize="inherit" />
+            </div>
+            <div>
+              <div className="qc-template-card-title">Single Quantity Layout</div>
+              <div className="qc-template-card-desc">
+                Generate an individual inspection report for each quantity. Best suited when detailed per-unit analysis is required.
+              </div>
+            </div>
+          </div>
+          <div className="qc-template-card-body">
+            <span className="qc-template-qty-label">
+              How many quantities to inspect?
+            </span>
+            <select
+              className="qc-template-qty-input"
+              value={singleCount}
+              onChange={(e) => setSingleCount(Number(e.target.value) || 1)}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {Array.from({ length: maxQuantity }, (_, i) => i + 1).map((qty) => (
+                <option key={qty} value={qty}>{qty}</option>
+              ))}
+            </select>
+          </div>
           <button
             type="button"
-            key={option.variant}
-            className={`qc-template-option${isDisabled ? " qc-template-option--disabled" : ""}`}
-            onClick={() => !isDisabled && onSelectTemplate(option.variant)}
-            disabled={isDisabled}
-            title={isDisabled ? "Consolidated Layout is currently unavailable" : undefined}
+            className="qc-template-card-action"
+            onClick={() => onSelectTemplate("DEFAULT", singleCount)}
           >
-            <div className="qc-template-option-header">
-              <strong>{option.title}</strong>
-              {isDisabled && <span className="qc-template-coming-soon">Coming Soon</span>}
-            </div>
-            <span>{option.description}</span>
-            {!isDisabled && <em>{actionLabel}</em>}
+            {actionLabel} Report <ArrowForwardIcon />
           </button>
-        );
-      })}
-    </div>
-  </Modal>
-);
+        </div>
+
+        <div className="qc-template-divider"><span>OR</span></div>
+
+        {/* Consolidated Layout Card */}
+        <div className="qc-template-card qc-template-card--consolidated">
+          <div className="qc-template-card-header">
+            <div className="qc-template-card-icon">
+              <ViewModuleOutlinedIcon fontSize="inherit" />
+            </div>
+            <div>
+              <div className="qc-template-card-title">Consolidated Layout</div>
+              <div className="qc-template-card-desc">
+                Combine multiple quantities into a single report sheet with separate Sample columns for each. Ideal for batch inspection.
+              </div>
+            </div>
+          </div>
+          <div className="qc-template-card-body">
+            <span className="qc-template-qty-label">
+              How many quantities in one report?
+            </span>
+            <select
+              className="qc-template-qty-input"
+              value={consolidatedCount}
+              onChange={(e) => setConsolidatedCount(Number(e.target.value) || 1)}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {Array.from({ length: maxQuantity }, (_, i) => i + 1).map((qty) => (
+                <option key={qty} value={qty}>{qty}</option>
+              ))}
+            </select>
+          </div>
+          <button
+            type="button"
+            className="qc-template-card-action"
+            onClick={() => onSelectTemplate("TOOLING_SPARE", consolidatedCount)}
+          >
+            {actionLabel} Report <ArrowForwardIcon />
+          </button>
+        </div>
+
+      </div>
+    </Modal>
+  );
+};
 
 export default QcReportTemplateModal;

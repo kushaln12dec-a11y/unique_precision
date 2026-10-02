@@ -6,7 +6,6 @@ import type { QcRow } from "./qcUtils";
 type QcColumnArgs = {
   updateDecision: (groupId: string, decision: "APPROVED" | "REJECTED", label: string) => Promise<void>;
   onOpenReport: (row: QcRow) => void;
-  onDownloadReport: (row: QcRow) => void;
   openClosePrompt: (row: QcRow) => void;
   showLogged?: boolean;
 };
@@ -22,7 +21,7 @@ const getCaptureData = (row: QcRow): any => {
   return capture || {};
 };
 
-const getCapturedOperatorName = (row: QcRow) => {
+const getCapturedOperatorNamesList = (row: QcRow) => {
   const capture = getCaptureData(row);
   let nameStr = "";
   if (capture.opsName) {
@@ -31,13 +30,26 @@ const getCapturedOperatorName = (row: QcRow) => {
   if (!nameStr) {
     nameStr = String(row.entry.assignedTo || row.parent.assignedTo || "-");
   }
-  return nameStr.split(",").map(n => n.trim().toUpperCase()).filter(n => n && n !== "UNASSIGN" && n !== "UNASSIGNED").join(", ") || "-";
+  const names = nameStr.split(",").map(n => n.trim().toUpperCase()).filter(n => n && n !== "UNASSIGN" && n !== "UNASSIGNED");
+  return names.length > 0 ? names : ["-"];
+};
+
+const DropdownListCell = ({ items, title }: { items: string[], title?: string }) => {
+  if (items.length <= 1) {
+    return <span title={title}>{items[0] || "-"}</span>;
+  }
+  return (
+    <select title={title} className="qc-dropdown-cell" style={{ padding: "0.2rem", borderRadius: "4px", border: "1px solid #ccc", background: "transparent", cursor: "pointer", maxWidth: "120px" }} onClick={(e) => e.stopPropagation()}>
+      {items.map((item, idx) => (
+        <option key={idx} value={item}>{item}</option>
+      ))}
+    </select>
+  );
 };
 
 export const createQcColumns = ({
   updateDecision,
   onOpenReport,
-  onDownloadReport,
   openClosePrompt,
   showLogged = false,
 }: QcColumnArgs) => [
@@ -53,15 +65,18 @@ export const createQcColumns = ({
       render: (row: QcRow) => {
         const from = row.quantityFrom;
         const to = row.quantityTo;
-        const label = from === to ? `#${from}` : `#${from}-#${to}`;
+        const list = [];
+        for (let i = from; i <= to; i++) {
+          list.push(`#${i}`);
+        }
         return (
           <div className="qc-quantity-cell">
-            <span className="qc-quantity-title" title={row.reportScopeLabel}>{label}</span>
+            <DropdownListCell items={list} title={row.reportScopeLabel} />
           </div>
         );
       },
     },
-    { key: "operator", label: "Operator", render: (row: QcRow) => getCapturedOperatorName(row) },
+    { key: "operator", label: "Operator", render: (row: QcRow) => <DropdownListCell items={getCapturedOperatorNamesList(row)} /> },
 
     {
       key: "decision",
@@ -94,9 +109,6 @@ export const createQcColumns = ({
       render: (row: QcRow) => (
         <div className="qc-inspection-report-actions">
           <button type="button" className="qc-inspection-report-btn" onClick={() => onOpenReport(row)}>Open</button>
-          <button type="button" className="qc-inspection-report-download-btn" onClick={() => onDownloadReport(row)}>
-            Download
-          </button>
           <button type="button" className="qc-inspection-report-close-btn" aria-label="Close inspection report item" title="Close and remove from QC queue" onClick={() => openClosePrompt(row)}>
             <CloseIcon sx={{ fontSize: "0.9rem" }} />
           </button>

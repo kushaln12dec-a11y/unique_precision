@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import OperatorTaskTimerConfirm from "./OperatorTaskTimerConfirm";
 import OperatorTaskTimerPanel from "./OperatorTaskTimerPanel";
 import { formatTaskTimer, getOperatorTaskTimerStorageKey, readPersistedTimerState } from "../utils/operatorTaskTimerUtils";
+import { getIdleTimeConfigs } from "../../../services/idleTimeConfigApi";
 
 type TaskSwitchPayload = {
   idleTime: string;
@@ -30,6 +31,13 @@ export const OperatorTaskTimer: React.FC<OperatorTaskTimerProps> = ({ onSaveTask
   const [idleReason, setIdleReason] = useState<string>(persistedState.reason);
   const [otherIdleReason, setOtherIdleReason] = useState<string>(persistedState.otherReason);
   const [remark, setRemark] = useState<string>(persistedState.remark);
+  const [idleOptions, setIdleOptions] = useState<string[]>([]);
+
+  useEffect(() => {
+    getIdleTimeConfigs()
+      .then((configs) => setIdleOptions(configs.map((c) => c.idleTimeType)))
+      .catch(() => setIdleOptions(["Power Break", "Machine Breakdown", "Vertical Dial", "Cleaning", "Consumables Change"]));
+  }, []);
 
   useEffect(() => {
     onRunningChange?.(timerRunning);
@@ -45,7 +53,7 @@ export const OperatorTaskTimer: React.FC<OperatorTaskTimerProps> = ({ onSaveTask
         remark,
         panelOpen: timerPanelOpen,
       }));
-    } catch {}
+    } catch { }
   }, [storageKey, timerRunning, timerStartedAt, idleReason, otherIdleReason, remark, timerPanelOpen]);
 
   useEffect(() => {
@@ -154,6 +162,7 @@ export const OperatorTaskTimer: React.FC<OperatorTaskTimerProps> = ({ onSaveTask
           otherIdleReason={otherIdleReason}
           remark={remark}
           savingTimer={savingTimer}
+          idleOptions={idleOptions}
           onIdleReasonChange={setIdleReason}
           onOtherReasonChange={setOtherIdleReason}
           onRemarkChange={setRemark}

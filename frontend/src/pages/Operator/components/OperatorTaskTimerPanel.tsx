@@ -4,6 +4,7 @@ type OperatorTaskTimerPanelProps = {
   otherIdleReason: string;
   remark: string;
   savingTimer: boolean;
+  idleOptions: string[];
   onIdleReasonChange: (value: string) => void;
   onOtherReasonChange: (value: string) => void;
   onRemarkChange: (value: string) => void;
@@ -16,6 +17,7 @@ const OperatorTaskTimerPanel = ({
   otherIdleReason,
   remark,
   savingTimer,
+  idleOptions,
   onIdleReasonChange,
   onOtherReasonChange,
   onRemarkChange,
@@ -30,13 +32,12 @@ const OperatorTaskTimerPanel = ({
       <label htmlFor="operator-idle-reason">Idle Time</label>
       <select id="operator-idle-reason" value={idleReason} onChange={(e) => onIdleReasonChange(e.target.value)} className="filter-select">
         <option value="">Select</option>
-        <option value="Power Break">Power Break</option>
-        <option value="Shift Over">Shift Over</option>
-        <option value="Machine Breakdown">Machine Breakdown</option>
-        <option value="Vertical Dial">Vertical Dial</option>
-        <option value="Cleaning">Cleaning</option>
-        <option value="Consumables Change">Consumables Change</option>
-        <option value="Others">Others</option>
+        {idleOptions.map((opt) => (
+          <option key={opt} value={opt}>
+            {opt}
+          </option>
+        ))}
+        {!idleOptions.includes("Others") && <option value="Others">Others</option>}
       </select>
     </div>
     {idleReason === "Others" && (

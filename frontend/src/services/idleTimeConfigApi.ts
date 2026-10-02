@@ -4,7 +4,7 @@ import { syncServerTimeOffset } from "./serverTime";
 
 export type IdleTimeConfig = {
   _id?: string;
-  idleTimeType: "Power Break" | "Machine Breakdown" | "Vertical Dial" | "Cleaning" | "Consumables Change";
+  idleTimeType: string;
   durationMinutes: number;
 };
 
