@@ -25,20 +25,34 @@ export const loadEnv = (): void => {
     return;
   }
 
-  const baseEnvPath = path.resolve(process.cwd(), ".env");
-  if (fs.existsSync(baseEnvPath)) {
-    dotenv.config({ path: baseEnvPath });
+  const basePathsToTry = [
+    path.resolve(process.cwd(), ".env"),
+    path.resolve(process.cwd(), "..", ".env"),
+    path.resolve(process.cwd(), "..", "..", ".env"),
+  ];
+
+  for (const envPath of basePathsToTry) {
+    if (fs.existsSync(envPath)) {
+      dotenv.config({ path: envPath });
+      break;
+    }
   }
 
   const appEnv = resolveAppEnv();
 
   if (appEnv !== "development") {
-    const overlayPath = path.resolve(process.cwd(), `.env.${appEnv}`);
-    if (fs.existsSync(overlayPath)) {
-      dotenv.config({
-        path: overlayPath,
-        override: true,
-      });
+    const overlayPathsToTry = [
+      path.resolve(process.cwd(), `.env.${appEnv}`),
+      path.resolve(process.cwd(), "..", `.env.${appEnv}`),
+    ];
+    for (const overlayPath of overlayPathsToTry) {
+      if (fs.existsSync(overlayPath)) {
+        dotenv.config({
+          path: overlayPath,
+          override: true,
+        });
+        break;
+      }
     }
   }
 

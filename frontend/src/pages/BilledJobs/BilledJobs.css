@@ -1,7 +1,12 @@
 .billed-jobs-content {
   background-color: var(--color-page-bg);
   min-height: 100vh;
+  height: 100vh;
   padding: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-sizing: border-box;
 }
 
 .billed-jobs-panel {
@@ -11,6 +16,11 @@
   border: 1px solid var(--color-border);
   padding: 1.5rem;
   margin-top: 1.5rem;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 .billed-jobs-tabs {
@@ -40,10 +50,14 @@
 
 .billed-jobs-view {
   width: 100%;
-  min-height: 60vh;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
-.billed-jobs-view > * {
+.billed-jobs-view>* {
   width: 100%;
 }
 
@@ -124,6 +138,7 @@
   0% {
     transform: translateX(100%);
   }
+
   100% {
     transform: translateX(-100%);
   }
@@ -178,7 +193,7 @@
   align-items: flex-end !important;
 }
 
-.billed-jobs-view .billed-programmer-wrapper .programmer-panel .panel-header-actions > * {
+.billed-jobs-view .billed-programmer-wrapper .programmer-panel .panel-header-actions>* {
   flex: 0 0 auto !important;
 }
 

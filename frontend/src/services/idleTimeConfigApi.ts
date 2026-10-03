@@ -6,6 +6,7 @@ export type IdleTimeConfig = {
   _id?: string;
   idleTimeType: string;
   durationMinutes: number;
+  requiresReason?: boolean;
 };
 
 const getAuthHeaders = (): Record<string, string> => {
@@ -61,12 +62,13 @@ export const getIdleTimeConfig = async (type: string): Promise<IdleTimeConfig> =
 // Create or update idle time configuration
 export const upsertIdleTimeConfig = async (
   idleTimeType: string,
-  durationMinutes: number
+  durationMinutes: number,
+  requiresReason?: boolean
 ): Promise<IdleTimeConfig> => {
   const res = await fetchWithServerTime("/api/idle-time-config", {
     method: "POST",
     headers: getAuthHeaders(),
-    body: JSON.stringify({ idleTimeType, durationMinutes }),
+    body: JSON.stringify({ idleTimeType, durationMinutes, requiresReason }),
   });
 
   if (!res.ok) {

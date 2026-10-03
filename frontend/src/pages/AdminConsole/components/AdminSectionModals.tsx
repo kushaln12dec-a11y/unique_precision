@@ -424,13 +424,52 @@ const AdminSectionModals = (props: Props) => {
 
       <Modal isOpen={activeSection === "idleTime"} onClose={() => setActiveSection(null)} title="Idle Time Options" className="admin-section-modal" size="small">
         <label>Add Idle Time Reason</label>
-        <div className="admin-option-input-row">
-          <input type="text" value={idleTimeInput} disabled={readOnly} placeholder="e.g. Tooling Break" onChange={(e) => setIdleTimeInput(e.target.value)} />
+        <p className="admin-help admin-help-compact">
+          Check <strong>"Requires Reason"</strong> to make an option (e.g. Improper Job Placement) prompt the operator for a mandatory explanation.
+        </p>
+        <div className="admin-option-input-row admin-idle-input-row">
+          <input type="text" value={idleTimeInput} disabled={readOnly} placeholder="e.g. Improper Job Placement" onChange={(e) => setIdleTimeInput(e.target.value)} style={{ flex: 1 }} />
           <button type="button" className="admin-add-btn" disabled={readOnly} onClick={() => addOption(idleTimeInput, setIdleTimeInput, setIdleTimeOptions, "Enter a reason first")}>
-            Save
+            Add
           </button>
         </div>
-        <OptionList items={idleTimeOptions} emptyText="No idle time options added yet." readOnly={readOnly} removeItem={(index) => removeOption(index, setIdleTimeOptions)} />
+        <div className="admin-option-list">
+          {idleTimeOptions.length === 0 ? (
+            <p className="admin-empty-text">No idle time options added yet.</p>
+          ) : (
+            idleTimeOptions.map((item, index) => {
+              const config = (props as any).idleTimeConfigs?.find?.((c: any) => c.idleTimeType === item);
+              const requiresReason = config?.requiresReason ?? false;
+              return (
+                <div className="admin-option-row admin-idle-option-row" key={`${item}-${index}`}>
+                  <div className="admin-idle-option-info">
+                    <span>{item}</span>
+                    <label className="admin-idle-requires-label" title="When checked, the operator must enter a written reason before saving this idle entry">
+                      <input
+                        type="checkbox"
+                        checked={requiresReason}
+                        disabled={readOnly}
+                        onChange={async () => {
+                          try {
+                            const { upsertIdleTimeConfig } = await import("../../../services/idleTimeConfigApi");
+                            await upsertIdleTimeConfig(item, config?.durationMinutes ?? 0, !requiresReason);
+                            setToast({ message: `Updated "${item}" — requires reason: ${!requiresReason}`, variant: "success", visible: true });
+                          } catch {
+                            setToast({ message: "Failed to update option", variant: "error", visible: true });
+                          }
+                        }}
+                      />
+                      <span>Requires Reason</span>
+                    </label>
+                  </div>
+                  <button type="button" className="admin-remove-btn" disabled={readOnly} onClick={() => removeOption(index, setIdleTimeOptions)}>
+                    Remove
+                  </button>
+                </div>
+              );
+            })
+          )}
+        </div>
         <div className="admin-modal-actions admin-modal-actions-end">
           <SaveButton saving={saving} readOnly={readOnly} onSave={handleSaveAndClose} label="Save Idle Time Options" />
         </div>

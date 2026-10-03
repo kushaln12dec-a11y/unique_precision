@@ -1,0 +1,21 @@
+# Tells Railway's Nixpacks builder to install Chromium (with all its required
+# shared libraries) alongside Node, so Puppeteer has a real browser to launch
+# at runtime. Without this, Puppeteer either has no browser at all, or has a
+# downloaded Chromium binary that fails to launch because libnss3, libgbm1,
+# libasound2, etc. aren't present in a stock Node-only Nixpacks image.
+#
+# Paired with PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true (set in Railway's
+# environment variables) so `npm install` doesn't also try to download its
+# own ~170MB Chromium build — we use this nix-provided one instead, which is
+# guaranteed to match the libraries available in this exact image.
+
+[phases.setup]
+nixPkgs = ["nodejs_22", "chromium"]
+
+[start]
+# Resolves chromium's actual path on PATH (nix installs it under a dynamically
+# hashed /nix/store/... path, so it can't be hardcoded) and exports it before
+# starting the server. The backend's own PATH-lookup fallback (added in
+# inspection-reports-routes.ts) also does this, so this is a belt-and-braces
+# guarantee it's set even before the app code runs.
+cmd = "export PUPPETEER_EXECUTABLE_PATH=$(which chromium) && cd backend && npm start"

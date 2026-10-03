@@ -11,6 +11,7 @@ export const getDefaultTimerState = () => ({
   startedAt: null as number | null,
   reason: "",
   otherReason: "",
+  improperJobReason: "",
   remark: "",
   panelOpen: false,
 });
@@ -24,6 +25,7 @@ export const readPersistedTimerState = (storageKey: string) => {
       startedAt?: number | null;
       reason?: string;
       otherReason?: string;
+      improperJobReason?: string;
       remark?: string;
       panelOpen?: boolean;
     };
@@ -34,6 +36,7 @@ export const readPersistedTimerState = (storageKey: string) => {
       startedAt,
       reason: String(parsed.reason || ""),
       otherReason: String(parsed.otherReason || ""),
+      improperJobReason: String(parsed.improperJobReason || ""),
       remark: String(parsed.remark || ""),
       panelOpen: Boolean(parsed.panelOpen || running),
     };

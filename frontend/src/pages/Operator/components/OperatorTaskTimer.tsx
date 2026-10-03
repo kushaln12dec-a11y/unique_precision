@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import OperatorTaskTimerConfirm from "./OperatorTaskTimerConfirm";
 import OperatorTaskTimerPanel from "./OperatorTaskTimerPanel";
 import { formatTaskTimer, getOperatorTaskTimerStorageKey, readPersistedTimerState } from "../utils/operatorTaskTimerUtils";
-import { getIdleTimeConfigs } from "../../../services/idleTimeConfigApi";
+import { getIdleTimeConfigs, type IdleTimeConfig } from "../../../services/idleTimeConfigApi";
 
 type TaskSwitchPayload = {
   idleTime: string;
@@ -18,6 +18,15 @@ type OperatorTaskTimerProps = {
   onRunningChange?: (running: boolean) => void;
 };
 
+const DEFAULT_IDLE_OPTIONS: IdleTimeConfig[] = [
+  { idleTimeType: "Power Break", durationMinutes: 0 },
+  { idleTimeType: "Shift Over", durationMinutes: 0 },
+  { idleTimeType: "Machine Breakdown", durationMinutes: 0 },
+  { idleTimeType: "Vertical Dial", durationMinutes: 0 },
+  { idleTimeType: "Cleaning", durationMinutes: 0 },
+  { idleTimeType: "Consumables Change", durationMinutes: 0 },
+];
+
 export const OperatorTaskTimer: React.FC<OperatorTaskTimerProps> = ({ onSaveTaskSwitch, onShowToast, onRunningChange }) => {
   const timerContainerRef = useRef<HTMLDivElement | null>(null);
   const storageKey = useMemo(() => getOperatorTaskTimerStorageKey(), []);
@@ -30,19 +39,16 @@ export const OperatorTaskTimer: React.FC<OperatorTaskTimerProps> = ({ onSaveTask
   const [confirmStartOpen, setConfirmStartOpen] = useState(false);
   const [idleReason, setIdleReason] = useState<string>(persistedState.reason);
   const [otherIdleReason, setOtherIdleReason] = useState<string>(persistedState.otherReason);
+  const [improperJobReason, setImproperJobReason] = useState<string>(persistedState.improperJobReason || "");
   const [remark, setRemark] = useState<string>(persistedState.remark);
-  const [idleOptions, setIdleOptions] = useState<string[]>([]);
+  const [idleOptions, setIdleOptions] = useState<IdleTimeConfig[]>([]);
 
   useEffect(() => {
     getIdleTimeConfigs()
       .then((configs) => {
-        if (configs.length > 0) {
-          setIdleOptions(configs.map((c) => c.idleTimeType));
-        } else {
-          setIdleOptions(["Power Break", "Shift Over", "Machine Breakdown", "Vertical Dial", "Cleaning", "Consumables Change"]);
-        }
+        setIdleOptions(configs.length > 0 ? configs : DEFAULT_IDLE_OPTIONS);
       })
-      .catch(() => setIdleOptions(["Power Break", "Shift Over", "Machine Breakdown", "Vertical Dial", "Cleaning", "Consumables Change"]));
+      .catch(() => setIdleOptions(DEFAULT_IDLE_OPTIONS));
   }, []);
 
   useEffect(() => {
@@ -56,11 +62,12 @@ export const OperatorTaskTimer: React.FC<OperatorTaskTimerProps> = ({ onSaveTask
         startedAt: timerStartedAt,
         reason: idleReason,
         otherReason: otherIdleReason,
+        improperJobReason,
         remark,
         panelOpen: timerPanelOpen,
       }));
     } catch { }
-  }, [storageKey, timerRunning, timerStartedAt, idleReason, otherIdleReason, remark, timerPanelOpen]);
+  }, [storageKey, timerRunning, timerStartedAt, idleReason, otherIdleReason, improperJobReason, remark, timerPanelOpen]);
 
   useEffect(() => {
     if (!timerRunning || !timerStartedAt) return;
@@ -76,6 +83,7 @@ export const OperatorTaskTimer: React.FC<OperatorTaskTimerProps> = ({ onSaveTask
       setTimerStartedAt(parsed.startedAt);
       setIdleReason(parsed.reason);
       setOtherIdleReason(parsed.otherReason);
+      setImproperJobReason(parsed.improperJobReason || "");
       setRemark(parsed.remark);
       setTimerPanelOpen(parsed.panelOpen);
       if (parsed.running && parsed.startedAt) {
@@ -106,12 +114,29 @@ export const OperatorTaskTimer: React.FC<OperatorTaskTimerProps> = ({ onSaveTask
   const handleSaveAndStopTimer = async () => {
     if (!timerRunning || !timerStartedAt) return onShowToast("Start timer first.", "error");
     if (!idleReason.trim()) return onShowToast("Please select idle reason.", "error");
-    if (idleReason === "Others" && !otherIdleReason.trim()) return onShowToast("Please enter other reason.", "error");
+
+    const selectedOption = idleOptions.find((o) => o.idleTimeType === idleReason);
+    if (selectedOption?.requiresReason && !improperJobReason.trim()) {
+      return onShowToast("Please enter the reason for this idle type.", "error");
+    }
+    if (idleReason === "Others" && !otherIdleReason.trim()) {
+      return onShowToast("Please enter other reason.", "error");
+    }
     if (!remark.trim()) return onShowToast("Remark is required.", "error");
 
     const endedAtMs = Date.now();
     const durationSeconds = Math.max(0, Math.floor((endedAtMs - timerStartedAt) / 1000));
-    const finalReason = idleReason === "Others" ? otherIdleReason.trim() : idleReason.trim();
+
+    // Build the final idle time label including the mandatory reason if required
+    let finalReason: string;
+    if (idleReason === "Others") {
+      finalReason = otherIdleReason.trim();
+    } else if (selectedOption?.requiresReason && improperJobReason.trim()) {
+      finalReason = `${idleReason.trim()} — ${improperJobReason.trim()}`;
+    } else {
+      finalReason = idleReason.trim();
+    }
+
     try {
       setSavingTimer(true);
       await onSaveTaskSwitch({
@@ -127,6 +152,7 @@ export const OperatorTaskTimer: React.FC<OperatorTaskTimerProps> = ({ onSaveTask
       setTimerPanelOpen(false);
       setIdleReason("");
       setOtherIdleReason("");
+      setImproperJobReason("");
       setRemark("");
       localStorage.removeItem(storageKey);
       onShowToast("Timer saved successfully.", "success");
@@ -166,11 +192,13 @@ export const OperatorTaskTimer: React.FC<OperatorTaskTimerProps> = ({ onSaveTask
           elapsedText={formatTaskTimer(elapsedSeconds)}
           idleReason={idleReason}
           otherIdleReason={otherIdleReason}
+          improperJobReason={improperJobReason}
           remark={remark}
           savingTimer={savingTimer}
           idleOptions={idleOptions}
           onIdleReasonChange={setIdleReason}
           onOtherReasonChange={setOtherIdleReason}
+          onImproperJobReasonChange={setImproperJobReason}
           onRemarkChange={setRemark}
           onSave={handleSaveAndStopTimer}
         />

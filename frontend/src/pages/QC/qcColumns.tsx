@@ -1,3 +1,4 @@
+import { useState } from "react";
 import CloseIcon from "@mui/icons-material/Close";
 import MarqueeCopyText from "../../components/MarqueeCopyText";
 import { formatJobRefDisplay } from "../../utils/jobFormatting";
@@ -12,7 +13,6 @@ type QcColumnArgs = {
 
 const getCaptureData = (row: QcRow): any => {
   const captures = Array.isArray(row.entry.operatorCaptures) ? row.entry.operatorCaptures : [];
-  // Find the operator capture that corresponds to the starting quantity of this QC item
   const capture = captures.find((c: any) => {
     const cFrom = Math.max(1, Number(c.fromQty || 1));
     const cTo = Math.max(cFrom, Number(c.toQty || cFrom));
@@ -34,16 +34,55 @@ const getCapturedOperatorNamesList = (row: QcRow) => {
   return names.length > 0 ? names : ["-"];
 };
 
-const DropdownListCell = ({ items, title }: { items: string[], title?: string }) => {
-  if (items.length <= 1) {
-    return <span title={title}>{items[0] || "-"}</span>;
+// Dropdown qty cell: simple viewing dropdown if > 1 item, clean badge if 1 item
+const QtyBadgeCell = ({ items, title }: { items: string[]; title?: string }) => {
+  const [selected, setSelected] = useState(items[0] || "");
+  if (items.length === 0) return <span className="qc-qty-empty">—</span>;
+  if (items.length === 1) {
+    return <span className="qc-qty-badge" title={title}>{items[0]}</span>;
   }
   return (
-    <select title={title} className="qc-dropdown-cell" style={{ padding: "0.2rem", borderRadius: "4px", border: "1px solid #ccc", background: "transparent", cursor: "pointer", maxWidth: "120px" }} onClick={(e) => e.stopPropagation()}>
-      {items.map((item, idx) => (
-        <option key={idx} value={item}>{item}</option>
-      ))}
-    </select>
+    <div className="qc-cell-dropdown-wrapper" onClick={(e) => e.stopPropagation()}>
+      <select
+        className="qc-cell-select qc-qty-select"
+        value={selected}
+        onChange={(e) => setSelected(e.target.value)}
+        title={title ?? items.join(", ")}
+      >
+        {items.map((item) => (
+          <option key={item} value={item}>
+            {item}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+};
+
+// Dropdown operator cell: simple viewing dropdown if > 1 name, clean single text if 1 name
+const OperatorChipCell = ({ names }: { names: string[] }) => {
+  const [selected, setSelected] = useState(names[0] || "-");
+  if (names.length === 0 || (names.length === 1 && names[0] === "-")) {
+    return <span className="qc-operator-empty">—</span>;
+  }
+  if (names.length === 1) {
+    return <span className="qc-operator-single">{names[0]}</span>;
+  }
+  return (
+    <div className="qc-cell-dropdown-wrapper" onClick={(e) => e.stopPropagation()}>
+      <select
+        className="qc-cell-select qc-operator-select"
+        value={selected}
+        onChange={(e) => setSelected(e.target.value)}
+        title={names.join(", ")}
+      >
+        {names.map((name) => (
+          <option key={name} value={name}>
+            {name}
+          </option>
+        ))}
+      </select>
+    </div>
   );
 };
 
@@ -55,7 +94,7 @@ export const createQcColumns = ({
 }: QcColumnArgs) => [
     { key: "customer", label: "Customer", render: (row: QcRow) => <div className="qc-customer-cell"><span className="qc-customer-name">{row.entry.customer || row.parent.customer || "-"}</span></div> },
     { key: "jobRef", label: "Job ref", headerClassName: "qc-job-ref-col", className: "qc-job-ref-cell", render: (row: QcRow) => <span className="qc-job-ref-value">{formatJobRefDisplay(String(row.entry.refNumber || row.parent.refNumber || "").trim())}</span> },
-    { key: "programRefFileName", label: <>Program Ref<br />File Name</>, render: (row: QcRow) => <MarqueeCopyText text={String((row.entry as any).programRefFile || (row.entry as any).programRefFileName || row.parent.refNumber || "-")} /> },
+    { key: "programRefFileName", label: <><span>Program Ref</span><br /><span>File Name</span></>, render: (row: QcRow) => <MarqueeCopyText text={String((row.entry as any).programRefFile || (row.entry as any).programRefFileName || row.parent.refNumber || "-")} /> },
     { key: "description", label: "Description", render: (row: QcRow) => <MarqueeCopyText text={row.entry.description || row.parent.description || "-"} /> },
     {
       key: "qty",
@@ -65,18 +104,22 @@ export const createQcColumns = ({
       render: (row: QcRow) => {
         const from = row.quantityFrom;
         const to = row.quantityTo;
-        const list = [];
+        const list: string[] = [];
         for (let i = from; i <= to; i++) {
           list.push(`#${i}`);
         }
         return (
           <div className="qc-quantity-cell">
-            <DropdownListCell items={list} title={row.reportScopeLabel} />
+            <QtyBadgeCell items={list} title={row.reportScopeLabel} />
           </div>
         );
       },
     },
-    { key: "operator", label: "Operator", render: (row: QcRow) => <DropdownListCell items={getCapturedOperatorNamesList(row)} /> },
+    {
+      key: "operator",
+      label: "Operator",
+      render: (row: QcRow) => <OperatorChipCell names={getCapturedOperatorNamesList(row)} />,
+    },
 
     {
       key: "decision",
