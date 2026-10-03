@@ -4,6 +4,12 @@ import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 
 import NotificationsActiveRoundedIcon from "@mui/icons-material/NotificationsActiveRounded";
 import RadioButtonCheckedRoundedIcon from "@mui/icons-material/RadioButtonCheckedRounded";
+import CheckCircleRoundedIcon from "@mui/icons-material/CheckCircleRounded";
+import WarningRoundedIcon from "@mui/icons-material/WarningRounded";
+import ErrorOutlineRoundedIcon from "@mui/icons-material/ErrorOutlineRounded";
+import InfoRoundedIcon from "@mui/icons-material/InfoRounded";
+import ArrowForwardRoundedIcon from "@mui/icons-material/ArrowForwardRounded";
+import NotificationsOffRoundedIcon from "@mui/icons-material/NotificationsOffRounded";
 import Modal from "./Modal";
 import ChangePasswordModal from "./ChangePasswordModal";
 import { getUserDesignationFromToken, getUserDisplayNameFromToken, getUserEmpIdFromToken } from "../utils/auth";
@@ -27,6 +33,7 @@ const Header = ({ title, onNavigate, breadcrumbsOverride }: HeaderProps) => {
   const designation = getUserDesignationFromToken();
   const [showNotificationsModal, setShowNotificationsModal] = useState(false);
   const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
+  const [notificationFilter, setNotificationFilter] = useState<"ALL" | "WARNING" | "DANGER" | "INFO">("ALL");
 
   const breadcrumbs = useMemo(() => {
     return resolveHeaderBreadcrumbs({
@@ -50,6 +57,31 @@ const Header = ({ title, onNavigate, breadcrumbsOverride }: HeaderProps) => {
     currentUserName: displayName || "",
     isActive: true,
   });
+
+  const filteredNotifications = useMemo(() => {
+    if (notificationFilter === "ALL") return notifications;
+    if (notificationFilter === "WARNING") return notifications.filter((n) => n.severity === "warning");
+    if (notificationFilter === "DANGER") return notifications.filter((n) => n.severity === "danger");
+    if (notificationFilter === "INFO") return notifications.filter((n) => n.severity === "info");
+    return notifications;
+  }, [notifications, notificationFilter]);
+
+  const warningCount = useMemo(() => notifications.filter((n) => n.severity === "warning").length, [notifications]);
+  const dangerCount = useMemo(() => notifications.filter((n) => n.severity === "danger").length, [notifications]);
+  const infoCount = useMemo(() => notifications.filter((n) => n.severity === "info").length, [notifications]);
+
+  const getSeverityIcon = (severity: string) => {
+    switch (severity) {
+      case "danger":
+        return <ErrorOutlineRoundedIcon className="notification-type-icon danger" />;
+      case "warning":
+        return <WarningRoundedIcon className="notification-type-icon warning" />;
+      case "info":
+        return <InfoRoundedIcon className="notification-type-icon info" />;
+      default:
+        return <CheckCircleRoundedIcon className="notification-type-icon success" />;
+    }
+  };
 
   return (
     <>
@@ -124,73 +156,126 @@ const Header = ({ title, onNavigate, breadcrumbsOverride }: HeaderProps) => {
       <Modal
         isOpen={showNotificationsModal}
         onClose={() => setShowNotificationsModal(false)}
-        title="Notifications"
+        title="Notifications & Alerts"
         size="large"
         className="header-notification-modal"
       >
-        <div className="header-notification-list">
-          {notifications.length === 0 ? (
-            <div className="header-notification-empty">
-              <strong>No notifications</strong>
-              <span>Assignment updates and completion alerts will appear here across the app.</span>
-            </div>
-          ) : (
-            notifications.map((notification) => (
-              <article
-                key={notification.id}
-                className={`header-notification-card ${notification.severity}`.trim()}
-                onClick={() => {
-                  if (!notification.navigatePath) return;
-                  setShowNotificationsModal(false);
-                  navigate(notification.navigatePath);
-                }}
-                onKeyDown={(event) => {
-                  if ((event.key === "Enter" || event.key === " ") && notification.navigatePath) {
-                    event.preventDefault();
+        <div className="header-notification-container">
+          {/* Header Bar with Filter Badges */}
+          <div className="header-notification-filter-bar">
+            <button
+              type="button"
+              className={`header-notification-filter-btn ${notificationFilter === "ALL" ? "active" : ""}`}
+              onClick={() => setNotificationFilter("ALL")}
+            >
+              All <span className="filter-count">{notifications.length}</span>
+            </button>
+            {warningCount > 0 && (
+              <button
+                type="button"
+                className={`header-notification-filter-btn warning ${notificationFilter === "WARNING" ? "active" : ""}`}
+                onClick={() => setNotificationFilter("WARNING")}
+              >
+                <WarningRoundedIcon style={{ fontSize: "0.85rem" }} /> Warnings <span className="filter-count">{warningCount}</span>
+              </button>
+            )}
+            {dangerCount > 0 && (
+              <button
+                type="button"
+                className={`header-notification-filter-btn danger ${notificationFilter === "DANGER" ? "active" : ""}`}
+                onClick={() => setNotificationFilter("DANGER")}
+              >
+                <ErrorOutlineRoundedIcon style={{ fontSize: "0.85rem" }} /> Critical <span className="filter-count">{dangerCount}</span>
+              </button>
+            )}
+            {infoCount > 0 && (
+              <button
+                type="button"
+                className={`header-notification-filter-btn info ${notificationFilter === "INFO" ? "active" : ""}`}
+                onClick={() => setNotificationFilter("INFO")}
+              >
+                <InfoRoundedIcon style={{ fontSize: "0.85rem" }} /> Info <span className="filter-count">{infoCount}</span>
+              </button>
+            )}
+          </div>
+
+          <div className="header-notification-list">
+            {filteredNotifications.length === 0 ? (
+              <div className="header-notification-empty">
+                <div className="header-notification-empty-icon">
+                  <NotificationsOffRoundedIcon fontSize="large" />
+                </div>
+                <strong>No {notificationFilter !== "ALL" ? notificationFilter.toLowerCase() : ""} notifications</strong>
+                <span>Assignment updates, operator activity alerts, and completion notifications will appear here.</span>
+              </div>
+            ) : (
+              filteredNotifications.map((notification) => (
+                <article
+                  key={notification.id}
+                  className={`header-notification-card ${notification.severity}`.trim()}
+                  onClick={() => {
+                    if (!notification.navigatePath) return;
                     setShowNotificationsModal(false);
                     navigate(notification.navigatePath);
-                  }
-                }}
-                role={notification.navigatePath ? "button" : undefined}
-                tabIndex={notification.navigatePath ? 0 : -1}
-              >
-                <div className="header-notification-card-header">
-                  <div className="header-notification-card-title">
-                    <strong>{notification.title}</strong>
-                    <span>{notification.subtitle}</span>
-                  </div>
-                  <span className={`header-notification-pill ${notification.severity}`.trim()}>
-                    {notification.statusLabel}
-                  </span>
-                </div>
-                <div className="header-notification-card-grid">
-                  {notification.fields.map((field) => (
-                    <div
-                      key={`${notification.id}:${field.label}`}
-                      className={`header-notification-meta ${field.wide ? "header-notification-meta-wide" : ""}`.trim()}
-                    >
-                      <span>{field.label}</span>
-                      <strong>{field.value}</strong>
-                    </div>
-                  ))}
-                </div>
-                <div className="header-notification-actions">
-                  <button
-                    type="button"
-                    className="header-notification-open-btn"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      if (!notification.navigatePath) return;
+                  }}
+                  onKeyDown={(event) => {
+                    if ((event.key === "Enter" || event.key === " ") && notification.navigatePath) {
+                      event.preventDefault();
                       setShowNotificationsModal(false);
                       navigate(notification.navigatePath);
-                    }}
-                  >
-                    {notification.actionLabel}
-                  </button>
-                </div>
-              </article>
-            ))
-          )}
+                    }
+                  }}
+                  role={notification.navigatePath ? "button" : undefined}
+                  tabIndex={notification.navigatePath ? 0 : -1}
+                >
+                  <div className="header-notification-card-header">
+                    <div className="header-notification-title-wrap">
+                      <div className="header-notification-icon-badge">
+                        {getSeverityIcon(notification.severity)}
+                      </div>
+                      <div className="header-notification-card-title">
+                        <strong>{notification.title}</strong>
+                        {notification.subtitle && <span>{notification.subtitle}</span>}
+                      </div>
+                    </div>
+                    <span className={`header-notification-pill ${notification.severity}`.trim()}>
+                      {notification.statusLabel}
+                    </span>
+                  </div>
+
+                  <div className="header-notification-card-grid">
+                    {notification.fields.map((field) => (
+                      <div
+                        key={`${notification.id}:${field.label}`}
+                        className={`header-notification-meta ${field.wide ? "header-notification-meta-wide" : ""}`.trim()}
+                      >
+                        <span className="meta-label">{field.label}</span>
+                        <strong className="meta-value">{field.value}</strong>
+                      </div>
+                    ))}
+                  </div>
+
+                  {notification.navigatePath && (
+                    <div className="header-notification-actions">
+                      <button
+                        type="button"
+                        className="header-notification-open-btn"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          if (!notification.navigatePath) return;
+                          setShowNotificationsModal(false);
+                          navigate(notification.navigatePath);
+                        }}
+                      >
+                        {notification.actionLabel}
+                        <ArrowForwardRoundedIcon style={{ fontSize: "0.85rem", marginLeft: "0.25rem" }} />
+                      </button>
+                    </div>
+                  )}
+                </article>
+              ))
+            )}
+          </div>
         </div>
       </Modal>
 

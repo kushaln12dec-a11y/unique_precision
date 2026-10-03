@@ -27,8 +27,30 @@ const InspectionReportPage = () => {
 
   const [loading, setLoading] = useState(false);
   const [generating, setGenerating] = useState(false);
-  const [rows, setRows] = useState<InspectionReportRowPayload[]>([createEmptyRow()]);
   const [maxJobQuantity, setMaxJobQuantity] = useState(1);
+
+  // Multi-quantity selection state & isolated rows map per quantity
+  const [selectedQuantities, setSelectedQuantities] = useState<number[]>([1]);
+  const [activeQuantityTab, setActiveQuantityTab] = useState<number>(1);
+  const [quantityRowsMap, setQuantityRowsMap] = useState<Record<number, InspectionReportRowPayload[]>>({
+    1: [createEmptyRow()],
+  });
+
+  // Derived current active rows for the active quantity tab
+  const rows = useMemo(() => {
+    return quantityRowsMap[activeQuantityTab] || [createEmptyRow()];
+  }, [quantityRowsMap, activeQuantityTab]);
+
+  const setRowsForActiveQty = useCallback(
+    (updater: InspectionReportRowPayload[] | ((prev: InspectionReportRowPayload[]) => InspectionReportRowPayload[])) => {
+      setQuantityRowsMap((prevMap) => {
+        const currentRows = prevMap[activeQuantityTab] || [createEmptyRow()];
+        const nextRows = typeof updater === "function" ? updater(currentRows) : updater;
+        return { ...prevMap, [activeQuantityTab]: nextRows };
+      });
+    },
+    [activeQuantityTab]
+  );
 
   const [customerId, setCustomerId] = useState("");
   const [date, setDate] = useState(getTodayIsoDate());
@@ -74,11 +96,29 @@ const InspectionReportPage = () => {
         const jobQty = Math.max(1, Number(selectedJob.qty || 1));
         setMaxJobQuantity(jobQty);
 
-        const targetQuantityCount =
-          quantityCount ||
-          (quantityFrom && quantityTo ? Math.max(1, quantityTo - quantityFrom + 1) : 0) ||
-          (quantityNumber ? 1 : 0) ||
-          jobQty;
+        // Determine initial quantity selection
+        let initialQuantities: number[] = [1];
+        if (quantityNumber && quantityNumber <= jobQty) {
+          initialQuantities = [quantityNumber];
+        } else if (quantityFrom && quantityTo) {
+          const start = Math.max(1, Math.min(quantityFrom, jobQty));
+          const end = Math.max(start, Math.min(quantityTo, jobQty));
+          initialQuantities = Array.from({ length: end - start + 1 }, (_, i) => start + i);
+        } else if (quantityCount && quantityCount > 0) {
+          initialQuantities = Array.from({ length: Math.min(quantityCount, jobQty) }, (_, i) => i + 1);
+        }
+
+        setSelectedQuantities(initialQuantities);
+        const firstQty = initialQuantities[0] || 1;
+        setActiveQuantityTab(firstQty);
+
+        const initialMap: Record<number, InspectionReportRowPayload[]> = {};
+        initialQuantities.forEach((qNum) => {
+          initialMap[qNum] = templateVariant === "TOOLING_SPARE"
+            ? Array.from({ length: Math.min(MAX_ROWS, Math.max(1, initialQuantities.length)) }, () => ({ ...createEmptyRow(), actualDimension: String(selectedJob.cut || "") }))
+            : [{ ...createEmptyRow(), actualDimension: String(selectedJob.cut || "") }];
+        });
+        setQuantityRowsMap(initialMap);
 
         setCustomerId(String(selectedJob.customer || ""));
         setDrawingName(String(selectedJob.description || ""));
@@ -90,13 +130,27 @@ const InspectionReportPage = () => {
           hrc: "",
           material: "",
         });
-        setQuantity(targetQuantityCount > 0 ? String(targetQuantityCount) : "1");
+        setQuantity(String(initialQuantities.length));
 
-        const templateRows = templateVariant === "TOOLING_SPARE"
-          ? Array.from({ length: Math.min(MAX_ROWS, Math.max(1, targetQuantityCount)) }, () => ({ ...createEmptyRow(), actualDimension: String(selectedJob.cut || "") }))
-          : [{ ...createEmptyRow(), actualDimension: String(selectedJob.cut || "") }];
-
-        setRows(templateRows);
+        // Restore draft from localStorage if available
+        const draftKey = `qc-inspection-report-draft:${groupId ?? "default"}`;
+        const savedDraft = localStorage.getItem(draftKey);
+        if (savedDraft) {
+          try {
+            const parsed = JSON.parse(savedDraft);
+            if (parsed.quantityRowsMap && typeof parsed.quantityRowsMap === "object") {
+              setQuantityRowsMap(parsed.quantityRowsMap);
+            }
+            if (Array.isArray(parsed.selectedQuantities) && parsed.selectedQuantities.length > 0) {
+              setSelectedQuantities(parsed.selectedQuantities);
+              if (!parsed.selectedQuantities.includes(firstQty)) {
+                setActiveQuantityTab(parsed.selectedQuantities[0]);
+              }
+            }
+          } catch {
+            /* ignore draft parse error */
+          }
+        }
       } catch {
         setToast({ message: "Failed to load group details for inspection report.", variant: "error", visible: true });
       } finally {
@@ -109,6 +163,61 @@ const InspectionReportPage = () => {
       isMounted = false;
     };
   }, [groupId, jobId, quantityCount, quantityFrom, quantityNumber, quantityTo, templateVariant]);
+
+  const toggleQuantitySelection = useCallback((qtyNum: number) => {
+    setSelectedQuantities((prev) => {
+      let updated: number[];
+      if (prev.includes(qtyNum)) {
+        if (prev.length <= 1) return prev; // Keep at least 1 quantity selected
+        updated = prev.filter((q) => q !== qtyNum);
+      } else {
+        updated = [...prev, qtyNum].sort((a, b) => a - b);
+      }
+
+      setQuantity(String(updated.length));
+
+      // Ensure new quantity has empty row list if not exists
+      setQuantityRowsMap((prevMap) => {
+        if (!prevMap[qtyNum]) {
+          return { ...prevMap, [qtyNum]: [createEmptyRow()] };
+        }
+        return prevMap;
+      });
+
+      // If active tab was unselected, switch active tab to first available
+      setActiveQuantityTab((currentActive) => {
+        if (!updated.includes(currentActive)) {
+          return updated[0] || 1;
+        }
+        return currentActive;
+      });
+
+      return updated;
+    });
+  }, []);
+
+  const selectAllQuantities = useCallback(() => {
+    const all = Array.from({ length: maxJobQuantity }, (_, i) => i + 1);
+    setSelectedQuantities(all);
+    setQuantity(String(all.length));
+    setQuantityRowsMap((prevMap) => {
+      const nextMap = { ...prevMap };
+      all.forEach((q) => {
+        if (!nextMap[q]) nextMap[q] = [createEmptyRow()];
+      });
+      return nextMap;
+    });
+  }, [maxJobQuantity]);
+
+  const selectFirstQuantity = useCallback(() => {
+    setSelectedQuantities([1]);
+    setActiveQuantityTab(1);
+    setQuantity("1");
+    setQuantityRowsMap((prevMap) => {
+      if (!prevMap[1]) return { ...prevMap, 1: [createEmptyRow()] };
+      return prevMap;
+    });
+  }, []);
 
   const reportPayload = useMemo<InspectionReportPayload>(
     () => ({
@@ -164,16 +273,14 @@ const InspectionReportPage = () => {
   }, [refreshPreview]);
 
   const updateRowText = (index: number, key: keyof Omit<InspectionReportRowPayload, "instruments">, value: string) => {
-    setRows((prev) => prev.map((row, rowIndex) => {
+    setRowsForActiveQty((prev) => prev.map((row, rowIndex) => {
       if (rowIndex !== index) return row;
-      const updated = { ...row, [key]: value };
-
-      return updated;
+      return { ...row, [key]: value };
     }));
   };
 
   const toggleInstrument = (index: number, key: keyof InstrumentSelection) => {
-    setRows((prev) =>
+    setRowsForActiveQty((prev) =>
       prev.map((row, rowIndex) =>
         rowIndex === index ? { ...row, instruments: { ...row.instruments, [key]: !row.instruments[key] } } : row
       )
@@ -210,9 +317,15 @@ const InspectionReportPage = () => {
     try {
       localStorage.setItem(
         `qc-inspection-report-draft:${groupId ?? "default"}`,
-        JSON.stringify({ ...reportPayload, inspectedBy: inspectedBy.trim().toUpperCase(), approvedBy: approvedBy.trim().toUpperCase() })
+        JSON.stringify({
+          ...reportPayload,
+          selectedQuantities,
+          quantityRowsMap,
+          inspectedBy: inspectedBy.trim().toUpperCase(),
+          approvedBy: approvedBy.trim().toUpperCase(),
+        })
       );
-      setToast({ message: "Inspection report saved.", variant: "success", visible: true });
+      setToast({ message: "Inspection report saved with all quantities.", variant: "success", visible: true });
     } catch {
       setToast({ message: "Failed to save inspection report.", variant: "error", visible: true });
     }
@@ -226,7 +339,8 @@ const InspectionReportPage = () => {
         <div className="roleboard-body qc-report-panel">
           <div className="qc-report-toolbar">
             <div className="qc-report-toolbar-meta">
-              <span>Rows Added: {rows.length}</span>
+              <span>Selected Quantities: {selectedQuantities.length} of {maxJobQuantity}</span>
+              <span>Active Quantity: #{activeQuantityTab} ({rows.length} rows)</span>
               <span>Filled Rows: {rows.filter(hasRowValue).length}</span>
             </div>
           </div>
@@ -235,6 +349,63 @@ const InspectionReportPage = () => {
             <section className="qc-report-left">
               <h3>Report Details</h3>
               {loading && <AppLoader variant="inline" message="Loading group details..." />}
+
+              {/* Multi-Quantity Selection & Editing Tabs */}
+              <div className="qc-quantity-selector-box">
+                <div className="qc-quantity-selector-header">
+                  <div className="qc-quantity-title">
+                    <strong>Select Quantities for Report</strong>
+                    <span>({selectedQuantities.length} of {maxJobQuantity} quantities selected)</span>
+                  </div>
+                  <div className="qc-quantity-actions">
+                    <button type="button" className="qc-qty-btn-link" onClick={selectAllQuantities}>Select All</button>
+                    <button type="button" className="qc-qty-btn-link" onClick={selectFirstQuantity}>Reset to Qty #1</button>
+                  </div>
+                </div>
+
+                <div className="qc-quantity-chips-grid">
+                  {Array.from({ length: maxJobQuantity }, (_, i) => i + 1).map((qtyNum) => {
+                    const isSelected = selectedQuantities.includes(qtyNum);
+                    const isActive = activeQuantityTab === qtyNum;
+                    return (
+                      <label
+                        key={qtyNum}
+                        className={`qc-qty-chip ${isSelected ? "selected" : ""} ${isActive ? "active-tab" : ""}`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => toggleQuantitySelection(qtyNum)}
+                        />
+                        <span>Qty #{qtyNum}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+
+                {/* Quantity Editing Tabs */}
+                <div className="qc-quantity-tabs-bar">
+                  <span className="qc-tabs-label">Edit Inspection Sheet:</span>
+                  <div className="qc-tabs-scroll">
+                    {selectedQuantities.map((qtyNum) => {
+                      const isActive = activeQuantityTab === qtyNum;
+                      const rowList = quantityRowsMap[qtyNum] || [];
+                      const filledCount = rowList.filter(hasRowValue).length;
+                      return (
+                        <button
+                          key={qtyNum}
+                          type="button"
+                          className={`qc-tab-item ${isActive ? "active" : ""}`}
+                          onClick={() => setActiveQuantityTab(qtyNum)}
+                        >
+                          <strong>Quantity #{qtyNum}</strong>
+                          <span className="tab-badge">{filledCount}/{rowList.length} rows</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
 
               <div className="qc-report-inline-fields">
                 <label>Customer ID<input value={customerId} onChange={(e) => setCustomerId(e.target.value)} /></label>
@@ -261,10 +432,10 @@ const InspectionReportPage = () => {
 
               <InspectionReportMeasurements
                 rows={rows}
-                onAddRow={() => setRows((prev) => (prev.length >= MAX_ROWS ? prev : [...prev, createEmptyRow()]))}
+                onAddRow={() => setRowsForActiveQty((prev) => (prev.length >= MAX_ROWS ? prev : [...prev, createEmptyRow()]))}
                 onUpdateText={updateRowText}
                 onUpdateSample={(rowIndex, sampleIndex, value) => {
-                  setRows((prev) =>
+                  setRowsForActiveQty((prev) =>
                     prev.map((r, i) => {
                       if (i !== rowIndex) return r;
                       const newSamples = [...(r.samples || [])];
@@ -274,8 +445,8 @@ const InspectionReportPage = () => {
                   );
                 }}
                 onToggleInstrument={toggleInstrument}
-                onClearRow={(index) => setRows((prev) => prev.map((row, rowIndex) => (rowIndex === index ? createEmptyRow() : row)))}
-                onRemoveRow={(index) => setRows((prev) => (prev.length <= 1 ? prev : prev.filter((_, rowIndex) => rowIndex !== index)))}
+                onClearRow={(index) => setRowsForActiveQty((prev) => prev.map((row, rowIndex) => (rowIndex === index ? createEmptyRow() : row)))}
+                onRemoveRow={(index) => setRowsForActiveQty((prev) => (prev.length <= 1 ? prev : prev.filter((_, rowIndex) => rowIndex !== index)))}
                 maxRows={MAX_ROWS}
                 templateVariant={templateVariant}
                 quantityCount={Math.min(maxJobQuantity, Math.max(1, Number(quantity) || 1))}

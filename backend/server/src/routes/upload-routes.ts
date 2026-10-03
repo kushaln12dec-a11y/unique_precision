@@ -1,9 +1,11 @@
 import { Router } from "express";
 import multer from "multer";
 import path from "path";
+import fs from "fs";
 import { authMiddleware } from "../middleware/auth";
 import { authorize } from "../middleware/rbac-middleware";
 import { uploadBufferToR2 } from "../config/r2";
+import { randomUUID } from "crypto";
 
 const router = Router();
 
@@ -45,13 +47,35 @@ router.post("/image", upload.single("image"), async (req, res) => {
       return res.status(400).json({ message: "SVG uploads are not allowed." });
     }
 
-    const uploaded = await uploadBufferToR2(file.buffer, file.mimetype, "uploads/images", file.originalname);
+    try {
+      const uploaded = await uploadBufferToR2(file.buffer, file.mimetype, "uploads/images", file.originalname);
+      return res.status(201).json({
+        message: "Image uploaded successfully to R2",
+        url: uploaded.url,
+        key: uploaded.key,
+      });
+    } catch (r2Error: any) {
+      // Fallback to local storage if R2 is not configured
+      console.warn("R2 Upload failed/skipped. Falling back to local storage:", r2Error.message);
 
-    return res.status(201).json({
-      message: "Image uploaded successfully",
-      url: uploaded.url,
-      key: uploaded.key,
-    });
+      const ext = path.extname(file.originalname) || `.${file.mimetype.split("/")[1]}`;
+      const fileName = `${Date.now()}-${randomUUID()}${ext}`;
+      const uploadDir = path.join(process.cwd(), "public", "uploads", "images");
+
+      if (!fs.existsSync(uploadDir)) {
+        fs.mkdirSync(uploadDir, { recursive: true });
+      }
+
+      const filePath = path.join(uploadDir, fileName);
+      fs.writeFileSync(filePath, file.buffer);
+
+      return res.status(201).json({
+        message: "Image uploaded successfully to local storage",
+        url: `/uploads/images/${fileName}`,
+        key: `uploads/images/${fileName}`,
+      });
+    }
+
   } catch (error: any) {
     console.error("Error uploading image:", error);
     return res.status(500).json({
