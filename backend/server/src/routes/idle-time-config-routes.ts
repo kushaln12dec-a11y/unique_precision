@@ -39,7 +39,7 @@ router.get("/:type", async (req, res) => {
 // Create or update idle time configuration
 router.post("/", authorize("ADMIN"), async (req, res) => {
   try {
-    const { idleTimeType, durationMinutes } = req.body;
+    const { idleTimeType, durationMinutes, requiresReason } = req.body;
 
     if (!idleTimeType || durationMinutes === undefined) {
       return res.status(400).json({ message: "idleTimeType and durationMinutes are required" });
@@ -47,8 +47,8 @@ router.post("/", authorize("ADMIN"), async (req, res) => {
 
     const config = await prisma.idleTimeConfig.upsert({
       where: { idleTimeType },
-      update: { durationMinutes },
-      create: { idleTimeType, durationMinutes },
+      update: { durationMinutes, requiresReason: Boolean(requiresReason) },
+      create: { idleTimeType, durationMinutes, requiresReason: Boolean(requiresReason) },
     });
 
     res.status(201).json({ ...config, _id: config.id });
@@ -61,7 +61,7 @@ router.post("/", authorize("ADMIN"), async (req, res) => {
 // Update idle time configuration
 router.put("/:type", authorize("ADMIN"), async (req, res) => {
   try {
-    const { durationMinutes } = req.body;
+    const { durationMinutes, requiresReason } = req.body;
     const idleTimeType = Array.isArray(req.params.type) ? req.params.type[0] : req.params.type;
 
     if (!idleTimeType) {
@@ -71,9 +71,12 @@ router.put("/:type", authorize("ADMIN"), async (req, res) => {
       return res.status(400).json({ message: "durationMinutes is required" });
     }
 
+    const updateData: any = { durationMinutes };
+    if (requiresReason !== undefined) updateData.requiresReason = Boolean(requiresReason);
+
     const config = await prisma.idleTimeConfig.update({
       where: { idleTimeType },
-      data: { durationMinutes },
+      data: updateData,
     });
 
     res.json({ ...config, _id: config.id });

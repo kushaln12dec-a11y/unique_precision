@@ -10,14 +10,14 @@ const SEDM_SLAB_GROUPS: Array<{
   minField: keyof CustomerRate;
   perField: keyof CustomerRate;
 }> = [
-  { key: "034", title: "0.3 - 0.4", minField: "sedm034Min", perField: "sedm034PerMm" },
-  { key: "056", title: "0.5 - 0.6", minField: "sedm056Min", perField: "sedm056PerMm" },
-  { key: "07", title: "0.7", minField: "sedm07Min", perField: "sedm07PerMm" },
-  { key: "0812", title: "0.8 - 1.2", minField: "sedm0812Min", perField: "sedm0812PerMm" },
-  { key: "1520", title: "1.5 - 2.0", minField: "sedm1520Min", perField: "sedm1520PerMm" },
-  { key: "2225", title: "2.2 - 2.5", minField: "sedm2225Min", perField: "sedm2225PerMm" },
-  { key: "30", title: "3.0", minField: "sedm30Min", perField: "sedm30PerMm" },
-];
+    { key: "034", title: "0.3 - 0.4", minField: "sedm034Min", perField: "sedm034PerMm" },
+    { key: "056", title: "0.5 - 0.6", minField: "sedm056Min", perField: "sedm056PerMm" },
+    { key: "07", title: "0.7", minField: "sedm07Min", perField: "sedm07PerMm" },
+    { key: "0812", title: "0.8 - 1.2", minField: "sedm0812Min", perField: "sedm0812PerMm" },
+    { key: "1520", title: "1.5 - 2.0", minField: "sedm1520Min", perField: "sedm1520PerMm" },
+    { key: "2225", title: "2.2 - 2.5", minField: "sedm2225Min", perField: "sedm2225PerMm" },
+    { key: "30", title: "3.0", minField: "sedm30Min", perField: "sedm30PerMm" },
+  ];
 type Props = {
   activeSection: AdminSection;
   setActiveSection: Dispatch<SetStateAction<AdminSection>>;
@@ -44,6 +44,10 @@ type Props = {
   setMachineInput: Dispatch<SetStateAction<string>>;
   machineOptions: string[];
   setMachineOptions: Dispatch<SetStateAction<string[]>>;
+  idleTimeInput: string;
+  setIdleTimeInput: Dispatch<SetStateAction<string>>;
+  idleTimeOptions: string[];
+  setIdleTimeOptions: Dispatch<SetStateAction<string[]>>;
   addOption: (
     rawValue: string,
     setValue: Dispatch<SetStateAction<string>>,
@@ -127,6 +131,10 @@ const AdminSectionModals = (props: Props) => {
     setMachineInput,
     machineOptions,
     setMachineOptions,
+    idleTimeInput,
+    setIdleTimeInput,
+    idleTimeOptions,
+    setIdleTimeOptions,
     addOption,
     removeOption,
     sanitizeMachineOptions,
@@ -162,10 +170,10 @@ const AdminSectionModals = (props: Props) => {
     () =>
       selectedSedmCustomer
         ? SEDM_SLAB_GROUPS.map((group) => ({
-            ...group,
-            minValue: selectedSedmCustomer[group.minField],
-            perValue: selectedSedmCustomer[group.perField],
-          }))
+          ...group,
+          minValue: selectedSedmCustomer[group.minField],
+          perValue: selectedSedmCustomer[group.perField],
+        }))
         : [],
     [selectedSedmCustomer]
   );
@@ -411,6 +419,59 @@ const AdminSectionModals = (props: Props) => {
         </div>
         <div className="admin-modal-actions admin-modal-actions-end">
           <SaveButton saving={saving} readOnly={readOnly} onSave={handleSaveAndClose} label="Save Hours Config" />
+        </div>
+      </Modal>
+
+      <Modal isOpen={activeSection === "idleTime"} onClose={() => setActiveSection(null)} title="Idle Time Options" className="admin-section-modal" size="small">
+        <label>Add Idle Time Reason</label>
+        <p className="admin-help admin-help-compact">
+          Check <strong>"Requires Reason"</strong> to make an option (e.g. Improper Job Placement) prompt the operator for a mandatory explanation.
+        </p>
+        <div className="admin-option-input-row admin-idle-input-row">
+          <input type="text" value={idleTimeInput} disabled={readOnly} placeholder="e.g. Improper Job Placement" onChange={(e) => setIdleTimeInput(e.target.value)} style={{ flex: 1 }} />
+          <button type="button" className="admin-add-btn" disabled={readOnly} onClick={() => addOption(idleTimeInput, setIdleTimeInput, setIdleTimeOptions, "Enter a reason first")}>
+            Add
+          </button>
+        </div>
+        <div className="admin-option-list">
+          {idleTimeOptions.length === 0 ? (
+            <p className="admin-empty-text">No idle time options added yet.</p>
+          ) : (
+            idleTimeOptions.map((item, index) => {
+              const config = (props as any).idleTimeConfigs?.find?.((c: any) => c.idleTimeType === item);
+              const requiresReason = config?.requiresReason ?? false;
+              return (
+                <div className="admin-option-row admin-idle-option-row" key={`${item}-${index}`}>
+                  <div className="admin-idle-option-info">
+                    <span>{item}</span>
+                    <label className="admin-idle-requires-label" title="When checked, the operator must enter a written reason before saving this idle entry">
+                      <input
+                        type="checkbox"
+                        checked={requiresReason}
+                        disabled={readOnly}
+                        onChange={async () => {
+                          try {
+                            const { upsertIdleTimeConfig } = await import("../../../services/idleTimeConfigApi");
+                            await upsertIdleTimeConfig(item, config?.durationMinutes ?? 0, !requiresReason);
+                            setToast({ message: `Updated "${item}" — requires reason: ${!requiresReason}`, variant: "success", visible: true });
+                          } catch {
+                            setToast({ message: "Failed to update option", variant: "error", visible: true });
+                          }
+                        }}
+                      />
+                      <span>Requires Reason</span>
+                    </label>
+                  </div>
+                  <button type="button" className="admin-remove-btn" disabled={readOnly} onClick={() => removeOption(index, setIdleTimeOptions)}>
+                    Remove
+                  </button>
+                </div>
+              );
+            })
+          )}
+        </div>
+        <div className="admin-modal-actions admin-modal-actions-end">
+          <SaveButton saving={saving} readOnly={readOnly} onSave={handleSaveAndClose} label="Save Idle Time Options" />
         </div>
       </Modal>
     </>

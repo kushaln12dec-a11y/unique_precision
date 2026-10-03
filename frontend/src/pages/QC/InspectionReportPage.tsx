@@ -28,7 +28,8 @@ const InspectionReportPage = () => {
   const [loading, setLoading] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [rows, setRows] = useState<InspectionReportRowPayload[]>([createEmptyRow()]);
-  const [linkQuantities, setLinkQuantities] = useState(false);
+  const [maxJobQuantity, setMaxJobQuantity] = useState(1);
+
   const [customerId, setCustomerId] = useState("");
   const [date, setDate] = useState(getTodayIsoDate());
   const [drawingName, setDrawingName] = useState("");
@@ -37,6 +38,8 @@ const InspectionReportPage = () => {
     toolIdentificationNo: "",
     consumablePartIdentificationNo: "",
     consumablePartName: "",
+    hrc: "",
+    material: "",
   });
   const [quantity, setQuantity] = useState("");
   const [decision, setDecision] = useState<Decision>("ACCEPTED");
@@ -50,7 +53,7 @@ const InspectionReportPage = () => {
   const [previewLoading, setPreviewLoading] = useState(false);
   const [previewError, setPreviewError] = useState("");
   const [toast, setToast] = useState<{ message: string; variant: "success" | "error" | "info"; visible: boolean }>({ message: "", variant: "info", visible: false });
-  const setToolingField = (field: "toolIdentificationNo" | "consumablePartIdentificationNo" | "consumablePartName", value: string) =>
+  const setToolingField = (field: keyof typeof toolingDetails, value: string) =>
     setToolingDetails((prev) => ({ ...prev, [field]: value }));
 
   useEffect(() => {
@@ -68,11 +71,14 @@ const InspectionReportPage = () => {
         if (!isMounted || jobs.length === 0) return;
 
         const selectedJob = (jobId ? jobs.find((job) => String(job.id) === jobId) : null) || jobs[0];
+        const jobQty = Math.max(1, Number(selectedJob.qty || 1));
+        setMaxJobQuantity(jobQty);
+
         const targetQuantityCount =
           quantityCount ||
           (quantityFrom && quantityTo ? Math.max(1, quantityTo - quantityFrom + 1) : 0) ||
           (quantityNumber ? 1 : 0) ||
-          Math.max(1, Number(selectedJob.qty || 1));
+          jobQty;
 
         setCustomerId(String(selectedJob.customer || ""));
         setDrawingName(String(selectedJob.description || ""));
@@ -81,6 +87,8 @@ const InspectionReportPage = () => {
           toolIdentificationNo: String((selectedJob as any).programRefFile || selectedJob.refNumber || ""),
           consumablePartIdentificationNo: String((selectedJob as any).programRefFile || selectedJob.refNumber || ""),
           consumablePartName: String(selectedJob.description || ""),
+          hrc: "",
+          material: "",
         });
         setQuantity(targetQuantityCount > 0 ? String(targetQuantityCount) : "1");
 
@@ -109,7 +117,7 @@ const InspectionReportPage = () => {
       quantityNumber,
       quantityFrom,
       quantityTo,
-      quantityCount,
+      quantityCount: Math.min(maxJobQuantity, Math.max(1, Number(quantity) || 1)),
       templateVariant,
       customerId: customerId.trim(),
       date: formatDateForTemplate(date),
@@ -118,6 +126,8 @@ const InspectionReportPage = () => {
       toolIdentificationNo: toolingDetails.toolIdentificationNo.trim(),
       consumablePartIdentificationNo: toolingDetails.consumablePartIdentificationNo.trim(),
       consumablePartName: toolingDetails.consumablePartName.trim(),
+      hrc: toolingDetails.hrc.trim(),
+      material: toolingDetails.material.trim(),
       quantity: quantity.trim(),
       decision,
       rows,
@@ -157,10 +167,7 @@ const InspectionReportPage = () => {
     setRows((prev) => prev.map((row, rowIndex) => {
       if (rowIndex !== index) return row;
       const updated = { ...row, [key]: value };
-      if (templateVariant === "TOOLING_SPARE" && linkQuantities) {
-        if (key === "measuringDimension") updated.deviation = value;
-        if (key === "deviation") updated.measuringDimension = value;
-      }
+
       return updated;
     }));
   };
@@ -243,6 +250,8 @@ const InspectionReportPage = () => {
                     <label>Tool Identification No.<input value={toolingDetails.toolIdentificationNo} onChange={(e) => setToolingField("toolIdentificationNo", e.target.value)} /></label>
                     <label>Consumable Part Identification No.<input value={toolingDetails.consumablePartIdentificationNo} onChange={(e) => setToolingField("consumablePartIdentificationNo", e.target.value)} /></label>
                     <label>Consumable Part Name<input value={toolingDetails.consumablePartName} onChange={(e) => setToolingField("consumablePartName", e.target.value)} /></label>
+                    <label>HRC<input value={toolingDetails.hrc} onChange={(e) => setToolingField("hrc", e.target.value)} /></label>
+                    <label>Material<input value={toolingDetails.material} onChange={(e) => setToolingField("material", e.target.value)} /></label>
                   </div>
                   <p className="qc-report-help-text">
                     Consolidated report note: the PDF labels the result columns as Quantity 1 and Quantity 2 so inspectors can match the sheet directly to the actual quantities.
@@ -254,13 +263,22 @@ const InspectionReportPage = () => {
                 rows={rows}
                 onAddRow={() => setRows((prev) => (prev.length >= MAX_ROWS ? prev : [...prev, createEmptyRow()]))}
                 onUpdateText={updateRowText}
+                onUpdateSample={(rowIndex, sampleIndex, value) => {
+                  setRows((prev) =>
+                    prev.map((r, i) => {
+                      if (i !== rowIndex) return r;
+                      const newSamples = [...(r.samples || [])];
+                      newSamples[sampleIndex] = value;
+                      return { ...r, samples: newSamples };
+                    })
+                  );
+                }}
                 onToggleInstrument={toggleInstrument}
                 onClearRow={(index) => setRows((prev) => prev.map((row, rowIndex) => (rowIndex === index ? createEmptyRow() : row)))}
                 onRemoveRow={(index) => setRows((prev) => (prev.length <= 1 ? prev : prev.filter((_, rowIndex) => rowIndex !== index)))}
                 maxRows={MAX_ROWS}
                 templateVariant={templateVariant}
-                linkQuantities={linkQuantities}
-                onToggleLinkQuantities={() => setLinkQuantities((prev) => !prev)}
+                quantityCount={Math.min(maxJobQuantity, Math.max(1, Number(quantity) || 1))}
               />
 
               <div className="qc-report-decision">

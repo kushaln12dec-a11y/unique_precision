@@ -4,7 +4,7 @@ export type Decision = "ACCEPTED" | "REJECTED";
 export type YesNo = "YES" | "NO" | "";
 export type DamageField = "workPieceDamage" | "rightAngleProblem" | "materialProblem";
 
-export const MAX_ROWS = 30;
+export const MAX_ROWS = 50;
 
 export const createEmptyInstruments = (): InstrumentSelection => ({
   hm: false,
@@ -19,6 +19,7 @@ export const createEmptyRow = (): InspectionReportRowPayload => ({
   tolerance: "",
   measuringDimension: "",
   deviation: "",
+  samples: [],
   instruments: createEmptyInstruments(),
 });
 

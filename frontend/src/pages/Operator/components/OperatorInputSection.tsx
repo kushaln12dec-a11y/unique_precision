@@ -93,6 +93,8 @@ export const OperatorInputSection: React.FC<OperatorInputSectionProps> = ({
   const [rangeTo, setRangeTo] = useState("2");
   const [isRangeApproved, setIsRangeApproved] = useState(false);
   const [selectedQaQuantities, setSelectedQaQuantities] = useState<Set<number>>(new Set());
+  const [currentPage, setCurrentPage] = useState(0);
+  const PAGE_SIZE = 50;
 
   const quantities = cutData.quantities || [];
   const displayQuantities = Array.from({ length: Math.max(quantity, quantities.length) }, (_, i) => quantities[i] || createFallbackQuantity());
@@ -104,6 +106,11 @@ export const OperatorInputSection: React.FC<OperatorInputSectionProps> = ({
   const rangeEndQty = isRangeValid ? parsedTo : rangeStartQty;
   const activeRangeSourceIndex = rangeStartQty - 1;
   const isRangeMode = captureMode === "RANGE";
+  const totalPages = isRangeMode ? 1 : Math.ceil(displayQuantities.length / PAGE_SIZE);
+  const pageStart = isRangeMode ? 0 : currentPage * PAGE_SIZE;
+  const pagedQuantities = isRangeMode
+    ? displayQuantities
+    : displayQuantities.slice(pageStart, pageStart + PAGE_SIZE);
   const allQuantityNumbers = Array.from({ length: totalQuantity }, (_, i) => i + 1);
   const getStatus = (qty: number): QuantityProgressStatus => qaStatuses[qty] || "EMPTY";
 
@@ -112,7 +119,12 @@ export const OperatorInputSection: React.FC<OperatorInputSectionProps> = ({
     setRangeTo(String(Math.min(2, totalQuantity)));
     setIsRangeApproved(false);
     setSelectedQaQuantities(new Set());
+    setCurrentPage(0);
   }, [totalQuantity]);
+
+  useEffect(() => {
+    if (!isRangeMode) setCurrentPage(0);
+  }, [captureMode]);
 
   useEffect(() => {
     setIsRangeApproved(false);
@@ -190,7 +202,19 @@ export const OperatorInputSection: React.FC<OperatorInputSectionProps> = ({
         cutId={cutId}
       />
 
-      {displayQuantities.map((qtyData, qtyIndex) => {
+      {totalPages > 1 && (
+        <div className="operator-qty-pagination">
+          <button type="button" className="operator-qty-page-btn" disabled={currentPage === 0} onClick={() => setCurrentPage((p) => Math.max(0, p - 1))}>‹ Prev</button>
+          <span className="operator-qty-page-info">Qty {pageStart + 1}–{Math.min(pageStart + PAGE_SIZE, displayQuantities.length)} of {displayQuantities.length}</span>
+          {Array.from({ length: totalPages }, (_, i) => (
+            <button key={i} type="button" className={`operator-qty-page-dot${i === currentPage ? " active" : ""}`} onClick={() => setCurrentPage(i)} aria-label={`Page ${i + 1}`}>{i + 1}</button>
+          ))}
+          <button type="button" className="operator-qty-page-btn" disabled={currentPage >= totalPages - 1} onClick={() => setCurrentPage((p) => Math.min(totalPages - 1, p + 1))}>Next ›</button>
+        </div>
+      )}
+
+      {pagedQuantities.map((qtyData, pagedIdx) => {
+        const qtyIndex = pageStart + pagedIdx;
         if (isRangeMode && qtyIndex !== activeRangeSourceIndex) return null;
         const normalizedUser = String(currentUserDisplayName || "").trim().toUpperCase();
         const opsNameList = Array.isArray(qtyData.opsName)
@@ -239,6 +263,17 @@ export const OperatorInputSection: React.FC<OperatorInputSectionProps> = ({
           />
         );
       })}
+
+      {totalPages > 1 && (
+        <div className="operator-qty-pagination">
+          <button type="button" className="operator-qty-page-btn" disabled={currentPage === 0} onClick={() => setCurrentPage((p) => Math.max(0, p - 1))}>‹ Prev</button>
+          <span className="operator-qty-page-info">Qty {pageStart + 1}–{Math.min(pageStart + PAGE_SIZE, displayQuantities.length)} of {displayQuantities.length}</span>
+          {Array.from({ length: totalPages }, (_, i) => (
+            <button key={i} type="button" className={`operator-qty-page-dot${i === currentPage ? " active" : ""}`} onClick={() => setCurrentPage(i)} aria-label={`Page ${i + 1}`}>{i + 1}</button>
+          ))}
+          <button type="button" className="operator-qty-page-btn" disabled={currentPage >= totalPages - 1} onClick={() => setCurrentPage((p) => Math.min(totalPages - 1, p + 1))}>Next ›</button>
+        </div>
+      )}
     </div>
   );
 };

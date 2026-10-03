@@ -4,13 +4,17 @@
   "private": true,
   "description": "Unique Precision - Full Stack Application",
   "scripts": {
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:backend": "cd backend && npm run dev",
+    "dev:frontend": "cd frontend && npm run dev",
     "build": "cd frontend && npm install --include=dev && npm run build && cd ../backend && npm install --include=dev && npm run build",
     "start": "cd backend && npm start"
   },
   "devDependencies": {
-    "vite": "^5.4.13",
     "@types/node": "^25.0.6",
-    "typescript": "^5.9.3"
+    "concurrently": "^10.0.5",
+    "typescript": "^5.9.3",
+    "vite": "^5.4.13"
   },
   "engines": {
     "node": "22.x"

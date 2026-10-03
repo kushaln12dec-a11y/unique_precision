@@ -71,12 +71,12 @@ function LazyAgGrid<T extends object>({
   const hasMoreRef = useRef(true);
   const offsetRef = useRef(0);
   const fetchPageRef = useRef(fetchPage);
-  const loadPageRef = useRef<(reset?: boolean) => Promise<void>>(async () => {});
+  const loadPageRef = useRef<(reset?: boolean) => Promise<void>>(async () => { });
 
   const defaultColDef = useMemo<ColDef<T>>(
     () => ({
-      sortable: true,
-      unSortIcon: true,
+      sortable: false,
+      unSortIcon: false,
       resizable: false,
       suppressMovable: true,
       minWidth: 64,
@@ -90,8 +90,8 @@ function LazyAgGrid<T extends object>({
     () =>
       columnDefs.map((columnDef) => ({
         ...columnDef,
-        sortable: true,
-        unSortIcon: true,
+        sortable: columnDef.sortable ?? false,
+        unSortIcon: false,
       })),
     [columnDefs]
   );
@@ -259,7 +259,7 @@ function LazyAgGrid<T extends object>({
       className={`lazy-ag-grid-shell ${className}`}
       style={
         fitHeightToContent
-          ? { height: `min(${Math.max(estimatedContentHeight, 180)}px, calc(100vh - 280px))` }
+          ? { height: `min(${Math.max(estimatedContentHeight, 520)}px, calc(100vh - 150px))` }
           : undefined
       }
     >

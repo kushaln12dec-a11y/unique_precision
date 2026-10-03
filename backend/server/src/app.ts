@@ -14,6 +14,7 @@ import inspectionReportsRoutes from "./routes/inspection-reports-routes";
 import uploadRoutes from "./routes/upload-routes";
 import dashboardRoutes from "./routes/dashboard-routes";
 import debugRoutes from "./routes/debug-routes";
+import loginCmsRoutes from "./routes/login-cms-routes";
 import { authenticate } from "./middleware/auth-middleware";
 import { errorHandler, jsonErrorHandler } from "./middleware/error-middleware";
 import { apiRateLimiter, authRateLimiter } from "./middleware/rate-limit-middleware";
@@ -118,6 +119,9 @@ app.use("/api/debug", debugRoutes);
 
 // Upload routes
 app.use("/api/upload", uploadRoutes);
+
+// Login CMS routes
+app.use("/api/login-cms", loginCmsRoutes);
 
 // Protected route example
 app.get("/api/protected", authenticate, (_req, res) => {

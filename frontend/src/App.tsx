@@ -17,6 +17,7 @@ const UserManagement = lazy(() => import("./pages/User Management/UserManagement
 const EmployeeLogs = lazy(() => import("./pages/EmployeeLogs/EmployeeLogs"));
 const AdminConsole = lazy(() => import("./pages/AdminConsole/AdminConsole"));
 const BilledJobs = lazy(() => import("./pages/BilledJobs/BilledJobsPage"));
+const LoginCMSPage = lazy(() => import("./pages/LoginCMS/LoginCMSPage"));
 
 const HomeRedirect = () => <Navigate to={getHomePathFromToken()} replace />;
 
@@ -120,6 +121,14 @@ function AppRoutes() {
           element={
             <ProtectedRoute allowedRoles={["ADMIN"]}>
               <AdminConsole />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/login-cms"
+          element={
+            <ProtectedRoute allowedRoles={["ADMIN"]}>
+              <LoginCMSPage />
             </ProtectedRoute>
           }
         />

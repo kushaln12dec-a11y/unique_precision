@@ -8,7 +8,20 @@ import { useCarousel } from "../../utils/useCarousel";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
 import { useTheme } from "../../theme/ThemeProvider";
+import { getPublicLoginSlides } from "../../services/loginCmsApi";
+import type { LoginSlide } from "../../types/loginCms";
 import "./Login.css";
+
+// Map static slides to LoginSlide shape for unified rendering
+const staticSlidesAsLoginSlides: LoginSlide[] = companySlides.map((s, idx) => ({
+  id: `static-${idx}`,
+  title: s.title,
+  subtitle: s.subtitle,
+  content: s.content.join("\n"),
+  highlight: s.highlight,
+  isActive: true,
+  sortOrder: idx,
+}));
 
 const Login = () => {
   const navigate = useNavigate();
@@ -18,6 +31,7 @@ const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
+  const [cmsSlides, setCmsSlides] = useState<LoginSlide[]>(staticSlidesAsLoginSlides);
 
   // Redirect if already logged in with a valid token
   useEffect(() => {
@@ -35,6 +49,15 @@ const Login = () => {
     setTheme("light");
   }, [setTheme]);
 
+  // Load CMS slides; fall back to static on error
+  useEffect(() => {
+    getPublicLoginSlides()
+      .then((slides) => {
+        if (slides && slides.length > 0) setCmsSlides(slides);
+      })
+      .catch(() => {/* keep static fallback */ });
+  }, []);
+
   // Use carousel hook
   const {
     currentSlide,
@@ -43,7 +66,7 @@ const Login = () => {
     goToSlide,
     slideWrapperStyle,
   } = useCarousel({
-    totalSlides: companySlides.length,
+    totalSlides: cmsSlides.length,
     threshold: 50,
     enableAutoPlay: true,
     autoPlayInterval: 5000,
@@ -77,86 +100,74 @@ const Login = () => {
             onMouseDown={handleMouseDown}
             onTouchStart={handleTouchStart}
           >
-            {companySlides.map((slide, index) => (
-              <div key={index} className="slide">
-                <div className="slide-content">
-                  <h2 className="slide-title">{slide.title}</h2>
-                  <p className="slide-subtitle">{slide.subtitle}</p>
-                  {index === 1 ? (
-                    // Facilities section - two columns
-                    <div className="facilities-grid">
-                      <ul className="slide-list slide-list-left">
-                        {slide.content.slice(0, 8).map((item, idx) => (
+            {cmsSlides.map((slide) => {
+              const lines = slide.content ? slide.content.split("\n").filter(Boolean) : [];
+              const isGrid = lines.length > 8;
+              return (
+                <div key={slide.id} className="slide">
+                  <div className="slide-content">
+                    {slide.imageUrl && (
+                      <img src={slide.imageUrl} alt="" className="slide-image" />
+                    )}
+                    <h2 className="slide-title">{slide.title}</h2>
+                    {slide.subtitle && <p className="slide-subtitle">{slide.subtitle}</p>}
+                    {isGrid ? (
+                      <div className="facilities-grid">
+                        <ul className="slide-list slide-list-left">
+                          {lines.slice(0, 8).map((item, idx) => (
+                            <li key={idx} className="slide-item">
+                              <span className="bullet-icon">→</span>
+                              <span>
+                                {item.includes(":") ? (
+                                  <><span className="highlight-label">{item.split(":")[0]}:</span>{item.substring(item.indexOf(":") + 1)}</>
+                                ) : item}
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                        <ul className="slide-list slide-list-right">
+                          {lines.slice(8).map((item, idx) => (
+                            <li key={idx} className="slide-item">
+                              <span className="bullet-icon">→</span>
+                              <span>
+                                {item.includes(":") ? (
+                                  <><span className="highlight-label">{item.split(":")[0]}:</span>{item.substring(item.indexOf(":") + 1)}</>
+                                ) : item}
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ) : (
+                      <ul className="slide-list">
+                        {lines.map((item, idx) => (
                           <li key={idx} className="slide-item">
                             <span className="bullet-icon">→</span>
                             <span>
                               {item.includes(":") ? (
-                                <>
-                                  <span className="highlight-label">
-                                    {item.split(":")[0]}:
-                                  </span>
-                                  {item.substring(item.indexOf(":") + 1)}
-                                </>
-                              ) : (
-                                item
-                              )}
+                                <><span className="highlight-label">{item.split(":")[0]}:</span>{item.substring(item.indexOf(":") + 1)}</>
+                              ) : item}
                             </span>
                           </li>
                         ))}
                       </ul>
-                      <ul className="slide-list slide-list-right">
-                        {slide.content.slice(8, 16).map((item, idx) => (
-                          <li key={idx} className="slide-item">
-                            <span className="bullet-icon">→</span>
-                            <span>
-                              {item.includes(":") ? (
-                                <>
-                                  <span className="highlight-label">
-                                    {item.split(":")[0]}:
-                                  </span>
-                                  {item.substring(item.indexOf(":") + 1)}
-                                </>
-                              ) : (
-                                item
-                              )}
-                            </span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  ) : (
-                    <ul className="slide-list">
-                      {slide.content.map((item, idx) => (
-                        <li key={idx} className="slide-item">
-                          <span className="bullet-icon">→</span>
-                          <span>
-                            {item.includes(":") ? (
-                              <>
-                                <span className="highlight-label">
-                                  {item.split(":")[0]}:
-                                </span>
-                                {item.substring(item.indexOf(":") + 1)}
-                              </>
-                            ) : (
-                              item
-                            )}
-                          </span>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                  {slide.highlight && (
-                    <p className="slide-highlight">{slide.highlight}</p>
-                  )}
+                    )}
+                    {slide.highlight && <p className="slide-highlight">{slide.highlight}</p>}
+                    {slide.buttonLabel && slide.buttonUrl && (
+                      <a href={slide.buttonUrl} target="_blank" rel="noreferrer" className="slide-cta-btn">
+                        {slide.buttonLabel}
+                      </a>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 
         {/* Navigation Dots */}
         <div className="slide-indicators">
-          {companySlides.map((_, index) => (
+          {cmsSlides.map((_, index) => (
             <button
               key={index}
               className={`indicator ${index === currentSlide ? "active" : ""}`}
@@ -191,7 +202,7 @@ const Login = () => {
                 className="form-input"
                 placeholder="Enter your employee ID (e.g. EMP0001)"
                 value={empId}
-                onChange={(e) => setEmpId(e.target.value.toUpperCase())}
+                onChange={(e) => setEmpId(e.target.value)}
                 required
                 autoComplete="username"
               />

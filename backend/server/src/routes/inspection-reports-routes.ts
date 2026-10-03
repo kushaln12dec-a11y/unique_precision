@@ -1,4 +1,6 @@
 import { Router } from "express";
+import { execFile } from "child_process";
+import { promisify } from "util";
 import puppeteer, { type Browser } from "puppeteer";
 import { authMiddleware } from "../middleware/auth";
 import {
@@ -10,9 +12,11 @@ const router = Router();
 
 router.use(authMiddleware);
 
+const execFileAsync = promisify(execFile);
+
 const CHROME_PATH_CANDIDATES = [
   process.env.PUPPETEER_EXECUTABLE_PATH,
-  // Linux paths (Railway, Render, Docker)
+  // Linux paths (Render, Docker, apt-installed Chrome)
   "/usr/bin/google-chrome-stable",
   "/usr/bin/google-chrome",
   "/usr/bin/chromium-browser",
@@ -26,35 +30,77 @@ const CHROME_PATH_CANDIDATES = [
   "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe",
 ].filter(Boolean) as string[];
 
+// Binaries to look up on PATH via `which`/`where`. This is what actually finds
+// Chromium on Railway/Nixpacks, where it's installed by nix into a dynamically
+// hashed path like /nix/store/<hash>-chromium-.../bin/chromium — a path that can
+// never be hardcoded above.
+const WHICH_CANDIDATES = ["chromium", "chromium-browser", "google-chrome-stable", "google-chrome"];
+
 let browserPromise: Promise<Browser> | null = null;
+let resolvedExecutablePathCache: string | undefined;
 
 const requireQcRole = (role?: string) => role === "QC" || role === "ADMIN";
 
+const fileExists = async (candidate: string): Promise<boolean> => {
+  try {
+    const fs = await import("fs/promises");
+    await fs.access(candidate);
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+const resolveViaWhich = async (): Promise<string | undefined> => {
+  const lookupCmd = process.platform === "win32" ? "where" : "which";
+  for (const bin of WHICH_CANDIDATES) {
+    try {
+      const { stdout } = await execFileAsync(lookupCmd, [bin]);
+      const resolved = stdout.split("\n")[0]?.trim();
+      if (resolved && (await fileExists(resolved))) {
+        return resolved;
+      }
+    } catch {
+      // binary not on PATH, try next
+    }
+  }
+  return undefined;
+};
+
 const resolveBrowserPath = async (): Promise<string | undefined> => {
-  // First try to use puppeteer's bundled browser (works when `puppeteer` package is installed)
+  // 1. Explicit override always wins if it actually exists.
+  if (process.env.PUPPETEER_EXECUTABLE_PATH && (await fileExists(process.env.PUPPETEER_EXECUTABLE_PATH))) {
+    console.log("[PDF] Using PUPPETEER_EXECUTABLE_PATH:", process.env.PUPPETEER_EXECUTABLE_PATH);
+    return process.env.PUPPETEER_EXECUTABLE_PATH;
+  }
+
+  // 2. Puppeteer's own bundled browser (works when it downloaded successfully at install time).
   try {
     // @ts-ignore — puppeteer may not be installed; this is a runtime fallback
     const puppeteerFull = await import("puppeteer");
     const bundledPath = (puppeteerFull as any).executablePath?.() ?? (puppeteerFull.default as any).executablePath?.();
-    if (bundledPath) {
-      const fsPromises = await import("fs/promises");
-      await fsPromises.access(bundledPath);
+    if (bundledPath && (await fileExists(bundledPath))) {
       console.log("[PDF] Using puppeteer bundled browser:", bundledPath);
       return bundledPath;
     }
   } catch {
-    // Bundled browser not available, fall through to candidates
+    // Bundled browser not available, fall through
   }
 
-  // Fall back to system-installed browsers
+  // 3. Hardcoded common install locations (apt/Debian/Windows).
   for (const candidate of CHROME_PATH_CANDIDATES) {
-    try {
-      await import("fs/promises").then((fs) => fs.access(candidate));
+    if (await fileExists(candidate)) {
       console.log("[PDF] Using system browser:", candidate);
       return candidate;
-    } catch {
-      // continue
     }
+  }
+
+  // 4. Resolve dynamically via PATH — this is what catches Nixpacks/Railway's
+  //    nix-installed chromium, whose path is not predictable/hardcodable.
+  const viaWhich = await resolveViaWhich();
+  if (viaWhich) {
+    console.log("[PDF] Using PATH-resolved browser:", viaWhich);
+    return viaWhich;
   }
 
   return undefined;
@@ -65,14 +111,40 @@ const getBrowser = async (): Promise<Browser> => {
     browserPromise = (async () => {
       const executablePath = await resolveBrowserPath();
       if (!executablePath) {
-        throw new Error("No Chromium-compatible browser found. Set PUPPETEER_EXECUTABLE_PATH.");
+        throw new Error(
+          "No Chromium-compatible browser found. On Railway, add the nixpacks.toml chromium package " +
+          "(see backend README) or set PUPPETEER_EXECUTABLE_PATH explicitly.",
+        );
       }
-      return puppeteer.launch({
-        executablePath,
-        headless: true,
-        args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage", "--font-render-hinting=none"],
-      });
+      resolvedExecutablePathCache = executablePath;
+      try {
+        return await puppeteer.launch({
+          executablePath,
+          headless: true,
+          args: [
+            "--no-sandbox",
+            "--disable-setuid-sandbox",
+            "--disable-dev-shm-usage",
+            "--disable-gpu",
+            "--font-render-hinting=none",
+          ],
+        });
+      } catch (launchError) {
+        // Surface launch failures clearly instead of a bare "Protocol error" —
+        // this is almost always missing shared libraries (libnss3, libatk-bridge2.0-0,
+        // libgbm1, libasound2, etc.) in the container image.
+        console.error(
+          `[PDF] Chromium found at "${executablePath}" but failed to launch. This usually means ` +
+          "required shared libraries are missing from the runtime image. Original error:",
+          launchError,
+        );
+        throw launchError;
+      }
     })();
+    // If launch failed, don't cache the rejected promise — let the next request retry cleanly.
+    browserPromise.catch(() => {
+      browserPromise = null;
+    });
   }
   return browserPromise;
 };
@@ -97,6 +169,24 @@ process.on("SIGINT", () => {
 });
 process.on("SIGTERM", () => {
   void closeBrowser();
+});
+
+// Lightweight diagnostic: reports what Chromium executable (if any) this environment
+// would use, without actually launching it. Call this after deploying to confirm the
+// fix worked, e.g. GET /api/inspection-reports/pdf-diagnostics
+router.get("/pdf-diagnostics", async (req, res) => {
+  if (!requireQcRole(req.user?.role)) {
+    return res.status(403).json({ message: "Access denied. QC role required." });
+  }
+  const executablePath = await resolveBrowserPath();
+  return res.json({
+    platform: process.platform,
+    node: process.version,
+    puppeteerExecutablePathEnv: process.env.PUPPETEER_EXECUTABLE_PATH || null,
+    resolvedExecutablePath: executablePath || null,
+    browserAlreadyLaunchedOnce: Boolean(resolvedExecutablePathCache),
+    status: executablePath ? "chromium_found" : "chromium_not_found",
+  });
 });
 
 router.post("/preview-html", async (req, res) => {
@@ -141,13 +231,25 @@ router.post("/generate", async (req, res) => {
     res.setHeader("Content-Disposition", `attachment; filename=\"inspection-report-${fileStamp}.pdf\"`);
     return res.send(Buffer.from(pdfBytes));
   } catch (error: any) {
-    if (String(error?.message || "").includes("No Chromium-compatible browser found")) {
+    console.error("Error generating inspection report PDF:", error?.stack || error);
+
+    const rawMessage = String(error?.message || "");
+    if (rawMessage.includes("No Chromium-compatible browser found")) {
       return res.status(500).json({
-        message: "Browser runtime not found for PDF generation. Set PUPPETEER_EXECUTABLE_PATH.",
+        message: "Browser runtime not found for PDF generation. See server logs for setup instructions.",
       });
     }
-    console.error("Error generating inspection report PDF:", error);
-    return res.status(500).json({ message: "Failed to generate inspection report PDF" });
+    if (rawMessage.toLowerCase().includes("libnss") || rawMessage.toLowerCase().includes("error while loading shared libraries")) {
+      return res.status(500).json({
+        message: "PDF renderer is missing required system libraries on this server. Contact an administrator.",
+      });
+    }
+
+    // In non-production, include the real reason so it's actionable without digging through logs.
+    return res.status(500).json({
+      message: "Failed to generate inspection report PDF",
+      ...(process.env.NODE_ENV !== "production" ? { detail: rawMessage } : {}),
+    });
   }
 });
 

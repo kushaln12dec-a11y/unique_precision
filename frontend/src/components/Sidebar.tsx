@@ -10,6 +10,7 @@ import SettingsSuggestIcon from '@mui/icons-material/SettingsSuggest';
 import LogoutIcon from '@mui/icons-material/Logout';
 import MenuOpenRoundedIcon from '@mui/icons-material/MenuOpenRounded';
 import ReceiptLongIcon from '@mui/icons-material/ReceiptLong';
+import WebIcon from '@mui/icons-material/Web';
 import { useLocation, useNavigate } from 'react-router-dom';
 import type { SidebarProps } from '../types/sidebar';
 import { clearAuthSession, getUserRoleFromToken } from '../utils/auth';
@@ -40,16 +41,17 @@ const Sidebar = ({ onNavigate, className = "" }: SidebarProps) => {
     { icon: PeopleIcon, label: 'User Management', path: '/users' },
     { icon: GroupsIcon, label: 'Job Logs', path: '/jobLogs' },
     { icon: ReceiptLongIcon, label: 'Billed Jobs', path: '/billed-jobs' },
+    { icon: WebIcon, label: 'Login Page CMS', path: '/login-cms', adminOnly: true },
   ];
   const filteredMenuItems =
     role && role !== 'ADMIN' && role !== 'ACCOUNTANT'
-      ? menuItems.filter((item) => {
+      ? menuItems.filter((item: any) => {
         if (item.path === dashboardPath || item.label === 'Dashboard') return true;
         if (item.label.toUpperCase() === role) return true;
         if (role === 'PROGRAMMER' && item.label === 'Operator') return true;
         return false;
       })
-      : menuItems;
+      : menuItems.filter((item: any) => !item.adminOnly || role === 'ADMIN');
 
   useEffect(() => {
     if (typeof window === 'undefined') return undefined;

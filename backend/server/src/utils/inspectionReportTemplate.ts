@@ -37,7 +37,8 @@ export type GenerateInspectionReportPayload = {
 };
 
 const CHECK_MARK = "&#10003;";
-const MAX_ROWS = 30;
+const MAX_ROWS = 100;
+const ROWS_PER_PAGE = 26;
 
 const htmlEscape = (value: unknown): string =>
   String(value ?? "")
@@ -133,26 +134,151 @@ export const buildInspectionReportHtml = (payload: GenerateInspectionReportPaylo
     }
   );
 
-  const tableRowsHtml = rowsToRender
-    .map((row, index) => {
-      return `
-        <tr>
-          <td class="sl-col">${index + 1}</td>
-          <td>${htmlEscape(row.actualDimension)}</td>
-          <td>${formatTolerance(row.tolerance)}</td>
-          <td>${htmlEscape(row.measuringDimension)}</td>
-          <td>${htmlEscape(row.deviation)}</td>
-          <td class="inst-col-data"><div class="inst-row">${instrumentPack(row.instruments)}</div></td>
-        </tr>
-      `;
-    })
-    .join("");
+  const chunks: InspectionRowPayload[][] = [];
+  for (let i = 0; i < rowsToRender.length; i += ROWS_PER_PAGE) {
+    chunks.push(rowsToRender.slice(i, i + ROWS_PER_PAGE));
+  }
 
   const workPieceDamage = toYesNo(payload.workPieceDamage);
   const rightAngleProblem = toYesNo(payload.rightAngleProblem);
   const materialProblem = toYesNo(payload.materialProblem);
   const inspectedBy = normalizeText(payload.inspectedBy).toUpperCase();
   const approvedBy = normalizeText(payload.approvedBy).toUpperCase();
+
+  const sheetsHtml = chunks.map((chunk, chunkIndex) => {
+    // Fill the last page with empty rows up to ROWS_PER_PAGE if needed for consistent styling, or just leave as is. We'll leave as is to avoid unnecessary lines if not requested.
+    const tableRowsHtml = chunk
+      .map((row, index) => {
+        const globalSl = chunkIndex * ROWS_PER_PAGE + index + 1;
+        return `
+          <tr>
+            <td class="sl-col">${globalSl}</td>
+            <td>${htmlEscape(row.actualDimension)}</td>
+            <td>${formatTolerance(row.tolerance)}</td>
+            <td>${htmlEscape(row.measuringDimension)}</td>
+            <td>${htmlEscape(row.deviation)}</td>
+            <td class="inst-col-data"><div class="inst-row">${instrumentPack(row.instruments)}</div></td>
+          </tr>
+        `;
+      })
+      .join("");
+
+    return `
+    <div class="sheet">
+      <div class="title-badge">Inspection Report ${chunks.length > 1 ? `(Page ${chunkIndex + 1}/${chunks.length})` : ""}</div>
+
+      <div class="header-row">
+        <div class="brand-wrap">
+          ${logoDataUri ? `<img class="brand-icon" src="${logoDataUri}" alt="Unique Precision Logo" />` : ""}
+          <div>
+            <div class="brand-name">Unique Precision</div>
+            <div class="brand-city">Bangalore - 560 091</div>
+          </div>
+        </div>
+        <div class="contact">
+          <div class="contact-line"><span>${EMAIL_ICON_SVG}</span><span>: uniqueprecision2019@gmail.com</span></div>
+          <div class="contact-line"><span>${PUBLIC_ICON_SVG}</span><span>: www.uniqueprecision.in</span></div>
+        </div>
+      </div>
+
+      <table class="meta-table">
+        <tr>
+          <td class="meta-label">Customer ID</td>
+          <td class="meta-colon">:</td>
+          <td class="meta-value">${htmlEscape(payload.customerId)}</td>
+          <td class="meta-label">Date</td>
+          <td class="meta-colon">:</td>
+          <td class="meta-value">${htmlEscape(payload.date)}</td>
+        </tr>
+        <tr>
+          <td class="meta-label">Drawing Name</td>
+          <td class="meta-colon">:</td>
+          <td class="meta-value">${htmlEscape(payload.drawingName)}</td>
+          <td class="meta-label">Drawing No.</td>
+          <td class="meta-colon">:</td>
+          <td class="meta-value">${htmlEscape(payload.drawingNo)}</td>
+        </tr>
+        <tr>
+          <td class="meta-label">Quantity</td>
+          <td class="meta-colon">:</td>
+          <td class="meta-value">${htmlEscape(payload.quantity)}</td>
+          <td colspan="3">
+            <div class="decision-strip">
+              <span>Accepted :<span class="decision-box">${decisionChecked(payload.decision, "ACCEPTED")}</span></span>
+              <span class="decision-rejected">Rejected :<span class="decision-box">${decisionChecked(payload.decision, "REJECTED")}</span></span>
+            </div>
+          </td>
+        </tr>
+      </table>
+
+      <table class="report-table">
+        <thead>
+          <tr>
+            <th class="sl-col">Sl. No.</th>
+            <th class="actual-col">Actual Dimension</th>
+            <th class="tol-col">Tolerance</th>
+            <th class="measure-col">Measuring Dimension</th>
+            <th class="dev-col">Deviation</th>
+            <th class="inst-col">Instruments to Measure</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${tableRowsHtml}
+        </tbody>
+      </table>
+
+      ${chunkIndex === chunks.length - 1 ? `
+      <div class="remarks">
+        <span>Remarks: All Dimensions are in mm.</span>
+        <span class="remarks-value">${htmlEscape(payload.remarks)}</span>
+      </div>
+
+      <div class="bottom-grid">
+        <div>
+          <div class="legend-wrap">
+            <div><span class="legend-red">HM</span>: Height Master</div>
+            <div><span class="legend-red">SG</span>: Slip Guage</div>
+            <div><span class="legend-red">PG</span>: Pin Guage</div>
+            <div><span class="legend-red">VC</span>: Vernier Caliper</div>
+            <div><span class="legend-red">DM</span>: Digital Micro Meter</div>
+          </div>
+        </div>
+        <div class="damage-column">
+          <div class="damage-wrap">
+            <div></div>
+            <div class="damage-head">YES</div>
+            <div class="damage-head">NO</div>
+
+            <div class="damage-label">Work Piece Damage</div>
+            <div class="damage-box">${ynCell(workPieceDamage, "YES")}</div>
+            <div class="damage-box">${ynCell(workPieceDamage, "NO")}</div>
+
+            <div class="damage-label">Any Right Angle Problem</div>
+            <div class="damage-box">${ynCell(rightAngleProblem, "YES")}</div>
+            <div class="damage-box">${ynCell(rightAngleProblem, "NO")}</div>
+
+            <div class="damage-label">Any Material Problem</div>
+            <div class="damage-box">${ynCell(materialProblem, "YES")}</div>
+            <div class="damage-box">${ynCell(materialProblem, "NO")}</div>
+          </div>
+        </div>
+        <div class="signatures">
+          <div>
+            <div>Inspected by</div>
+            <div class="sign-line">${htmlEscape(inspectedBy)}</div>
+          </div>
+          <div>
+            <div>Approved by</div>
+            <div class="sign-line">${htmlEscape(approvedBy)}</div>
+          </div>
+        </div>
+      </div>
+      ` : `<div style="flex: 1;"></div>`}
+    </div>
+    `;
+  }).join("");
+
+
 
   return `<!doctype html>
 <html>
@@ -173,20 +299,25 @@ export const buildInspectionReportHtml = (payload: GenerateInspectionReportPaylo
       min-height: 100vh;
       padding: 12px;
       display: flex;
-      justify-content: flex-start;
-      align-items: flex-start;
+      flex-direction: column;
+      gap: 16px;
+      align-items: center;
     }
     .sheet {
       position: relative;
       width: 100%;
       max-width: 760px;
-      min-height: 1065px;
+      height: 1065px;
       background: #fff;
       border: 1.6px solid #3c55b4;
       padding: 24px 8px 8px;
       color: #2848a7;
       display: flex;
       flex-direction: column;
+      page-break-after: always;
+    }
+    .sheet:last-child {
+      page-break-after: auto;
     }
     .title-badge {
       position: absolute;
@@ -481,115 +612,7 @@ export const buildInspectionReportHtml = (payload: GenerateInspectionReportPaylo
 </head>
 <body>
   <div class="preview-canvas">
-    <div class="sheet">
-      <div class="title-badge">Inspection Report</div>
-
-      <div class="header-row">
-        <div class="brand-wrap">
-          ${logoDataUri ? `<img class="brand-icon" src="${logoDataUri}" alt="Unique Precision Logo" />` : ""}
-          <div>
-            <div class="brand-name">Unique Precision</div>
-            <div class="brand-city">Bangalore - 560 091</div>
-          </div>
-        </div>
-        <div class="contact">
-          <div class="contact-line"><span>${EMAIL_ICON_SVG}</span><span>: uniqueprecision2019@gmail.com</span></div>
-          <div class="contact-line"><span>${PUBLIC_ICON_SVG}</span><span>: www.uniqueprecision.in</span></div>
-        </div>
-      </div>
-
-      <table class="meta-table">
-        <tr>
-          <td class="meta-label">Customer ID</td>
-          <td class="meta-colon">:</td>
-          <td class="meta-value">${htmlEscape(payload.customerId)}</td>
-          <td class="meta-label">Date</td>
-          <td class="meta-colon">:</td>
-          <td class="meta-value">${htmlEscape(payload.date)}</td>
-        </tr>
-        <tr>
-          <td class="meta-label">Drawing Name</td>
-          <td class="meta-colon">:</td>
-          <td class="meta-value">${htmlEscape(payload.drawingName)}</td>
-          <td class="meta-label">Drawing No.</td>
-          <td class="meta-colon">:</td>
-          <td class="meta-value">${htmlEscape(payload.drawingNo)}</td>
-        </tr>
-        <tr>
-          <td class="meta-label">Quantity</td>
-          <td class="meta-colon">:</td>
-          <td class="meta-value">${htmlEscape(payload.quantity)}</td>
-          <td colspan="3">
-            <div class="decision-strip">
-              <span>Accepted :<span class="decision-box">${decisionChecked(payload.decision, "ACCEPTED")}</span></span>
-              <span class="decision-rejected">Rejected :<span class="decision-box">${decisionChecked(payload.decision, "REJECTED")}</span></span>
-            </div>
-          </td>
-        </tr>
-      </table>
-
-      <table class="report-table">
-        <thead>
-          <tr>
-            <th class="sl-col">Sl. No.</th>
-            <th class="actual-col">Actual Dimension</th>
-            <th class="tol-col">Tolerance</th>
-            <th class="measure-col">Measuring Dimension</th>
-            <th class="dev-col">Deviation</th>
-            <th class="inst-col">Instruments to Measure</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${tableRowsHtml}
-        </tbody>
-      </table>
-
-      <div class="remarks">
-        <span>Remarks: All Dimensions are in mm.</span>
-        <span class="remarks-value">${htmlEscape(payload.remarks)}</span>
-      </div>
-
-      <div class="bottom-grid">
-        <div>
-          <div class="legend-wrap">
-            <div><span class="legend-red">HM</span>: Height Master</div>
-            <div><span class="legend-red">SG</span>: Slip Guage</div>
-            <div><span class="legend-red">PG</span>: Pin Guage</div>
-            <div><span class="legend-red">VC</span>: Vernier Caliper</div>
-            <div><span class="legend-red">DM</span>: Digital Micro Meter</div>
-          </div>
-        </div>
-        <div class="damage-column">
-          <div class="damage-wrap">
-            <div></div>
-            <div class="damage-head">YES</div>
-            <div class="damage-head">NO</div>
-
-            <div class="damage-label">Work Piece Damage</div>
-            <div class="damage-box">${ynCell(workPieceDamage, "YES")}</div>
-            <div class="damage-box">${ynCell(workPieceDamage, "NO")}</div>
-
-            <div class="damage-label">Any Right Angle Problem</div>
-            <div class="damage-box">${ynCell(rightAngleProblem, "YES")}</div>
-            <div class="damage-box">${ynCell(rightAngleProblem, "NO")}</div>
-
-            <div class="damage-label">Any Material Problem</div>
-            <div class="damage-box">${ynCell(materialProblem, "YES")}</div>
-            <div class="damage-box">${ynCell(materialProblem, "NO")}</div>
-          </div>
-        </div>
-        <div class="signatures">
-          <div>
-            <div>Inspected by</div>
-            <div class="sign-line">${htmlEscape(inspectedBy)}</div>
-          </div>
-          <div>
-            <div>Approved by</div>
-            <div class="sign-line">${htmlEscape(approvedBy)}</div>
-          </div>
-        </div>
-      </div>
-    </div>
+    ${sheetsHtml}
   </div>
 </body>
 </html>`;

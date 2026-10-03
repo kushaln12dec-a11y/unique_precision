@@ -88,6 +88,7 @@ export type AdminSection =
   | "machines"
   | "hours"
   | "thickness"
+  | "idleTime"
   | null;
 
 export type AdminToastState = {
@@ -104,4 +105,5 @@ export type AdminSnapshot = {
   machineOptions: string[];
   hoursConfig: Pick<MasterConfig, "settingHoursPerSetting" | "complexExtraHours" | "pipExtraHours"> | null;
   thicknessConfig: Pick<MasterConfig, "thicknessRateUpto100" | "thicknessRateAbove100"> | null;
+  idleTimeOptions: string[];
 };

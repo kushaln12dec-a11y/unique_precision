@@ -279,8 +279,27 @@ model IdleTimeConfig {
   id              String   @id @default(uuid()) @db.Uuid
   idleTimeType    String   @unique
   durationMinutes Int
+  requiresReason  Boolean  @default(false)
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
+}
+
+model LoginSlide {
+  id          String   @id @default(uuid()) @db.Uuid
+  title       String
+  subtitle    String?
+  content     String   @db.Text
+  highlight   String?
+  imageUrl    String?
+  buttonLabel String?
+  buttonUrl   String?
+  sortOrder   Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([isActive])
+  @@index([sortOrder])
 }
 
 model Counter {

@@ -9,14 +9,37 @@
 
 .roleboard-content {
   flex: 1;
+  display: flex;
+  flex-direction: column;
   min-width: 0;
   min-height: 0;
   background: var(--color-page-bg);
-  padding: 0.25rem;
   box-sizing: border-box;
+  overflow: hidden;
+  padding: 0;
+}
+
+/* Programmer-panel inside roleboard fills available height */
+.roleboard-content>.programmer-panel {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  margin: 0.5rem;
+}
+
+/* Allow the AG Grid shell inside roleboard to flex-grow */
+.roleboard-content>.programmer-panel .lazy-ag-grid-shell {
+  flex: 1;
+  min-height: 0;
+  height: auto !important;
+}
+
+/* Scrollable variant keeps page scroll (e.g. admin pages) */
+.roleboard-content.roleboard-content-scrollable {
   overflow-y: auto;
   overflow-x: hidden;
-  padding:0px;
 }
 
 .roleboard-body {
@@ -30,6 +53,7 @@
 }
 
 @media (min-width: 1025px) {
+
   .roleboard-container:has(.sidebar.collapsed:hover),
   .roleboard-container:has(.sidebar.expanded) {
     padding-left: 240px;
@@ -41,7 +65,7 @@
 }
 
 @media only screen and (min-width: 768px) and (max-width: 1024px) and (orientation: portrait),
-  only screen and (min-width: 1024px) and (max-width: 1366px) and (orientation: landscape) {
+only screen and (min-width: 1024px) and (max-width: 1366px) and (orientation: landscape) {
   .roleboard-body {
     margin-top: 1rem;
     padding: 1.2rem;
@@ -93,7 +117,8 @@
   }
 }
 
-@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+@media (-webkit-min-device-pixel-ratio: 2),
+(min-resolution: 192dpi) {
   .roleboard-body {
     box-shadow: var(--card-shadow);
   }

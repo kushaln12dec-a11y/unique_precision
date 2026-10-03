@@ -9,6 +9,7 @@ import { getUserRoleFromToken } from "../../utils/auth";
 import { getMasterConfig, updateMasterConfig } from "../../services/masterConfigApi";
 import type { CustomerRate, MasterConfig } from "../../types/masterConfig";
 import { MACHINE_OPTIONS, toMachineIndex } from "../../utils/jobFormatting";
+import { deleteIdleTimeConfig, getIdleTimeConfigs, upsertIdleTimeConfig } from "../../services/idleTimeConfigApi";
 import AdminSectionModals from "./components/AdminSectionModals";
 import AdminSummaryCards from "./components/AdminSummaryCards";
 import {
@@ -58,6 +59,8 @@ const AdminConsole = () => {
   const [passInput, setPassInput] = useState("");
   const [electrodeInput, setElectrodeInput] = useState("");
   const [machineInput, setMachineInput] = useState("");
+  const [idleTimeOptions, setIdleTimeOptions] = useState<string[]>([]);
+  const [idleTimeInput, setIdleTimeInput] = useState("");
   const [savedSnapshot, setSavedSnapshot] = useState<AdminSnapshot>({
     customers: [],
     materials: [],
@@ -66,6 +69,7 @@ const AdminConsole = () => {
     machineOptions: [],
     hoursConfig: null,
     thicknessConfig: null,
+    idleTimeOptions: [],
   });
 
   useEffect(() => {
@@ -91,7 +95,13 @@ const AdminConsole = () => {
         setPassOptions(nextPassOptions);
         setElectrodeOptions(nextElectrodeOptions);
         setMachineOptions(nextMachineOptions);
-        persistSnapshot(fetched, setSavedSnapshot);
+
+        const fetchedIdle = await getIdleTimeConfigs();
+        const fallbackIdle = ["Power Break", "Shift Over", "Machine Breakdown", "Vertical Dial", "Cleaning", "Consumables Change"];
+        const nextIdle = sanitizeOptions(fetchedIdle.length > 0 ? fetchedIdle.map((c) => c.idleTimeType) : fallbackIdle);
+        setIdleTimeOptions(nextIdle);
+
+        persistSnapshot(fetched, nextIdle, setSavedSnapshot);
       } catch {
         setToast({ message: "Failed to load Admin Console data", variant: "error", visible: true });
       } finally {
@@ -107,6 +117,7 @@ const AdminConsole = () => {
   const normalizedPassOptions = useMemo(() => sanitizeOptions(passOptions), [passOptions]);
   const normalizedElectrodeOptions = useMemo(() => sanitizeOptions(electrodeOptions), [electrodeOptions]);
   const normalizedMachineOptions = useMemo(() => sanitizeMachineOptions(machineOptions), [machineOptions]);
+  const normalizedIdleTimeOptions = useMemo(() => sanitizeOptions(idleTimeOptions), [idleTimeOptions]);
   const normalizedHoursConfig = useMemo(
     () => ({
       settingHoursPerSetting: Number(config?.settingHoursPerSetting) === 0.25 ? 0.25 : 0.5,
@@ -132,6 +143,7 @@ const AdminConsole = () => {
       machines: serialize(normalizedMachineOptions) !== serialize(savedSnapshot.machineOptions),
       hours: serialize(normalizedHoursConfig) !== serialize(savedSnapshot.hoursConfig),
       thickness: serialize(normalizedThicknessConfig) !== serialize(savedSnapshot.thicknessConfig),
+      idleTime: serialize(normalizedIdleTimeOptions) !== serialize(savedSnapshot.idleTimeOptions),
     }),
     [
       normalizedCustomers,
@@ -141,6 +153,7 @@ const AdminConsole = () => {
       normalizedMachineOptions,
       normalizedHoursConfig,
       normalizedThicknessConfig,
+      normalizedIdleTimeOptions,
       savedSnapshot,
     ]
   );
@@ -170,7 +183,19 @@ const AdminConsole = () => {
       setPassOptions(sanitizeOptions(updated.passOptions));
       setElectrodeOptions(sanitizeOptions(updated.sedmElectrodeOptions));
       setMachineOptions(sanitizeMachineOptions(updated.machineOptions));
-      persistSnapshot(updated, setSavedSnapshot);
+
+      const currentIdleTypes = new Set(normalizedIdleTimeOptions);
+      const originalIdleTypes = new Set(savedSnapshot.idleTimeOptions);
+      const added = normalizedIdleTimeOptions.filter(t => !originalIdleTypes.has(t));
+      const removed = savedSnapshot.idleTimeOptions.filter(t => !currentIdleTypes.has(t));
+      for (const t of added) {
+        await upsertIdleTimeConfig(t, 0);
+      }
+      for (const t of removed) {
+        await deleteIdleTimeConfig(t);
+      }
+
+      persistSnapshot(updated, normalizedIdleTimeOptions, setSavedSnapshot);
       setToast({ message: "Admin Console saved", variant: "success", visible: true });
     } catch {
       setToast({ message: "Failed to save Admin Console", variant: "error", visible: true });
@@ -206,6 +231,7 @@ const AdminConsole = () => {
     { title: "Pass Options", value: `${normalizedPassOptions.length} pass presets`, detail: "Controls pass dropdown values in the job form.", dirty: sectionDirty.pass, onClick: () => setActiveSection("pass") },
     { title: "SEDM Electrode", value: `${normalizedElectrodeOptions.length} electrode options`, detail: "Keeps SEDM selection fast and consistent.", dirty: sectionDirty.sedm, onClick: () => setActiveSection("sedm") },
     { title: "Machine Options", value: `${normalizedMachineOptions.length} machine slots`, detail: "Feeds the Operator Mach # dropdowns.", dirty: sectionDirty.machines, onClick: () => setActiveSection("machines") },
+    { title: "Idle Time Options", value: `${normalizedIdleTimeOptions.length} reasons`, detail: "Presets for operator task switch idle reasons.", dirty: sectionDirty.idleTime, onClick: () => setActiveSection("idleTime") },
     { title: "Hours Config", value: `${normalizedHoursConfig.settingHoursPerSetting} base setting hrs`, detail: "Global extras still apply across Programmer calculations.", dirty: sectionDirty.hours, onClick: () => setActiveSection("hours") },
   ];
 
@@ -263,6 +289,10 @@ const AdminConsole = () => {
         setMachineInput={setMachineInput}
         machineOptions={machineOptions}
         setMachineOptions={setMachineOptions}
+        idleTimeInput={idleTimeInput}
+        setIdleTimeInput={setIdleTimeInput}
+        idleTimeOptions={idleTimeOptions}
+        setIdleTimeOptions={setIdleTimeOptions}
         addOption={addOption}
         removeOption={(index, setList) => setList((prev) => prev.filter((_, idx) => idx !== index))}
         sanitizeMachineOptions={sanitizeMachineOptions}
@@ -276,7 +306,7 @@ const AdminConsole = () => {
   );
 };
 
-const persistSnapshot = (nextConfig: MasterConfig, setSavedSnapshot: Dispatch<SetStateAction<AdminSnapshot>>) => {
+const persistSnapshot = (nextConfig: MasterConfig, idleTimeOptions: string[], setSavedSnapshot: Dispatch<SetStateAction<AdminSnapshot>>) => {
   setSavedSnapshot({
     customers: normalizeCustomerRows(nextConfig.customers),
     materials: sanitizeOptions(nextConfig.materials),
@@ -292,6 +322,7 @@ const persistSnapshot = (nextConfig: MasterConfig, setSavedSnapshot: Dispatch<Se
       thicknessRateUpto100: Number(nextConfig.thicknessRateUpto100) || 1500,
       thicknessRateAbove100: Number(nextConfig.thicknessRateAbove100) || 1200,
     },
+    idleTimeOptions: sanitizeOptions(idleTimeOptions),
   });
 };
 
