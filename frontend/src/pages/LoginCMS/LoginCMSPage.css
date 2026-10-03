@@ -9,6 +9,7 @@
     padding: 1.5rem;
     min-height: 0;
     overflow-y: auto;
+    overflow-x: hidden;
 }
 
 .login-cms-header {
@@ -88,6 +89,10 @@
     grid-template-columns: 1fr 360px;
     gap: 1.5rem;
     align-items: start;
+}
+
+.login-cms-workspace>* {
+    min-width: 0;
 }
 
 @media (max-width: 960px) {

@@ -5,9 +5,68 @@ import { authorize } from "../middleware/rbac-middleware";
 
 const router = Router();
 
+const DEFAULT_COMPANY_SLIDES = [
+    {
+        title: "UNIQUE PRECISION",
+        subtitle: "Our Advanced Manufacturing Solutions",
+        content:
+            "FANUC ROBOCUT WIRE EDM MACHINE: The superior engineered Robocut Aoic Series comes with fully integrated Japan's Fanuc reliability, 3 axis Capability, maximum taper angle, accuracy and high surface finish\n" +
+            'EDM DRILLING MACHINE: The controlled technology built super EDM Machine comprises of "one-touch one hole" feature adopting 3D accuracy equally among x, y and z-axis\n' +
+            "Tesa - Hite 600 - Height Master: Experience fastest and Simplest measurement with TESA- HITE features programmed routines for more accurate and complex measurement which is far efficient than ever before",
+        sortOrder: 0,
+        isActive: true,
+    },
+    {
+        title: "Facilities",
+        subtitle: "The Service we render are auto components & All Types of wedm job works with some as follows",
+        content:
+            "Forging Dies\nGear Cutting\nDie Insert\nSpoke Dies\nConducting Dies\nPcd Cutting\nBullet Dies\nCarbide Snap Gauges\nRing Gauges\nPlug Gauges\nDiamond Gauges\nDrop Gauges\nProfile Gauges\nFixtures\nMould Tools\nPress Tools",
+        sortOrder: 1,
+        isActive: true,
+    },
+    {
+        title: "Quality Instrument Traits",
+        subtitle: "Precision Measurement Instruments",
+        content:
+            "Slip Gauges: Come in sets of blocks of various sizes. Two or more blocks are wrung together to form a stack of required dimension, used to measure the length or width of a slot as accurate as 0.005mm\n" +
+            "Pin Gauges: Precision ground cylindrical bars used to measure the diameter of a hole. Available from dia 1.00mm to dia 5.00mm in step of 0.01mm\n" +
+            "Outside Micrometer: Precision measuring instrument used to measure small distances. Measurements are digitally displayed on the LCD screen. Least count is 0.001mm. Maximum measurable size available is 25.000mm\n" +
+            "Dial Caliper: Used to measure the inner and outer dimensions accurately. Least count is 0.01mm. Available size is 150.00mm\n" +
+            "Dial Gauge: Used to accurately measure small linear distances, for example to square a job before starting the wire EDM process, to check the perpendicularity of the job. Least count is 0.002mm\n" +
+            "Vernier Height Gauge: A measuring device used for determining the height of objects, and for marking of items to be worked on. Used in metalworking or metrology to either set or measure vertical distances",
+        sortOrder: 2,
+        isActive: true,
+    },
+    {
+        title: "Why Unique Precision",
+        subtitle: "We at Unique Precision, strive to give our customers an incomparable tooling experience with a commitment of quality, trust, accuracy and affordability. our promises include:",
+        content:
+            "Accuracy Variety & Quality: When we say variety, unique precision has got, Digital Micrometer, Dial Vernier, Dial Gauge, Slip Gauges, Pin Gauges as precision measuring instruments. We wire EDM parts as accurate as 0.002mm and surface finish up to Ra 0.30\n" +
+            "Quality & On-Time Job Processing: Customers have the flexibility to send the drawings any time via e-mail. We do accept hard copy drawings as well. We ensure fast turnarounds. Also, we work 24/7 to help us meet our production commitments\n" +
+            "4 Axis Capability: With our 4 axis capabilities, we can machine major complex profiles. When it comes to suiting punch and die we can either press or slip fit as per customer demand and requirements",
+        sortOrder: 3,
+        isActive: true,
+    },
+];
+
+async function ensureDefaultSlidesExist() {
+    try {
+        const count = await prisma.loginSlide.count();
+        if (count === 0) {
+            await prisma.loginSlide.createMany({
+                data: DEFAULT_COMPANY_SLIDES,
+            });
+            console.log("[LoginCMS] Seeded 4 default company slides.");
+        }
+    } catch (error) {
+        console.error("Error checking/seeding default login slides:", error);
+    }
+}
+
 // Public endpoint — read active slides (no auth required, for login page)
 router.get("/public", async (_req, res) => {
     try {
+        await ensureDefaultSlidesExist();
         const slides = await prisma.loginSlide.findMany({
             where: { isActive: true },
             orderBy: { sortOrder: "asc" },
@@ -36,6 +95,7 @@ router.use(authMiddleware);
 // Get all slides (admin management view)
 router.get("/", authorize("ADMIN"), async (_req, res) => {
     try {
+        await ensureDefaultSlidesExist();
         const slides = await prisma.loginSlide.findMany({
             orderBy: { sortOrder: "asc" },
         });

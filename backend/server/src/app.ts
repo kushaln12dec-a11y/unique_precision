@@ -128,6 +128,10 @@ app.get("/api/protected", authenticate, (_req, res) => {
   res.json({ message: "Protected data" });
 });
 
+// Serve local uploads
+const publicUploadsPath = path.join(process.cwd(), "public", "uploads");
+app.use("/uploads", express.static(publicUploadsPath));
+
 // Serve frontend if built assets exist
 const clientPath = path.join(__dirname, "../../frontend/dist");
 const indexPath = path.join(clientPath, "index.html");

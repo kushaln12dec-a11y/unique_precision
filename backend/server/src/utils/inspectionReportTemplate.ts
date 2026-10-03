@@ -37,8 +37,8 @@ export type GenerateInspectionReportPayload = {
 };
 
 const CHECK_MARK = "&#10003;";
-const MAX_ROWS = 100;
-const ROWS_PER_PAGE = 26;
+const MAX_ROWS = 500;
+const ROWS_PER_PAGE = 50;
 
 const htmlEscape = (value: unknown): string =>
   String(value ?? "")
@@ -227,7 +227,6 @@ export const buildInspectionReportHtml = (payload: GenerateInspectionReportPaylo
         </tbody>
       </table>
 
-      ${chunkIndex === chunks.length - 1 ? `
       <div class="remarks">
         <span>Remarks: All Dimensions are in mm.</span>
         <span class="remarks-value">${htmlEscape(payload.remarks)}</span>
@@ -273,7 +272,6 @@ export const buildInspectionReportHtml = (payload: GenerateInspectionReportPaylo
           </div>
         </div>
       </div>
-      ` : `<div style="flex: 1;"></div>`}
     </div>
     `;
   }).join("");

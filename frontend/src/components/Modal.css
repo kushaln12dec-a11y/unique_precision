@@ -55,7 +55,8 @@
 }
 
 @media only screen and (min-width: 768px) and (max-width: 1024px) and (orientation: portrait),
-  only screen and (min-width: 1024px) and (max-width: 1366px) and (orientation: landscape) {
+only screen and (min-width: 1024px) and (max-width: 1366px) and (orientation: landscape) {
+
   .filter-modal.modal-card,
   .filter-modal.modal-card.modal-large,
   .modal-card.filter-modal,
@@ -92,21 +93,23 @@
 
 .modal-close {
   border: none;
-  background: transparent;
-  font-size: 1.4rem;
-  line-height: 1;
-  color: var(--color-text);
+  background: var(--color-surface-muted, rgba(0, 0, 0, 0.05));
+  color: var(--color-text-soft, #64748b);
   cursor: pointer;
   padding: 0;
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
+  transition: all 0.2s ease;
 }
 
 .modal-close:hover {
-  color: var(--color-danger);
+  background: rgba(239, 68, 68, 0.12);
+  color: #ef4444;
+  transform: scale(1.06);
 }
 
 .modal-content {

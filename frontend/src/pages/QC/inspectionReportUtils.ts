@@ -4,7 +4,8 @@ export type Decision = "ACCEPTED" | "REJECTED";
 export type YesNo = "YES" | "NO" | "";
 export type DamageField = "workPieceDamage" | "rightAngleProblem" | "materialProblem";
 
-export const MAX_ROWS = 50;
+export const MAX_ROWS = 500;
+export const ENTRIES_PER_PAGE = 50;
 
 export const createEmptyInstruments = (): InstrumentSelection => ({
   hm: false,
