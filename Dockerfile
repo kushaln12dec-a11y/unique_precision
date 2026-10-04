@@ -44,9 +44,9 @@ ENV NODE_ENV=production
 WORKDIR /app
 
 # Install deps first (better layer caching)
-COPY frontend/package.json frontend/package-lock.json ./frontend/
+COPY frontend/package.json frontend/package-lock.json* ./frontend/
 RUN cd frontend && npm install --include=dev
-COPY backend/package.json backend/package-lock.json ./backend/
+COPY backend/package.json backend/package-lock.json* ./backend/
 RUN cd backend && npm install --include=dev
 
 # Copy source and build both
