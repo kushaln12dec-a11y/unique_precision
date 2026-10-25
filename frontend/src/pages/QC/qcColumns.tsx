@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import CloseIcon from "@mui/icons-material/Close";
 import MarqueeCopyText from "../../components/MarqueeCopyText";
 import { formatJobRefDisplay } from "../../utils/jobFormatting";
@@ -48,7 +48,6 @@ const getOperatorsByQuantity = (row: QcRow): OperatorQtyEntry[] => {
   const from = row.quantityFrom;
   const to = row.quantityTo;
 
-  // For each quantity in this QC row's range, collect operators from matching captures
   const qtyMap = new Map<number, Map<string, string>>(); // qty → (name → duration)
 
   for (let qty = from; qty <= to; qty++) {
@@ -62,12 +61,10 @@ const getOperatorsByQuantity = (row: QcRow): OperatorQtyEntry[] => {
       const rawName = String(c.opsName || "").trim();
       if (!rawName || rawName.toUpperCase() === "UNASSIGNED" || rawName.toUpperCase() === "UNASSIGN") return;
 
-      // Handle comma-separated names within a single capture
       const names = rawName.split(",").map(n => n.trim().toUpperCase()).filter(Boolean);
       const durLabel = formatMachineHrsLabel(c.machineHrs);
 
       names.forEach(name => {
-        // If this operator already appears for this qty, keep the longer duration
         const existing = nameMap.get(name) || "";
         if (!existing && durLabel) {
           nameMap.set(name, durLabel);
@@ -89,7 +86,6 @@ const getOperatorsByQuantity = (row: QcRow): OperatorQtyEntry[] => {
     }
   }
 
-  // Build the result
   const result: OperatorQtyEntry[] = [];
   qtyMap.forEach((nameMap, qty) => {
     const operators = Array.from(nameMap.entries()).map(([name, dur]) => ({
@@ -102,15 +98,83 @@ const getOperatorsByQuantity = (row: QcRow): OperatorQtyEntry[] => {
   return result.sort((a, b) => a.quantityNumber - b.quantityNumber);
 };
 
-/** Flat list of unique operator names (for search/filter compatibility) */
-const getCapturedOperatorNamesList = (row: QcRow) => {
-  const entries = getOperatorsByQuantity(row);
-  const unique = new Set<string>();
-  entries.forEach(e => e.operators.forEach(o => unique.add(o.name)));
-  return unique.size > 0 ? Array.from(unique) : ["-"];
-};
+/* ---------- Compact operator cell with popover ---------- */
 
-/* ---------- cell components ---------- */
+/**
+ * Shows a compact single-line summary with an "+N more" badge.
+ * Hovering the badge opens a popover listing all operators grouped by quantity.
+ */
+const OperatorQuantityCell = ({ row }: { row: QcRow }) => {
+  const [open, setOpen] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const entries = getOperatorsByQuantity(row);
+
+  if (entries.length === 0) {
+    return <span className="qc-operator-empty">—</span>;
+  }
+
+  // Flatten all unique operators across all quantities for the summary line
+  const allOps = entries.flatMap(e => e.operators);
+  const firstName = allOps[0]?.name ?? "—";
+  const firstDur = allOps[0]?.durationLabel ?? "";
+  const extraCount = allOps.length - 1;
+  const multiQty = entries.length > 1;
+
+  const totalTooltipLines = entries.reduce((sum, e) => sum + e.operators.length, 0);
+  const showPopover = totalTooltipLines > 1 || multiQty;
+
+  const handleMouseEnter = () => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    setOpen(true);
+  };
+  const handleMouseLeave = () => {
+    timerRef.current = setTimeout(() => setOpen(false), 180);
+  };
+
+  return (
+    <div
+      className="qc-op-cell-wrapper"
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+    >
+      {/* ── Inline summary row ── */}
+      <div className="qc-op-summary">
+        <span className="qc-op-first-name" title={firstDur ? `${firstName} — ${firstDur}` : firstName}>
+          {firstName}
+        </span>
+        {firstDur && <span className="qc-op-first-dur">{firstDur}</span>}
+        {showPopover && (
+          <span className="qc-op-more-badge">
+            {extraCount > 0 ? `+${extraCount}` : "▾"}
+          </span>
+        )}
+      </div>
+
+      {/* ── Popover panel ── */}
+      {showPopover && open && (
+        <div className="qc-op-popover">
+          <div className="qc-op-popover-inner">
+            {entries.map(entry => (
+              <div key={entry.quantityNumber} className="qc-op-pop-group">
+                {multiQty && (
+                  <span className="qc-op-pop-qty-label">Qty #{entry.quantityNumber}</span>
+                )}
+                {entry.operators.map((op, i) => (
+                  <div key={i} className="qc-op-pop-row">
+                    <span className="qc-op-pop-name">{op.name}</span>
+                    {op.durationLabel && (
+                      <span className="qc-op-pop-dur">{op.durationLabel}</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
 
 // Dropdown qty cell: simple viewing dropdown if > 1 item, clean badge if 1 item
 const QtyBadgeCell = ({ items, title }: { items: string[]; title?: string }) => {
@@ -133,90 +197,6 @@ const QtyBadgeCell = ({ items, title }: { items: string[]; title?: string }) => 
           </option>
         ))}
       </select>
-    </div>
-  );
-};
-
-/** Grouped operator display: quantity-keyed operator chips with durations */
-const OperatorQuantityCell = ({ row }: { row: QcRow }) => {
-  const [expanded, setExpanded] = useState(false);
-  const entries = getOperatorsByQuantity(row);
-  const totalQuantities = row.quantityTo - row.quantityFrom + 1;
-
-  if (entries.length === 0) {
-    return <span className="qc-operator-empty">—</span>;
-  }
-
-  // Simple case: single quantity, single operator
-  if (entries.length === 1 && entries[0].operators.length === 1) {
-    const op = entries[0].operators[0];
-    return (
-      <div className="qc-operator-grouped" title={op.durationLabel ? `${op.name} — ${op.durationLabel}` : op.name}>
-        <span className="qc-operator-single-name">{op.name}</span>
-        {op.durationLabel && <span className="qc-operator-duration">{op.durationLabel}</span>}
-      </div>
-    );
-  }
-
-  // Simple case: single quantity, multiple operators — show flat chip list
-  if (entries.length === 1) {
-    const ops = entries[0].operators;
-    const visibleOps = expanded ? ops : ops.slice(0, 2);
-    return (
-      <div className="qc-operator-grouped">
-        <div className="qc-operator-chips">
-          {visibleOps.map((op, idx) => (
-            <span key={idx} className="qc-operator-chip" title={op.durationLabel ? `${op.name} — ${op.durationLabel}` : op.name}>
-              {op.name}
-              {op.durationLabel && <span className="qc-operator-duration">{op.durationLabel}</span>}
-            </span>
-          ))}
-        </div>
-        {ops.length > 2 && !expanded && (
-          <button type="button" className="qc-operator-view-all" onClick={(e) => { e.stopPropagation(); setExpanded(true); }}>
-            +{ops.length - 2} more
-          </button>
-        )}
-        {expanded && ops.length > 2 && (
-          <button type="button" className="qc-operator-view-all" onClick={(e) => { e.stopPropagation(); setExpanded(false); }}>
-            Show less
-          </button>
-        )}
-      </div>
-    );
-  }
-
-  // Multiple quantities: grouped display
-  const MAX_VISIBLE_GROUPS = 2;
-  const visibleEntries = expanded ? entries : entries.slice(0, MAX_VISIBLE_GROUPS);
-
-  return (
-    <div className="qc-operator-grouped">
-      {visibleEntries.map((entry) => (
-        <div key={entry.quantityNumber} className="qc-operator-qty-group">
-          {totalQuantities > 1 && (
-            <span className="qc-operator-qty-label">#{entry.quantityNumber}</span>
-          )}
-          <div className="qc-operator-chips">
-            {entry.operators.map((op, idx) => (
-              <span key={idx} className="qc-operator-chip" title={op.durationLabel ? `${op.name} — ${op.durationLabel}` : op.name}>
-                {op.name}
-                {op.durationLabel && <span className="qc-operator-duration">{op.durationLabel}</span>}
-              </span>
-            ))}
-          </div>
-        </div>
-      ))}
-      {entries.length > MAX_VISIBLE_GROUPS && !expanded && (
-        <button type="button" className="qc-operator-view-all" onClick={(e) => { e.stopPropagation(); setExpanded(true); }}>
-          View all ({entries.length} quantities)
-        </button>
-      )}
-      {expanded && entries.length > MAX_VISIBLE_GROUPS && (
-        <button type="button" className="qc-operator-view-all" onClick={(e) => { e.stopPropagation(); setExpanded(false); }}>
-          Show less
-        </button>
-      )}
     </div>
   );
 };

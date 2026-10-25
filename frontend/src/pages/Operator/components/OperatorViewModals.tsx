@@ -24,6 +24,14 @@ type PendingEndTimeCapture = {
 
 const formatWorkedDuration = (seconds: number) => formatCompactDurationWords(Math.max(0, Math.round(seconds)));
 
+type OperatorUser = { id: string | number; name: string };
+
+type SplitEntry = {
+  operatorId: string;
+  /** minutes entered by admin */
+  minutes: string;
+};
+
 type OperatorViewModalsProps = {
   jobs: JobEntry[];
   cutInputs: Map<number | string, CutInputData>;
@@ -36,13 +44,170 @@ type OperatorViewModalsProps = {
   handleUpdateQaStatus: (cutId: number | string, quantityNumbers: number[], status: "SENT_TO_QA" | "SAVED" | "READY_FOR_QA") => Promise<void>;
   handleResetQuantity: (cutId: number | string, quantityIndex: number) => Promise<void>;
   handleConfirmEndTimeCapture: (cutId: number | string, quantityIndex: number, timestampMs: number) => Promise<boolean>;
-  /** Admin-only props for post-confirm operator reassignment */
   isAdmin?: boolean;
-  allowedOperatorUsers?: Array<{ id: string | number; name: string }>;
+  allowedOperatorUsers?: OperatorUser[];
   postConfirmLogId?: string | null;
   setPostConfirmLogId?: Dispatch<SetStateAction<string | null>>;
   onAssignAfterConfirmSuccess?: (message: string) => void;
 };
+
+// ─── Admin multi-operator split modal ────────────────────────────────────────
+
+type AdminSplitModalProps = {
+  isOpen: boolean;
+  logId: string;
+  totalWorkedSeconds: number;
+  operatorUsers: OperatorUser[];
+  onClose: () => void;
+  onSuccess: (message: string) => void;
+};
+
+const AdminSplitModal = ({
+  isOpen,
+  logId,
+  totalWorkedSeconds,
+  operatorUsers,
+  onClose,
+  onSuccess,
+}: AdminSplitModalProps) => {
+  const [splits, setSplits] = useState<SplitEntry[]>([{ operatorId: "", minutes: "" }]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState("");
+
+  // Reset on open
+  useEffect(() => {
+    if (isOpen) {
+      setSplits([{ operatorId: "", minutes: "" }]);
+      setError("");
+    }
+  }, [isOpen]);
+
+  const addRow = () => setSplits(prev => [...prev, { operatorId: "", minutes: "" }]);
+  const removeRow = (idx: number) => setSplits(prev => prev.filter((_, i) => i !== idx));
+  const updateRow = (idx: number, field: keyof SplitEntry, value: string) =>
+    setSplits(prev => prev.map((s, i) => (i === idx ? { ...s, [field]: value } : s)));
+
+  const totalAssignedMinutes = splits.reduce((sum, s) => sum + (Number(s.minutes) || 0), 0);
+  const totalWorkedMinutes = Math.round(totalWorkedSeconds / 60);
+  const remainingMinutes = totalWorkedMinutes - totalAssignedMinutes;
+
+  const handleSubmit = async () => {
+    setError("");
+    const validSplits = splits.filter(s => s.operatorId && Number(s.minutes) > 0);
+    if (validSplits.length === 0) {
+      setError("Add at least one operator with a time allocation.");
+      return;
+    }
+    const duplicateIds = validSplits.map(s => s.operatorId).filter((id, i, arr) => arr.indexOf(id) !== i);
+    if (duplicateIds.length > 0) {
+      setError("Each operator can only appear once.");
+      return;
+    }
+    if (totalAssignedMinutes > totalWorkedMinutes + 1) {
+      setError(`Total assigned (${totalAssignedMinutes} min) exceeds worked time (${totalWorkedMinutes} min).`);
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      // Call assignOperatorWork once per operator; the backend splits seconds from the source log
+      for (const split of validSplits) {
+        await assignOperatorWork({
+          logId,
+          operatorUserId: split.operatorId,
+          workedSeconds: Math.round(Number(split.minutes) * 60),
+        });
+      }
+      onSuccess(`Revenue split across ${validSplits.length} operator(s) successfully.`);
+      onClose();
+    } catch (err: any) {
+      setError(err?.message || "Failed to assign. Try again or adjust manually via the Logs tab.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} title="Assign Revenue to Operator(s)" size="medium">
+      <div className="aaw-split-modal">
+        <p className="aaw-split-intro">
+          Allocate worked time to the operator(s) who actually performed this job.
+          The admin account's revenue will be reduced accordingly.
+        </p>
+
+        {/* Worked time reference */}
+        <div className="aaw-split-total-bar">
+          <span className="aaw-split-total-label">Total worked time</span>
+          <span className="aaw-split-total-value">{totalWorkedMinutes} min</span>
+          <span className={`aaw-split-remaining ${remainingMinutes < 0 ? "over" : ""}`}>
+            {remainingMinutes >= 0 ? `${remainingMinutes} min unassigned` : `${Math.abs(remainingMinutes)} min over`}
+          </span>
+        </div>
+
+        {/* Split rows */}
+        <div className="aaw-split-rows">
+          {splits.map((split, idx) => {
+            const selectedUser = operatorUsers.find(u => String(u.id) === split.operatorId);
+            return (
+              <div key={idx} className="aaw-split-row">
+                <select
+                  className="aaw-split-select"
+                  value={split.operatorId}
+                  onChange={e => updateRow(idx, "operatorId", e.target.value)}
+                >
+                  <option value="">— Select operator —</option>
+                  {operatorUsers.map(u => (
+                    <option key={String(u.id)} value={String(u.id)}>{u.name}</option>
+                  ))}
+                </select>
+                <div className="aaw-split-time-input-wrap">
+                  <input
+                    type="number"
+                    className="aaw-split-time-input"
+                    min={1}
+                    max={totalWorkedMinutes}
+                    step={1}
+                    placeholder="min"
+                    value={split.minutes}
+                    onChange={e => updateRow(idx, "minutes", e.target.value)}
+                  />
+                  <span className="aaw-split-time-unit">min</span>
+                </div>
+                {selectedUser && split.minutes && (
+                  <span className="aaw-split-name-preview" title={selectedUser.name}>
+                    {selectedUser.name.split(" ")[0]}
+                  </span>
+                )}
+                {splits.length > 1 && (
+                  <button type="button" className="aaw-split-remove-btn" onClick={() => removeRow(idx)} title="Remove">✕</button>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        <button type="button" className="aaw-split-add-btn" onClick={addRow}>
+          + Add another operator
+        </button>
+
+        {error && <div className="aaw-submit-error">{error}</div>}
+
+        <div className="aaw-split-footer">
+          <button type="button" className="aaw-cancel-btn" disabled={isSubmitting} onClick={onClose}>
+            Skip
+          </button>
+          <button type="button" className="aaw-confirm-btn" disabled={isSubmitting} onClick={handleSubmit}>
+            {isSubmitting ? "Saving…" : "Confirm Assignments"}
+          </button>
+        </div>
+      </div>
+    </Modal>
+  );
+};
+
+// ─── Main modals component ────────────────────────────────────────────────────
 
 const OperatorViewModals = ({
   jobs,
@@ -57,45 +222,24 @@ const OperatorViewModals = ({
   handleResetQuantity,
   handleConfirmEndTimeCapture,
   isAdmin = false,
-  allowedOperatorUsers = [] as Array<{ id: string | number; name: string }>,
+  allowedOperatorUsers = [] as OperatorUser[],
   postConfirmLogId = null,
   setPostConfirmLogId,
   onAssignAfterConfirmSuccess,
 }: OperatorViewModalsProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showSplitModal, setShowSplitModal] = useState(false);
 
-  // Admin: selected operator userId to assign after confirm
-  const [adminAssignTo, setAdminAssignTo] = useState(""); // holds user id as string
-  const [isAssigning, setIsAssigning] = useState(false);
-  const [assignError, setAssignError] = useState("");
-
-  // Admin assign modal: opens automatically if admin has selected an operator and postConfirmLogId is set
-  const [showAssignModal, setShowAssignModal] = useState(false);
-
-  // Derived: name of the selected operator (for display only)
-  const adminAssignToName = allowedOperatorUsers.find((u) => String(u.id) === adminAssignTo)?.name ?? adminAssignTo;
-
+  // When a log is created and admin has elected to split revenue, open the split modal
   useEffect(() => {
-    if (postConfirmLogId && adminAssignTo && isAdmin) {
-      setShowAssignModal(true);
+    if (postConfirmLogId && isAdmin && allowedOperatorUsers.length > 0) {
+      setShowSplitModal(true);
     }
-  }, [postConfirmLogId, adminAssignTo, isAdmin]);
+  }, [postConfirmLogId, isAdmin, allowedOperatorUsers.length]);
 
-  const handleAdminAssign = async () => {
-    if (!postConfirmLogId || !adminAssignTo) return;
-    try {
-      setIsAssigning(true);
-      setAssignError("");
-      await assignOperatorWork({ logId: postConfirmLogId, operatorUserId: adminAssignTo });
-      setShowAssignModal(false);
-      setAdminAssignTo("");
-      setPostConfirmLogId?.(null);
-      onAssignAfterConfirmSuccess?.("Revenue reassigned to operator successfully.");
-    } catch (err: any) {
-      setAssignError(err?.message || "Failed to reassign. Please use the Logs tab to adjust manually.");
-    } finally {
-      setIsAssigning(false);
-    }
+  const handleSplitModalClose = () => {
+    setShowSplitModal(false);
+    setPostConfirmLogId?.(null);
   };
 
   const pendingDispatchJob = pendingDispatch
@@ -182,6 +326,7 @@ const OperatorViewModals = ({
         />
       )}
 
+      {/* ── Confirm End Time Modal ── */}
       <Modal
         isOpen={Boolean(pendingEndTimeCapture)}
         onClose={handleCancelEndTimeCapture}
@@ -233,32 +378,16 @@ const OperatorViewModals = ({
               </div>
             )}
 
-            {/* ── Admin-only: Assign Revenue to Correct Operator ── */}
+            {/* ── Admin-only notice ── */}
             {isAdmin && allowedOperatorUsers.length > 0 && (
               <div className="admin-assign-inline-section">
                 <div className="admin-assign-inline-header">
-                  <span className="admin-assign-inline-title">🔧 Admin: Assign Revenue to Operator</span>
+                  <span className="admin-assign-inline-title">🔧 Admin: Revenue Assignment</span>
                   <span className="admin-assign-inline-hint">
-                    If punching out on behalf of an operator, select their name so revenue is credited to them, not to your admin account.
+                    After confirming, you can assign the worked time to the operator(s) who performed this job.
+                    You'll be prompted to choose operator(s) and time allocation immediately after saving.
                   </span>
                 </div>
-                <select
-                  className="admin-assign-inline-select"
-                  value={adminAssignTo}
-                  onChange={(e) => setAdminAssignTo(e.target.value)}
-                >
-                  <option value="">— Keep as admin (no reassignment) —</option>
-                  {allowedOperatorUsers.map((user) => (
-                    <option key={String(user.id)} value={String(user.id)}>
-                      {user.name}
-                    </option>
-                  ))}
-                </select>
-                {adminAssignTo && (
-                  <p className="admin-assign-inline-note">
-                    ✓ After confirming, all worked time and revenue will be transferred to <strong>{adminAssignToName}</strong>.
-                  </p>
-                )}
               </div>
             )}
 
@@ -291,57 +420,20 @@ const OperatorViewModals = ({
         ) : null}
       </Modal>
 
-      {/* Admin-only: post-confirm reassign confirmation modal */}
-      <Modal
-        isOpen={showAssignModal}
-        onClose={() => {
-          setShowAssignModal(false);
-          setAdminAssignTo("");
-          setPostConfirmLogId?.(null);
-        }}
-        title="Reassign Revenue to Operator"
-        size="small"
-      >
-        <div className="aaw-modal">
-          <div className="aaw-info-block">
-            <div className="aaw-info-row">
-              <span className="aaw-label">Assign to</span>
-              <span className="aaw-value aaw-owner">{adminAssignTo}</span>
-            </div>
-            <div className="aaw-info-row">
-              <span className="aaw-label">Log ID</span>
-              <span className="aaw-value" style={{ fontFamily: "monospace", fontSize: "0.75rem" }}>{postConfirmLogId}</span>
-            </div>
-          </div>
-          <p className="aaw-mode-desc">
-            The entire work session revenue will be transferred to <strong>{adminAssignToName}</strong>.
-            Your admin account will not retain any revenue from this session.
-          </p>
-          {assignError && <div className="aaw-submit-error">{assignError}</div>}
-          <div className="aaw-actions">
-            <button
-              type="button"
-              className="aaw-cancel-btn"
-              disabled={isAssigning}
-              onClick={() => {
-                setShowAssignModal(false);
-                setAdminAssignTo("");
-                setPostConfirmLogId?.(null);
-              }}
-            >
-              Skip
-            </button>
-            <button
-              type="button"
-              className="aaw-confirm-btn"
-              disabled={isAssigning}
-              onClick={handleAdminAssign}
-            >
-              {isAssigning ? "Reassigning…" : `Transfer to ${adminAssignToName}`}
-            </button>
-          </div>
-        </div>
-      </Modal>
+      {/* ── Admin multi-operator split modal (auto-opens after log is created) ── */}
+      {isAdmin && postConfirmLogId && (
+        <AdminSplitModal
+          isOpen={showSplitModal}
+          logId={postConfirmLogId}
+          totalWorkedSeconds={pendingEndTimeWorkedSeconds}
+          operatorUsers={allowedOperatorUsers}
+          onClose={handleSplitModalClose}
+          onSuccess={(msg) => {
+            handleSplitModalClose();
+            onAssignAfterConfirmSuccess?.(msg);
+          }}
+        />
+      )}
     </>
   );
 };

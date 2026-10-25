@@ -457,120 +457,55 @@
   font-size: 0.85rem;
 }
 
-.qc-operator-single {
-  font-size: 0.72rem;
-  font-weight: 600;
-  color: #166534;
-  white-space: nowrap;
-  max-width: 100px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
 .qc-operator-empty {
   color: #94a3b8;
-  font-size: 0.85rem;
+  font-size: 0.82rem;
 }
 
-/* ── Grouped Operator-Quantity Cell (AG Grid) ── */
+/* ── AG Grid: Operator column ── */
 .jobs-table-wrapper .ag-header-cell.qc-operator-col {
-  min-width: 180px;
+  min-width: 160px;
 }
 
 .jobs-table-wrapper .ag-cell.qc-operator-cell {
-  min-width: 180px;
-  max-width: 280px;
-  /* AG Grid cells: align content to the top */
-  align-items: flex-start !important;
-  padding-top: 7px !important;
-  padding-bottom: 7px !important;
-  overflow: visible;
+  min-width: 160px;
+  max-width: 220px;
+  overflow: visible !important;
 }
 
-.qc-operator-grouped {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  max-width: 240px;
+/* ── Compact operator cell wrapper (relative so popover anchors to it) ── */
+.qc-op-cell-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  max-width: 200px;
   width: 100%;
 }
 
-/* Single operator name + duration in one row */
-.qc-operator-single-name {
+/* ── Inline summary: first name + duration + "+N" badge ── */
+.qc-op-summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  width: 100%;
+}
+
+.qc-op-first-name {
   font-size: 0.75rem;
   font-weight: 700;
   color: #166534;
-  line-height: 1.2;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 180px;
+  max-width: 110px;
+  flex-shrink: 1;
 }
 
-/* Quantity number label (#1, #2, ...) */
-.qc-operator-qty-group {
-  display: flex;
-  align-items: flex-start;
-  gap: 5px;
-  padding-bottom: 3px;
-  border-bottom: 1px dashed #e2e8f0;
-  min-width: 0;
-}
-
-.qc-operator-qty-group:last-child {
-  border-bottom: none;
-  padding-bottom: 0;
-}
-
-.qc-operator-qty-label {
-  flex-shrink: 0;
+.qc-op-first-dur {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  min-width: 24px;
-  height: 18px;
-  padding: 0 4px;
-  border-radius: 4px;
-  background: #eff6ff;
-  border: 1px solid #93c5fd;
-  color: #1d4ed8;
-  font-size: 0.65rem;
-  font-weight: 800;
-  margin-top: 1px;
-  white-space: nowrap;
-}
-
-/* Chip row containing one or more operator chips */
-.qc-operator-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 3px;
-  min-width: 0;
-}
-
-/* Individual operator chip */
-.qc-operator-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  padding: 1px 6px 1px 5px;
-  border-radius: 999px;
-  background: #f0fdf4;
-  border: 1px solid #bbf7d0;
-  color: #166534;
-  font-size: 0.68rem;
-  font-weight: 700;
-  white-space: nowrap;
-  max-width: 170px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* Duration label inside chip */
-.qc-operator-duration {
-  display: inline-flex;
-  align-items: center;
-  padding: 0 4px;
+  padding: 1px 5px;
   border-radius: 4px;
   background: #dcfce7;
   color: #14532d;
@@ -580,23 +515,98 @@
   flex-shrink: 0;
 }
 
-/* "View all" / "Show less" toggle */
-.qc-operator-view-all {
+/* "+N more" / "▾" badge — triggers popover */
+.qc-op-more-badge {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 16px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: #eff6ff;
+  border: 1px solid #93c5fd;
+  color: #1d4ed8;
+  font-size: 0.62rem;
+  font-weight: 800;
+  cursor: default;
+  white-space: nowrap;
+}
+
+/* ── Popover panel ── */
+.qc-op-popover {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 9999;
+  min-width: 200px;
+  max-width: 280px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.14);
+  pointer-events: none;
+  /* interaction via parent hover */
+}
+
+.qc-op-popover-inner {
+  padding: 8px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* Quantity group header inside popover */
+.qc-op-pop-group {
+  padding: 0 10px 4px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.qc-op-pop-group:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.qc-op-pop-qty-label {
+  display: block;
+  font-size: 0.6rem;
+  font-weight: 800;
+  color: #1d4ed8;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 3px;
+  margin-top: 2px;
+}
+
+/* Each operator row inside popover */
+.qc-op-pop-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 2px 0;
+}
+
+.qc-op-pop-name {
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: #166534;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.qc-op-pop-dur {
+  flex-shrink: 0;
   display: inline-flex;
   align-items: center;
   padding: 1px 6px;
-  border-radius: 999px;
-  border: 1px dashed #93c5fd;
-  background: transparent;
-  color: #1d4ed8;
-  font-size: 0.65rem;
+  border-radius: 4px;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  color: #14532d;
+  font-size: 0.62rem;
   font-weight: 700;
-  cursor: pointer;
   white-space: nowrap;
-  margin-top: 2px;
-  transition: background 0.15s;
-}
-
-.qc-operator-view-all:hover {
-  background: #eff6ff;
 }
