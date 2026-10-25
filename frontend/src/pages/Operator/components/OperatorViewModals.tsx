@@ -1,13 +1,14 @@
 import ConfirmDeleteModal from "../../../components/ConfirmDeleteModal";
 import Modal from "../../../components/Modal";
 import type { JobEntry } from "../../../types/job";
-import { type Dispatch, type SetStateAction, useState } from "react";
+import { type Dispatch, type SetStateAction, useEffect, useState } from "react";
 import { decimalHoursToHHMMSS } from "../utils/machineHrsCalculation";
 import type { CutInputData } from "../types/cutInput";
 import { formatCompactDurationWords, getQuantityElapsedSeconds } from "../utils/operatorTimeUtils";
 import { getPersistedIdleDuration } from "../utils/operatorViewPageHelpers";
 import { formatQuantityIdentifierFromIndex, getSettingIdentifier } from "../../../utils/jobFormatting";
 import { getOperatorQuantityHistory } from "../utils/operatorQuantityHistory";
+import { assignOperatorWork } from "../../../services/operatorApi";
 import "../Operator.part08.css";
 
 type PendingDispatch = { cutId: number | string; quantityNumbers: number[] } | null;
@@ -35,6 +36,12 @@ type OperatorViewModalsProps = {
   handleUpdateQaStatus: (cutId: number | string, quantityNumbers: number[], status: "SENT_TO_QA" | "SAVED" | "READY_FOR_QA") => Promise<void>;
   handleResetQuantity: (cutId: number | string, quantityIndex: number) => Promise<void>;
   handleConfirmEndTimeCapture: (cutId: number | string, quantityIndex: number, timestampMs: number) => Promise<boolean>;
+  /** Admin-only props for post-confirm operator reassignment */
+  isAdmin?: boolean;
+  allowedOperatorUsers?: Array<{ id: string | number; name: string }>;
+  postConfirmLogId?: string | null;
+  setPostConfirmLogId?: Dispatch<SetStateAction<string | null>>;
+  onAssignAfterConfirmSuccess?: (message: string) => void;
 };
 
 const OperatorViewModals = ({
@@ -49,8 +56,47 @@ const OperatorViewModals = ({
   handleUpdateQaStatus,
   handleResetQuantity,
   handleConfirmEndTimeCapture,
+  isAdmin = false,
+  allowedOperatorUsers = [] as Array<{ id: string | number; name: string }>,
+  postConfirmLogId = null,
+  setPostConfirmLogId,
+  onAssignAfterConfirmSuccess,
 }: OperatorViewModalsProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Admin: selected operator userId to assign after confirm
+  const [adminAssignTo, setAdminAssignTo] = useState(""); // holds user id as string
+  const [isAssigning, setIsAssigning] = useState(false);
+  const [assignError, setAssignError] = useState("");
+
+  // Admin assign modal: opens automatically if admin has selected an operator and postConfirmLogId is set
+  const [showAssignModal, setShowAssignModal] = useState(false);
+
+  // Derived: name of the selected operator (for display only)
+  const adminAssignToName = allowedOperatorUsers.find((u) => String(u.id) === adminAssignTo)?.name ?? adminAssignTo;
+
+  useEffect(() => {
+    if (postConfirmLogId && adminAssignTo && isAdmin) {
+      setShowAssignModal(true);
+    }
+  }, [postConfirmLogId, adminAssignTo, isAdmin]);
+
+  const handleAdminAssign = async () => {
+    if (!postConfirmLogId || !adminAssignTo) return;
+    try {
+      setIsAssigning(true);
+      setAssignError("");
+      await assignOperatorWork({ logId: postConfirmLogId, operatorUserId: adminAssignTo });
+      setShowAssignModal(false);
+      setAdminAssignTo("");
+      setPostConfirmLogId?.(null);
+      onAssignAfterConfirmSuccess?.("Revenue reassigned to operator successfully.");
+    } catch (err: any) {
+      setAssignError(err?.message || "Failed to reassign. Please use the Logs tab to adjust manually.");
+    } finally {
+      setIsAssigning(false);
+    }
+  };
 
   const pendingDispatchJob = pendingDispatch
     ? jobs.find((job) => String(job.id) === String(pendingDispatch.cutId))
@@ -187,6 +233,35 @@ const OperatorViewModals = ({
               </div>
             )}
 
+            {/* ── Admin-only: Assign Revenue to Correct Operator ── */}
+            {isAdmin && allowedOperatorUsers.length > 0 && (
+              <div className="admin-assign-inline-section">
+                <div className="admin-assign-inline-header">
+                  <span className="admin-assign-inline-title">🔧 Admin: Assign Revenue to Operator</span>
+                  <span className="admin-assign-inline-hint">
+                    If punching out on behalf of an operator, select their name so revenue is credited to them, not to your admin account.
+                  </span>
+                </div>
+                <select
+                  className="admin-assign-inline-select"
+                  value={adminAssignTo}
+                  onChange={(e) => setAdminAssignTo(e.target.value)}
+                >
+                  <option value="">— Keep as admin (no reassignment) —</option>
+                  {allowedOperatorUsers.map((user) => (
+                    <option key={String(user.id)} value={String(user.id)}>
+                      {user.name}
+                    </option>
+                  ))}
+                </select>
+                {adminAssignTo && (
+                  <p className="admin-assign-inline-note">
+                    ✓ After confirming, all worked time and revenue will be transferred to <strong>{adminAssignToName}</strong>.
+                  </p>
+                )}
+              </div>
+            )}
+
             <div className="confirm-modal-footer-simple">
               <button type="button" className="btn-secondary-simple" onClick={handleCancelEndTimeCapture} disabled={isSubmitting}>
                 Cancel
@@ -214,6 +289,58 @@ const OperatorViewModals = ({
             </div>
           </div>
         ) : null}
+      </Modal>
+
+      {/* Admin-only: post-confirm reassign confirmation modal */}
+      <Modal
+        isOpen={showAssignModal}
+        onClose={() => {
+          setShowAssignModal(false);
+          setAdminAssignTo("");
+          setPostConfirmLogId?.(null);
+        }}
+        title="Reassign Revenue to Operator"
+        size="small"
+      >
+        <div className="aaw-modal">
+          <div className="aaw-info-block">
+            <div className="aaw-info-row">
+              <span className="aaw-label">Assign to</span>
+              <span className="aaw-value aaw-owner">{adminAssignTo}</span>
+            </div>
+            <div className="aaw-info-row">
+              <span className="aaw-label">Log ID</span>
+              <span className="aaw-value" style={{ fontFamily: "monospace", fontSize: "0.75rem" }}>{postConfirmLogId}</span>
+            </div>
+          </div>
+          <p className="aaw-mode-desc">
+            The entire work session revenue will be transferred to <strong>{adminAssignToName}</strong>.
+            Your admin account will not retain any revenue from this session.
+          </p>
+          {assignError && <div className="aaw-submit-error">{assignError}</div>}
+          <div className="aaw-actions">
+            <button
+              type="button"
+              className="aaw-cancel-btn"
+              disabled={isAssigning}
+              onClick={() => {
+                setShowAssignModal(false);
+                setAdminAssignTo("");
+                setPostConfirmLogId?.(null);
+              }}
+            >
+              Skip
+            </button>
+            <button
+              type="button"
+              className="aaw-confirm-btn"
+              disabled={isAssigning}
+              onClick={handleAdminAssign}
+            >
+              {isAssigning ? "Reassigning…" : `Transfer to ${adminAssignToName}`}
+            </button>
+          </div>
+        </div>
       </Modal>
     </>
   );

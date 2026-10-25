@@ -197,24 +197,24 @@ export const useOperatorPersistenceActions = ({
       idleTime: string;
       idleTimeDuration: string;
     }
-  ) => {
+  ): Promise<{ success: boolean; completedLogId?: string }> => {
     const cutData = cutInputs.get(cutId);
     const qtyData = cutData?.quantities?.[quantityIndex];
     if (!qtyData) {
       showAndHideToast(setActionToast, "No quantity data found.", "error", 3000);
-      return false;
+      return { success: false };
     }
     if (qtyData.isPaused) {
       showAndHideToast(setActionToast, "Resume this quantity before capturing end time.", "error", 3000);
-      return false;
+      return { success: false };
     }
 
     const job = jobs.find((item) => String(item.id) === String(cutId));
     if (!job) {
       showAndHideToast(setActionToast, "Job not found.", "error", 3000);
-      return false;
+      return { success: false };
     }
-    if (!ensureCurrentUserAssigned(job, cutId, quantityIndex)) return false;
+    if (!ensureCurrentUserAssigned(job, cutId, quantityIndex)) return { success: false };
 
     const key = `${String(cutId)}:${quantityIndex}`;
     const logId = activeOperatorLogIds.get(key) || await resolveActiveOperatorLogId(cutId, quantityIndex);
@@ -282,12 +282,12 @@ export const useOperatorPersistenceActions = ({
       clearQuantityErrors(cutId, quantityIndex);
       showAndHideToast(setSaveToast, `${formatQuantityIdentifierFromIndex(quantityIndex, "Quantity")} logged successfully!`, "success", 2000);
 
-      return true;
+      return { success: true, completedLogId: completedLogId || undefined };
     } catch (error) {
       console.error("Failed to complete operator run", error);
       const message = error instanceof Error ? error.message : "Failed to capture end time.";
       showAndHideToast(setActionToast, message, "error", 3500);
-      return false;
+      return { success: false };
     }
   }, [activeOperatorLogIds, clearQuantityErrors, cutInputs, ensureCurrentUserAssigned, jobs, resolveActiveOperatorLogId, setActionToast, setActiveOperatorLogIds, setQaStatusesByCut, setSaveToast, setSavedQuantities]);
 

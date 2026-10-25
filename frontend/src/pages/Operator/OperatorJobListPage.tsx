@@ -21,9 +21,11 @@ import type { JobEntry } from "../../types/job";
 import type { OperatorTableRow } from "./types";
 import type { BulkAssignmentPayloadItem } from "./components/BulkAssignmentModal";
 import { useJobSync } from "../../hooks/useJobSync";
+import AdminAssignWorkModal from "./components/AdminAssignWorkModal";
 import "../RoleBoard.css";
 import "../Programmer/Programmer.css";
 import "./Operator.css";
+import "./OperatorViewPage.css";
 
 const OperatorJobListPage = ({
   forceTab,
@@ -208,7 +210,7 @@ const OperatorJobListPage = ({
   });
   qaTableDataRef.current = filteredGridTableData;
 
-  const { userFilterOptions, machineFilterOptions, filterOperatorLogs, handleExportOperatorLogsCsv, operatorLogColumnDefs, logsFetchPage } =
+  const { userFilterOptions, machineFilterOptions, filterOperatorLogs, handleExportOperatorLogsCsv, operatorLogColumnDefs, logsFetchPage, assignWorkLog, setAssignWorkLog } =
     useOperatorLogs({ jobs, users, machineOptionsForDropdown, operatorLogSearch, operatorLogUser, operatorLogStatus, operatorLogMachine, setToast });
 
   const { handleDownloadCSV, jobsFetchPage } = useOperatorJobBoard({ assignedToFilter, createdByFilter, customerFilter, descriptionFilter, filters, hasJobSearch, filteredGridTableData, isAdmin });
@@ -304,6 +306,16 @@ const OperatorJobListPage = ({
           handleDeleteSelectedRows={handleDeleteSelectedRows}
           setSelectedEntryIds={setSelectedEntryIds}
           setSelectedJobIds={setSelectedJobIds}
+        />
+        <AdminAssignWorkModal
+          isOpen={assignWorkLog !== null}
+          log={assignWorkLog}
+          onClose={() => setAssignWorkLog(null)}
+          onSuccess={(message) => {
+            setAssignWorkLog(null);
+            setToast({ message, variant: "success", visible: true });
+            window.setTimeout(() => setToast((prev) => ({ ...prev, visible: false })), 3500);
+          }}
         />
       </div>
     </div>

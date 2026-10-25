@@ -283,6 +283,24 @@ export const completeOperatorProductionLog = async (payload: {
   return res.json();
 };
 
+export const assignOperatorWorkedTime = async (payload: {
+  logId: string;
+  operatorUserId: string;
+  workedSeconds?: number;
+}): Promise<{ logs: EmployeeLog[]; split: boolean }> => {
+  const res = await fetchWithServerTime("/api/employee-logs/operator/assign-work", {
+    method: "POST",
+    headers: getAuthHeaders(),
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({ message: "Failed to assign worked time" }));
+    throw new Error(error.message || "Failed to assign worked time");
+  }
+  invalidateEmployeeLogsCache(/employee-logs/);
+  return res.json();
+};
+
 export const createOperatorTaskSwitchLog = async (payload: {
   idleTime: string;
   remark: string;

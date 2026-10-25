@@ -11,28 +11,106 @@ type QcColumnArgs = {
   showLogged?: boolean;
 };
 
-const getCaptureData = (row: QcRow): any => {
-  const captures = Array.isArray(row.entry.operatorCaptures) ? row.entry.operatorCaptures : [];
-  const capture = captures.find((c: any) => {
-    const cFrom = Math.max(1, Number(c.fromQty || 1));
-    const cTo = Math.max(cFrom, Number(c.toQty || cFrom));
-    return row.quantityFrom >= cFrom && row.quantityFrom <= cTo;
-  });
-  return capture || {};
+/* ---------- helpers ---------- */
+
+type OperatorQtyEntry = {
+  quantityNumber: number;
+  operators: Array<{ name: string; durationLabel: string }>;
 };
 
-const getCapturedOperatorNamesList = (row: QcRow) => {
-  const capture = getCaptureData(row);
-  let nameStr = "";
-  if (capture.opsName) {
-    nameStr = Array.isArray(capture.opsName) ? capture.opsName.join(", ") : String(capture.opsName);
+/** Parse "HH:MM" or decimal hours into a short human-readable duration */
+const formatMachineHrsLabel = (machineHrs: unknown): string => {
+  const raw = String(machineHrs || "").trim();
+  if (!raw) return "";
+  if (raw.includes(":")) {
+    const [hRaw, mRaw] = raw.split(":");
+    const h = Number(hRaw) || 0;
+    const m = Number(mRaw) || 0;
+    if (h === 0 && m === 0) return "";
+    const parts: string[] = [];
+    if (h > 0) parts.push(`${h}h`);
+    if (m > 0) parts.push(`${m}m`);
+    return parts.join(" ");
   }
-  if (!nameStr) {
-    nameStr = String(row.entry.assignedTo || row.parent.assignedTo || "-");
-  }
-  const names = nameStr.split(",").map(n => n.trim().toUpperCase()).filter(n => n && n !== "UNASSIGN" && n !== "UNASSIGNED");
-  return names.length > 0 ? names : ["-"];
+  const hours = Number(raw);
+  if (!Number.isFinite(hours) || hours <= 0) return "";
+  const h = Math.floor(hours);
+  const m = Math.round((hours - h) * 60);
+  const parts: string[] = [];
+  if (h > 0) parts.push(`${h}h`);
+  if (m > 0) parts.push(`${m}m`);
+  return parts.join(" ");
 };
+
+/** Build a map of quantity→operators from all captures on the job */
+const getOperatorsByQuantity = (row: QcRow): OperatorQtyEntry[] => {
+  const captures = Array.isArray(row.entry.operatorCaptures) ? row.entry.operatorCaptures : [];
+  const from = row.quantityFrom;
+  const to = row.quantityTo;
+
+  // For each quantity in this QC row's range, collect operators from matching captures
+  const qtyMap = new Map<number, Map<string, string>>(); // qty → (name → duration)
+
+  for (let qty = from; qty <= to; qty++) {
+    const nameMap = new Map<string, string>();
+
+    captures.forEach((c: any) => {
+      const cFrom = Math.max(1, Number(c.fromQty || 1));
+      const cTo = Math.max(cFrom, Number(c.toQty || cFrom));
+      if (qty < cFrom || qty > cTo) return;
+
+      const rawName = String(c.opsName || "").trim();
+      if (!rawName || rawName.toUpperCase() === "UNASSIGNED" || rawName.toUpperCase() === "UNASSIGN") return;
+
+      // Handle comma-separated names within a single capture
+      const names = rawName.split(",").map(n => n.trim().toUpperCase()).filter(Boolean);
+      const durLabel = formatMachineHrsLabel(c.machineHrs);
+
+      names.forEach(name => {
+        // If this operator already appears for this qty, keep the longer duration
+        const existing = nameMap.get(name) || "";
+        if (!existing && durLabel) {
+          nameMap.set(name, durLabel);
+        } else if (!existing) {
+          nameMap.set(name, "");
+        }
+      });
+    });
+
+    // Fallback to assignedTo if no captures found
+    if (nameMap.size === 0) {
+      const fallback = String(row.entry.assignedTo || row.parent.assignedTo || "").trim();
+      const names = fallback.split(",").map(n => n.trim().toUpperCase()).filter(n => n && n !== "UNASSIGNED" && n !== "UNASSIGN");
+      names.forEach(name => nameMap.set(name, ""));
+    }
+
+    if (nameMap.size > 0) {
+      qtyMap.set(qty, nameMap);
+    }
+  }
+
+  // Build the result
+  const result: OperatorQtyEntry[] = [];
+  qtyMap.forEach((nameMap, qty) => {
+    const operators = Array.from(nameMap.entries()).map(([name, dur]) => ({
+      name,
+      durationLabel: dur,
+    }));
+    result.push({ quantityNumber: qty, operators });
+  });
+
+  return result.sort((a, b) => a.quantityNumber - b.quantityNumber);
+};
+
+/** Flat list of unique operator names (for search/filter compatibility) */
+const getCapturedOperatorNamesList = (row: QcRow) => {
+  const entries = getOperatorsByQuantity(row);
+  const unique = new Set<string>();
+  entries.forEach(e => e.operators.forEach(o => unique.add(o.name)));
+  return unique.size > 0 ? Array.from(unique) : ["-"];
+};
+
+/* ---------- cell components ---------- */
 
 // Dropdown qty cell: simple viewing dropdown if > 1 item, clean badge if 1 item
 const QtyBadgeCell = ({ items, title }: { items: string[]; title?: string }) => {
@@ -59,32 +137,91 @@ const QtyBadgeCell = ({ items, title }: { items: string[]; title?: string }) => 
   );
 };
 
-// Dropdown operator cell: simple viewing dropdown if > 1 name, clean single text if 1 name
-const OperatorChipCell = ({ names }: { names: string[] }) => {
-  const [selected, setSelected] = useState(names[0] || "-");
-  if (names.length === 0 || (names.length === 1 && names[0] === "-")) {
+/** Grouped operator display: quantity-keyed operator chips with durations */
+const OperatorQuantityCell = ({ row }: { row: QcRow }) => {
+  const [expanded, setExpanded] = useState(false);
+  const entries = getOperatorsByQuantity(row);
+  const totalQuantities = row.quantityTo - row.quantityFrom + 1;
+
+  if (entries.length === 0) {
     return <span className="qc-operator-empty">—</span>;
   }
-  if (names.length === 1) {
-    return <span className="qc-operator-single">{names[0]}</span>;
+
+  // Simple case: single quantity, single operator
+  if (entries.length === 1 && entries[0].operators.length === 1) {
+    const op = entries[0].operators[0];
+    return (
+      <div className="qc-operator-grouped" title={op.durationLabel ? `${op.name} — ${op.durationLabel}` : op.name}>
+        <span className="qc-operator-single-name">{op.name}</span>
+        {op.durationLabel && <span className="qc-operator-duration">{op.durationLabel}</span>}
+      </div>
+    );
   }
+
+  // Simple case: single quantity, multiple operators — show flat chip list
+  if (entries.length === 1) {
+    const ops = entries[0].operators;
+    const visibleOps = expanded ? ops : ops.slice(0, 2);
+    return (
+      <div className="qc-operator-grouped">
+        <div className="qc-operator-chips">
+          {visibleOps.map((op, idx) => (
+            <span key={idx} className="qc-operator-chip" title={op.durationLabel ? `${op.name} — ${op.durationLabel}` : op.name}>
+              {op.name}
+              {op.durationLabel && <span className="qc-operator-duration">{op.durationLabel}</span>}
+            </span>
+          ))}
+        </div>
+        {ops.length > 2 && !expanded && (
+          <button type="button" className="qc-operator-view-all" onClick={(e) => { e.stopPropagation(); setExpanded(true); }}>
+            +{ops.length - 2} more
+          </button>
+        )}
+        {expanded && ops.length > 2 && (
+          <button type="button" className="qc-operator-view-all" onClick={(e) => { e.stopPropagation(); setExpanded(false); }}>
+            Show less
+          </button>
+        )}
+      </div>
+    );
+  }
+
+  // Multiple quantities: grouped display
+  const MAX_VISIBLE_GROUPS = 2;
+  const visibleEntries = expanded ? entries : entries.slice(0, MAX_VISIBLE_GROUPS);
+
   return (
-    <div className="qc-cell-dropdown-wrapper" onClick={(e) => e.stopPropagation()}>
-      <select
-        className="qc-cell-select qc-operator-select"
-        value={selected}
-        onChange={(e) => setSelected(e.target.value)}
-        title={names.join(", ")}
-      >
-        {names.map((name) => (
-          <option key={name} value={name}>
-            {name}
-          </option>
-        ))}
-      </select>
+    <div className="qc-operator-grouped">
+      {visibleEntries.map((entry) => (
+        <div key={entry.quantityNumber} className="qc-operator-qty-group">
+          {totalQuantities > 1 && (
+            <span className="qc-operator-qty-label">#{entry.quantityNumber}</span>
+          )}
+          <div className="qc-operator-chips">
+            {entry.operators.map((op, idx) => (
+              <span key={idx} className="qc-operator-chip" title={op.durationLabel ? `${op.name} — ${op.durationLabel}` : op.name}>
+                {op.name}
+                {op.durationLabel && <span className="qc-operator-duration">{op.durationLabel}</span>}
+              </span>
+            ))}
+          </div>
+        </div>
+      ))}
+      {entries.length > MAX_VISIBLE_GROUPS && !expanded && (
+        <button type="button" className="qc-operator-view-all" onClick={(e) => { e.stopPropagation(); setExpanded(true); }}>
+          View all ({entries.length} quantities)
+        </button>
+      )}
+      {expanded && entries.length > MAX_VISIBLE_GROUPS && (
+        <button type="button" className="qc-operator-view-all" onClick={(e) => { e.stopPropagation(); setExpanded(false); }}>
+          Show less
+        </button>
+      )}
     </div>
   );
 };
+
+/* ---------- column definitions ---------- */
 
 export const createQcColumns = ({
   updateDecision,
@@ -118,7 +255,9 @@ export const createQcColumns = ({
     {
       key: "operator",
       label: "Operator",
-      render: (row: QcRow) => <OperatorChipCell names={getCapturedOperatorNamesList(row)} />,
+      headerClassName: "qc-operator-col",
+      className: "qc-operator-cell",
+      render: (row: QcRow) => <OperatorQuantityCell row={row} />,
     },
 
     {

@@ -476,12 +476,12 @@ export const buildInspectionReportHtml = (payload: GenerateInspectionReportPaylo
       font-weight: 700;
       height: 18px;
     }
-    .sl-col { width: 8%; text-align: center; }
-    .actual-col { width: 21%; }
+    .sl-col { width: 4.5%; text-align: center; white-space: nowrap; max-width: 38px; overflow: hidden; }
+    .actual-col { width: 22.5%; }
     .tol-col { width: 11%; }
-    .measure-col { width: 21%; }
+    .measure-col { width: 22.5%; }
     .dev-col { width: 11%; }
-    .inst-col { width: 28%; }
+    .inst-col { width: 28.5%; }
     .inst-col-data { padding: 1px 2px; }
     .inst-row {
       display: flex;

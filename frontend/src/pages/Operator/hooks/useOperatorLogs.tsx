@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
 import type { Column } from "../../../components/DataTable";
 import type { EmployeeLog } from "../../../types/employeeLog";
 import type { JobEntry } from "../../../types/job";
@@ -52,6 +52,9 @@ export const useOperatorLogs = ({
 }: Params) => {
   const viewerRole = String(getUserRoleFromToken() || "").toUpperCase();
   const canViewRevenue = viewerRole !== "OPERATOR";
+  const isAdmin = viewerRole === "ADMIN";
+
+  const [assignWorkLog, setAssignWorkLog] = useState<import("../../../types/employeeLog").EmployeeLog | null>(null);
 
   const getLogQuantityNumbers = useCallback((log: EmployeeLog): number[] => {
     const fromMeta = Array.isArray((log.metadata as any)?.quantityNumbers)
@@ -173,7 +176,8 @@ export const useOperatorLogs = ({
     getMachineNumberForLog,
     getRevenueForLog,
     canViewRevenue,
-  }), [canViewRevenue, designationByUserName, getMachineNumberForLog, getRevenueForLog]);
+    onAdminAssign: isAdmin ? (log) => setAssignWorkLog(log) : undefined,
+  }), [canViewRevenue, designationByUserName, getMachineNumberForLog, getRevenueForLog, isAdmin]);
 
   const filterOperatorLogs = useMemo(
     () =>
@@ -308,5 +312,7 @@ export const useOperatorLogs = ({
     handleExportOperatorLogsCsv,
     operatorLogColumnDefs,
     logsFetchPage,
+    assignWorkLog,
+    setAssignWorkLog,
   };
 };

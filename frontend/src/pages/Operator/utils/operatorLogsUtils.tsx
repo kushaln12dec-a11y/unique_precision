@@ -47,99 +47,106 @@ export const buildOperatorLogsColumns = ({
   getMachineNumberForLog,
   getRevenueForLog,
   canViewRevenue,
+  onAdminAssign,
 }: {
   designationByUserName: Map<string, string>;
   getMachineNumberForLog: (log: EmployeeLog) => string;
   getRevenueForLog: (log: EmployeeLog, workedSecondsMap?: Map<string, number>) => string;
   canViewRevenue: boolean;
+  /** Admin-only: called when user clicks "Adjust" on a log row */
+  onAdminAssign?: (log: EmployeeLog) => void;
 }): Column<EmployeeLog>[] => [
-  {
-    key: "userName",
-    label: "User",
-    sortable: false,
-    render: (row) => {
-      const name = getLogUserDisplayName(row.userName, row.userEmail, "Operator");
-      const designation = designationByUserName.get(name.toLowerCase()) || "OPS";
-      return (
-        <div className="log-user-stack log-user-badge-stack log-user-inline-stack">
-          <span className="log-user-initial-badge" title={name.toUpperCase()}>{getInitials(name)}</span>
-          <span>{designation}</span>
-        </div>
-      );
+    {
+      key: "userName",
+      label: "User",
+      sortable: false,
+      render: (row) => {
+        const name = getLogUserDisplayName(row.userName, row.userEmail, "Operator");
+        const designation = designationByUserName.get(name.toLowerCase()) || "OPS";
+        return (
+          <div className="log-user-stack log-user-badge-stack log-user-inline-stack">
+            <span className="log-user-initial-badge" title={name.toUpperCase()}>{getInitials(name)}</span>
+            <span>{designation}</span>
+          </div>
+        );
+      },
     },
-  },
-  { key: "machineNumber", label: "MACH #", sortable: false, render: (row) => formatMachineLabel(getMachineNumberForLog(row)) },
-  {
-    key: "workItemTitle",
-    label: "Job Ref",
-    sortable: false,
-    className: "operator-log-text-col",
-    render: (row) => (
-      <JobRefLink
-        role="OPERATOR"
-        jobGroupId={row.jobGroupId}
-        jobId={row.jobId}
-        refNumber={row.refNumber}
-        fallbackLabel={formatOperatorWorkItem(row.refNumber || row.workItemTitle)}
-      />
-    ),
-  },
-  { key: "jobDescription", label: "Description", sortable: false, className: "operator-log-text-col", render: (row) => <MarqueeCopyText text={String(row.jobDescription || "-")} /> },
-  { key: "workSummary", label: "Summary", sortable: false, className: "operator-log-text-col", render: (row) => <MarqueeCopyText text={String(row.workSummary || "-")} /> },
-  {
-    key: "startedAt",
-    label: "Started at",
-    sortable: false,
-    render: (row) => {
-      const parts = getDisplayDateTimeParts(row.startedAt);
-      return <div className="created-at-split"><span>{parts.date}</span><span>{parts.time}</span></div>;
+    { key: "machineNumber", label: "MACH #", sortable: false, render: (row) => formatMachineLabel(getMachineNumberForLog(row)) },
+    {
+      key: "workItemTitle",
+      label: "Job Ref",
+      sortable: false,
+      className: "operator-log-text-col",
+      render: (row) => (
+        <JobRefLink
+          role="OPERATOR"
+          jobGroupId={row.jobGroupId}
+          jobId={row.jobId}
+          refNumber={row.refNumber}
+          fallbackLabel={formatOperatorWorkItem(row.refNumber || row.workItemTitle)}
+        />
+      ),
     },
-  },
-  {
-    key: "endedAt",
-    label: "Ended at",
-    sortable: false,
-    render: (row) => {
-      const parts = getDisplayDateTimeParts(row.endedAt);
-      return <div className="created-at-split"><span>{parts.date}</span><span>{parts.time}</span></div>;
+    { key: "jobDescription", label: "Description", sortable: false, className: "operator-log-text-col", render: (row) => <MarqueeCopyText text={String(row.jobDescription || "-")} /> },
+    { key: "workSummary", label: "Summary", sortable: false, className: "operator-log-text-col", render: (row) => <MarqueeCopyText text={String(row.workSummary || "-")} /> },
+    {
+      key: "startedAt",
+      label: "Started at",
+      sortable: false,
+      render: (row) => {
+        const parts = getDisplayDateTimeParts(row.startedAt);
+        return <div className="created-at-split"><span>{parts.date}</span><span>{parts.time}</span></div>;
+      },
     },
-  },
-  { key: "shift", label: "Shift", sortable: false, render: (row) => renderOperatorShiftBadge(row.startedAt) },
-  {
-    key: "estimatedSeconds",
-    label: "ETA",
-    sortable: false,
-    render: (row) => {
-      const metadata = (row.metadata as any) || {};
-      const estimatedSeconds = Number(metadata.estimatedSeconds || 0);
-      return estimatedSeconds > 0 ? formatOperatorDuration(estimatedSeconds) : "-";
+    {
+      key: "endedAt",
+      label: "Ended at",
+      sortable: false,
+      render: (row) => {
+        const parts = getDisplayDateTimeParts(row.endedAt);
+        return <div className="created-at-split"><span>{parts.date}</span><span>{parts.time}</span></div>;
+      },
     },
-  },
-  { key: "durationSeconds", label: "Duration", sortable: false, render: (row) => {
-    // Use the actual durationSeconds from the log, fallback to metadata workedSeconds
-    const duration = Number(row.durationSeconds || (row.metadata as any)?.workedSeconds || 0);
-    return formatOperatorDuration(duration);
-  }},
-  { key: "overtimeSeconds", label: "OT", sortable: false, render: (row) => {
-    const metadata = (row.metadata as any) || {};
-    const overtime = Number(metadata.overtimeSeconds || 0);
-    return overtime > 0 ? formatOperatorDuration(overtime) : "-";
-  }},
-  {
-    key: "quantityNumbers",
-    label: "Qty",
-    sortable: false,
-    render: (row) => {
-      const quantities = Array.isArray((row.metadata as any)?.quantityNumbers)
-        ? (row.metadata as any).quantityNumbers
-        : [];
-      return quantities.length ? quantities.map((qty: number) => `Q${qty}`).join(", ") : "-";
+    { key: "shift", label: "Shift", sortable: false, render: (row) => renderOperatorShiftBadge(row.startedAt) },
+    {
+      key: "estimatedSeconds",
+      label: "ETA",
+      sortable: false,
+      render: (row) => {
+        const metadata = (row.metadata as any) || {};
+        const estimatedSeconds = Number(metadata.estimatedSeconds || 0);
+        return estimatedSeconds > 0 ? formatOperatorDuration(estimatedSeconds) : "-";
+      },
     },
-  },
-  { key: "idleWindow", label: "Idle Window", sortable: false, className: "operator-log-text-col", render: (row) => <MarqueeCopyText text={formatOperatorIdleWindow(row)} /> },
-  { key: "remark", label: "Remark", sortable: false, render: (row) => String((row.metadata as any)?.remark || "-") },
-  ...(canViewRevenue
-    ? [{
+    {
+      key: "durationSeconds", label: "Duration", sortable: false, render: (row) => {
+        // Use the actual durationSeconds from the log, fallback to metadata workedSeconds
+        const duration = Number(row.durationSeconds || (row.metadata as any)?.workedSeconds || 0);
+        return formatOperatorDuration(duration);
+      }
+    },
+    {
+      key: "overtimeSeconds", label: "OT", sortable: false, render: (row) => {
+        const metadata = (row.metadata as any) || {};
+        const overtime = Number(metadata.overtimeSeconds || 0);
+        return overtime > 0 ? formatOperatorDuration(overtime) : "-";
+      }
+    },
+    {
+      key: "quantityNumbers",
+      label: "Qty",
+      sortable: false,
+      render: (row) => {
+        const quantities = Array.isArray((row.metadata as any)?.quantityNumbers)
+          ? (row.metadata as any).quantityNumbers
+          : [];
+        return quantities.length ? quantities.map((qty: number) => `Q${qty}`).join(", ") : "-";
+      },
+    },
+    { key: "idleWindow", label: "Idle Window", sortable: false, className: "operator-log-text-col", render: (row) => <MarqueeCopyText text={formatOperatorIdleWindow(row)} /> },
+    { key: "remark", label: "Remark", sortable: false, render: (row) => String((row.metadata as any)?.remark || "-") },
+    ...(canViewRevenue
+      ? [{
         key: "revenue",
         label: "Revenue",
         sortable: false,
@@ -169,27 +176,49 @@ export const buildOperatorLogsColumns = ({
           );
         },
       } as Column<EmployeeLog>]
-    : []),
-  {
-    key: "status",
-    label: "Status",
-    sortable: false,
-    render: (row) => {
-      const raw = String(row.status || "-").toUpperCase();
-      const statusClass = raw === "IN_PROGRESS" ? "in-progress" : raw === "REJECTED" ? "rejected" : "completed";
-      const historicalStatus = String((row.metadata as any)?.historicalStatus || "").trim().toUpperCase();
-      const historicalLabel = historicalStatus ? formatOperatorLogStatus(historicalStatus) : "";
-      return (
-        <span
-          className={`log-status-badge ${statusClass}`}
-          title={historicalLabel ? `Previously ${historicalLabel}` : undefined}
-        >
-          {formatOperatorLogStatus(row.status)}
-        </span>
-      );
+      : []),
+    {
+      key: "status",
+      label: "Status",
+      sortable: false,
+      render: (row) => {
+        const raw = String(row.status || "-").toUpperCase();
+        const statusClass = raw === "IN_PROGRESS" ? "in-progress" : raw === "REJECTED" ? "rejected" : "completed";
+        const historicalStatus = String((row.metadata as any)?.historicalStatus || "").trim().toUpperCase();
+        const historicalLabel = historicalStatus ? formatOperatorLogStatus(historicalStatus) : "";
+        return (
+          <span
+            className={`log-status-badge ${statusClass}`}
+            title={historicalLabel ? `Previously ${historicalLabel}` : undefined}
+          >
+            {formatOperatorLogStatus(row.status)}
+          </span>
+        );
+      },
     },
-  },
-];
+    // Admin-only: Adjust Time & Revenue Allocation column
+    ...(onAdminAssign
+      ? [{
+        key: "adminAssign",
+        label: "Admin",
+        sortable: false,
+        render: (row: EmployeeLog) => {
+          const isActive = String(row.status || "").toUpperCase() === "IN_PROGRESS";
+          if (isActive) return <span className="qc-operator-empty">Running</span>;
+          return (
+            <button
+              type="button"
+              className="admin-assign-action-btn"
+              title="Adjust time & revenue allocation for this session"
+              onClick={() => onAdminAssign(row)}
+            >
+              Adjust
+            </button>
+          );
+        },
+      } as Column<EmployeeLog>]
+      : []),
+  ];
 
 export const buildOperatorLogColumnDefs = (columns: Column<EmployeeLog>[]) =>
   columns.map((column) => {
@@ -233,45 +262,45 @@ export const buildOperatorLogFilter =
     operatorLogStatus: "" | "IN_PROGRESS" | "COMPLETED" | "REJECTED";
     operatorLogSearch: string;
   }) =>
-  (logs: EmployeeLog[]) =>
-    logs.filter((log) => {
-      const matchesStatus =
-        !operatorLogStatus ||
-        String(log.status || "").trim().toUpperCase() === String(operatorLogStatus || "").trim().toUpperCase();
+    (logs: EmployeeLog[]) =>
+      logs.filter((log) => {
+        const matchesStatus =
+          !operatorLogStatus ||
+          String(log.status || "").trim().toUpperCase() === String(operatorLogStatus || "").trim().toUpperCase();
 
-      if (!matchesStatus) return false;
+        if (!matchesStatus) return false;
 
-      const normalizedUserName = getLogUserDisplayName(log.userName, log.userEmail, "Operator");
-      const matchesUser =
-        !operatorLogUser ||
-        normalizedUserName.toLowerCase() === String(operatorLogUser || "").trim().toLowerCase();
+        const normalizedUserName = getLogUserDisplayName(log.userName, log.userEmail, "Operator");
+        const matchesUser =
+          !operatorLogUser ||
+          normalizedUserName.toLowerCase() === String(operatorLogUser || "").trim().toLowerCase();
 
-      if (!matchesUser) return false;
+        if (!matchesUser) return false;
 
-      return matchesSearchQuery(
-        [
-          normalizedUserName,
-          designationByUserName.get(getLogUserDisplayName(log.userName, log.userEmail, "Operator").toLowerCase()) || "OPS",
-          formatMachineLabel(getMachineNumberForLog(log)),
-          formatOperatorWorkItem(log.refNumber || log.workItemTitle),
-          log.jobDescription || "",
-          log.workSummary || "",
-          formatDisplayDateTime(log.startedAt),
-          formatDisplayDateTime(log.endedAt || null),
-          getOperatorShiftLabel(log.startedAt),
-          formatOperatorDuration(Number(log.durationSeconds || (log.metadata as any)?.workedSeconds || 0)),
-          (() => {
-            const overtime = Number((log.metadata as any)?.overtimeSeconds || 0);
-            return formatOperatorDuration(overtime);
-          })(),
-          Array.isArray((log.metadata as any)?.quantityNumbers)
-            ? (log.metadata as any).quantityNumbers.map((qty: number) => `Q${qty}`).join(", ")
-            : "-",
-          formatOperatorIdleWindow(log),
-          String((log.metadata as any)?.remark || "-"),
-          ...(canViewRevenue ? [getRevenueForLog(log)] : []),
-          formatOperatorLogStatus(log.status),
-        ],
-        operatorLogSearch
-      );
-    });
+        return matchesSearchQuery(
+          [
+            normalizedUserName,
+            designationByUserName.get(getLogUserDisplayName(log.userName, log.userEmail, "Operator").toLowerCase()) || "OPS",
+            formatMachineLabel(getMachineNumberForLog(log)),
+            formatOperatorWorkItem(log.refNumber || log.workItemTitle),
+            log.jobDescription || "",
+            log.workSummary || "",
+            formatDisplayDateTime(log.startedAt),
+            formatDisplayDateTime(log.endedAt || null),
+            getOperatorShiftLabel(log.startedAt),
+            formatOperatorDuration(Number(log.durationSeconds || (log.metadata as any)?.workedSeconds || 0)),
+            (() => {
+              const overtime = Number((log.metadata as any)?.overtimeSeconds || 0);
+              return formatOperatorDuration(overtime);
+            })(),
+            Array.isArray((log.metadata as any)?.quantityNumbers)
+              ? (log.metadata as any).quantityNumbers.map((qty: number) => `Q${qty}`).join(", ")
+              : "-",
+            formatOperatorIdleWindow(log),
+            String((log.metadata as any)?.remark || "-"),
+            ...(canViewRevenue ? [getRevenueForLog(log)] : []),
+            formatOperatorLogStatus(log.status),
+          ],
+          operatorLogSearch
+        );
+      });

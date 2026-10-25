@@ -51,6 +51,7 @@ const OperatorJobDetailPage = () => {
     previousEndTimeEpochMs: number | null;
     previousMachineHrs: string;
   } | null>(null);
+  const [postConfirmLogId, setPostConfirmLogId] = useState<string | null>(null);
   const pendingScrollRestoreRef = useRef<number | null>(null);
   const reloadInFlightRef = useRef<Promise<void> | null>(null);
 
@@ -349,7 +350,10 @@ const OperatorJobDetailPage = () => {
       idleTime: persistedIdleReason,
       idleTimeDuration: persistedIdleDuration,
     });
-    if (!success) return false;
+    if (!success.success) return false;
+
+    // If a log was created, make it available for admin-assign (stored briefly for the modal)
+    if (success.completedLogId) setPostConfirmLogId(success.completedLogId);
 
     await reloadOperatorViewDataPreservingScroll();
     setPendingEndTimeCapture(null);
@@ -563,6 +567,14 @@ const OperatorJobDetailPage = () => {
         handleUpdateQaStatus={handleUpdateQaStatus}
         handleResetQuantity={handleResetQuantity}
         handleConfirmEndTimeCapture={handleConfirmEndTimeCapture}
+        isAdmin={isAdmin}
+        allowedOperatorUsers={allowedOperatorUsers}
+        postConfirmLogId={postConfirmLogId}
+        setPostConfirmLogId={setPostConfirmLogId}
+        onAssignAfterConfirmSuccess={(message) => {
+          setActionToast({ message, variant: "success", visible: true });
+          setTimeout(() => setActionToast((prev) => ({ ...prev, visible: false })), 3500);
+        }}
       />
     </div>
   );

@@ -832,6 +832,127 @@ router.post("/operator/complete", authorize("OPERATOR", "ADMIN", "PROGRAMMER"), 
   }
 });
 
+// Administrative correction for a run that was closed from an admin account.
+// Revenue is derived from production-log ownership, so changing only opsName is
+// not sufficient: the worked time must belong to the operator's log.
+router.post("/operator/assign-work", authorize("ADMIN"), async (req, res) => {
+  try {
+    const logId = String(req.body?.logId || "").trim();
+    const operatorUserId = toUuid(req.body?.operatorUserId);
+    const requestedSeconds = parseWorkedSeconds(req.body?.workedSeconds);
+    if (!logId || !operatorUserId) {
+      return res.status(400).json({ message: "A production log and operator are required." });
+    }
+
+    const result = await prisma.$transaction(async (tx) => {
+      const [sourceLog, operator] = await Promise.all([
+        tx.employeeLog.findUnique({ where: { id: logId } }),
+        tx.user.findFirst({ where: { id: operatorUserId, role: "OPERATOR" } }),
+      ]);
+      if (!sourceLog || sourceLog.role !== "OPERATOR" || sourceLog.activityType !== "OPERATOR_PRODUCTION") {
+        throw Object.assign(new Error("Production log not found."), { statusCode: 404 });
+      }
+      if (sourceLog.status === "IN_PROGRESS") {
+        throw Object.assign(new Error("Complete the run before assigning its worked time."), { statusCode: 400 });
+      }
+      if (!operator) throw Object.assign(new Error("Selected user is not an operator."), { statusCode: 400 });
+
+      const totalSeconds = getWorkedSecondsForOperatorLog(sourceLog);
+      const assignedSeconds = requestedSeconds === null ? totalSeconds : requestedSeconds;
+      if (assignedSeconds <= 0 || assignedSeconds > totalSeconds) {
+        throw Object.assign(new Error(`Assigned time must be between 1 second and ${totalSeconds} seconds.`), { statusCode: 400 });
+      }
+
+      const operatorName = `${String(operator.firstName || "").trim()} ${String(operator.lastName || "").trim()}`.trim().toUpperCase()
+        || (String(operator.email || "").split("@")[0] || "").toUpperCase();
+      const sourceMetadata = ((sourceLog.metadata as any) || {}) as Record<string, any>;
+      const cleanRevenueMetadata = (metadata: Record<string, any>) => {
+        const { revenue, revenueByQuantity, perQuantityRevenue, creditedWorkedSeconds, estimatedSeconds, overtimeSeconds, workedToEstimatedRatio, ...rest } = metadata;
+        return rest;
+      };
+      const job = sourceLog.jobId ? await tx.job.findUnique({
+        where: { id: sourceLog.jobId },
+        select: { id: true, qty: true, totalHrs: true, rate: true, totalAmount: true, wedmAmount: true, sedmAmount: true },
+      }) : null;
+
+      if (assignedSeconds === totalSeconds) {
+        const reassigned = await tx.employeeLog.update({
+          where: { id: sourceLog.id },
+          data: {
+            userId: operator.id,
+            userEmail: operator.email,
+            userName: operatorName,
+            metadata: {
+              ...cleanRevenueMetadata(sourceMetadata),
+              workedSeconds: totalSeconds,
+              manuallyAssignedBy: resolveReqUserName(req.user),
+              manuallyAssignedAt: new Date().toISOString(),
+            },
+          },
+        });
+        if (job) await rebalanceOperatorRevenueForJob(tx, job);
+        return { logs: [reassigned], split: false };
+      }
+
+      const remainingSeconds = totalSeconds - assignedSeconds;
+      const sourceStart = sourceLog.startedAt instanceof Date ? sourceLog.startedAt : new Date(sourceLog.startedAt);
+      const targetStart = new Date(sourceStart.getTime() + remainingSeconds * 1000);
+      const targetEnd = sourceLog.endedAt instanceof Date ? sourceLog.endedAt : new Date(targetStart.getTime() + assignedSeconds * 1000);
+      const remainingEnd = new Date(targetStart.getTime());
+      const [updatedSource, createdTarget] = await Promise.all([
+        tx.employeeLog.update({
+          where: { id: sourceLog.id },
+          data: {
+            endedAt: remainingEnd,
+            durationSeconds: remainingSeconds,
+            metadata: { ...cleanRevenueMetadata(sourceMetadata), workedSeconds: remainingSeconds },
+          },
+        }),
+        tx.employeeLog.create({
+          data: {
+            role: sourceLog.role,
+            activityType: sourceLog.activityType,
+            status: sourceLog.status,
+            userId: operator.id,
+            userEmail: operator.email,
+            userName: operatorName,
+            jobId: sourceLog.jobId,
+            jobGroupId: sourceLog.jobGroupId,
+            refNumber: sourceLog.refNumber,
+            settingLabel: sourceLog.settingLabel,
+            quantityFrom: sourceLog.quantityFrom,
+            quantityTo: sourceLog.quantityTo,
+            quantityCount: sourceLog.quantityCount,
+            jobCustomer: sourceLog.jobCustomer,
+            jobDescription: sourceLog.jobDescription,
+            workItemTitle: sourceLog.workItemTitle,
+            workSummary: sourceLog.workSummary,
+            startedAt: targetStart,
+            endedAt: targetEnd,
+            durationSeconds: assignedSeconds,
+            metadata: {
+              ...cleanRevenueMetadata(sourceMetadata),
+              workedSeconds: assignedSeconds,
+              manuallyAssignedBy: resolveReqUserName(req.user),
+              manuallyAssignedAt: new Date().toISOString(),
+              splitFromLogId: sourceLog.id,
+            },
+          },
+        }),
+      ]);
+      if (job) await rebalanceOperatorRevenueForJob(tx, job);
+      return { logs: [updatedSource, createdTarget], split: true };
+    });
+
+    res.json({ ...result, logs: result.logs.map(mapEmployeeLog) });
+  } catch (error: any) {
+    const statusCode = Number(error?.statusCode || 0);
+    if (statusCode) return res.status(statusCode).json({ message: error.message });
+    console.error("Error assigning operator work:", error);
+    res.status(500).json({ message: "Failed to assign operator worked time." });
+  }
+});
+
 router.post("/operator/start", authorize("OPERATOR", "ADMIN", "PROGRAMMER"), async (req, res) => {
   try {
     const reqUser = req.user as any;
