@@ -1,7 +1,10 @@
 import { useMemo, useState } from "react";
 import DownloadIcon from "@mui/icons-material/Download";
 import LazyAgGrid from "../../../components/LazyAgGrid";
-import { getEmployeeLogsPage } from "../../../services/employeeLogsApi";
+import Modal from "../../../components/Modal";
+import { assignOperatorWorkedTime, getEmployeeLogsPage } from "../../../services/employeeLogsApi";
+import { getUsers } from "../../../services/userApi";
+import type { User } from "../../../types/user";
 import type { EmployeeLog } from "../../../types/employeeLog";
 import { getUserRoleFromToken } from "../../../utils/auth";
 import { getDisplayDateTimeParts } from "../../../utils/date";
@@ -26,10 +29,30 @@ export const EmployeeLogsPanel = () => {
   const [statusFilter, setStatusFilter] = useState<"" | "COMPLETED" | "IN_PROGRESS" | "REJECTED">("");
   const [searchQuery, setSearchQuery] = useState("");
   const [error, setError] = useState("");
+  const [selectedLog, setSelectedLog] = useState<EmployeeLog | null>(null);
+  const [operators, setOperators] = useState<User[]>([]);
+  const [operatorUserId, setOperatorUserId] = useState("");
+  const [workedTime, setWorkedTime] = useState("");
+  const [assigning, setAssigning] = useState(false);
+  const [logsRefreshKey, setLogsRefreshKey] = useState(0);
 
   const getRevenueLabel = (row: EmployeeLog) => getRevenueLabelForLog(row);
 
-  const columns = useMemo(() => createEmployeeLogColumns({ activeRole, isAdmin, getRevenueLabel }), [activeRole, isAdmin]);
+  const openAssignment = async (log: EmployeeLog) => {
+    setSelectedLog(log);
+    setOperatorUserId("");
+    setWorkedTime("");
+    try {
+      setOperators(await getUsers(["OPERATOR"]));
+    } catch {
+      setError("Failed to load operators.");
+    }
+  };
+
+  const columns = useMemo(
+    () => createEmployeeLogColumns({ activeRole, isAdmin, getRevenueLabel, onAssignWorkedTime: openAssignment }),
+    [activeRole, isAdmin]
+  );
 
   const getColumnMinWidth = (columnKey: string) => {
     if (columnKey === "employee") return 96;
@@ -199,9 +222,48 @@ export const EmployeeLogsPanel = () => {
           getRowId={(row) => row._id}
           className="employee-logs-table logs-center"
           rowHeight={64}
-          refreshKey={`${activeRole}|${statusFilter}|${searchQuery}`}
+          refreshKey={`${activeRole}|${statusFilter}|${searchQuery}|${logsRefreshKey}`}
         />
       )}
+
+      <Modal isOpen={Boolean(selectedLog)} onClose={() => !assigning && setSelectedLog(null)} title="Assign Operator Worked Time" size="small">
+        {selectedLog && (
+          <div className="operator-endtime-confirm">
+            <p>Assign all or part of this log's worked time to an operator. Revenue is recalculated from the revised time split.</p>
+            <p><strong>Current log:</strong> {selectedLog.userName || "Unknown"} — {formatDuration(getWorkedSecondsForLog(selectedLog))}</p>
+            <label className="employee-assign-label">Operator
+              <select value={operatorUserId} onChange={(event) => setOperatorUserId(event.target.value)}>
+                <option value="">Select operator</option>
+                {operators.map((operator) => <option key={operator._id} value={operator._id}>{`${operator.firstName || ""} ${operator.lastName || ""}`.trim() || operator.email}</option>)}
+              </select>
+            </label>
+            <label className="employee-assign-label">Time to assign (HH:MM:SS; leave blank for all)
+              <input value={workedTime} onChange={(event) => setWorkedTime(event.target.value)} placeholder="e.g. 01:30:00" />
+            </label>
+            <div className="confirm-modal-footer-simple">
+              <button type="button" className="btn-secondary-simple" onClick={() => setSelectedLog(null)} disabled={assigning}>Cancel</button>
+              <button type="button" className="btn-primary-simple" disabled={assigning || !operatorUserId} onClick={async () => {
+                const parts = workedTime.trim().split(":").map(Number);
+                const seconds = workedTime.trim() ? (parts.length === 3 ? parts[0] * 3600 + parts[1] * 60 + parts[2] : NaN) : undefined;
+                if (seconds !== undefined && (!Number.isFinite(seconds) || seconds <= 0)) {
+                  setError("Use HH:MM:SS for the time to assign.");
+                  return;
+                }
+                setAssigning(true);
+                try {
+                  await assignOperatorWorkedTime({ logId: selectedLog._id, operatorUserId, workedSeconds: seconds });
+                  setSelectedLog(null);
+                  setLogsRefreshKey((value) => value + 1);
+                } catch (assignError: any) {
+                  setError(assignError?.message || "Failed to assign worked time.");
+                } finally {
+                  setAssigning(false);
+                }
+              }}>{assigning ? "Assigning..." : "Assign & Recalculate Revenue"}</button>
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 };

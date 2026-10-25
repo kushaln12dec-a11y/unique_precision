@@ -296,7 +296,16 @@ const InspectionReportPage = () => {
   const handleGenerate = async () => {
     try {
       setGenerating(true);
-      const blob = await generateInspectionReport(reportPayload);
+      // Build a complete payload with rows from ALL selected quantities
+      // so that the PDF includes every quantity's actual dimension / tolerance
+      const allSelectedRows: InspectionReportRowPayload[] = selectedQuantities.flatMap(
+        (qtyNum) => quantityRowsMap[qtyNum] || []
+      );
+      const generatePayload: InspectionReportPayload = {
+        ...reportPayload,
+        rows: allSelectedRows.length > 0 ? allSelectedRows : rows,
+      };
+      const blob = await generateInspectionReport(generatePayload);
       const link = document.createElement("a");
       const url = URL.createObjectURL(blob);
       link.href = url;
@@ -350,8 +359,8 @@ const InspectionReportPage = () => {
               <h3>Report Details</h3>
               {loading && <AppLoader variant="inline" message="Loading group details..." />}
 
-              {/* Multi-Quantity Selection & Editing Tabs */}
-              <div className="qc-quantity-selector-box">
+              {/* Multi-Quantity Selection & Editing Tabs — hidden for Consolidated Report */}
+              {templateVariant !== "TOOLING_SPARE" && <div className="qc-quantity-selector-box">
                 <div className="qc-quantity-selector-header">
                   <div className="qc-quantity-title">
                     <strong>Select Quantities for Report</strong>
@@ -405,7 +414,7 @@ const InspectionReportPage = () => {
                     })}
                   </div>
                 </div>
-              </div>
+              </div>}
 
               <div className="qc-report-inline-fields">
                 <label>Customer ID<input value={customerId} onChange={(e) => setCustomerId(e.target.value)} /></label>

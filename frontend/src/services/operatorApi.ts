@@ -267,3 +267,33 @@ export const bulkUpdateOperatorJobs = async (
 
   return res.json();
 };
+
+export type AssignOperatorWorkPayload = {
+  logId: string;
+  operatorUserId: string;
+  /** Optional: seconds to assign to the operator. If omitted, all worked time is transferred. */
+  workedSeconds?: number;
+};
+
+export type AssignOperatorWorkResult = {
+  split: boolean;
+  logs: import("../types/employeeLog").EmployeeLog[];
+};
+
+/** Admin-only: reassign (and optionally split) a completed operator run to the correct operator. */
+export const assignOperatorWork = async (
+  payload: AssignOperatorWorkPayload
+): Promise<AssignOperatorWorkResult> => {
+  const res = await fetchWithServerTime("/api/employee-logs/operator/assign-work", {
+    method: "POST",
+    headers: getAuthHeaders(),
+    body: JSON.stringify(payload),
+  });
+
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({ message: "Failed to assign operator work" }));
+    throw new Error(error.message || "Failed to assign operator work");
+  }
+
+  return res.json();
+};

@@ -160,10 +160,12 @@ export const createEmployeeLogColumns = ({
   activeRole,
   isAdmin,
   getRevenueLabel,
+  onAssignWorkedTime,
 }: {
   activeRole: RoleTab;
   isAdmin: boolean;
   getRevenueLabel: (row: EmployeeLog) => string;
+  onAssignWorkedTime?: (row: EmployeeLog) => void;
 }): Column<EmployeeLog>[] => {
   const employeeColumn: Column<EmployeeLog> = {
     key: "employee",
@@ -210,6 +212,14 @@ export const createEmployeeLogColumns = ({
       createDateColumn("endedAt", "Ended At", true),
       { key: "durationSeconds", label: "Time Taken", sortable: false, render: (row) => formatDuration(getWorkedSecondsForLog(row)) },
       createStatusColumn(),
+      ...(isAdmin && onAssignWorkedTime ? [{
+        key: "assignWorkedTime",
+        label: "Assign Time",
+        sortable: false,
+        render: (row: EmployeeLog) => row.status === "IN_PROGRESS" ? "-" : (
+          <button type="button" className="employee-csv-btn" onClick={() => onAssignWorkedTime(row)}>Assign</button>
+        ),
+      } as Column<EmployeeLog>] : []),
     ];
   }
 

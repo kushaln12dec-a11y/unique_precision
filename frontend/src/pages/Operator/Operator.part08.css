@@ -587,3 +587,65 @@
     gap: 1rem;
   }
 }
+
+/* ── Admin Assign Inline Section (inside Confirm End Time modal) ── */
+.admin-assign-inline-section {
+  background: #fffbeb;
+  border: 1px solid #fbbf24;
+  border-left: 4px solid #f59e0b;
+  border-radius: 10px;
+  padding: 0.85rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.admin-assign-inline-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.admin-assign-inline-title {
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: #92400e;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.admin-assign-inline-hint {
+  font-size: 0.75rem;
+  color: #78350f;
+  font-weight: 500;
+  line-height: 1.45;
+}
+
+.admin-assign-inline-select {
+  height: 36px;
+  border: 1px solid #fbbf24;
+  border-radius: 8px;
+  padding: 0 0.75rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  background: #fff;
+  color: #1c1917;
+  cursor: pointer;
+}
+
+.admin-assign-inline-select:focus {
+  outline: none;
+  border-color: #f59e0b;
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.15);
+}
+
+.admin-assign-inline-note {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #065f46;
+  margin: 0;
+  padding: 0.4rem 0.6rem;
+  background: #ecfdf5;
+  border: 1px solid #6ee7b7;
+  border-radius: 6px;
+}

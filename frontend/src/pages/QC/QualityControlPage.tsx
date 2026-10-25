@@ -324,16 +324,20 @@ const QualityControlPage = ({
             ? 240
             : column.key === "inspectionReport" || column.key === "decision"
               ? 220
-              : 130,
+              : column.key === "operator"
+                ? 200
+                : 130,
         cellClass: column.className,
         headerClass: column.headerClassName,
         cellRenderer: column.render
           ? (params: any) =>
             column.render?.(params.data, params.node?.rowIndex || 0)
           : undefined,
+        autoHeight: column.key === "operator" ? true : undefined,
       })),
     [columns],
   );
+
 
   return (
     <div

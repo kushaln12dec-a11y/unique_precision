@@ -64,18 +64,18 @@
   background: #f8fafc;
 }
 
-.jobs-table-wrapper .data-table th.qc-job-ref-col,
-.jobs-table-wrapper .data-table td.qc-job-ref-cell {
+.jobs-table-wrapper .ag-header-cell.qc-job-ref-col,
+.jobs-table-wrapper .ag-cell.qc-job-ref-cell {
   min-width: 145px;
 }
 
-.jobs-table-wrapper .data-table th.qc-qty-col,
-.jobs-table-wrapper .data-table td.qc-qty-cell {
+.jobs-table-wrapper .ag-header-cell.qc-qty-col,
+.jobs-table-wrapper .ag-cell.qc-qty-cell {
   min-width: 100px;
 }
 
-.jobs-table-wrapper .data-table td.qc-job-ref-cell,
-.jobs-table-wrapper .data-table td.qc-qty-cell {
+.jobs-table-wrapper .ag-cell.qc-job-ref-cell,
+.jobs-table-wrapper .ag-cell.qc-qty-cell {
   white-space: normal;
   word-break: normal;
   text-align: center;
@@ -144,15 +144,15 @@
   text-align: center;
 }
 
-.jobs-table-wrapper .data-table th.qc-decision-col,
-.jobs-table-wrapper .data-table td.qc-decision-cell {
+.jobs-table-wrapper .ag-header-cell.qc-decision-col,
+.jobs-table-wrapper .ag-cell.qc-decision-cell {
   min-width: 160px;
   text-align: center;
   overflow: visible;
 }
 
-.jobs-table-wrapper .data-table th.qc-inspection-col,
-.jobs-table-wrapper .data-table td.qc-inspection-cell {
+.jobs-table-wrapper .ag-header-cell.qc-inspection-col,
+.jobs-table-wrapper .ag-cell.qc-inspection-cell {
   min-width: 140px;
   text-align: center;
   overflow: visible;
@@ -470,4 +470,133 @@
 .qc-operator-empty {
   color: #94a3b8;
   font-size: 0.85rem;
+}
+
+/* ── Grouped Operator-Quantity Cell (AG Grid) ── */
+.jobs-table-wrapper .ag-header-cell.qc-operator-col {
+  min-width: 180px;
+}
+
+.jobs-table-wrapper .ag-cell.qc-operator-cell {
+  min-width: 180px;
+  max-width: 280px;
+  /* AG Grid cells: align content to the top */
+  align-items: flex-start !important;
+  padding-top: 7px !important;
+  padding-bottom: 7px !important;
+  overflow: visible;
+}
+
+.qc-operator-grouped {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-width: 240px;
+  width: 100%;
+}
+
+/* Single operator name + duration in one row */
+.qc-operator-single-name {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #166534;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 180px;
+}
+
+/* Quantity number label (#1, #2, ...) */
+.qc-operator-qty-group {
+  display: flex;
+  align-items: flex-start;
+  gap: 5px;
+  padding-bottom: 3px;
+  border-bottom: 1px dashed #e2e8f0;
+  min-width: 0;
+}
+
+.qc-operator-qty-group:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.qc-operator-qty-label {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 4px;
+  background: #eff6ff;
+  border: 1px solid #93c5fd;
+  color: #1d4ed8;
+  font-size: 0.65rem;
+  font-weight: 800;
+  margin-top: 1px;
+  white-space: nowrap;
+}
+
+/* Chip row containing one or more operator chips */
+.qc-operator-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  min-width: 0;
+}
+
+/* Individual operator chip */
+.qc-operator-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 1px 6px 1px 5px;
+  border-radius: 999px;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  color: #166534;
+  font-size: 0.68rem;
+  font-weight: 700;
+  white-space: nowrap;
+  max-width: 170px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Duration label inside chip */
+.qc-operator-duration {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 4px;
+  border-radius: 4px;
+  background: #dcfce7;
+  color: #14532d;
+  font-size: 0.6rem;
+  font-weight: 700;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* "View all" / "Show less" toggle */
+.qc-operator-view-all {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 6px;
+  border-radius: 999px;
+  border: 1px dashed #93c5fd;
+  background: transparent;
+  color: #1d4ed8;
+  font-size: 0.65rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  margin-top: 2px;
+  transition: background 0.15s;
+}
+
+.qc-operator-view-all:hover {
+  background: #eff6ff;
 }
